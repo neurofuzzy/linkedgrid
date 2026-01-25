@@ -14,5 +14,4 @@ export { LinkedCell } from './linked-cell';
 export { LinkedCellUtils } from './linked-cell-utils';
 export { LinkedGrid } from './linked-grid';
 export { LinkedGridUtils } from './linked-grid-utils';
-export { LinkedValue } from './linked-value';
 export type { ILinkedGrid, ILinkedCell } from './interfaces';

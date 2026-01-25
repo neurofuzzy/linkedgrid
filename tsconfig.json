@@ -36,7 +36,7 @@
     "packages/**/*",
     "examples/tower-defense-modes.test.ts",
     "etc/archive/compositor"
-  ],
+, "test/linked-grid.test.ts"  ],
   "exclude": [
     "node_modules",
     "dist"

@@ -6,6 +6,7 @@
  */
 
 import { Direction } from './direction';
+import { LinkedCell } from './linked-cell';
 
 /**
  * Minimal interface for a grid that LinkedCell can reference.
@@ -13,11 +14,11 @@ import { Direction } from './direction';
  * 
  * C is the cell type (allows LinkedCell to know it gets LinkedCell back)
  */
-export interface ILinkedGrid<C = unknown> {
+export interface ILinkedGrid{
     readonly width: number;
     readonly height: number;
-    readonly cells: C[];
-    cell(x: number, y: number): C | null;
+    readonly cells: LinkedCell[];
+    cell(x: number, y: number): LinkedCell | null;
 }
 
 /**
