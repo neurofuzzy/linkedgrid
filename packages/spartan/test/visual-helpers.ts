@@ -1,24 +1,63 @@
-import { describe, it } from 'vitest';
 import { LinkedGrid } from '../../grid/linked-grid';
 import { SparseEntityStore } from '../entity-store';
 import { SpatialSystem } from '../spatial-system';
 
+export interface VisualTestContext {
+    grid: LinkedGrid;
+    spatial: SpatialSystem;
+    store: SparseEntityStore;
+}
+
+export interface VisualTestDefinition {
+    arrange?: (ctx: VisualTestContext) => void | Promise<void>;
+    act: (ctx: VisualTestContext) => void | Promise<void>;
+    assert?: (ctx: VisualTestContext) => void | Promise<void>;
+}
+
 /**
- * Mark a test for the visual runner.
- * Also registers as a normal Vitest test for CI.
+ * Mark a test for the visual runner with Arrange-Act-Assert pattern.
+ * - arrange: Setup initial state (runs on load, visible before play)
+ * - act: Perform actions (runs on play, generates snapshots)
+ * - assert: Validate results (runs after act, determines pass/fail)
  */
-export function visual(name: string, fn: (ctx: any) => void | Promise<void>) {
-    // Register in visual test array (only in browser)
+export function visual(
+    name: string, 
+    definition: VisualTestDefinition | ((ctx: VisualTestContext) => void | Promise<void>)
+) {
+    // Normalize definition to AAA format
+    const normalized: VisualTestDefinition = typeof definition === 'function' 
+        ? { act: definition }
+        : definition;
+    
+    // Register in global array (for both browser and Node.js)
+    if (typeof globalThis !== 'undefined') {
+        (globalThis as any).visualTests = (globalThis as any).visualTests || [];
+        (globalThis as any).visualTests.push({ name, definition: normalized });
+    }
+    
+    // Also register in window if in browser
     if (typeof window !== 'undefined') {
         (window as any).visualTests = (window as any).visualTests || [];
-        (window as any).visualTests.push({ name, fn });
+        (window as any).visualTests.push({ name, definition: normalized });
     }
 
-    // Also register as normal Vitest test (runs in CI)
-    it(name, async () => {
-        const grid = new LinkedGrid(20, 20);
-        const store = new SparseEntityStore();
-        const spatial = new SpatialSystem(grid, store);
-        await fn({ grid, spatial, store });
-    });
+    // Only register as Vitest test if vitest globals are available
+    if (typeof (globalThis as any).it === 'function') {
+        const it = (globalThis as any).it;
+        try {
+            it(name, async () => {
+                const grid = new LinkedGrid(20, 20);
+                const store = new SparseEntityStore();
+                const spatial = new SpatialSystem(grid, store);
+                const ctx = { grid, spatial, store };
+                
+                // Run all phases for Vitest
+                if (normalized.arrange) await normalized.arrange(ctx);
+                await normalized.act(ctx);
+                if (normalized.assert) await normalized.assert(ctx);
+            });
+        } catch (e) {
+            // Silently ignore if not in a proper test context
+        }
+    }
 }
