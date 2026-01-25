@@ -1,5 +1,5 @@
 /**
- * LinkedValue - A doubly-linked list node for chaining values.
+ * LinkedValue - A doubly-linked list node for chaining numeric values.
  *
  * @deprecated This class is unused and will be removed in a future version.
  * For snake/centipede chains, use arrays or implement chain logic directly.
@@ -8,15 +8,13 @@
  * - Centipede/snake chains that need to split/merge
  * - Sequential entity movement with trail following
  * - Any ordered linked data structure
- *
- * @template T The type of value stored in each node
  */
-export class LinkedValue<T> {
-    value: T;
-    private _prev: LinkedValue<T> | null;
-    private _next: LinkedValue<T> | null;
+export class LinkedValue {
+    value: number;
+    private _prev: LinkedValue | null;
+    private _next: LinkedValue | null;
 
-    constructor(value: T, prev: LinkedValue<T> | null = null, next: LinkedValue<T> | null = null) {
+    constructor(value: number, prev: LinkedValue | null = null, next: LinkedValue | null = null) {
         this.value = value;
         this._prev = prev;
         this._next = next;
@@ -27,8 +25,8 @@ export class LinkedValue<T> {
     }
 
     /** Get the first node in the chain */
-    first(): LinkedValue<T> {
-        let node: LinkedValue<T> = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    first(): LinkedValue {
+        let node: LinkedValue = this; // eslint-disable-line @typescript-eslint/no-this-alias
         while (node._prev) {
             node = node._prev;
         }
@@ -36,8 +34,8 @@ export class LinkedValue<T> {
     }
 
     /** Get the last node in the chain */
-    last(): LinkedValue<T> {
-        let node: LinkedValue<T> = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    last(): LinkedValue {
+        let node: LinkedValue = this; // eslint-disable-line @typescript-eslint/no-this-alias
         while (node._next) {
             node = node._next;
         }
@@ -45,12 +43,12 @@ export class LinkedValue<T> {
     }
 
     /** Get previous node, or null if this is the first */
-    prev(): LinkedValue<T> | null {
+    prev(): LinkedValue | null {
         return this._prev;
     }
 
     /** Get next node, or null if this is the last */
-    next(): LinkedValue<T> | null {
+    next(): LinkedValue | null {
         return this._next;
     }
 
@@ -67,7 +65,7 @@ export class LinkedValue<T> {
     /** Get the length of the chain from this node to the end */
     lengthToEnd(): number {
         let count = 1;
-        let node: LinkedValue<T> | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
+        let node: LinkedValue | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
         while (node._next) {
             count++;
             node = node._next;
@@ -84,8 +82,8 @@ export class LinkedValue<T> {
      * Insert a new value before this node.
      * @returns The newly created node
      */
-    insertBefore(value: T): LinkedValue<T> {
-        const newNode = new LinkedValue<T>(value, this._prev, this);
+    insertBefore(value: number): LinkedValue {
+        const newNode = new LinkedValue(value, this._prev, this);
         return newNode;
     }
 
@@ -93,8 +91,8 @@ export class LinkedValue<T> {
      * Insert a new value after this node.
      * @returns The newly created node
      */
-    insertAfter(value: T): LinkedValue<T> {
-        const newNode = new LinkedValue<T>(value, this, this._next);
+    insertAfter(value: number): LinkedValue {
+        const newNode = new LinkedValue(value, this, this._next);
         return newNode;
     }
 
@@ -102,7 +100,7 @@ export class LinkedValue<T> {
      * Remove this node from the chain.
      * @returns The next node (or prev if no next), or null if this was the only node
      */
-    remove(): LinkedValue<T> | null {
+    remove(): LinkedValue | null {
         const prev = this._prev;
         const next = this._next;
 
@@ -120,7 +118,7 @@ export class LinkedValue<T> {
      * This node becomes the tail of the first chain.
      * @returns The head of the new chain (was this.next), or null if this was already the tail
      */
-    splitAfter(): LinkedValue<T> | null {
+    splitAfter(): LinkedValue | null {
         const newHead = this._next;
         if (newHead) {
             newHead._prev = null;
@@ -132,8 +130,8 @@ export class LinkedValue<T> {
     /**
      * Iterate through all nodes from this one to the end.
      */
-    forEach(callback: (node: LinkedValue<T>, index: number) => void): void {
-        let node: LinkedValue<T> | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    forEach(callback: (node: LinkedValue, index: number) => void): void {
+        let node: LinkedValue | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
         let index = 0;
         while (node) {
             callback(node, index);
@@ -145,8 +143,8 @@ export class LinkedValue<T> {
     /**
      * Iterate through all nodes from this one to the beginning (reverse).
      */
-    forEachReverse(callback: (node: LinkedValue<T>, index: number) => void): void {
-        let node: LinkedValue<T> | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    forEachReverse(callback: (node: LinkedValue, index: number) => void): void {
+        let node: LinkedValue | null = this; // eslint-disable-line @typescript-eslint/no-this-alias
         let index = 0;
         while (node) {
             callback(node, index);
@@ -158,8 +156,8 @@ export class LinkedValue<T> {
     /**
      * Convert the chain to an array of values (from first to last).
      */
-    toArray(): T[] {
-        const result: T[] = [];
+    toArray(): number[] {
+        const result: number[] = [];
         this.first().forEach(node => result.push(node.value));
         return result;
     }
@@ -167,8 +165,8 @@ export class LinkedValue<T> {
     /**
      * Find a node in the chain that matches the predicate.
      */
-    find(predicate: (value: T) => boolean): LinkedValue<T> | null {
-        let node: LinkedValue<T> | null = this.first();
+    find(predicate: (value: number) => boolean): LinkedValue | null {
+        let node: LinkedValue | null = this.first();
         while (node) {
             if (predicate(node.value)) return node;
             node = node._next;

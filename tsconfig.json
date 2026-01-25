@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "rootDir": "packages",
+    "paths": {
+      "@gamegrid/grid": [
+        "./packages/grid/index.ts"
+      ],
+      "@gamegrid/engine": [
+        "./packages/engine/index.ts"
+      ],
+      "@gamegrid/ecs": [
+        "./packages/ecs/index.ts"
+      ],
+      "@gamegrid/gameplay": [
+        "./packages/gameplay/index.ts"
+      ],
+      "@gamegrid/runtime": [
+        "./packages/runtime/index.ts"
+      ],
+      "@gamegrid/editor": [
+        "./packages/editor/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "packages/**/*",
+    "examples/tower-defense-modes.test.ts",
+    "etc/archive/compositor"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

@@ -7,12 +7,12 @@ import { LinkedCell } from './linked-cell';
  * This is the main container class that creates and manages a grid of LinkedCell instances.
  * Each cell stores direct references to its UP, DOWN, LEFT, RIGHT neighbors for O(1) navigation.
  * 
- * @typeParam T - The type of values stored in cell.values[] (typically number for game state enums)
+ * All values are constrained to numbers for simplicity.
  * 
  * @example
  * ```typescript
  * // Create a 10x10 grid for a tile-based game
- * const grid = new LinkedGrid<number>(10, 10);
+ * const grid = new LinkedGrid(10, 10);
  * 
  * // Access cells
  * const cell = grid.cell(5, 5);
@@ -27,18 +27,18 @@ import { LinkedCell } from './linked-cell';
  * @example
  * ```typescript
  * // Create a wrapped grid (Pac-Man style)
- * const grid = new LinkedGrid<number>(20, 20, true);
+ * const grid = new LinkedGrid(20, 20, true);
  * // Moving off right edge wraps to left edge
  * ```
  * 
  * @example
  * ```typescript
  * // Create a grid with custom default value
- * const grid = new LinkedGrid<number>(10, 10, false, -1);
+ * const grid = new LinkedGrid(10, 10, false, -1);
  * // All cells start with values[0] = -1
  * ```
  */
-export class LinkedGrid<T> {
+export class LinkedGrid {
 
     /** Grid width (number of columns) */
     width: number;
@@ -47,10 +47,10 @@ export class LinkedGrid<T> {
     height: number;
     
     /** 2D array for coordinate-based access: grid[y][x] */
-    grid: LinkedCell<T>[][] = [];
+    grid: LinkedCell[][] = [];
     
     /** Flat array of all cells for iteration */
-    cells: LinkedCell<T>[] = [];
+    cells: LinkedCell[] = [];
 
     /** Whether edges wrap around (toroidal/Pac-Man style) */
     private _wrap: boolean = false;
@@ -63,9 +63,9 @@ export class LinkedGrid<T> {
      * @param width - Number of columns (default 3)
      * @param height - Number of rows (default 3)
      * @param wrap - Enable toroidal wrapping (default false)
-     * @param defaultValue - Initial value for layer 0 of all cells (default 0 as T)
+     * @param defaultValue - Initial value for layer 0 of all cells (default 0)
      */
-    constructor(width = 3, height = 3, wrap = false, defaultValue: T = 0 as T) {
+    constructor(width = 3, height = 3, wrap = false, defaultValue: number = 0) {
 
         this.width = width;
         this.height = height;
@@ -75,12 +75,12 @@ export class LinkedGrid<T> {
 
         for (let j = 0; j < height; j++) {
 
-            const row: LinkedCell<T>[] = [];
+            const row: LinkedCell[] = [];
             this.grid.push(row);
 
             for (let i = 0; i < width; i++) {
 
-                const cell = new LinkedCell<T>();
+                const cell = new LinkedCell();
                 cell.x = i;
                 cell.y = j;
                 cell._grid = this;
@@ -172,7 +172,7 @@ export class LinkedGrid<T> {
      * }
      * ```
      */
-    cell(x: number, y: number): LinkedCell<T> | null {
+    cell(x: number, y: number): LinkedCell | null {
         if (x < 0 || y < 0) return null;
         if (x >= this.width || y >= this.height) return null;
         return this.grid[y][x];
@@ -189,7 +189,7 @@ export class LinkedGrid<T> {
      * @param n - New cell to place at position
      * @returns true if coordinates are valid, false otherwise
      */
-    setCell(x: number, y: number, n: LinkedCell<T>): boolean {
+    setCell(x: number, y: number, n: LinkedCell): boolean {
         if (x < 0 || y < 0) return false;
         if (x >= this.width || y >= this.height) return false;
         this.grid[y][x] = n;
@@ -205,7 +205,7 @@ export class LinkedGrid<T> {
      * @param cell - The cell to find coordinates for
      * @returns {x, y} coordinates, or null if cell not found in grid
      */
-    getCellCoordinates(cell: LinkedCell<T>): { x: number, y: number } | null {
+    getCellCoordinates(cell: LinkedCell): { x: number, y: number } | null {
         // Fast path: use stored coordinates
         if (cell.x >= 0 && cell.y >= 0) {
             return { x: cell.x, y: cell.y };
@@ -238,8 +238,8 @@ export class LinkedGrid<T> {
      * line.forEach(cell => cell.setValue(0, WALL));
      * ```
      */
-    getLine(x0: number, y0: number, x1: number, y1: number): LinkedCell<T>[] {
-        const cells: LinkedCell<T>[] = [];
+    getLine(x0: number, y0: number, x1: number, y1: number): LinkedCell[] {
+        const cells: LinkedCell[] = [];
 
         const dx = Math.abs(x1 - x0);
         const dy = Math.abs(y1 - y0);
@@ -341,7 +341,7 @@ export class LinkedGrid<T> {
      */
     scroll(
         dir: Direction,
-        fillFn?: (x: number, y: number, cell: LinkedCell<T>) => T,
+        fillFn?: (x: number, y: number, cell: LinkedCell) => number,
         layer = 0
     ) {
         const { width, height } = this;
@@ -404,7 +404,7 @@ export class LinkedGrid<T> {
                 }
                 for (let x = 0; x < width; x++) {
                     const cell = this.grid[height - 1][x];
-                    cell.values[layer] = fillFn ? fillFn(x, height - 1, cell) : undefined as T;
+                    cell.values[layer] = fillFn ? fillFn(x, height - 1, cell) : 0;
                 }
             } else if (dir === Direction.DN) {
                 // Shift everything down, fill top row
@@ -415,7 +415,7 @@ export class LinkedGrid<T> {
                 }
                 for (let x = 0; x < width; x++) {
                     const cell = this.grid[0][x];
-                    cell.values[layer] = fillFn ? fillFn(x, 0, cell) : undefined as T;
+                    cell.values[layer] = fillFn ? fillFn(x, 0, cell) : 0;
                 }
             } else if (dir === Direction.LT) {
                 // Shift everything left, fill right column
@@ -426,7 +426,7 @@ export class LinkedGrid<T> {
                 }
                 for (let y = 0; y < height; y++) {
                     const cell = this.grid[y][width - 1];
-                    cell.values[layer] = fillFn ? fillFn(width - 1, y, cell) : undefined as T;
+                    cell.values[layer] = fillFn ? fillFn(width - 1, y, cell) : 0;
                 }
             } else if (dir === Direction.RT) {
                 // Shift everything right, fill left column
@@ -437,7 +437,7 @@ export class LinkedGrid<T> {
                 }
                 for (let y = 0; y < height; y++) {
                     const cell = this.grid[y][0];
-                    cell.values[layer] = fillFn ? fillFn(0, y, cell) : undefined as T;
+                    cell.values[layer] = fillFn ? fillFn(0, y, cell) : 0;
                 }
             }
         }
@@ -469,7 +469,7 @@ export class LinkedGrid<T> {
      * }
      * ```
      */
-    checkCollision(x: number, y: number, types: T[], layer = 0, treatOobAsCollision = true): boolean {
+    checkCollision(x: number, y: number, types: number[], layer = 0, treatOobAsCollision = true): boolean {
         const cell = this.cell(x, y);
         if (!cell) return treatOobAsCollision;
         return types.includes(cell.values[layer]);
@@ -496,7 +496,7 @@ export class LinkedGrid<T> {
      * }
      * ```
      */
-    checkMoveCollision(x: number, y: number, dir: Direction, types: T[], layer = 0): boolean {
+    checkMoveCollision(x: number, y: number, dir: Direction, types: number[], layer = 0): boolean {
         let destX = x, destY = y;
         switch (dir) {
             case Direction.UP: destY--; break;
