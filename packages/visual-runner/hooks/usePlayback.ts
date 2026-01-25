@@ -3,10 +3,10 @@ import { useInput } from 'ink';
 import type { Snapshot } from '../lib/test-executor.js';
 
 export function usePlayback(
-  snapshots: Snapshot[], 
-  onRestart?: () => void,
-  testStatus?: 'idle' | 'running' | 'complete',
-  setTestStatus?: (status: 'idle' | 'running' | 'complete') => void
+  snapshots: Snapshot[],
+  onAction?: () => void,      // Called when Enter/Space pressed
+  autoPlay?: boolean,          // Auto-start when snapshots change
+  onComplete?: () => void      // Called when playback reaches end
 ) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,41 +20,30 @@ export function usePlayback(
     setIsPlaying(false);
   }, [snapshots]);
   
-  // Update status based on playback position
+  // Auto-start playing when autoPlay is true and we have snapshots
   useEffect(() => {
-    if (snapshots.length === 0 || !setTestStatus) return;
-    
-    if (testStatus === 'running' && isAtEnd && !isPlaying) {
-      setTestStatus('complete');
-    }
-  }, [isAtEnd, isPlaying, snapshots.length, testStatus, setTestStatus]);
-  
-  // Auto-start playing when snapshots are loaded and status is running
-  useEffect(() => {
-    if (snapshots.length > 0 && testStatus === 'running' && !isPlaying) {
+    if (autoPlay && snapshots.length > 1 && !isPlaying) {
       setIsPlaying(true);
     }
-  }, [snapshots.length, testStatus]);
+  }, [autoPlay, snapshots.length]);
+  
+  // Call onComplete when playback reaches the end
+  useEffect(() => {
+    if (isPlaying && currentIndex >= snapshots.length - 1 && onComplete) {
+      setIsPlaying(false);
+      onComplete();
+    }
+  }, [isPlaying, currentIndex, snapshots.length, onComplete]);
   
   // Keyboard controls
   useInput((input, key) => {
-    // If test is idle, enter/space should start it
-    if (testStatus === 'idle' && (input === ' ' || key.return)) {
-      if (onRestart) {
-        onRestart(); // This will execute the test
-      }
+    // Enter or Space triggers action if defined
+    if ((input === ' ' || key.return) && onAction) {
+      onAction();
       return;
     }
     
-    // If at end and test is complete, restart
-    if (testStatus === 'complete' && (input === ' ' || key.return)) {
-      if (onRestart) {
-        onRestart();
-      }
-      return;
-    }
-    
-    // Normal playback controls (when running)
+    // Normal playback controls
     if (input === ' ') {
       setIsPlaying(prev => !prev);
     } else if (key.return) {
@@ -67,13 +56,8 @@ export function usePlayback(
       if (currentIndex > 0) {
         setCurrentIndex(i => i - 1);
       }
-    } else if (input === 'r') {
-      if (onRestart) {
-        onRestart();
-      } else {
-        setCurrentIndex(0);
-        setIsPlaying(false);
-      }
+    } else if (input === 'r' && onAction) {
+      onAction();
     }
   });
   

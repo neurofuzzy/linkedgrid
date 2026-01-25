@@ -1,6 +1,6 @@
 # Spartan Framework Development Rules
 
-1. All examples and tests must support headless automated testing and running in the visual runner.
+1. All examples and tests must support headless automated testing and running in the visual runner
 2. All tests must use AAA pattern (arrange, act, assert).
 3. Whenever being additive, ask _is this spartan?_ Does it have only what is necessary and essential? 
 4. NO emojis.

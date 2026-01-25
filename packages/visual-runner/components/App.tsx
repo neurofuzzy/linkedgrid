@@ -10,47 +10,122 @@ import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
 import { usePlayback } from '../hooks/usePlayback.js';
 
-type TestStatus = 'idle' | 'running' | 'complete';
+// Discriminated union - makes invalid states impossible
+type TestRunnerState = 
+  | { type: 'selecting' }
+  | { 
+      type: 'loaded';
+      testName: string;
+      testIndex: number;
+      snapshot: Snapshot;
+      definition: VisualTestDefinition;
+      executor: TestExecutor;
+    }
+  | { 
+      type: 'running';
+      testName: string;
+      testIndex: number;
+      snapshots: Snapshot[];
+      definition: VisualTestDefinition;
+      executor: TestExecutor;
+      result: TestResult;  // Store result while playing
+    }
+  | { 
+      type: 'completed';
+      testName: string;
+      testIndex: number;
+      snapshots: Snapshot[];
+      result: TestResult;
+      definition: VisualTestDefinition;
+    };
 
 export function App() {
   const [tests, setTests] = useState<TestFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTest, setSelectedTest] = useState<string | null>(null);
-  const [selectedTestIndex, setSelectedTestIndex] = useState<number>(-1);
-  const [testDefinition, setTestDefinition] = useState<VisualTestDefinition | null>(null);
-  const [testExecutor, setTestExecutor] = useState<TestExecutor | null>(null);
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [testResult, setTestResult] = useState<TestResult | null>(null);
-  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
+  const [state, setState] = useState<TestRunnerState>({ type: 'selecting' });
   const [showSidebar, setShowSidebar] = useState(true);
   
-  const handleExecuteTest = async () => {
-    if (!testDefinition || !testExecutor) return;
+  const handleStart = async () => {
+    if (state.type !== 'loaded') return; // Type guard!
     
-    setTestStatus('running');
-    setSnapshots([]);
-    setTestResult(null);
+    const { definition, executor, snapshot, testName, testIndex } = state;
     
     try {
-      const result = await testExecutor.executeActAssert(testDefinition);
-      setTestResult(result);
-      setSnapshots(result.snapshots);
+      // Run act & assert phases
+      const result = await executor.executeActAssert(definition);
+      
+      // Prepend arrange snapshot to results
+      const allSnapshots = [snapshot, ...result.snapshots];
+      
+      // Transition to running state with result stored (triggers auto-play)
+      setState({
+        type: 'running',
+        testName,
+        testIndex,
+        snapshots: allSnapshots,
+        definition,
+        executor,
+        result  // Store result for when playback completes
+      });
     } catch (err) {
       setError((err as Error).message);
-      setTestStatus('complete');
     }
   };
   
-  const handleRestart = () => {
-    handleExecuteTest();
+  const handleComplete = () => {
+    if (state.type !== 'running') return; // Type guard!
+    
+    const { snapshots, testName, testIndex, definition, result } = state;
+    
+    setState({
+      type: 'completed',
+      testName,
+      testIndex,
+      snapshots,
+      result,
+      definition
+    });
   };
   
-  const { currentIndex, isPlaying, interval, snapshot, isAtEnd, startPlayback } = usePlayback(
-    snapshots, 
-    handleRestart,
-    testStatus,
-    (status) => setTestStatus(status)
+  const handleRestart = async () => {
+    if (state.type !== 'completed') return; // Type guard!
+    
+    const { definition, testName, testIndex } = state;
+    
+    try {
+      // Create fresh executor and re-run arrange
+      const executor = new TestExecutor();
+      const snapshot = await executor.executeArrange(definition);
+      
+      // Transition back to loaded state
+      setState({
+        type: 'loaded',
+        testName,
+        testIndex,
+        snapshot,
+        definition,
+        executor
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  
+  // Derive props from state
+  const snapshots = state.type === 'running' || state.type === 'completed' 
+    ? state.snapshots 
+    : state.type === 'loaded' 
+    ? [state.snapshot] 
+    : [];
+
+  const { currentIndex, isPlaying, snapshot } = usePlayback(
+    snapshots,
+    state.type === 'loaded' ? handleStart : 
+    state.type === 'completed' ? handleRestart : 
+    undefined,
+    state.type === 'running',  // Auto-play when running
+    state.type === 'running' ? () => handleComplete() : undefined
   );
   const { write } = useStdout();
   
@@ -81,24 +156,20 @@ export function App() {
       setShowSidebar(prev => !prev);
     } else if (input === 'q') {
       process.exit(0);
-    } else if (key.home) {
-      // Go back to test selection
+    } else if (key.escape || (key as any).home) {
+      // Go back to test selection (home key might not be in Key type)
+      setState({ type: 'selecting' });
       setShowSidebar(true);
-      setSelectedTest(null);
-      setSelectedTestIndex(-1);
-      setSnapshots([]);
-      setTestStatus('idle');
-      setTestResult(null);
-    } else if (!showSidebar && (key.upArrow || key.downArrow)) {
+    } else if (!showSidebar && state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
       // Navigate between tests when viewing a test
-      let newIndex = selectedTestIndex;
-      if (key.upArrow && selectedTestIndex > 0) {
-        newIndex = selectedTestIndex - 1;
-      } else if (key.downArrow && selectedTestIndex < flatTests.length - 1) {
-        newIndex = selectedTestIndex + 1;
+      let newIndex = state.testIndex;
+      if (key.upArrow && newIndex > 0) {
+        newIndex = newIndex - 1;
+      } else if (key.downArrow && newIndex < flatTests.length - 1) {
+        newIndex = newIndex + 1;
       }
       
-      if (newIndex !== selectedTestIndex) {
+      if (newIndex !== state.testIndex) {
         const test = flatTests[newIndex];
         handleSelectTest(test.file, test.testName, newIndex);
       }
@@ -106,29 +177,14 @@ export function App() {
   });
   
   // Handle test selection - load and execute arrange phase
-  const handleSelectTest = async (file: string, testName: string, index?: number) => {
-    setSelectedTest(testName);
+  const handleSelectTest = async (file: string, testName: string, index: number) => {
+    setState({ type: 'selecting' }); // Clear previous state
     setShowSidebar(false);
-    setTestResult(null);
-    setTestStatus('idle');
-    setSnapshots([]);
-    setTestDefinition(null);
-    setTestExecutor(null);
-    
-    // Set the index if provided, otherwise find it
-    if (index !== undefined) {
-      setSelectedTestIndex(index);
-    } else {
-      const idx = flatTests.findIndex(t => t.file === file && t.testName === testName);
-      setSelectedTestIndex(idx);
-    }
     
     try {
-      // Dynamic import to load the test definition
       const modulePath = `../../${file}`;
-      const module = await import(modulePath);
+      await import(modulePath);
       
-      // Get test definition from globalThis.visualTests registry
       const testRegistry = (globalThis as any).visualTests || [];
       const testEntry = testRegistry.find((t: any) => t.name === testName);
       
@@ -136,16 +192,21 @@ export function App() {
         throw new Error(`Test "${testName}" not found in registry`);
       }
       
-      // Store the test definition and execute arrange phase
       const definition = testEntry.definition;
-      setTestDefinition(definition);
-      
       const executor = new TestExecutor();
-      setTestExecutor(executor);
       
-      // Execute arrange phase to show initial state
-      const initialSnapshot = await executor.executeArrange(definition);
-      setSnapshots([initialSnapshot]);
+      // Execute arrange phase
+      const snapshot = await executor.executeArrange(definition);
+      
+      // Transition to loaded state
+      setState({
+        type: 'loaded',
+        testName,
+        testIndex: index,
+        snapshot,
+        definition,
+        executor
+      });
     } catch (err) {
       setError((err as Error).message);
     }
@@ -153,20 +214,20 @@ export function App() {
   
   // Render status indicator
   const renderStatus = () => {
-    if (testStatus === 'idle') {
-      return <Text dimColor> [IDLE - press enter to start]</Text>;
+    switch (state.type) {
+      case 'selecting':
+        return null;
+      case 'loaded':
+        return <Text dimColor> [IDLE - press enter to start]</Text>;
+      case 'running':
+        return <Text color="blue"> [⟳ RUNNING]</Text>;
+      case 'completed':
+        return (
+          <Text color={state.result.passed ? 'green' : 'red'}>
+            {' '}[{state.result.passed ? '✓ PASS' : '✗ FAIL'}]
+          </Text>
+        );
     }
-    if (testStatus === 'running') {
-      return <Text color="blue"> [⟳ RUNNING]</Text>;
-    }
-    if (testStatus === 'complete' && testResult) {
-      return (
-        <Text color={testResult.passed ? 'green' : 'red'}>
-          {' '}[{testResult.passed ? '✓ PASS' : '✗ FAIL'}]
-        </Text>
-      );
-    }
-    return null;
   };
   
   if (loading) {
@@ -193,9 +254,9 @@ export function App() {
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1}>
         <Text bold>LinkedGrid Visual Test Runner</Text>
-        {selectedTest && !showSidebar && (
+        {state.type !== 'selecting' && !showSidebar && (
           <>
-            <Text dimColor> - {selectedTest} ({selectedTestIndex + 1}/{flatTests.length})</Text>
+            <Text dimColor> - {state.testName} ({state.testIndex + 1}/{flatTests.length})</Text>
             {renderStatus()}
           </>
         )}
@@ -213,10 +274,10 @@ export function App() {
           <Box marginTop={1}>
             <InfoBar snapshot={snapshot} />
           </Box>
-          {testResult && !testResult.passed && (
+          {state.type === 'completed' && !state.result.passed && (
             <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
               <Text color="red" bold>Test Failed: </Text>
-              <Text color="red">{testResult.error}</Text>
+              <Text color="red">{state.result.error}</Text>
             </Box>
           )}
           <Box marginTop={1}>
@@ -224,16 +285,16 @@ export function App() {
               currentIndex={currentIndex}
               totalSnapshots={snapshots.length}
               isPlaying={isPlaying}
-              interval={interval}
+              interval={500}
             />
           </Box>
           {!showSidebar && (
             <Box marginTop={1}>
               <Text dimColor>
                 [home] menu | [↑↓] switch test | {
-                  testStatus === 'idle' 
+                  state.type === 'loaded' 
                     ? '[enter/space] start test' 
-                    : testStatus === 'complete'
+                    : state.type === 'completed'
                     ? '[enter/space] restart'
                     : '[enter] play | [space] play/pause | [←→] step'
                 } | [r] restart | [q] quit

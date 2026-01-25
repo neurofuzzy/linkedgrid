@@ -5,15 +5,15 @@ import type { TestFile } from '../lib/test-discovery.js';
 
 interface Props {
   tests: TestFile[];
-  onSelect: (file: string, testName: string) => void;
+  onSelect: (file: string, testName: string, index: number) => void;
 }
 
 export function TestSidebar({ tests, onSelect }: Props) {
-  const items = tests.flatMap(testFile =>
-    testFile.tests.map((testName, idx) => ({
-      key: `${testFile.file}-${testName}-${idx}`,
+  const items = tests.flatMap((testFile, fileIndex) => 
+    testFile.tests.map((testName, testIndex) => ({
+      key: `${testFile.file}-${testName}-${testIndex}`,
       label: testName,
-      value: { file: testFile.file, testName }
+      value: { file: testFile.file, testName, globalIndex: fileIndex * 1000 + testIndex }
     }))
   );
   
@@ -23,7 +23,7 @@ export function TestSidebar({ tests, onSelect }: Props) {
       <Box marginTop={1}>
         <SelectInput
           items={items}
-          onSelect={({ value }) => onSelect(value.file, value.testName)}
+          onSelect={({ value }) => onSelect(value.file, value.testName, value.globalIndex)}
         />
       </Box>
     </Box>
