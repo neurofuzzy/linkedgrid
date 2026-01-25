@@ -91,14 +91,15 @@ export function App() {
   const handleRestart = async () => {
     if (state.type !== 'completed') return; // Type guard!
     
-    const { definition, testName, testIndex } = state;
+    const { definition, testName, testIndex, snapshots: currentSnapshots } = state;
     
+    // Keep showing the last frame while we restart
     try {
       // Create fresh executor and re-run arrange
       const executor = new TestExecutor();
       const snapshot = await executor.executeArrange(definition);
       
-      // Transition back to loaded state
+      // Transition directly to loaded state (no intermediate state change)
       setState({
         type: 'loaded',
         testName,

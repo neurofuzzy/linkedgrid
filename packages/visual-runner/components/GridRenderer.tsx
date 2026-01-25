@@ -15,23 +15,17 @@ const ENTITY_COLORS: Record<string, (s: string) => string> = {
   wall: chalk.gray,
 };
 
+const DEFAULT_GRID_SIZE = { w: 20, h: 20 };
+
 export function GridRenderer({ snapshot }: Props) {
-  if (!snapshot) {
-    return (
-      <Box borderStyle="single" padding={1}>
-        <Text dimColor>Select a test to begin</Text>
-      </Box>
-    );
-  }
-  
-  const { grid, entities } = snapshot;
+  const grid = snapshot?.grid || DEFAULT_GRID_SIZE;
   
   // Build ASCII grid
   const lines: string[] = [];
   for (let y = 0; y < grid.h; y++) {
     let line = '';
     for (let x = 0; x < grid.w; x++) {
-      const entity = entities.find(e => e.x === x && e.y === y);
+      const entity = snapshot?.entities.find(e => e.x === x && e.y === y);
       if (entity) {
         const char = entity.type[0].toUpperCase();
         const colorFn = ENTITY_COLORS[entity.type] || chalk.white;
