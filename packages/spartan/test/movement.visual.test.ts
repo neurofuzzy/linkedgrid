@@ -14,12 +14,12 @@ visual('player moves right 3 times', {
 visual('spawn multiple entities', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 10, 10, 1);
+    },
+    act: ({ spatial }) => {
+        // Add entities one at a time to show spawning process
         spatial.spawn('enemy', 12, 10, 1);
         spatial.spawn('enemy', 10, 12, 1);
         spatial.spawn('item', 11, 11, 2);
-    },
-    act: ({ spatial }) => {
-        // No actions - just showing initial setup
     }
 });
 

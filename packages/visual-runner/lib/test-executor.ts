@@ -76,8 +76,7 @@ export class TestExecutor {
   async executeActAssert(definition: VisualTestDefinition): Promise<TestResult> {
     this.snapshots = [];
     
-    // Capture initial state first
-    this.captureSnapshot(this.spatial, 'initial', [], null);
+    // Don't capture initial state - the arrange snapshot is already the initial state
     
     const ctx = { 
       grid: this.grid, 

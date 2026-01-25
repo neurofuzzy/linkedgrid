@@ -55,6 +55,20 @@ export function App() {
       // Run act & assert phases
       const result = await executor.executeActAssert(definition);
       
+      // If act phase is empty, stay in loaded state (nothing to animate)
+      if (result.snapshots.length === 0) {
+        // Test completed successfully with no actions to animate
+        setState({
+          type: 'completed',
+          testName,
+          testIndex,
+          snapshots: [snapshot], // Just the arrange snapshot
+          result: { ...result, snapshots: [snapshot] },
+          definition
+        });
+        return;
+      }
+      
       // Prepend arrange snapshot to results
       const allSnapshots = [snapshot, ...result.snapshots];
       
