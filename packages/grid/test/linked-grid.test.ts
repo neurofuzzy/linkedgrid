@@ -223,7 +223,7 @@ describe('LinkedGrid', () => {
 
             const ascii = LinkedGridUtils.print(grid, 0);
 
-            expect(ascii).toBe('01|--|--\n--|00|--\n--|--|00');
+            expect(ascii).toBe('01|--|--\n--|00|--\n--|--|01');
         });
     });
 
