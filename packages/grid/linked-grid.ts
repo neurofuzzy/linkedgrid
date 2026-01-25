@@ -180,24 +180,6 @@ export class LinkedGrid {
     }
 
     /**
-     * Set cell at coordinates (advanced usage).
-     * 
-     * Replaces the cell at the given position. The new cell should have its neighbors
-     * properly linked. This is rarely needed - use for custom cell implementations.
-     * 
-     * @param x - Column index
-     * @param y - Row index
-     * @param n - New cell to place at position
-     * @returns true if coordinates are valid, false otherwise
-     */
-    setCell(x: number, y: number, n: LinkedCell): boolean {
-        if (x < 0 || y < 0) return false;
-        if (x >= this.width || y >= this.height) return false;
-        this.grid[y][x] = n;
-        return true;
-    }
-
-    /**
      * Get coordinates for a cell.
      * 
      * Cells created by LinkedGrid always have valid x,y coordinates.
