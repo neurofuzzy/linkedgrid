@@ -126,12 +126,45 @@ npm test
 # Run tests in watch mode
 npm run test:watch
 
+# Visual test runner (opens in browser)
+npm run dev
+
 # Build
 npm run build
 
 # Lint
 npm run lint
 ```
+
+## Visual Test Runner
+
+The spartan visual test runner lets you see and step through test execution:
+
+```bash
+npm run dev
+# Opens http://localhost:5183/dev/visual-runner.html
+```
+
+**Features:**
+- Click any test to run it
+- Step through operations one at a time
+- Auto-play with configurable interval
+- See grid state changes visually
+
+**Writing Visual Tests:**
+
+```typescript
+import { visual } from './visual-helpers';
+
+visual('player moves right 3 times', ({ spatial }) => {
+  spatial.spawn('player', 5, 5, 1, { hp: 100 });
+  spatial.move(5, 5, 6, 5, 1);
+  spatial.move(6, 5, 7, 5, 1);
+  spatial.move(7, 5, 8, 5, 1);
+});
+```
+
+Visual tests also run as normal Vitest tests in CI.
 
 ## License
 
