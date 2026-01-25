@@ -11,7 +11,8 @@
 
 export { Direction } from './direction';
 export { LinkedCell } from './linked-cell';
-export { LinkedGrid } from './linked-grid';
-export { LinkedValue } from './linked-value';
 export { LinkedCellUtils } from './linked-cell-utils';
+export { LinkedGrid } from './linked-grid';
+export { LinkedGridUtils } from './linked-grid-utils';
+export { LinkedValue } from './linked-value';
 export type { ILinkedGrid, ILinkedCell } from './interfaces';
