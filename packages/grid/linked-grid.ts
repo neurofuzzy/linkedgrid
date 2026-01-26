@@ -64,9 +64,8 @@ export class LinkedGrid {
      * @param width - Number of columns (default 3)
      * @param height - Number of rows (default 3)
      * @param wrap - Enable toroidal wrapping (default false)
-     * @param defaultValue - Initial value for layer 0 of all cells (default 0)
      */
-    constructor(width = 3, height = 3, wrap = false, defaultValue: number = 0) {
+    constructor(width = 3, height = 3, wrap = false) {
 
         this.width = width;
         this.height = height;
@@ -85,8 +84,6 @@ export class LinkedGrid {
                 cell.x = i;
                 cell.y = j;
                 cell._grid = this;
-                // Initialize layer 0 to default value
-                cell.values[0] = defaultValue;
                 this.cells.push(cell);
                 row.push(cell);
 

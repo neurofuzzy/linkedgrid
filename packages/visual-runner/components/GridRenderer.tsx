@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Text } from 'ink';
 import chalk from 'chalk';
 import type { Snapshot } from '../lib/test-executor.js';
@@ -29,7 +28,8 @@ export function GridRenderer({ snapshot }: Props) {
       const entitiesHere = snapshot?.entities.filter(e => e.x === x && e.y === y) || [];
       
       if (entitiesHere.length > 0) {
-        // Show entity on highest layer (Rule 8: higher layer indexes are "on top")
+        // Show entity on highest layer (follows same logic as getTopmostEntity)
+        // Rule 8: higher layer indexes render "on top" of lower layers
         const topEntity = entitiesHere.reduce((highest, current) => 
           current.layer > highest.layer ? current : highest
         );

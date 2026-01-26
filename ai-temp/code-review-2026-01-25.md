@@ -9,7 +9,7 @@ The direct neighbor references (`_neighbors` array) are brilliant for grid-based
 The `move()` + `commit()` pattern in `SpatialSystem` elegantly solves the convoy problem. Being able to move adjacent entities simultaneously without order-dependent blocking is a real challenge that you've solved cleanly.
 
 **3. Layer-Based Entity Storage**
-Using `cell.items[layer]` for entity positions is simple and effective. The constraint that entities occupy exactly one cell on one layer keeps the mental model clean.
+Using `cell.values[layer]` for entity positions is simple and effective. The constraint that entities occupy exactly one cell on one layer keeps the mental model clean.
 
 **4. Separation of Concerns**
 - `LinkedGrid`: Pure spatial structure
@@ -25,7 +25,7 @@ This separation is well thought out.
 
 ```typescript
 // LinkedCell allows arbitrary indexing but values should be bounded
-cell.items[999] = entityId; // No protection against this
+cell.values[999] = entityId; // No protection against this
 
 // Missing validation
 cell.values[-1] = 5; // Negative indices aren't caught
@@ -39,7 +39,7 @@ setItem(layer: number, val: number) {
     if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
         throw new Error(`Layer must be 0-${LinkedCell.MAX_LAYERS-1}`);
     }
-    this.items[layer] = val;
+    this.values[layer] = val;
     return this;
 }
 ```

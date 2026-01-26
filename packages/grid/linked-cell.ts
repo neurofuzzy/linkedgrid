@@ -42,19 +42,17 @@ export class LinkedCell {
     _neighbors: (LinkedCell | null)[] = [];
 
     /** Numeric game state values, one per layer (e.g., layer 0: terrain, layer 1: items) */
-    values: number[] = [];
+    _values: (number | undefined)[] = [];
+
+    get values(): (number | undefined)[] {
+        return this._values;
+    }
 
     /** Numeric values for distance fields, pathfinding costs, light intensity, etc. */
     distances: number[] = [];
 
     /** Boolean masks for collision, visibility, walkability, etc. */
     masks: boolean[] = [];
-
-    /** Item/entity references per layer (numeric IDs) */
-    items: number[] = [];
-
-    /** Arbitrary data storage for custom game-specific data */
-    data: Record<string, unknown> = {};
 
     /** BFS visited flag (used internally by pathfinding, cleaned up after) */
     _visited: boolean = false;
@@ -69,7 +67,7 @@ export class LinkedCell {
     y: number = -1;
 
     /** Reference to parent grid - required for geometry methods - set by LinkedGrid */
-    _grid: ILinkedGrid<LinkedCell> | null = null;
+    _grid: ILinkedGrid | null = null;
 
     /**
      * Create a new LinkedCell.
@@ -90,6 +88,21 @@ export class LinkedCell {
     }
 
     /**
+     * Get value at a layer.
+     * 
+     * @param layer - Layer index (0-based)
+     * @returns Value at layer
+     * 
+     * @example
+     * ```typescript
+     * const value = cell.getValue(0);
+     * ```
+     */
+    getValue(layer: number): (number | undefined) {
+        return this.values[layer];
+    }
+
+    /**
      * Set value at a layer.
      * 
      * @param layer - Layer index (0-based)
@@ -103,8 +116,32 @@ export class LinkedCell {
      *     .setMask(0, false);  // Not walkable
      * ```
      */
-    setValue(layer: number, val: number) {
+    setValue(layer: number, val: (number | undefined)) {
         this.values[layer] = val;
+        return this;
+    }
+
+    /**
+     * Clear value at a layer.
+     * 
+     * @param layer - Layer index (0-based)
+     * @returns this for chaining
+     * 
+     * @example
+     * ```typescript
+     * cell.clearValue(0);
+     * ```
+     */
+    clearValue(layer: number) {
+        this.values[layer] = undefined;
+        return this;
+    }
+
+    /**
+     * Clear all values.
+     */
+    clearValues() {
+        this._values = [];
         return this;
     }
 
@@ -117,18 +154,6 @@ export class LinkedCell {
      */
     setMask(layer: number, val: boolean) {
         this.masks[layer] = val;
-        return this;
-    }
-
-    /**
-     * Set item reference at a layer.
-     * 
-     * @param layer - Layer index (0-based)
-     * @param val - Item value to store
-     * @returns this for chaining
-     */
-    setItem(layer: number, val: number) {
-        this.items[layer] = val;
         return this;
     }
 

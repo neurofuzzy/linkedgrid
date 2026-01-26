@@ -19,7 +19,7 @@ See `specs/spartan-dev-rules.md` for the 5 rules, but in summary:
 
 The system uses **LinkedGrid** as the spatial foundation with a **sparse external entity store**.
 
-**Key Concept:** Entities are stored primarily in cell layers (`cell.items[layer]`), with minimal metadata in a separate store.
+**Key Concept:** Entities are stored primarily in cell layers (`cell.values[layer]`), with minimal metadata in a separate store.
 
 ```
 LinkedGrid (20x20)
@@ -81,7 +81,7 @@ linkedgrid/
 Critical for understanding how the spatial system works:
 
 1. **Entities occupy one cell at a time**
-2. **Entities occupy a layer on a cell** - `cell.items[layer] = entityId`
+2. **Entities occupy a layer on a cell** - `cell.values[layer] = entityId`
 3. **Check destination before moving** - No overwrites
 4. **Multiple entities per cell via different layers** - Same cell, different layers
 5. **Spatial queries are first-class** - Circle, line, radius queries
@@ -90,6 +90,91 @@ Critical for understanding how the spatial system works:
 8. **Higher layer indexes are "on top"** - Visual rendering priority
 9. **Overlap events propagate down** - From high to low layers
 10. **LinkedCells never move** - Position is immutable
+
+## The 8-Layer System
+
+The Spartan Framework uses a fixed 8-layer architecture with semantic meaning for each layer. This opinionated structure provides consistency across all games.
+
+### Layer Constants
+
+```typescript
+import { GameLayers } from '@spartan';
+
+// The 8 semantic layers (0-7)
+GameLayers.BACKGROUND    // 0 - Static background visuals
+GameLayers.FLOOR         // 1 - Walkable terrain
+GameLayers.LOGIC         // 2 - Invisible AI helpers (editor-only)
+GameLayers.COLLECTIBLES  // 3 - Items to pick up
+GameLayers.WALLS         // 4 - Static blocking elements
+GameLayers.ACTORS        // 5 - Moving entities (players, enemies)
+GameLayers.EPHEMERALS    // 6 - Effects, projectiles, decals
+GameLayers.TEXT          // 7 - UI overlays (always on top)
+```
+
+### Blocking Behavior
+
+**Movement blocking** (via `isBlocked()` helper):
+- Walls layer (both `values[WALLS]` terrain and `items[WALLS]` entities)
+- Actors layer (`items[ACTORS]`)
+- Optional: Empty floor tiles when `emptyFloorsBlock=true`
+
+**Vision blocking** (via `blocksVision()` helper):
+- Only walls layer blocks vision
+- Actors and floor do not block line-of-sight
+
+### Empty Floor Blocking Pattern
+
+Games can opt-in to void/pit blocking by passing `emptyFloorsBlock=true`:
+
+```typescript
+import { isBlocked } from '@spartan';
+
+// Space game with deadly voids
+const emptyFloorsBlock = true;
+
+// Cell with no floor = impassable void
+cell.values[GameLayers.FLOOR] = undefined;
+cell.values[GameLayers.BACKGROUND] = SPACE_STARS; // Visual decoration
+
+// Check if blocked
+if (isBlocked(cell, emptyFloorsBlock)) {
+  // Can't move into void
+}
+```
+
+### Rendering Priority
+
+Layers render from lowest to highest (0-7), with higher layers appearing "on top":
+
+```typescript
+import { getTopmostEntity, GAMEPLAY_VISIBLE_LAYERS } from '@spartan';
+
+// Get the topmost visible entity for rendering
+const entityId = getTopmostEntity(cell, GAMEPLAY_VISIBLE_LAYERS);
+```
+
+The `LOGIC` layer (layer 2) is excluded from `GAMEPLAY_VISIBLE_LAYERS` and only appears in editor/debug mode.
+
+### Movement with Blocking
+
+```typescript
+import { GameLayers, isBlocked } from '@spartan';
+
+// Move with standard blocking logic
+const emptyFloorsBlock = true;
+spatial.move(x, y, nx, ny, GameLayers.ACTORS, 
+  (cell) => isBlocked(cell, emptyFloorsBlock)
+);
+spatial.commit();
+```
+
+### Full Specification
+
+See [`specs/spartan-layer-rules.md`](../specs/spartan-layer-rules.md) for the complete layer architecture specification, including:
+- Detailed layer descriptions and purposes
+- Usage patterns across different game genres
+- Design constraints and workarounds
+- Advanced patterns (entity state transitions, floor effects)
 
 ## Visual Test Runner
 
@@ -296,4 +381,4 @@ When modifying the codebase, ask:
 ---
 
 **Last Updated:** 2026-01-26  
-**Version:** After AAA pattern implementation and assertion system
+**Version:** After 8-layer system integration
