@@ -18,14 +18,12 @@ export function usePlayback(
   });
   const interval = 500;
   
-  // Use refs for callbacks to avoid dependency issues
+  // Use ref for callback to avoid dependency issues
   const onCompleteRef = useRef(onComplete);
-  const stateRef = useRef(state);
   
   useEffect(() => {
     onCompleteRef.current = onComplete;
-    stateRef.current = state;
-  }, [onComplete, state]);
+  }, [onComplete]);
   
   const isAtEnd = state.currentIndex >= snapshots.length - 1;
   
@@ -57,9 +55,6 @@ export function usePlayback(
     if (state.type !== 'playing' || snapshots.length === 0) return;
     
     const timer = setInterval(() => {
-      // Check ref for most current state
-      if (stateRef.current.type !== 'playing') return;
-      
       setState(current => {
         // Type guard ensures we only advance when playing
         if (current.type !== 'playing') return current;
