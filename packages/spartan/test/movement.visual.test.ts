@@ -65,11 +65,12 @@ visual('projectile hits enemy', {
 
 visual('multiple layers at same cell', {
     arrange: ({ spatial }) => {
-        spatial.spawn('item', 10, 10, 1);
-        spatial.spawn('player', 9, 10, 2);
+        spatial.spawn('item', 11, 10, 1);
+        spatial.spawn('player', 8, 10, 2);
     },
     act: ({ spatial }) => {
         // Player moves away
+        spatial.move(8, 10, 9, 10, 2);
         spatial.move(9, 10, 10, 10, 2);
         spatial.move(10, 10, 11, 10, 2);
         // Item still there at (10, 10)
