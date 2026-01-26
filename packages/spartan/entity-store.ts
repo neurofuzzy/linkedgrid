@@ -100,7 +100,7 @@ export class SparseEntityStore {
      * Remove entity data from the store.
      * 
      * Note: This only removes from the store. Caller is responsible for
-     * cleaning up the entity ID from cell.items[] layers (Rule 6).
+     * cleaning up the entity ID from cell.values[] layers (Rule 6).
      * 
      * @param id - Entity ID to remove
      * @returns true if entity was removed, false if not found
@@ -110,7 +110,7 @@ export class SparseEntityStore {
      * // Remove entity from both store and cell
      * const removed = store.remove(entityId);
      * if (removed) {
-     *   cell.items[layer] = undefined;
+     *   cell.values[layer] = undefined;
      * }
      * ```
      */
@@ -152,7 +152,7 @@ export class SparseEntityStore {
     /**
      * Clear all entities from the store.
      * 
-     * Use for resetting game state. Remember to also clear cell.items[]
+     * Use for resetting game state. Remember to also clear cell.values[]
      * layers as this only clears the metadata store.
      */
     clear(): void {

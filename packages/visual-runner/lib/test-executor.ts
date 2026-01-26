@@ -184,7 +184,7 @@ export class TestExecutor {
         const cell = grid.cell(x, y);
         if (cell) {
           // Iterate through all layers in the cell
-          cell.items.forEach((entityId: number | undefined, layer: number) => {
+          cell.values.forEach((entityId: number | undefined, layer: number) => {
             if (entityId !== undefined) {
               const data = spatial.getEntityData(entityId);
               if (data) {

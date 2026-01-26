@@ -30,6 +30,20 @@
  * ```
  */
 
+// Core framework
 export { SparseEntityStore } from './entity-store';
 export { SpatialSystem } from './spatial-system';
-export type { EntityData, Layer, Position } from './types';
+
+// Types and layer constants
+export type { EntityData, Layer, Position, GameLayer } from './types';
+export { 
+    GameLayers, 
+    BLOCKING_LAYERS, 
+    VISION_BLOCKING_LAYERS, 
+    GAMEPLAY_VISIBLE_LAYERS,
+    ALL_LAYERS 
+} from './types';
+
+// Blocking utilities
+// Layer utilities
+export { getTopmostEntity, isBlocked, blocksVision, isWalkable } from './layer-helpers';

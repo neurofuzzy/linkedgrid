@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useInput } from 'ink';
+import { useState, useEffect, useRef } from 'react';
 import type { Snapshot } from '../lib/test-executor.js';
+
+// Discriminated union - makes invalid states impossible
+type PlaybackState =
+  | { type: 'paused'; currentIndex: number }
+  | { type: 'playing'; currentIndex: number };
 
 export function usePlayback(
   snapshots: Snapshot[],
@@ -8,84 +12,91 @@ export function usePlayback(
   autoPlay?: boolean,          // Auto-start when snapshots change
   onComplete?: () => void      // Called when playback reaches end
 ) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [interval] = useState(500);
+  const [state, setState] = useState<PlaybackState>({ 
+    type: 'paused', 
+    currentIndex: 0 
+  });
+  const interval = 500;
   
-  const isAtEnd = currentIndex >= snapshots.length - 1;
+  // Use ref for callback to avoid dependency issues
+  const onCompleteRef = useRef(onComplete);
+  const hasCalledCompleteRef = useRef(false);
   
-  // Reset to beginning when snapshots change
   useEffect(() => {
-    setCurrentIndex(0);
-    setIsPlaying(false);
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+  
+  // Reset the complete flag when snapshots change
+  useEffect(() => {
+    hasCalledCompleteRef.current = false;
   }, [snapshots]);
   
-  // Auto-start playing when autoPlay is true and we have snapshots
+  const isAtEnd = state.currentIndex >= snapshots.length - 1;
+  
+  // Reset and auto-play when snapshots change
   useEffect(() => {
-    if (autoPlay && snapshots.length > 1 && !isPlaying) {
-      setIsPlaying(true);
+    if (autoPlay && snapshots.length > 1) {
+      setState({ type: 'playing', currentIndex: 0 });
+    } else {
+      setState({ type: 'paused', currentIndex: 0 });
     }
-  }, [autoPlay, snapshots.length]);
+  }, [snapshots, autoPlay]);
   
   // Call onComplete when playback reaches the end
   useEffect(() => {
-    if (isPlaying && currentIndex >= snapshots.length - 1 && onComplete) {
-      setIsPlaying(false);
-      onComplete();
-    }
-  }, [isPlaying, currentIndex, snapshots.length, onComplete]);
-  
-  // Keyboard controls
-  useInput((input, key) => {
-    // Enter or Space triggers action if defined
-    if ((input === ' ' || key.return) && onAction) {
-      onAction();
-      return;
-    }
-    
-    // Normal playback controls
-    if (input === ' ') {
-      setIsPlaying(prev => !prev);
-    } else if (key.return) {
-      setIsPlaying(true);
-    } else if (key.rightArrow) {
-      if (currentIndex < snapshots.length - 1) {
-        setCurrentIndex(i => i + 1);
+    if (state.type === 'playing' && state.currentIndex >= snapshots.length - 1) {
+      setState({ type: 'paused', currentIndex: state.currentIndex });
+      // Only call onComplete once per playback session
+      if (onCompleteRef.current && !hasCalledCompleteRef.current) {
+        hasCalledCompleteRef.current = true;
+        onCompleteRef.current();
       }
-    } else if (key.leftArrow) {
-      if (currentIndex > 0) {
-        setCurrentIndex(i => i - 1);
-      }
-    } else if (input === 'r' && onAction) {
-      onAction();
     }
-  });
+  }, [state.type, state.currentIndex, snapshots.length]);
   
-  // Auto-play interval
+  // Auto-play interval - only runs when playing
   useEffect(() => {
-    if (!isPlaying || snapshots.length === 0) return;
+    if (state.type !== 'playing' || snapshots.length === 0) return;
     
     const timer = setInterval(() => {
-      setCurrentIndex(i => {
-        if (i >= snapshots.length - 1) {
-          setIsPlaying(false);
-          return i;
+      setState(current => {
+        // Type guard ensures we only advance when playing
+        if (current.type !== 'playing') return current;
+        
+        if (current.currentIndex >= snapshots.length - 1) {
+          return { type: 'paused', currentIndex: current.currentIndex };
         }
-        return i + 1;
+        return { type: 'playing', currentIndex: current.currentIndex + 1 };
       });
     }, interval);
     
     return () => clearInterval(timer);
-  }, [isPlaying, interval, snapshots.length]);
+  }, [state.type, interval, snapshots.length]);
   
-  const snapshot = snapshots[currentIndex] || null;
+  const snapshot = snapshots[state.currentIndex] || null;
   
   return {
-    currentIndex,
-    isPlaying,
+    currentIndex: state.currentIndex,
+    isPlaying: state.type === 'playing',
     interval,
     snapshot,
     isAtEnd,
-    startPlayback: () => setIsPlaying(true)
+    startPlayback: () => setState(s => ({ type: 'playing', currentIndex: s.currentIndex })),
+    togglePlayback: () => setState(s => ({
+      type: s.type === 'playing' ? 'paused' : 'playing',
+      currentIndex: s.currentIndex
+    })),
+    stepForward: () => {
+      setState(s => ({
+        type: 'paused',
+        currentIndex: Math.min(s.currentIndex + 1, snapshots.length - 1)
+      }));
+    },
+    stepBackward: () => {
+      setState(s => ({
+        type: 'paused',
+        currentIndex: Math.max(s.currentIndex - 1, 0)
+      }));
+    }
   };
 }

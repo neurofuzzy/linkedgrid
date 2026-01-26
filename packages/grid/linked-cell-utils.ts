@@ -44,7 +44,7 @@ export class LinkedCellUtils {
      * Get all cells along a line to target using Bresenham's algorithm.
      */
     static getLine(cell: LinkedCell, target: LinkedCell): LinkedCell[] {
-        if (!cell._grid || cell.x < 0 || target.x < 0) return [];
+        if (!cell.grid || cell.x < 0 || target.x < 0) return [];
 
         const cells: LinkedCell[] = [];
         let x0 = cell.x, y0 = cell.y;
@@ -55,9 +55,10 @@ export class LinkedCellUtils {
         const sx = x0 < x1 ? 1 : -1;
         const sy = y0 < y1 ? 1 : -1;
         let err = dx - dy;
+        const grid = cell.grid;
 
         while (true) {
-            const currentCell = cell._grid.cell(x0, y0);
+            const currentCell = grid.cell(x0, y0);
             if (currentCell && currentCell !== cell) cells.push(currentCell);
 
             if (x0 === x1 && y0 === y1) break;
@@ -74,22 +75,23 @@ export class LinkedCellUtils {
      * Get all cells within a circular radius (Euclidean distance).
      */
     static getCircle(cell: LinkedCell, radius: number): LinkedCell[] {
-        if (!cell._grid || cell.x < 0) return [];
+        if (!cell.grid || cell.x < 0) return [];
 
         const cells: LinkedCell[] = [];
+        const grid = cell.grid;
         const r2 = radius * radius;
 
         const minX = Math.max(0, Math.floor(cell.x - radius));
-        const maxX = Math.min(cell._grid.width - 1, Math.ceil(cell.x + radius));
+        const maxX = Math.min(grid.width - 1, Math.ceil(cell.x + radius));
         const minY = Math.max(0, Math.floor(cell.y - radius));
-        const maxY = Math.min(cell._grid.height - 1, Math.ceil(cell.y + radius));
+        const maxY = Math.min(grid.height - 1, Math.ceil(cell.y + radius));
 
         for (let y = minY; y <= maxY; y++) {
             for (let x = minX; x <= maxX; x++) {
                 const dx = x - cell.x;
                 const dy = y - cell.y;
                 if (dx * dx + dy * dy <= r2) {
-                    const currentCell = cell._grid.cell(x, y);
+                    const currentCell = grid.cell(x, y);
                     if (currentCell) cells.push(currentCell);
                 }
             }
@@ -106,9 +108,10 @@ export class LinkedCellUtils {
         radius: number,
         blockFn: (lc: LinkedCell) => boolean = () => false
     ): LinkedCell[] {
-        if (!cell._grid || cell.x < 0) return [];
+        if (!cell.grid || cell.x < 0) return [];
 
         const visible = new Set<LinkedCell>();
+        const grid = cell.grid;
         visible.add(cell);
 
         // Cast rays in all directions (simple raycasting FOV)
@@ -129,10 +132,10 @@ export class LinkedCellUtils {
                 const cellX = Math.floor(x);
                 const cellY = Math.floor(y);
 
-                if (cellX < 0 || cellX >= cell._grid.width ||
-                    cellY < 0 || cellY >= cell._grid.height) break;
+                if (cellX < 0 || cellX >= grid.width ||
+                    cellY < 0 || cellY >= grid.height) break;
 
-                const currentCell = cell._grid.cell(cellX, cellY);
+                const currentCell = grid.cell(cellX, cellY);
                 if (!currentCell) break;
 
                 visible.add(currentCell);
@@ -154,9 +157,10 @@ export class LinkedCellUtils {
         spread: number,
         blockFn: (lc: LinkedCell) => boolean = () => false
     ): LinkedCell[] {
-        if (!cell._grid || cell.x < 0) return [];
+        if (!cell.grid || cell.x < 0) return [];
 
         const visible = new Set<LinkedCell>();
+        const grid = cell.grid;
         visible.add(cell);
 
         // Normalize direction to 0-2PI
@@ -182,10 +186,10 @@ export class LinkedCellUtils {
                 const cellX = Math.floor(x);
                 const cellY = Math.floor(y);
 
-                if (cellX < 0 || cellX >= cell._grid.width ||
-                    cellY < 0 || cellY >= cell._grid.height) break;
+                if (cellX < 0 || cellX >= grid.width ||
+                    cellY < 0 || cellY >= grid.height) break;
 
-                const currentCell = cell._grid.cell(cellX, cellY);
+                const currentCell = grid.cell(cellX, cellY);
                 if (!currentCell) break;
 
                 visible.add(currentCell);
@@ -207,7 +211,7 @@ export class LinkedCellUtils {
         distanceLayer = 0,
         blockFn: (lc: LinkedCell) => boolean = () => false
     ): void {
-        if (!cell._grid || cell.x < 0) return;
+        if (!cell.grid || cell.x < 0) return;
 
         // Calculate max radius based on when intensity reaches 0
         const maxRadius = Math.ceil(intensity / falloff);
@@ -238,10 +242,10 @@ export class LinkedCellUtils {
         visibleMask = 4,
         revealedMask = 5
     ): void {
-        if (!cell._grid) return;
+        if (!cell.grid) return;
 
         // Clear current visibility for all cells
-        cell._grid.cells.forEach((c: LinkedCell) => {
+        cell.grid.cells.forEach((c: LinkedCell) => {
             c.masks[visibleMask] = false;
         });
 
@@ -255,6 +259,8 @@ export class LinkedCellUtils {
 
     /**
      * Find cells matching a predicate using BFS (breadth-first search).
+     * 
+     * Uses standard queue-based BFS algorithm with proper visited tracking.
      */
     static find(
         cell: LinkedCell,
@@ -263,38 +269,35 @@ export class LinkedCellUtils {
         maxRange = 10,
         findLimit = 1
     ): { cell: LinkedCell, dist: number }[] {
-        const lcs: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
-
-        let ns = cell._neighbors;
-        let nns: (LinkedCell | null)[] = [];
-        let d = 0;
+        const visited = new WeakSet<LinkedCell>();
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        visited.add(cell);
 
         const matches: { cell: LinkedCell, dist: number }[] = [];
-        let findLimitReached = false;
+        let head = 0;
 
-        while (ns.length) {
-            d++;
-            for (const n of ns) {
-                if (n && matchFn(n)) {
-                    matches.push({ cell: n, dist: d });
-                    if (findLimit > 0 && matches.length === findLimit) {
-                        findLimitReached = true;
-                        break;
+        while (head < queue.length) {
+            const { cell: current, dist } = queue[head++];
+
+            if (dist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor)) {
+                    visited.add(neighbor);
+
+                    if (matchFn(neighbor)) {
+                        matches.push({ cell: neighbor, dist: dist + 1 });
+                        if (findLimit > 0 && matches.length >= findLimit) {
+                            return matches;
+                        }
+                    }
+
+                    if (passFn(neighbor)) {
+                        queue.push({ cell: neighbor, dist: dist + 1 });
                     }
                 }
-                if (n && n !== cell && !n._visited && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    n._visited = true;
-                    lcs.push({ cell: n, dist: d });
-                }
             }
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
-            if (findLimitReached) break;
         }
-
-        lcs.forEach(n => n.cell._visited = false);
 
         return matches;
     }
@@ -308,8 +311,9 @@ export class LinkedCellUtils {
         matchFn: (lc: LinkedCell | null) => boolean,
         maxRange = 10
     ): LinkedCell[] {
-        const allVisited: LinkedCell[] = [cell];
-        cell._visited = true;
+        const visited = new WeakSet<LinkedCell>();
+        const prev = new WeakMap<LinkedCell, LinkedCell>();
+        visited.add(cell);
 
         let frontier: LinkedCell[] = [cell];
         let d = 0;
@@ -322,10 +326,9 @@ export class LinkedCellUtils {
 
             for (const current of frontier) {
                 for (const neighbor of current.neighbors()) {
-                    if (neighbor && !neighbor._visited && passFn(neighbor)) {
-                        neighbor._visited = true;
-                        neighbor._prev = current;
-                        allVisited.push(neighbor);
+                    if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
+                        visited.add(neighbor);
+                        prev.set(neighbor, current);
                         nextFrontier.push(neighbor);
 
                         if (matchFn(neighbor)) {
@@ -345,53 +348,60 @@ export class LinkedCellUtils {
             let current: LinkedCell | null = match;
             while (current && current !== cell) {
                 path.unshift(current);
-                current = current._prev;
+                current = prev.get(current) ?? null;
             }
         }
-
-        allVisited.forEach(n => {
-            n._prev = null;
-            n._visited = false;
-        });
 
         return path;
     }
 
     /**
      * Get all neighbors within a range using BFS expansion.
+     * 
+     * Uses standard queue-based BFS with proper visited tracking.
+     * Returns the starting cell (dist: 0) and all reachable neighbors within maxRange.
      */
     static getNeighborsWithinRange(
         cell: LinkedCell,
         passFn: (lc: LinkedCell | null) => boolean,
         maxRange = 1
     ): { cell: LinkedCell, dist: number }[] {
-        const lcs: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        const visited = new WeakSet<LinkedCell>();
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        visited.add(cell);
 
-        let ns = cell._neighbors;
-        let nns: (LinkedCell | null)[] = [];
-        let d = 0;
+        const results: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        let head = 0;
 
-        while (ns.length) {
-            d++;
-            ns.forEach(n => {
-                if (n && n !== cell && !n._visited && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    n._visited = true;
-                    lcs.push({ cell: n, dist: d });
+        while (head < queue.length) {
+            const { cell: current, dist } = queue[head++];
+
+            if (dist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
+                    visited.add(neighbor);
+                    const newDist = dist + 1;
+                    queue.push({ cell: neighbor, dist: newDist });
+                    results.push({ cell: neighbor, dist: newDist });
                 }
-            });
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
+            }
         }
 
-        lcs.forEach(n => n.cell._visited = false);
-
-        return lcs;
+        return results;
     }
 
     /**
      * Flood-fill distance values from this cell outward (Dijkstra map).
+     * 
+     * Uses standard queue-based BFS to correctly calculate and propagate distances.
+     * 
+     * @param cell - Starting cell
+     * @param passFn - Predicate for passable cells
+     * @param distLayer - Layer to store distances in
+     * @param dist - Distance increment per step (default 1)
+     * @param doAdd - If false, clear starting cell to 0; if true, add to existing (default false)
+     * @param maxRange - Maximum distance to propagate (default 50)
      */
     static setDistance(
         cell: LinkedCell,
@@ -401,31 +411,31 @@ export class LinkedCellUtils {
         doAdd = false,
         maxRange = 50
     ) {
-        if (!doAdd) cell.distances[distLayer] = 0;
-        const currentDist = cell.distances[distLayer] ?? 0;
-        cell.distances[distLayer] = currentDist + dist;
-
-        const lcs: LinkedCell[] = [cell];
-
-        let ns = cell._neighbors;
-        let nns: (LinkedCell | null)[] = [];
-        let d = dist;
-
-        while (ns.length) {
-            d++;
-            ns.forEach(n => {
-                if (n && n !== cell && !n._visited && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    n.distances[distLayer] = d;
-                    n._visited = true;
-                    lcs.push(n);
-                }
-            });
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
+        const visited = new WeakSet<LinkedCell>();
+        
+        // Set starting cell distance
+        if (!doAdd) {
+            cell.distances[distLayer] = 0;
         }
+        
+        const startDist = cell.distances[distLayer] ?? 0;
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: startDist }];
+        visited.add(cell);
 
-        lcs.forEach(n => n._visited = false);
+        let head = 0;
+        while (head < queue.length) {
+            const { cell: current, dist: currentDist } = queue[head++];
+
+            if (currentDist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
+                    visited.add(neighbor);
+                    const newDist = currentDist + dist;
+                    neighbor.distances[distLayer] = newDist;
+                    queue.push({ cell: neighbor, dist: newDist });
+                }
+            }
+        }
     }
 }
