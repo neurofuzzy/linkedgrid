@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, spartan-base]
+    branches: [main, develop]
   pull_request:
-    branches: [main, spartan-base]
+    branches: [main, develop]
 
 jobs:
   test:
