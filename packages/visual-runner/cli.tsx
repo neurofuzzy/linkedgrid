@@ -3,8 +3,9 @@ import React from 'react';
 import { render } from 'ink';
 import { App } from './components/App.js';
 
-// Check if stdin supports raw mode
-if (process.stdin.isTTY) {
+// Check if stdin supports raw mode (unless bypassed for testing)
+const bypassTTY = process.env.BYPASS_TTY === 'true';
+if (process.stdin.isTTY || bypassTTY) {
   render(<App />);
 } else {
   console.error('Error: This tool requires an interactive terminal.');
