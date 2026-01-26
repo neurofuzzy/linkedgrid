@@ -20,7 +20,8 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "visual": "tsx packages/visual-runner/cli.tsx"
   },
   "repository": {
     "type": "git",

@@ -5,13 +5,13 @@
  * - LinkedGrid with O(1) neighbor navigation
  * - Pathfinding, raycasting, field-of-view
  * - Distance fields for AI
- * - Scrolling viewports
+ * 
+ * All values are constrained to numbers for simplicity.
  */
 
 export { Direction } from './direction';
 export { LinkedCell } from './linked-cell';
+export { LinkedCellUtils } from './linked-cell-utils';
 export { LinkedGrid } from './linked-grid';
-export { LinkedGridView } from './linked-grid-view';
-export { LinkedValue } from './linked-value';
-export { LinkedGridStack } from './linked-grid-stack';
-export type { ILinkedGrid, ILinkedCell, ILinkedGridView } from './interfaces';
+export { LinkedGridUtils } from './linked-grid-utils';
+export type { ILinkedGrid, ILinkedCell } from './interfaces';
