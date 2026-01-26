@@ -416,6 +416,119 @@ describe('SpatialSystem', () => {
         });
     });
 
+    describe('getEntityPosition', () => {
+        it('returns position after spawn', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            const pos = spatial.getEntityPosition(id);
+
+            expect(pos).not.toBeNull();
+            expect(pos?.x).toBe(5);
+            expect(pos?.y).toBe(5);
+            expect(pos?.layer).toBe(1);
+        });
+
+        it('updates position after move', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.move(5, 5, 7, 8, 1);
+            spatial.commit();
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(7);
+            expect(pos?.y).toBe(8);
+            expect(pos?.layer).toBe(1);
+        });
+
+        it('updates position after multiple moves', () => {
+            const id = spatial.spawn('player', 0, 0, 1);
+            
+            spatial.move(0, 0, 1, 0, 1);
+            spatial.commit();
+            let pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(1);
+            expect(pos?.y).toBe(0);
+
+            spatial.move(1, 0, 1, 1, 1);
+            spatial.commit();
+            pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(1);
+            expect(pos?.y).toBe(1);
+
+            spatial.move(1, 1, 2, 2, 1);
+            spatial.commit();
+            pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(2);
+            expect(pos?.y).toBe(2);
+        });
+
+        it('does not update position when move fails', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.spawn('wall', 6, 5, 1);
+            
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(5);
+            expect(pos?.y).toBe(5);
+        });
+
+        it('returns null after entity is removed', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.remove(5, 5, 1);
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos).toBeNull();
+        });
+
+        it('returns null for non-existent entity', () => {
+            const pos = spatial.getEntityPosition(999);
+            expect(pos).toBeNull();
+        });
+
+        it('tracks multiple entities independently', () => {
+            const id1 = spatial.spawn('player', 5, 5, 1);
+            const id2 = spatial.spawn('enemy', 7, 8, 2);
+            const id3 = spatial.spawn('item', 1, 2, 3);
+
+            const pos1 = spatial.getEntityPosition(id1);
+            const pos2 = spatial.getEntityPosition(id2);
+            const pos3 = spatial.getEntityPosition(id3);
+
+            expect(pos1).toEqual({ x: 5, y: 5, layer: 1 });
+            expect(pos2).toEqual({ x: 7, y: 8, layer: 2 });
+            expect(pos3).toEqual({ x: 1, y: 2, layer: 3 });
+        });
+
+        it('handles convoy movements correctly', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 6, 5, 1);
+            const id3 = spatial.spawn('unit', 7, 5, 1);
+
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.move(6, 5, 7, 5, 1);
+            spatial.move(7, 5, 8, 5, 1);
+            spatial.commit();
+
+            expect(spatial.getEntityPosition(id1)).toEqual({ x: 6, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id2)).toEqual({ x: 7, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id3)).toEqual({ x: 8, y: 5, layer: 1 });
+        });
+
+        it('maintains position when move conflicts', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 5, 7, 1);
+
+            // Both try to move to same destination
+            spatial.move(5, 5, 5, 6, 1);
+            spatial.move(5, 7, 5, 6, 1);
+            spatial.commit();
+
+            // Neither should have moved
+            expect(spatial.getEntityPosition(id1)).toEqual({ x: 5, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id2)).toEqual({ x: 5, y: 7, layer: 1 });
+        });
+    });
+
     describe('getGrid and getStore', () => {
         it('returns grid instance', () => {
             expect(spatial.getGrid()).toBe(grid);

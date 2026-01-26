@@ -66,6 +66,9 @@ export class SpatialSystem {
         blockFn?: (cell: LinkedCell | null) => boolean;
     }> = [];
 
+    /** Entity position tracking: entity ID → {x, y, layer} */
+    private positions: Map<number, {x: number, y: number, layer: Layer}> = new Map();
+
     /**
      * Create a new SpatialSystem.
      * 
@@ -112,6 +115,9 @@ export class SpatialSystem {
 
         // Write to cell layer (Rule 2: entities occupy a layer)
         cell.setValue(layer, entityId);
+
+        // Track entity position
+        this.positions.set(entityId, { x, y, layer });
 
         return entityId;
     }
@@ -287,6 +293,12 @@ export class SpatialSystem {
                 const toCell = this.grid.cell(move.toX, move.toY);
                 if (toCell) {
                     toCell.setValue(move.layer, move.entityId);
+                    // Update position tracking
+                    this.positions.set(move.entityId, {
+                        x: move.toX,
+                        y: move.toY,
+                        layer: move.layer
+                    });
                 }
             }
         }
@@ -342,6 +354,9 @@ export class SpatialSystem {
 
         // Remove from store
         this.store.remove(entityId);
+
+        // Remove position tracking
+        this.positions.delete(entityId);
 
         return true;
     }
@@ -508,6 +523,28 @@ export class SpatialSystem {
      */
     getEntityData(id: number): EntityData | undefined {
         return this.store.getData(id);
+    }
+
+    /**
+     * Get the grid position of an entity by ID.
+     * 
+     * Returns null if entity is not currently on the grid.
+     * Entities can exist in the store without grid positions
+     * (e.g., during animations, transitions, or as UI elements).
+     * 
+     * @param id - Entity ID
+     * @returns Position with x, y, and layer, or null if not on grid
+     * 
+     * @example
+     * ```typescript
+     * const pos = spatial.getEntityPosition(playerId);
+     * if (pos) {
+     *   console.log(`Player at (${pos.x}, ${pos.y}) on layer ${pos.layer}`);
+     * }
+     * ```
+     */
+    getEntityPosition(id: number): {x: number, y: number, layer: Layer} | null {
+        return this.positions.get(id) ?? null;
     }
 
     /**

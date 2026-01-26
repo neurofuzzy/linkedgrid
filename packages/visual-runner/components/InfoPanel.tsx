@@ -52,21 +52,6 @@ export function InfoPanel({
         </Box>
       </Box>
       
-      {/* Layer Legend */}
-      <Box marginTop={1} flexDirection="column">
-        <Text bold dimColor>Layers</Text>
-        <Box marginTop={0.5} flexDirection="column">
-          <Text dimColor>0 BACKGROUND   - Static visuals</Text>
-          <Text dimColor>1 FLOOR        - Terrain (walkable)</Text>
-          <Text dimColor>2 LOGIC        - Invisible helpers</Text>
-          <Text dimColor>3 COLLECTIBLES - Pickups</Text>
-          <Text dimColor>4 WALLS        - Static blocking</Text>
-          <Text dimColor>5 ACTORS       - Moving entities</Text>
-          <Text dimColor>6 EPHEMERALS   - Effects/projectiles</Text>
-          <Text dimColor>7 TEXT         - UI overlays</Text>
-        </Box>
-      </Box>
-      
       {/* Assertions in the middle if present */}
       {assertions && assertions.length > 0 && (
         <>
