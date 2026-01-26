@@ -22,6 +22,7 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 - Background textures (static, tiled)
 - Ambient visual details
 - Decorative patterns
+- Visual representation of voids (pits, deep water, outer space)
 
 **Data Storage**:
 - `values[0]`: Background tile type/ID
@@ -31,10 +32,13 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 
 **Rendering Note**: This layer stores static background tiles aligned to the grid. Parallax scrolling is not supported in the Spartan Framework.
 
+**Design Pattern**: Use BACKGROUND to visually represent hazards/voids (stars, water, lava) while using the "Empty floor tiles block" game setting to make those cells impassable.
+
 **Example Uses**:
-- Roguelike: Dungeon floor base texture
-- Shmup: Static starfield pattern
-- Puzzle: Background wallpaper
+- Roguelike: Dungeon void (shows through missing floor)
+- Space game: Starfield (shows where there's no floor)
+- Platformer: Sky/clouds background
+- Water level: Deep water texture (cells without floor are impassable)
 
 ---
 
@@ -51,26 +55,16 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 - `items[1]`: Rarely used (terrain is typically in values)
 
 **Gameplay Impact**: 
-- Characters can walk on most floor tiles
-- **Certain floor types block movement** (pits, deep water, void)
+- Floor tiles are walkable by default
 - May trigger effects (damage from lava, slipping on ice)
 - Does not block vision
-
-**Floor Blocking Examples**:
-```typescript
-// Define blocking floor types
-const FLOOR_PIT = 10;
-const FLOOR_DEEP_WATER = 11;
-const FLOOR_VOID = 12;
-
-// These floor values will block movement
-cell.values[GameLayers.FLOOR] = FLOOR_PIT;  // Can't walk here
-```
+- **Game Setting**: "Empty floor tiles block" - when enabled, cells with no floor value are impassable (see Movement Blocking section)
 
 **Example Uses**:
 - Roguelike: Stone floor, lava (damages player)
 - Side-scroller: Ground/platform surface
 - Adventure: Different terrain types with movement costs
+- Space game: Empty floor = void of space (impassable when setting enabled)
 
 ---
 
@@ -517,16 +511,15 @@ export const ALL_LAYERS = [
 ```typescript
 /**
  * Check if a cell blocks movement.
- * Considers floor blocking, wall terrain, wall entities, and actors.
+ * Considers empty floor blocking (game setting), walls, and actors.
+ * 
+ * @param emptyFloorsBlock - Game setting: cells without floor are impassable
  */
-export function isBlocked(cell: LinkedCell | null): boolean {
+export function isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): boolean {
   if (!cell) return true;
   
-  // Check if floor type blocks movement (pits, deep water)
-  const floorType = cell.values[GameLayers.FLOOR];
-  if (floorType === FLOOR_PIT || 
-      floorType === FLOOR_DEEP_WATER || 
-      floorType === FLOOR_VOID) {
+  // Check empty floor blocking (game setting)
+  if (emptyFloorsBlock && cell.values[GameLayers.FLOOR] === undefined) {
     return true;
   }
   
@@ -630,7 +623,7 @@ function canMove(entity, cell) {
 
 **Limitation**: `items[layer]` stores a single entity ID. Cannot have two collectibles (coin + key) in one cell.
 
-**Impact**: Level designers must spread collectibles across adjacent cells.
+**Impact**: Level designers must spread collectibles across adjacent cells or use container entities.
 
 **Workarounds**:
 - **Container entities**: Create a "LootPile" entity that contains multiple items
@@ -651,21 +644,6 @@ function canMove(entity, cell) {
 **Rationale**: Parallax typically requires procedural generation and camera-relative positioning, which is beyond the scope of the Spartan Framework's grid-based design.
 
 **This is a fundamental constraint and will not be changed.**
-
-### 5. Wall Decorations & Variations
-
-**Limitation**: Adding visual variations to walls (torches, banners, cracks) requires either new tile types or sprite states.
-
-**Solution**: Use the built-in sprite system (5 states × 5 frames per entity):
-```typescript
-// Define wall with sprite states
-spatial.spawn('wall', x, y, GameLayers.WALLS, {
-  baseType: WALL_STONE,
-  spriteState: 'torch'  // States: 'plain', 'torch', 'banner', 'cracked', etc.
-});
-```
-
-Each entity can have up to 5 different sprite states with 5 animation frames each, providing 25 visual variations per entity type.
 
 ---
 
@@ -769,32 +747,17 @@ function attackEnemy(entity) {
 
 **Sprite Editor**: The sprite editor allows creators to define all 25 sprite variations visually (5 states × 5 frames).
 
-### Floor Type Blocking
+### Floor Type Effects
 
-Using floor values to create hazards:
-
-```typescript
-// Define blocking floor types
-const FLOOR_GRASS = 0;      // Walkable
-const FLOOR_LAVA = 1;       // Walkable but damages
-const FLOOR_PIT = 2;        // Blocks movement
-const FLOOR_DEEP_WATER = 3; // Blocks movement
-const FLOOR_ICE = 4;        // Walkable but slippery
-
-// Floor blocking check (called by isBlocked)
-const BLOCKING_FLOOR_TYPES = [FLOOR_PIT, FLOOR_DEEP_WATER];
-
-function isFloorBlocking(floorType: number): boolean {
-  return BLOCKING_FLOOR_TYPES.includes(floorType);
-}
-```
-
-### Dynamic Floor Effects
-
-Using floor values to trigger gameplay effects:
+Using floor values to trigger gameplay effects without blocking movement:
 
 ```typescript
 // Define floor effect types
+const FLOOR_GRASS = 0;      // Normal
+const FLOOR_LAVA = 1;       // Damages player
+const FLOOR_ICE = 2;        // Slippery movement
+const FLOOR_TELEPORT = 3;   // Instant transport
+
 const FLOOR_EFFECTS = {
   [FLOOR_LAVA]: (entity) => damageEntity(entity, 5),
   [FLOOR_ICE]: (entity) => applySlippery(entity),
@@ -810,6 +773,8 @@ function updateActorOnFloor(actorId: number, cell: LinkedCell) {
   }
 }
 ```
+
+**Note**: Floor effects are separate from blocking. All floor types are walkable unless the "Empty floor tiles block" setting is enabled and the cell has no floor value.
 
 ### Fog of War with Masks
 
@@ -909,12 +874,11 @@ const ghost = spatial.spawn('ghost', x, y, GameLayers.ACTORS, {
 });
 
 // Modified movement validation
-function canEntityMove(entityId: number, cell: LinkedCell): boolean {
+function canEntityMove(entityId: number, cell: LinkedCell, emptyFloorsBlock = false): boolean {
   const entity = spatial.getEntityData(entityId);
   
-  // Check floor blocking (applies to all entities)
-  const floorType = cell.values[GameLayers.FLOOR];
-  if (isFloorBlocking(floorType)) {
+  // Check empty floor blocking (applies to all entities unless they ignore it)
+  if (emptyFloorsBlock && cell.values[GameLayers.FLOOR] === undefined) {
     return false;
   }
   
@@ -979,7 +943,8 @@ The Spartan Framework's 8-layer architecture provides:
 
 **Key Implementation Details**:
 - Check BOTH `values[]` AND `items[]` for blocking
-- Some floor types can block movement (pits, water)
+- Empty floor cells can block movement (game setting: "Empty floor tiles block")
+- BACKGROUND layer shows through empty floor cells (for pits, voids, space)
 - EPHEMERALS layer handles both temporary effects and permanent decals
 - Entity sprite system provides 25 visual variations per entity type
 - Entity properties provide extension points for special abilities (ghosting, etc.)
