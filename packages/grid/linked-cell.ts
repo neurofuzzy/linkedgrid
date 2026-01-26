@@ -39,10 +39,10 @@ import { LinkedCellUtils } from './linked-cell-utils';
 export class LinkedCell {
 
     /** Direct references to neighbors [UP-1, DN-1, LT-1, RT-1] (Direction enum - 1) */
-    _neighbors: (LinkedCell | null)[] = [];
+    private _neighbors: (LinkedCell | null)[] = [];
 
     /** Numeric game state values, one per layer (e.g., layer 0: terrain, layer 1: items) */
-    _values: (number | undefined)[] = [];
+    private _values: (number | undefined)[] = [];
 
     get values(): (number | undefined)[] {
         return this._values;
@@ -67,7 +67,11 @@ export class LinkedCell {
     y: number = -1;
 
     /** Reference to parent grid - required for geometry methods - set by LinkedGrid */
-    _grid: ILinkedGrid | null = null;
+    private _grid: ILinkedGrid | null = null;
+
+    get grid(): ILinkedGrid | null {
+        return this._grid;
+    }
 
     /**
      * Create a new LinkedCell.
@@ -75,23 +79,23 @@ export class LinkedCell {
      * Typically cells are created by LinkedGrid, not manually.
      * If creating manually, you must set neighbors yourself.
      * 
-     * @param up - Cell above (or null for edge)
-     * @param down - Cell below (or null for edge)
-     * @param left - Cell to the left (or null for edge)
-     * @param right - Cell to the right (or null for edge)
+     * @param {ILinkedGrid} _grid- Reference to parent grid
+     * @returns {LinkedCell} - The new LinkedCell instance
+     * 
+     * @example
+     * ```typescript
+     * const cell = new LinkedCell(grid);
+     * ```
      */
-    constructor(up: LinkedCell | null = null, down: LinkedCell | null = null, left: LinkedCell | null = null, right: LinkedCell | null = null) {
-        this.setNeighbor(Direction.UP, up);
-        this.setNeighbor(Direction.DN, down);
-        this.setNeighbor(Direction.LT, left);
-        this.setNeighbor(Direction.RT, right);
+    constructor(_grid: ILinkedGrid | null = null) {
+        this._grid = _grid;
     }
 
     /**
      * Get value at a layer.
      * 
-     * @param layer - Layer index (0-based)
-     * @returns Value at layer
+     * @param {number} layer - Layer index (0-based)
+     * @returns {(number | undefined)} Value at layer
      * 
      * @example
      * ```typescript
@@ -105,8 +109,8 @@ export class LinkedCell {
     /**
      * Set value at a layer.
      * 
-     * @param layer - Layer index (0-based)
-     * @param val - Value to store
+     * @param {number} layer - Layer index (0-based)
+     * @param {(number | undefined)} val - Value to store
      * @returns this for chaining
      * 
      * @example
@@ -117,14 +121,14 @@ export class LinkedCell {
      * ```
      */
     setValue(layer: number, val: (number | undefined)) {
-        this.values[layer] = val;
+        this._values[layer] = val;
         return this;
     }
 
     /**
      * Clear value at a layer.
      * 
-     * @param layer - Layer index (0-based)
+     * @param {number} layer - Layer index (0-based)
      * @returns this for chaining
      * 
      * @example
@@ -133,7 +137,7 @@ export class LinkedCell {
      * ```
      */
     clearValue(layer: number) {
-        this.values[layer] = undefined;
+        this._values[layer] = undefined;
         return this;
     }
 
@@ -148,8 +152,8 @@ export class LinkedCell {
     /**
      * Set boolean mask at a layer.
      * 
-     * @param layer - Layer index (0-based)
-     * @param val - Boolean value
+     * @param {number} layer - Layer index (0-based)
+     * @param {boolean} val - Boolean value
      * @returns this for chaining
      */
     setMask(layer: number, val: boolean) {
@@ -163,9 +167,9 @@ export class LinkedCell {
      * This is the core navigation method - O(n) where n is number of steps.
      * Returns null if path goes off grid edge (or wraps if grid has wrapping enabled).
      * 
-     * @param dir - Direction to move (UP, DN, LT, RT)
-     * @param num - Number of steps to take (default 1)
-     * @returns The destination cell, or null if off grid
+     * @param {Direction} dir - Direction to move (UP, DN, LT, RT)
+     * @param {number} num - Number of steps to take (default 1)
+     * @returns {LinkedCell | null} The destination cell, or null if off grid
      * 
      * @example
      * ```typescript
@@ -187,8 +191,8 @@ export class LinkedCell {
      * 
      * Walks in the given direction until matchFn returns true or grid edge is reached.
      * 
-     * @param matchFn - Predicate function to test cells
-     * @param dir - Direction to search
+     * @param {(lc: LinkedCell) => boolean} matchFn - Predicate function to test cells
+     * @param {Direction} dir - Direction to search
      * @returns First matching cell, or null if none found
      * 
      * @example
@@ -211,7 +215,7 @@ export class LinkedCell {
     /**
      * Get all 4 neighbors as an array.
      * 
-     * @returns Array of [UP, DN, LT, RT] neighbors (null for edges)
+     * @returns {LinkedCell[]} Array of [UP, DN, LT, RT] neighbors (null for edges)
      * 
      * @example
      * ```typescript
@@ -226,8 +230,8 @@ export class LinkedCell {
     /**
      * Get neighbor in a specific direction.
      * 
-     * @param dir - Direction (UP, DN, LT, RT)
-     * @returns Neighbor cell, or null if at grid edge (or wrapped if grid has wrapping)
+     * @param {Direction} dir - Direction (UP, DN, LT, RT)
+     * @returns {LinkedCell | null} Neighbor cell, or null if at grid edge (or wrapped if grid has wrapping)
      * 
      * @example
      * ```typescript
@@ -244,8 +248,8 @@ export class LinkedCell {
     /**
      * Set neighbor in a direction (used by LinkedGrid during initialization).
      * 
-     * @param dir - Direction to set neighbor for
-     * @param n - The neighbor cell (or null for edge)
+     * @param {Direction} dir - Direction to set neighbor for
+     * @param {LinkedCell | null} n - The neighbor cell (or null for edge)
      * @returns this for chaining
      */
     setNeighbor(dir: Direction, n: LinkedCell | null) {
@@ -256,6 +260,13 @@ export class LinkedCell {
     /**
     /**
      * Cast a ray in a cardinal direction until blocked or max distance.
+     * 
+     * @param {Direction} dir - Direction to cast ray
+     * @param {number} maxDist - Maximum distance to cast ray
+     * @param {(lc: LinkedCell) => boolean} blockFn - Function to check if cell is blocked
+     * @returns {LinkedCell[]} Array of cells along the ray
+     * @returns {boolean} True if ray was blocked
+     * @returns {LinkedCell | null} Cell that was hit
      */
     raycast(
         dir: Direction,
@@ -267,6 +278,9 @@ export class LinkedCell {
 
     /**
      * Get all cells along a line to target using Bresenham's algorithm.
+     * 
+     * @param {LinkedCell} target - Target cell
+     * @returns {LinkedCell[]} Array of cells along the line
      */
     getLine(target: LinkedCell): LinkedCell[] {
         return LinkedCellUtils.getLine(this, target);
@@ -274,6 +288,9 @@ export class LinkedCell {
 
     /**
      * Get all cells within a circular radius (Euclidean distance).
+     * 
+     * @param {number} radius - Radius of circle
+     * @returns {LinkedCell[]} Array of cells within the circle
      */
     getCircle(radius: number): LinkedCell[] {
         return LinkedCellUtils.getCircle(this, radius);
@@ -281,6 +298,10 @@ export class LinkedCell {
 
     /**
      * Compute field of view using ray-casting.
+     * 
+     * @param {number} radius - Radius of field of view
+     * @param {(lc: LinkedCell) => boolean} blockFn - Function to check if cell is blocked
+     * @returns {LinkedCell[]} Array of cells within the field of view
      */
     fieldOfView(
         radius: number,
@@ -291,6 +312,12 @@ export class LinkedCell {
 
     /**
      * Compute field of view within a cone (directional vision).
+     * 
+     * @param {number} radius - Radius of field of view
+     * @param {number} direction - Direction of field of view
+     * @param {number} spread - Spread of field of view
+     * @param {(lc: LinkedCell) => boolean} blockFn - Function to check if cell is blocked
+     * @returns {LinkedCell[]} Array of cells within the field of view
      */
     fieldOfViewCone(
         radius: number,
@@ -303,6 +330,12 @@ export class LinkedCell {
 
     /**
      * Propagate light from this cell with intensity falloff.
+     * 
+     * @param {number} intensity - Intensity of light
+     * @param {number} falloff - Falloff of light
+     * @param {number} distanceLayer - Layer to store distance
+     * @param {(lc: LinkedCell) => boolean} blockFn - Function to check if cell is blocked
+     * @returns {void}
      */
     propagateLight(
         intensity: number,
@@ -315,6 +348,12 @@ export class LinkedCell {
 
     /**
      * Apply fog of war visibility state using mask layers.
+     * 
+     * @param {number} radius - Radius of fog of war
+     * @param {(lc: LinkedCell) => boolean} blockFn - Function to check if cell is blocked
+     * @param {number} visibleMask - Layer to store visible cells
+     * @param {number} revealedMask - Layer to store revealed cells
+     * @returns {void}
      */
     applyFogOfWar(
         radius: number,
@@ -327,6 +366,12 @@ export class LinkedCell {
 
     /**
      * Find cells matching a predicate using BFS (breadth-first search).
+     * 
+     * @param {(lc: LinkedCell | null) => boolean} passFn - Function to check if cell is passable
+     * @param {(lc: LinkedCell | null) => boolean} matchFn - Function to check if cell matches
+     * @param {number} maxRange - Maximum range to search
+     * @param {number} findLimit - Maximum number of cells to find
+     * @returns {LinkedCell[]} Array of cells found
      */
     find(
         passFn: (lc: LinkedCell | null) => boolean,
@@ -339,6 +384,11 @@ export class LinkedCell {
 
     /**
      * Find shortest path to a target using BFS pathfinding.
+     * 
+     * @param {(lc: LinkedCell | null) => boolean} passFn - Function to check if cell is passable
+     * @param {(lc: LinkedCell | null) => boolean} matchFn - Function to check if cell matches
+     * @param {number} maxRange - Maximum range to search
+     * @returns {LinkedCell[]} Array of cells found
      */
     findPath(
         passFn: (lc: LinkedCell | null) => boolean,
@@ -350,6 +400,10 @@ export class LinkedCell {
 
     /**
      * Get all neighbors within a range using BFS expansion.
+     * 
+     * @param {(lc: LinkedCell | null) => boolean} passFn - Function to check if cell is passable
+     * @param {number} maxRange - Maximum range to search
+     * @returns {LinkedCell[]} Array of cells found
      */
     getNeighborsWithinRange(
         passFn: (lc: LinkedCell | null) => boolean,
@@ -360,6 +414,13 @@ export class LinkedCell {
 
     /**
      * Flood-fill distance values from this cell outward (Dijkstra map).
+     * 
+     * @param {(lc: LinkedCell | null) => boolean} passFn - Function to check if cell is passable
+     * @param {number} distLayer - Layer to store distance
+     * @param {number} dist - Distance to add
+     * @param {boolean} doAdd - Whether to add distance or set it
+     * @param {number} maxRange - Maximum range to search
+     * @returns {void}
      */
     setDistance(
         passFn: (lc: LinkedCell | null) => boolean,

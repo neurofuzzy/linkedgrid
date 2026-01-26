@@ -474,23 +474,6 @@ describe('LinkedGrid', () => {
             expect(bottomEdge.neighbor(Direction.DN)).toBe(grid.cell(2, 0));
         });
 
-        it('can be enabled/disabled with setWrap', () => {
-            const grid = new LinkedGrid(5, 5);
-
-            // Without wrap, edges are null
-            expect(grid.cell(0, 0)!.neighbor(Direction.UP)).toBeNull();
-
-            // Enable wrapping
-            grid.setWrap(true);
-            expect(grid.wrap).toBe(true);
-            expect(grid.cell(0, 0)!.neighbor(Direction.UP)).toBe(grid.cell(0, 4));
-
-            // Disable wrapping
-            grid.setWrap(false);
-            expect(grid.wrap).toBe(false);
-            expect(grid.cell(0, 0)!.neighbor(Direction.UP)).toBeNull();
-        });
-
         it('move traverses wrapped grid infinitely', () => {
             const grid = new LinkedGrid(3, 3, true);
             grid.cells.forEach(c => c.setValue(0, 0));

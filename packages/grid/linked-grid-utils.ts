@@ -71,7 +71,7 @@ export class LinkedGridUtils {
      * ```
      */
     static print(grid: LinkedGrid, layer = 0): string {
-        return grid.grid.map(
+        return grid._grid.map(
             row => row.map(
                 cell => cell.values[layer] === undefined ? "--" : `${cell.values[layer]}`.padStart(2, "0")
             ).join("|")
@@ -96,7 +96,7 @@ export class LinkedGridUtils {
      * ```
      */
     static printDistances(grid: LinkedGrid, layer = 0): string {
-        return grid.grid.map(
+        return grid._grid.map(
             row => row.map(
                 cell => cell.distances[layer] === undefined ? "--" : `${cell.distances[layer]}`.padStart(2, "0")
             ).join("|")

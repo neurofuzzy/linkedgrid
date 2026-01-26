@@ -42,16 +42,32 @@ import { LinkedGridUtils } from './linked-grid-utils';
 export class LinkedGrid {
 
     /** Grid width (number of columns) */
-    width: number;
+    private _width: number;
+
+    get width(): number {
+        return this._width;
+    }
     
     /** Grid height (number of rows) */
-    height: number;
+    private _height: number;
+
+    get height(): number {
+        return this._height;
+    }
     
     /** 2D array for coordinate-based access: grid[y][x] */
-    grid: LinkedCell[][] = [];
+    private _grid: LinkedCell[][] = [];
+
+    get grid(): LinkedCell[][] {
+        return this._grid;
+    }
     
     /** Flat array of all cells for iteration */
-    cells: LinkedCell[] = [];
+    private _cells: LinkedCell[] = [];
+
+    get cells(): LinkedCell[] {
+        return this._cells;
+    }
 
     /** Whether edges wrap around (toroidal/Pac-Man style) */
     private _wrap: boolean = false;
@@ -61,30 +77,36 @@ export class LinkedGrid {
      * 
      * Creates all cells, assigns coordinates, sets grid references, and links neighbors.
      * 
-     * @param width - Number of columns (default 3)
-     * @param height - Number of rows (default 3)
+     * @param {number} width - Number of columns (default 3)
+     * @param {number} height - Number of rows (default 3)
+     * @param {boolean} wrap - Enable toroidal wrapping (default false)
+     * @returns {LinkedGrid} - The new LinkedGrid instance
+     * 
+     * @example
+     * ```typescript
+     * const grid = new LinkedGrid(10, 10);
+     * ```
      * @param wrap - Enable toroidal wrapping (default false)
      */
-    constructor(width = 3, height = 3, wrap = false) {
+    constructor(width: number = 3, height: number = 3, wrap: boolean = false) {
 
-        this.width = width;
-        this.height = height;
+        this._width = width;
+        this._height = height;
         this._wrap = wrap;
-        this.grid = [];
-        this.cells = [];
+        this._grid = [];
+        this._cells = [];
 
         for (let j = 0; j < height; j++) {
 
             const row: LinkedCell[] = [];
-            this.grid.push(row);
+            this._grid.push(row);
 
             for (let i = 0; i < width; i++) {
 
-                const cell = new LinkedCell();
+                const cell = new LinkedCell(this);
                 cell.x = i;
                 cell.y = j;
-                cell._grid = this;
-                this.cells.push(cell);
+                this._cells.push(cell);
                 row.push(cell);
 
             }
@@ -93,30 +115,6 @@ export class LinkedGrid {
 
         this._linkNeighbors();
 
-    }
-
-    /**
-     * Enable or disable edge wrapping (toroidal grid).
-     * 
-     * When enabled, moving off one edge wraps to the opposite side (Pac-Man style).
-     * When disabled, edge cells have null neighbors at boundaries.
-     * 
-     * Re-links all neighbors after changing wrap mode.
-     * 
-     * @param wrap - Whether to enable wrapping
-     * @returns this for chaining
-     * 
-     * @example
-     * ```typescript
-     * grid.setWrap(true);
-     * const topLeft = grid.cell(0, 0);
-     * const wrapped = topLeft.move(Direction.UP); // Wraps to bottom
-     * ```
-     */
-    setWrap(wrap: boolean) {
-        this._wrap = wrap;
-        this._linkNeighbors();
-        return this;
     }
 
     /** Get current wrap mode */
@@ -132,24 +130,24 @@ export class LinkedGrid {
      * In normal mode: Sets null for out-of-bounds neighbors.
      */
     private _linkNeighbors() {
-        const { width, height } = this;
+        const { _width: width, _height: height } = this;
 
         for (let j = 0; j < height; j++) {
             for (let i = 0; i < width; i++) {
-                const cell = this.grid[j][i];
+                const cell = this._grid[j][i];
 
                 if (this._wrap) {
                     // Toroidal wrapping
-                    cell.setNeighbor(Direction.UP, this.grid[(j - 1 + height) % height][i]);
-                    cell.setNeighbor(Direction.DN, this.grid[(j + 1) % height][i]);
-                    cell.setNeighbor(Direction.LT, this.grid[j][(i - 1 + width) % width]);
-                    cell.setNeighbor(Direction.RT, this.grid[j][(i + 1) % width]);
+                    cell.setNeighbor(Direction.UP, this._grid[(j - 1 + height) % height][i]);
+                    cell.setNeighbor(Direction.DN, this._grid[(j + 1) % height][i]);
+                    cell.setNeighbor(Direction.LT, this._grid[j][(i - 1 + width) % width]);
+                    cell.setNeighbor(Direction.RT, this._grid[j][(i + 1) % width]);
                 } else {
                     // Normal edges (null at boundaries)
-                    cell.setNeighbor(Direction.UP, j > 0 ? this.grid[j - 1][i] : null);
-                    cell.setNeighbor(Direction.DN, j < height - 1 ? this.grid[j + 1][i] : null);
-                    cell.setNeighbor(Direction.LT, i > 0 ? this.grid[j][i - 1] : null);
-                    cell.setNeighbor(Direction.RT, i < width - 1 ? this.grid[j][i + 1] : null);
+                    cell.setNeighbor(Direction.UP, j > 0 ? this._grid[j - 1][i] : null);
+                    cell.setNeighbor(Direction.DN, j < height - 1 ? this._grid[j + 1][i] : null);
+                    cell.setNeighbor(Direction.LT, i > 0 ? this._grid[j][i - 1] : null);
+                    cell.setNeighbor(Direction.RT, i < width - 1 ? this._grid[j][i + 1] : null);
                 }
             }
         }
@@ -172,8 +170,8 @@ export class LinkedGrid {
      */
     cell(x: number, y: number): LinkedCell | null {
         if (x < 0 || y < 0) return null;
-        if (x >= this.width || y >= this.height) return null;
-        return this.grid[y][x];
+        if (x >= this._width || y >= this._height) return null;
+        return this._grid[y][x];
     }
 
     /**
