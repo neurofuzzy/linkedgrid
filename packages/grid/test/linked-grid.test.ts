@@ -174,11 +174,11 @@ describe('LinkedGrid', () => {
             console.log('\n--- Distance Field from Center ---');
             console.log(ascii);
 
-            // Distances should radiate outward
-            expect(grid.cell(2, 2)!.distances[0]).toBe(1); // center gets dist+1
-            expect(grid.cell(2, 1)!.distances[0]).toBe(2); // adjacent
-            expect(grid.cell(0, 0)!.distances[0]).toBe(5); // corner
-            expect(grid.cell(4, 4)!.distances[0]).toBe(5); // opposite corner
+            // Distances should radiate outward (source at distance 0)
+            expect(grid.cell(2, 2)!.distances[0]).toBe(0); // center (source)
+            expect(grid.cell(2, 1)!.distances[0]).toBe(1); // adjacent
+            expect(grid.cell(0, 0)!.distances[0]).toBe(4); // corner
+            expect(grid.cell(4, 4)!.distances[0]).toBe(4); // opposite corner
         });
 
         it('respects obstacles in distance field', () => {

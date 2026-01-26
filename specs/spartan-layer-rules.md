@@ -328,9 +328,8 @@ function isBlocked(cell: LinkedCell): boolean {
     return true;
   }
   
-  // Check walls (static terrain or dynamic entities)
-  if (cell.values[GameLayers.WALLS] !== undefined ||
-      cell.values[GameLayers.WALLS] !== undefined) {
+  // Check walls
+  if (cell.values[GameLayers.WALLS] !== undefined) {
     return true;
   }
   
@@ -346,14 +345,11 @@ function isBlocked(cell: LinkedCell): boolean {
 **Note on Floor Blocking**: While Layer 1 (FLOOR) is generally walkable, specific floor types can block movement. This allows pits, chasms, and deep water to be represented as floor tiles that prevent passage.
 
 ### Vision Blocking
-Vision can be blocked by:
-- Static walls in `values[WALLS]`
-- Dynamic entities in `items[WALLS]`
+Vision is blocked by walls on the WALLS layer:
 
 ```typescript
 function blocksVision(cell: LinkedCell): boolean {
-  return cell.values[GameLayers.WALLS] !== undefined ||
-         cell.values[GameLayers.WALLS] !== undefined;
+  return cell.values[GameLayers.WALLS] !== undefined;
 }
 ```
 
@@ -523,12 +519,7 @@ export function isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): bo
     return true;
   }
   
-  // Check wall terrain (static tilemap)
-  if (cell.values[GameLayers.WALLS] !== undefined) {
-    return true;
-  }
-  
-  // Check wall entities (doors, destructibles)
+  // Check walls
   if (cell.values[GameLayers.WALLS] !== undefined) {
     return true;
   }
@@ -547,7 +538,7 @@ export function isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): bo
 export function blocksVision(cell: LinkedCell | null): boolean {
   if (!cell) return true;
   return VISION_BLOCKING_LAYERS.some(layer => 
-    cell.values[layer] !== undefined || cell.values[layer] !== undefined
+    cell.values[layer] !== undefined
   );
 }
 
@@ -884,8 +875,7 @@ function canEntityMove(entityId: number, cell: LinkedCell, emptyFloorsBlock = fa
   
   // Check walls (can be ignored by special entities)
   if (!entity.ignoresWalls) {
-    if (cell.values[GameLayers.WALLS] !== undefined ||
-        cell.values[GameLayers.WALLS] !== undefined) {
+    if (cell.values[GameLayers.WALLS] !== undefined) {
       return false;
     }
   }

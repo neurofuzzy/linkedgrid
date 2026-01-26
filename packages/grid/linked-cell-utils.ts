@@ -259,6 +259,8 @@ export class LinkedCellUtils {
 
     /**
      * Find cells matching a predicate using BFS (breadth-first search).
+     * 
+     * Uses standard queue-based BFS algorithm with proper visited tracking.
      */
     static find(
         cell: LinkedCell,
@@ -268,35 +270,33 @@ export class LinkedCellUtils {
         findLimit = 1
     ): { cell: LinkedCell, dist: number }[] {
         const visited = new WeakSet<LinkedCell>();
-        const lcs: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
-
-        let ns = cell.neighbors();
-        let nns: (LinkedCell | null)[] = [];
-        let d = 0;
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        visited.add(cell);
 
         const matches: { cell: LinkedCell, dist: number }[] = [];
-        let findLimitReached = false;
+        let head = 0;
 
-        while (ns.length) {
-            d++;
-            for (const n of ns) {
-                if (n && matchFn(n)) {
-                    matches.push({ cell: n, dist: d });
-                    if (findLimit > 0 && matches.length === findLimit) {
-                        findLimitReached = true;
-                        break;
+        while (head < queue.length) {
+            const { cell: current, dist } = queue[head++];
+
+            if (dist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor)) {
+                    visited.add(neighbor);
+
+                    if (matchFn(neighbor)) {
+                        matches.push({ cell: neighbor, dist: dist + 1 });
+                        if (findLimit > 0 && matches.length >= findLimit) {
+                            return matches;
+                        }
+                    }
+
+                    if (passFn(neighbor)) {
+                        queue.push({ cell: neighbor, dist: dist + 1 });
                     }
                 }
-                if (n && n !== cell && !visited.has(n) && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    visited.add(n);
-                    lcs.push({ cell: n, dist: d });
-                }
             }
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
-            if (findLimitReached) break;
         }
 
         return matches;
@@ -357,6 +357,9 @@ export class LinkedCellUtils {
 
     /**
      * Get all neighbors within a range using BFS expansion.
+     * 
+     * Uses standard queue-based BFS with proper visited tracking.
+     * Returns the starting cell (dist: 0) and all reachable neighbors within maxRange.
      */
     static getNeighborsWithinRange(
         cell: LinkedCell,
@@ -364,31 +367,41 @@ export class LinkedCellUtils {
         maxRange = 1
     ): { cell: LinkedCell, dist: number }[] {
         const visited = new WeakSet<LinkedCell>();
-        const lcs: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        visited.add(cell);
 
-        let ns = cell.neighbors();
-        let nns: (LinkedCell | null)[] = [];
-        let d = 0;
+        const results: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+        let head = 0;
 
-        while (ns.length) {
-            d++;
-            ns.forEach(n => {
-                if (n && n !== cell && !visited.has(n) && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    visited.add(n);
-                    lcs.push({ cell: n, dist: d });
+        while (head < queue.length) {
+            const { cell: current, dist } = queue[head++];
+
+            if (dist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
+                    visited.add(neighbor);
+                    const newDist = dist + 1;
+                    queue.push({ cell: neighbor, dist: newDist });
+                    results.push({ cell: neighbor, dist: newDist });
                 }
-            });
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
+            }
         }
 
-        return lcs;
+        return results;
     }
 
     /**
      * Flood-fill distance values from this cell outward (Dijkstra map).
+     * 
+     * Uses standard queue-based BFS to correctly calculate and propagate distances.
+     * 
+     * @param cell - Starting cell
+     * @param passFn - Predicate for passable cells
+     * @param distLayer - Layer to store distances in
+     * @param dist - Distance increment per step (default 1)
+     * @param doAdd - If false, clear starting cell to 0; if true, add to existing (default false)
+     * @param maxRange - Maximum distance to propagate (default 50)
      */
     static setDistance(
         cell: LinkedCell,
@@ -400,26 +413,29 @@ export class LinkedCellUtils {
     ) {
         const visited = new WeakSet<LinkedCell>();
         
-        if (!doAdd) cell.distances[distLayer] = 0;
-        const currentDist = cell.distances[distLayer] ?? 0;
-        cell.distances[distLayer] = currentDist + dist;
+        // Set starting cell distance
+        if (!doAdd) {
+            cell.distances[distLayer] = 0;
+        }
+        
+        const startDist = cell.distances[distLayer] ?? 0;
+        const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: startDist }];
+        visited.add(cell);
 
-        let ns = cell.neighbors();
-        let nns: (LinkedCell | null)[] = [];
-        let d = dist;
+        let head = 0;
+        while (head < queue.length) {
+            const { cell: current, dist: currentDist } = queue[head++];
 
-        while (ns.length) {
-            d++;
-            ns.forEach(n => {
-                if (n && n !== cell && !visited.has(n) && passFn(n)) {
-                    nns.push(...n.neighbors());
-                    n.distances[distLayer] = d;
-                    visited.add(n);
+            if (currentDist >= maxRange) continue;
+
+            for (const neighbor of current.neighbors()) {
+                if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
+                    visited.add(neighbor);
+                    const newDist = currentDist + dist;
+                    neighbor.distances[distLayer] = newDist;
+                    queue.push({ cell: neighbor, dist: newDist });
                 }
-            });
-            ns = nns.filter(n => !!n);
-            nns = [];
-            if (d == maxRange) break;
+            }
         }
     }
 }

@@ -38,6 +38,9 @@ import { LinkedCellUtils } from './linked-cell-utils';
  */
 export class LinkedCell {
 
+    /** Maximum number of layers (8-layer system: 0-7) */
+    private static readonly MAX_LAYERS = 8;
+
     /** Direct references to neighbors [UP-1, DN-1, LT-1, RT-1] (Direction enum - 1) */
     private _neighbors: (LinkedCell | null)[] = [];
 
@@ -106,6 +109,7 @@ export class LinkedCell {
      * 
      * @param {number} layer - Layer index (0-based)
      * @returns {(number | undefined)} Value at layer
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      * 
      * @example
      * ```typescript
@@ -113,6 +117,9 @@ export class LinkedCell {
      * ```
      */
     getValue(layer: number): (number | undefined) {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         return this.values[layer];
     }
 
@@ -122,6 +129,7 @@ export class LinkedCell {
      * @param {number} layer - Layer index (0-based)
      * @param {(number | undefined)} val - Value to store
      * @returns this for chaining
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      * 
      * @example
      * ```typescript
@@ -131,6 +139,9 @@ export class LinkedCell {
      * ```
      */
     setValue(layer: number, val: (number | undefined)) {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         this._values[layer] = val;
         return this;
     }
@@ -140,6 +151,7 @@ export class LinkedCell {
      * 
      * @param {number} layer - Layer index (0-based)
      * @returns this for chaining
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      * 
      * @example
      * ```typescript
@@ -147,6 +159,9 @@ export class LinkedCell {
      * ```
      */
     clearValue(layer: number) {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         this._values[layer] = undefined;
         return this;
     }
@@ -164,6 +179,7 @@ export class LinkedCell {
      * 
      * @param {number} layer - Layer index (0-based)
      * @returns {boolean} Mask at layer
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      * 
      * @example
      * ```typescript
@@ -171,6 +187,9 @@ export class LinkedCell {
      * ```
      */
     getMask(layer: number): boolean {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         return this._masks[layer];
     }
 
@@ -180,8 +199,12 @@ export class LinkedCell {
      * @param {number} layer - Layer index (0-based)
      * @param {boolean} val - Boolean value
      * @returns this for chaining
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      */
     setMask(layer: number, val: boolean) {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         this._masks[layer] = val;
         return this;
     }
@@ -191,6 +214,7 @@ export class LinkedCell {
      * 
      * @param {number} layer - Layer index (0-based)
      * @returns {number} Distance at layer
+     * @throws {RangeError} If layer index is out of bounds (0-7)
      * 
      * @example
      * ```typescript
@@ -198,6 +222,9 @@ export class LinkedCell {
      * ```
      */
     getDistance(layer: number): number {
+        if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
+            throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+        }
         return this._distances[layer];
     }
 
