@@ -103,9 +103,7 @@ export class LinkedGrid {
 
             for (let i = 0; i < width; i++) {
 
-                const cell = new LinkedCell(this);
-                cell.x = i;
-                cell.y = j;
+                const cell = new LinkedCell(this, i, j);
                 this._cells.push(cell);
                 row.push(cell);
 

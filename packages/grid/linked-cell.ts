@@ -49,27 +49,35 @@ export class LinkedCell {
     }
 
     /** Numeric values for distance fields, pathfinding costs, light intensity, etc. */
-    distances: number[] = [];
+    private _distances: number[] = [];
+    get distances(): number[] {
+        return this._distances;
+    }
 
     /** Boolean masks for collision, visibility, walkability, etc. */
-    masks: boolean[] = [];
-
-    /** BFS visited flag (used internally by pathfinding, cleaned up after) */
-    _visited: boolean = false;
-
-    /** BFS previous cell pointer (used internally by pathfinding, cleaned up after) */
-    _prev: LinkedCell | null = null;
+    private _masks: boolean[] = [];
+    get masks(): boolean[] {
+        return this._masks;
+    }
 
     /** Grid X coordinate (0-indexed column) - set by LinkedGrid */
-    x: number = -1;
+    private _x: number = -1;
+
+    get x(): number {
+        return this._x;
+    }
 
     /** Grid Y coordinate (0-indexed row) - set by LinkedGrid */
-    y: number = -1;
+    private _y: number = -1;
 
-    /** Reference to parent grid - required for geometry methods - set by LinkedGrid */
-    private _grid: ILinkedGrid | null = null;
+    get y(): number {
+        return this._y;
+    }
 
-    get grid(): ILinkedGrid | null {
+    /** Reference to parent grid - required for geometry methods */
+    private _grid: ILinkedGrid;
+
+    get grid(): ILinkedGrid {
         return this._grid;
     }
 
@@ -87,8 +95,10 @@ export class LinkedCell {
      * const cell = new LinkedCell(grid);
      * ```
      */
-    constructor(_grid: ILinkedGrid | null = null) {
+    constructor(_grid: ILinkedGrid, x: number, y: number) {
         this._grid = _grid;
+        this._x = x;
+        this._y = y;
     }
 
     /**
@@ -150,6 +160,21 @@ export class LinkedCell {
     }
 
     /**
+     * Get mask at a layer.
+     * 
+     * @param {number} layer - Layer index (0-based)
+     * @returns {boolean} Mask at layer
+     * 
+     * @example
+     * ```typescript
+     * const mask = cell.getMask(0);
+     * ```
+     */
+    getMask(layer: number): boolean {
+        return this._masks[layer];
+    }
+
+    /**
      * Set boolean mask at a layer.
      * 
      * @param {number} layer - Layer index (0-based)
@@ -157,8 +182,23 @@ export class LinkedCell {
      * @returns this for chaining
      */
     setMask(layer: number, val: boolean) {
-        this.masks[layer] = val;
+        this._masks[layer] = val;
         return this;
+    }
+
+    /**
+     * Get distance at a layer.
+     * 
+     * @param {number} layer - Layer index (0-based)
+     * @returns {number} Distance at layer
+     * 
+     * @example
+     * ```typescript
+     * const distance = cell.getDistance(0);
+     * ```
+     */
+    getDistance(layer: number): number {
+        return this._distances[layer];
     }
 
     /**
