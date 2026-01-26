@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Text, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
 import { useInput } from 'ink';
@@ -126,14 +126,17 @@ export function App() {
     }
   };
   
-  // Derive props from state
-  const snapshots = state.type === 'running' || state.type === 'completed' 
-    ? state.snapshots 
-    : state.type === 'loaded' 
-    ? [state.snapshot] 
-    : [];
+  // Derive props from state - memoize to prevent recreating array on every render
+  const snapshots = useMemo(() => {
+    if (state.type === 'running' || state.type === 'completed') {
+      return state.snapshots;
+    } else if (state.type === 'loaded') {
+      return [state.snapshot];
+    }
+    return [];
+  }, [state]);
 
-  const { currentIndex, isPlaying, snapshot } = usePlayback(
+  const { currentIndex, isPlaying, snapshot, togglePlayback, stepForward, stepBackward } = usePlayback(
     snapshots,
     state.type === 'loaded' ? handleStart : 
     state.type === 'completed' ? handleRestart : 
@@ -180,18 +183,60 @@ export function App() {
     } else if (key.escape) {
       // Go back to test selection (useEffect will clear screen)
       setState({ type: 'selecting' });
-    } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
-      // Navigate between tests when viewing a test
+    } else if (state.type !== 'selecting' && key.upArrow) {
+      // Navigate to previous test
       let newIndex = state.testIndex;
-      if (key.upArrow && newIndex > 0) {
+      if (newIndex > 0) {
         newIndex = newIndex - 1;
-      } else if (key.downArrow && newIndex < flatTests.length - 1) {
-        newIndex = newIndex + 1;
-      }
-      
-      if (newIndex !== state.testIndex) {
         const test = flatTests[newIndex];
         handleSelectTest(test.file, test.testName, newIndex);
+      }
+    } else if (state.type !== 'selecting' && key.downArrow) {
+      // Navigate to next test
+      let newIndex = state.testIndex;
+      if (newIndex < flatTests.length - 1) {
+        newIndex = newIndex + 1;
+        const test = flatTests[newIndex];
+        handleSelectTest(test.file, test.testName, newIndex);
+      }
+    } else if (state.type !== 'selecting' && key.leftArrow) {
+      // Step backward - if loaded, start test first
+      if (state.type === 'loaded') {
+        handleStart();
+      } else {
+        stepBackward();
+      }
+    } else if (state.type !== 'selecting' && key.rightArrow) {
+      // Step forward - if loaded, start test first
+      if (state.type === 'loaded') {
+        handleStart();
+      } else {
+        stepForward();
+      }
+    } else if (state.type !== 'selecting' && input === ' ') {
+      // Toggle play/pause or trigger action
+      if (state.type === 'loaded') {
+        handleStart();
+      } else if (state.type === 'completed') {
+        handleRestart();
+      } else {
+        togglePlayback();
+      }
+    } else if (state.type !== 'selecting' && key.return) {
+      // Start/restart or play
+      if (state.type === 'loaded') {
+        handleStart();
+      } else if (state.type === 'completed') {
+        handleRestart();
+      } else {
+        togglePlayback();
+      }
+    } else if (state.type !== 'selecting' && input === 'r') {
+      // Restart
+      if (state.type === 'completed') {
+        handleRestart();
+      } else if (state.type === 'loaded') {
+        handleStart();
       }
     }
   });
