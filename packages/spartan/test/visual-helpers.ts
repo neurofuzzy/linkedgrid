@@ -2,10 +2,18 @@ import { LinkedGrid } from '../../grid/linked-grid';
 import { SparseEntityStore } from '../entity-store';
 import { SpatialSystem } from '../spatial-system';
 
+export interface AssertionResult {
+    description: string;
+    passed: boolean;
+    error?: string;
+}
+
 export interface VisualTestContext {
     grid: LinkedGrid;
     spatial: SpatialSystem;
     store: SparseEntityStore;
+    expect: (description: string, fn: () => void) => void;
+    assertions?: AssertionResult[];  // Will be populated by test executor
 }
 
 export interface VisualTestDefinition {
@@ -49,7 +57,17 @@ export function visual(
                 const grid = new LinkedGrid(20, 20);
                 const store = new SparseEntityStore();
                 const spatial = new SpatialSystem(grid, store);
-                const ctx = { grid, spatial, store };
+                
+                // For Vitest, expect just throws on failure
+                const expect = (description: string, fn: () => void) => {
+                    try {
+                        fn();
+                    } catch (err) {
+                        throw new Error(`${description}: ${(err as Error).message}`);
+                    }
+                };
+                
+                const ctx = { grid, spatial, store, expect };
                 
                 // Run all phases for Vitest
                 if (normalized.arrange) await normalized.arrange(ctx);

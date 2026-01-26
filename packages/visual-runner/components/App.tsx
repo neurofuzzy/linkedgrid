@@ -6,6 +6,7 @@ import { TestSidebar } from './TestSidebar.js';
 import { GridRenderer } from './GridRenderer.js';
 import { PlaybackControls } from './PlaybackControls.js';
 import { InfoBar } from './InfoBar.js';
+import { AssertionPanel } from './AssertionPanel.js';
 import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
 import { usePlayback } from '../hooks/usePlayback.js';
@@ -289,7 +290,12 @@ export function App() {
             )}
             
             <Box flexDirection="column" flexGrow={1}>
-              <GridRenderer snapshot={snapshot} />
+              <Box>
+                <GridRenderer snapshot={snapshot} />
+                {state.type === 'completed' && (
+                  <AssertionPanel assertions={state.result.assertions} />
+                )}
+              </Box>
               <Box marginTop={1}>
                 <InfoBar snapshot={snapshot} />
               </Box>

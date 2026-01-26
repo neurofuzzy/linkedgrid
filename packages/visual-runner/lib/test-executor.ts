@@ -20,6 +20,11 @@ export interface TestResult {
   snapshots: Snapshot[];
   passed: boolean;
   error?: string;
+  assertions?: Array<{
+    description: string;
+    passed: boolean;
+    error?: string;
+  }>;
 }
 
 export interface VisualTestContext {
@@ -41,6 +46,7 @@ export class TestExecutor {
   private spatial!: SpatialSystem;
   private wrappedSpatial!: SpatialSystem;
   private captureEnabled = true; // Control whether proxy captures snapshots
+  private assertions: Array<{ description: string; passed: boolean; error?: string }> = [];
   
   /**
    * Execute arrange phase only - sets up initial state
@@ -83,13 +89,30 @@ export class TestExecutor {
    */
   async executeActAssert(definition: VisualTestDefinition): Promise<TestResult> {
     this.snapshots = [];
+    this.assertions = [];
     
     // Don't capture initial state - the arrange snapshot is already the initial state
+    
+    // Create expect helper that captures assertions
+    const expect = (description: string, fn: () => void) => {
+      try {
+        fn();
+        this.assertions.push({ description, passed: true });
+      } catch (err) {
+        this.assertions.push({
+          description,
+          passed: false,
+          error: (err as Error).message
+        });
+        throw err; // Re-throw to fail the test
+      }
+    };
     
     const ctx = { 
       grid: this.grid, 
       spatial: this.wrappedSpatial, 
-      store: this.store 
+      store: this.store,
+      expect
     };
     
     try {
@@ -103,13 +126,15 @@ export class TestExecutor {
       
       return {
         snapshots: this.snapshots,
-        passed: true
+        passed: true,
+        assertions: this.assertions
       };
     } catch (error) {
       return {
         snapshots: this.snapshots,
         passed: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        assertions: this.assertions
       };
     }
   }
