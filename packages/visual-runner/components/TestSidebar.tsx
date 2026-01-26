@@ -9,12 +9,16 @@ interface Props {
 }
 
 export function TestSidebar({ tests, onSelect }: Props) {
-  const items = tests.flatMap((testFile, fileIndex) => 
-    testFile.tests.map((testName, testIndex) => ({
-      key: `${testFile.file}-${testName}-${testIndex}`,
-      label: testName,
-      value: { file: testFile.file, testName, globalIndex: fileIndex * 1000 + testIndex }
-    }))
+  let counter = 0;
+  const items = tests.flatMap(testFile => 
+    testFile.tests.map(testName => {
+      const idx = counter++;
+      return {
+        key: `${testFile.file}-${testName}-${idx}`,
+        label: testName,
+        value: { file: testFile.file, testName, globalIndex: idx }
+      };
+    })
   );
   
   return (

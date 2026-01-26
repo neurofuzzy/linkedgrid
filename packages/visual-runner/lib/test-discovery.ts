@@ -19,14 +19,14 @@ export async function discoverTests(): Promise<TestFile[]> {
       const fullPath = path.join(rootDir, file);
       const content = await fs.readFile(fullPath, 'utf-8');
       
-      // Parse visual() calls
-      const visualRegex = /visual\(['"](.+?)['"],/g;
+      // Parse visual() calls - handles escaped quotes and flexible whitespace
+      const visualRegex = /visual\s*\(\s*(['"])(.*?)(?<!\\)\1\s*,/gs;
       const matches = [...content.matchAll(visualRegex)];
       
       return {
         file,
         path: fullPath,
-        tests: matches.map(m => m[1])
+        tests: matches.map(m => m[2])
       };
     })
   );

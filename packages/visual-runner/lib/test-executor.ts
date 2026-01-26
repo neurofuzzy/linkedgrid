@@ -104,7 +104,7 @@ export class TestExecutor {
           passed: false,
           error: (err as Error).message
         });
-        throw err; // Re-throw to fail the test
+        // Do not re-throw, to allow all assertions to run
       }
     };
     
@@ -124,9 +124,12 @@ export class TestExecutor {
         await definition.assert(ctx);
       }
       
+      const testPassed = this.assertions.every(a => a.passed);
+      
       return {
         snapshots: this.snapshots,
-        passed: true,
+        passed: testPassed,
+        error: testPassed ? undefined : 'One or more assertions failed',
         assertions: this.assertions
       };
     } catch (error) {
@@ -142,17 +145,26 @@ export class TestExecutor {
   private wrapSpatial(spatial: SpatialSystem): SpatialSystem {
     return new Proxy(spatial, {
       get: (target, prop) => {
-        if (typeof target[prop] !== 'function') return target[prop];
+        const originalMethod = target[prop as keyof SpatialSystem];
+        if (typeof originalMethod !== 'function') return originalMethod;
         
         return (...args: unknown[]) => {
-          const result = target[prop].apply(target, args);
+          const result = originalMethod.apply(target, args);
           
-          // Only capture if enabled (disabled during arrange phase)
-          if (this.captureEnabled && ['spawn', 'move', 'remove'].includes(prop as string)) {
-            this.captureSnapshot(target, prop as string, args, result);
+          const handleResult = (res: unknown) => {
+            // Only capture if enabled (disabled during arrange phase)
+            if (this.captureEnabled && ['spawn', 'move', 'remove', 'commit'].includes(prop as string)) {
+              this.captureSnapshot(target, prop as string, args, res);
+            }
+            return res;
+          };
+          
+          // Handle async methods
+          if (result instanceof Promise) {
+            return result.then(handleResult);
           }
           
-          return result;
+          return handleResult(result);
         };
       }
     });
