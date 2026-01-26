@@ -24,8 +24,30 @@ export class SparseEntityStore {
     /** Internal storage: entity ID → entity data */
     private data: Map<number, EntityData> = new Map();
     
-    /** Auto-incrementing ID counter */
+    /** Auto-incrementing ID counter (used if no generator provided) */
     private nextId = 1;
+
+    /** Optional ID generator function (for global entity ID management) */
+    private idGenerator?: () => number;
+
+    /**
+     * Create a new SparseEntityStore.
+     * 
+     * @param idGenerator - Optional function to generate entity IDs (for global ID management)
+     * 
+     * @example
+     * ```typescript
+     * // Standalone store with internal counter
+     * const store1 = new SparseEntityStore();
+     * 
+     * // Store with global ID generator
+     * const gameState = new GameState();
+     * const store2 = new SparseEntityStore(() => gameState.generateEntityId());
+     * ```
+     */
+    constructor(idGenerator?: () => number) {
+        this.idGenerator = idGenerator;
+    }
 
     /**
      * Create a new entity ID and store its metadata.
@@ -41,7 +63,7 @@ export class SparseEntityStore {
      * ```
      */
     createId(type: string, props?: Record<string, unknown>): number {
-        const id = this.nextId++;
+        const id = this.idGenerator ? this.idGenerator() : this.nextId++;
         const entityData: EntityData = {
             id,
             type,

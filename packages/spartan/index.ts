@@ -33,6 +33,10 @@
 // Core framework
 export { SparseEntityStore } from './entity-store';
 export { SpatialSystem } from './spatial-system';
+export { GameState } from './game-state';
+export { Scene } from './scene';
+export { SceneManager } from './scene-manager';
+export { GameManager } from './game-manager';
 
 // Types and layer constants
 export type { EntityData, Layer, Position, GameLayer } from './types';
