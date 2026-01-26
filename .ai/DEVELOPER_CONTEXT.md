@@ -60,7 +60,7 @@ linkedgrid/
 │       │   ├── GridRenderer.tsx # ASCII grid visualization
 │       │   ├── PlaybackControls.tsx  # Step/play controls
 │       │   ├── InfoBar.tsx      # Current operation display
-│       │   └── AssertionPanel.tsx    # Assertion results
+│       │   └── InfoPanel.tsx    # Assertion results
 │       ├── lib/
 │       │   ├── test-executor.ts    # Runs tests & captures snapshots
 │       │   └── test-discovery.ts   # Finds *.visual.test.ts files
@@ -159,7 +159,7 @@ expect('Player at (10, 10)', () => {
 });
 ```
 
-Results appear in `AssertionPanel` after playback completes.
+Results appear in `InfoPanel` after playback completes.
 
 ## Key Design Decisions
 

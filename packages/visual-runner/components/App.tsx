@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Text, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
 import { useInput } from 'ink';
 import { TestSidebar } from './TestSidebar.js';
 import { GridRenderer } from './GridRenderer.js';
-import { PlaybackControls } from './PlaybackControls.js';
-import { InfoBar } from './InfoBar.js';
-import { AssertionPanel } from './AssertionPanel.js';
+import { InfoPanel } from './InfoPanel.js';
 import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
 import { usePlayback } from '../hooks/usePlayback.js';
@@ -128,14 +126,17 @@ export function App() {
     }
   };
   
-  // Derive props from state
-  const snapshots = state.type === 'running' || state.type === 'completed' 
-    ? state.snapshots 
-    : state.type === 'loaded' 
-    ? [state.snapshot] 
-    : [];
+  // Derive props from state - memoize to prevent recreating array on every render
+  const snapshots = useMemo(() => {
+    if (state.type === 'running' || state.type === 'completed') {
+      return state.snapshots;
+    } else if (state.type === 'loaded') {
+      return [state.snapshot];
+    }
+    return [];
+  }, [state]);
 
-  const { currentIndex, isPlaying, snapshot } = usePlayback(
+  const { currentIndex, isPlaying, snapshot, togglePlayback, stepForward, stepBackward } = usePlayback(
     snapshots,
     state.type === 'loaded' ? handleStart : 
     state.type === 'completed' ? handleRestart : 
@@ -183,17 +184,42 @@ export function App() {
       // Go back to test selection (useEffect will clear screen)
       setState({ type: 'selecting' });
     } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
-      // Navigate between tests when viewing a test
-      let newIndex = state.testIndex;
-      if (key.upArrow && newIndex > 0) {
-        newIndex = newIndex - 1;
-      } else if (key.downArrow && newIndex < flatTests.length - 1) {
-        newIndex = newIndex + 1;
-      }
-      
-      if (newIndex !== state.testIndex) {
+      // Navigate between tests
+      const direction = key.upArrow ? -1 : 1;
+      const newIndex = state.testIndex + direction;
+      if (newIndex >= 0 && newIndex < flatTests.length) {
         const test = flatTests[newIndex];
         handleSelectTest(test.file, test.testName, newIndex);
+      }
+    } else if (state.type !== 'selecting' && key.leftArrow) {
+      // Step backward - if loaded, start test first
+      if (state.type === 'loaded') {
+        handleStart();
+      } else {
+        stepBackward();
+      }
+    } else if (state.type !== 'selecting' && key.rightArrow) {
+      // Step forward - if loaded, start test first
+      if (state.type === 'loaded') {
+        handleStart();
+      } else {
+        stepForward();
+      }
+    } else if (state.type !== 'selecting' && (input === ' ' || key.return)) {
+      // Toggle play/pause or trigger action
+      if (state.type === 'loaded') {
+        handleStart();
+      } else if (state.type === 'completed') {
+        handleRestart();
+      } else {
+        togglePlayback();
+      }
+    } else if (state.type !== 'selecting' && input === 'r') {
+      // Restart
+      if (state.type === 'completed') {
+        handleRestart();
+      } else if (state.type === 'loaded') {
+        handleStart();
       }
     }
   });
@@ -299,12 +325,14 @@ export function App() {
             <Box flexDirection="column" flexGrow={1}>
               <Box>
                 <GridRenderer snapshot={snapshot} />
-                {state.type === 'completed' && (
-                  <AssertionPanel assertions={state.result.assertions} />
-                )}
-              </Box>
-              <Box marginTop={1}>
-                <InfoBar snapshot={snapshot} />
+                <InfoPanel 
+                  currentIndex={currentIndex}
+                  totalSnapshots={snapshots.length}
+                  isPlaying={isPlaying}
+                  interval={500}
+                  assertions={state.type === 'completed' ? state.result.assertions : undefined}
+                  snapshot={snapshot}
+                />
               </Box>
               {state.type === 'completed' && !state.result.passed && (
                 <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
@@ -312,14 +340,6 @@ export function App() {
                   <Text color="red">{state.result.error}</Text>
                 </Box>
               )}
-              <Box marginTop={1}>
-                <PlaybackControls
-                  currentIndex={currentIndex}
-                  totalSnapshots={snapshots.length}
-                  isPlaying={isPlaying}
-                  interval={500}
-                />
-              </Box>
               <Box marginTop={1}>
                 <Text dimColor>
                   [esc] menu | [↑↓] switch test | {
