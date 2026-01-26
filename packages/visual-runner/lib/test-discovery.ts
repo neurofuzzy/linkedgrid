@@ -6,6 +6,7 @@ export interface TestFile {
   file: string;
   path: string;
   tests: string[];
+  category: string;
 }
 
 export async function discoverTests(): Promise<TestFile[]> {
@@ -23,10 +24,26 @@ export async function discoverTests(): Promise<TestFile[]> {
       const visualRegex = /visual\s*\(\s*(['"])(.*?)(?<!\\)\1\s*,/gs;
       const matches = [...content.matchAll(visualRegex)];
       
+      // Extract category from filename
+      // e.g., "movement.visual.test.ts" → "Movement"
+      // e.g., "scene-transition.visual.test.ts" → "Scenes"
+      const filename = path.basename(file, '.visual.test.ts');
+      let category = filename
+        .split(/[-.]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      // Map specific categories
+      if (filename.includes('scene')) category = 'Scenes';
+      if (filename.includes('layer')) category = 'Layers';
+      if (filename.includes('movement')) category = 'Movement';
+      if (filename.includes('assertion')) category = 'Assertions';
+      
       return {
         file,
         path: fullPath,
-        tests: matches.map(m => m[2])
+        tests: matches.map(m => m[2]),
+        category
       };
     })
   );

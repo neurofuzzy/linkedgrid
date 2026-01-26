@@ -6,6 +6,11 @@ export interface Snapshot {
   operation: string;
   args: unknown[];
   result: unknown;
+  
+  // Scene information (optional for backward compatibility)
+  sceneId?: string;
+  sceneName?: string;
+  
   entities: Array<{
     id: number;
     type: string;
@@ -31,6 +36,10 @@ export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
   store: SparseEntityStore;
+  
+  // Optional scene system support
+  game?: any;  // GameManager - use any to avoid circular dependency
+  scene?: any; // Scene - for single-scene tests with metadata
 }
 
 export interface VisualTestDefinition {
@@ -66,6 +75,9 @@ export class TestExecutor {
       store: this.store 
     };
     
+    // Store context globally for snapshot capture to access scene info
+    (globalThis as any).__currentTestContext = ctx;
+    
     // Disable snapshot capture during arrange - we only want the final state
     this.captureEnabled = false;
     
@@ -73,6 +85,9 @@ export class TestExecutor {
     if (definition.arrange) {
       await definition.arrange(ctx);
     }
+    
+    // Wrap GameManager if present after arrange (when it's been assigned)
+    this.setupGameManagerWrapping(ctx);
     
     // Re-enable capture
     this.captureEnabled = true;
@@ -114,6 +129,9 @@ export class TestExecutor {
       store: this.store,
       expect
     };
+    
+    // Update global context with expect function
+    (globalThis as any).__currentTestContext = ctx;
     
     try {
       // Act phase
@@ -196,12 +214,55 @@ export class TestExecutor {
       }
     }
     
+    // Detect scene information from context
+    let sceneId: string | undefined;
+    let sceneName: string | undefined;
+    
+    const testCtx = (globalThis as any).__currentTestContext;
+    if (testCtx?.game) {
+      // Multi-scene test with GameManager
+      const activeScene = testCtx.game.sceneManager?.getActiveScene();
+      if (activeScene) {
+        sceneId = activeScene.id;
+        sceneName = activeScene.metadata?.name as string;
+      }
+    } else if (testCtx?.scene) {
+      // Single scene test with explicit scene
+      sceneId = testCtx.scene.id;
+      sceneName = testCtx.scene.metadata?.name as string;
+    }
+    
     this.snapshots.push({
       operation,
       args,
       result,
       entities,
-      grid: { w: grid.width, h: grid.height }
+      grid: { w: grid.width, h: grid.height },
+      sceneId,
+      sceneName
     });
+  }
+  
+  private setupGameManagerWrapping(ctx: VisualTestContext): void {
+    // Wrap GameManager.movePlayerToScene if present
+    if (ctx.game && ctx.game.movePlayerToScene) {
+      const originalMove = ctx.game.movePlayerToScene.bind(ctx.game);
+      ctx.game.movePlayerToScene = (...args: any[]) => {
+        const result = originalMove(...args);
+        
+        // Capture snapshot after scene transition
+        const activeScene = ctx.game.sceneManager?.getActiveScene();
+        if (activeScene && this.captureEnabled) {
+          this.captureSnapshot(
+            activeScene.spatial, 
+            'movePlayerToScene', 
+            args, 
+            result
+          );
+        }
+        
+        return result;
+      };
+    }
   }
 }

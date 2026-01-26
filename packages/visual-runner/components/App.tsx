@@ -5,6 +5,7 @@ import { useInput } from 'ink';
 import { TestSidebar } from './TestSidebar.js';
 import { GridRenderer } from './GridRenderer.js';
 import { InfoPanel } from './InfoPanel.js';
+import { CategoryTabs } from './CategoryTabs.js';
 import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
 import { usePlayback } from '../hooks/usePlayback.js';
@@ -44,6 +45,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<TestRunnerState>({ type: 'selecting' });
   const [showSidebar, setShowSidebar] = useState(false); // Only used within test view
+  const [selectedCategory, setSelectedCategory] = useState<string>('Movement'); // Default category
   
   const handleStart = async () => {
     if (state.type !== 'loaded') return; // Type guard!
@@ -151,8 +153,27 @@ export function App() {
   );
   const { write } = useStdout();
   
+  // Get previous snapshot for scene transition detection
+  const previousSnapshot = currentIndex > 0 ? snapshots[currentIndex - 1] : null;
+  
+  // Get unique categories
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(tests.map(t => t.category))).sort();
+    // Ensure selectedCategory exists in list
+    if (cats.length > 0 && !cats.includes(selectedCategory)) {
+      setSelectedCategory(cats[0]);
+    }
+    return cats;
+  }, [tests]);
+  
+  // Filter tests by selected category
+  const filteredTests = useMemo(() => 
+    tests.filter(t => t.category === selectedCategory),
+    [tests, selectedCategory]
+  );
+  
   // Flatten tests for navigation
-  const flatTests = tests.flatMap(testFile =>
+  const flatTests = filteredTests.flatMap(testFile =>
     testFile.tests.map(testName => ({
       file: testFile.file,
       testName
@@ -188,6 +209,12 @@ export function App() {
     } else if (key.escape) {
       // Go back to test selection (useEffect will clear screen)
       setState({ type: 'selecting' });
+    } else if (state.type === 'selecting' && (key.leftArrow || key.rightArrow)) {
+      // Switch categories in selection view
+      const direction = key.leftArrow ? -1 : 1;
+      const currentIndex = categories.indexOf(selectedCategory);
+      const newIndex = (currentIndex + direction + categories.length) % categories.length;
+      setSelectedCategory(categories[newIndex]);
     } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
       // Navigate between tests
       const direction = key.upArrow ? -1 : 1;
@@ -316,20 +343,29 @@ export function App() {
       
       <Box>
         {state.type === 'selecting' ? (
-          // Show test selection sidebar
-          <TestSidebar tests={tests} onSelect={handleSelectTest} />
+          // Show test selection with categories
+          <Box flexDirection="column" width="100%">
+            <CategoryTabs 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onSelect={setSelectedCategory} 
+            />
+            <Box marginTop={1}>
+              <TestSidebar tests={filteredTests} onSelect={handleSelectTest} />
+            </Box>
+          </Box>
         ) : (
           // Show test runner interface
           <>
             {showSidebar && (
               <Box marginRight={1} width="40%">
-                <TestSidebar tests={tests} onSelect={handleSelectTest} />
+                <TestSidebar tests={filteredTests} onSelect={handleSelectTest} />
               </Box>
             )}
             
             <Box flexDirection="column" flexGrow={1}>
               <Box>
-                <GridRenderer snapshot={snapshot} />
+                <GridRenderer snapshot={snapshot} previousSnapshot={previousSnapshot} />
                 <InfoPanel 
                   currentIndex={currentIndex}
                   totalSnapshots={snapshots.length}

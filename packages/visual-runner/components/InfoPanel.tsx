@@ -77,14 +77,31 @@ export function InfoPanel({
       )}
       
       {/* InfoBar at the bottom */}
-      <Box marginTop={1} paddingTop={1}>
-        {!snapshot || snapshot.operation === 'initial' ? (
-          <Text dimColor>No operation</Text>
-        ) : (
-          <Text>
-            {chalk.yellow(snapshot.operation)}
-            {argsStr && chalk.dim(` (${argsStr})`)}
-          </Text>
+      <Box marginTop={1} paddingTop={1} flexDirection="column">
+        <Box>
+          {!snapshot || snapshot.operation === 'initial' ? (
+            <Text dimColor>No operation</Text>
+          ) : (
+            <Text>
+              {chalk.yellow(snapshot.operation)}
+              {argsStr && chalk.dim(` (${argsStr})`)}
+            </Text>
+          )}
+        </Box>
+        
+        {/* Scene metadata */}
+        {snapshot && (
+          <Box marginTop={1}>
+            <Text dimColor>Grid: </Text>
+            <Text>{snapshot.grid.w}×{snapshot.grid.h}</Text>
+            
+            {snapshot.sceneId && (
+              <>
+                <Text dimColor> | Scene: </Text>
+                <Text>{snapshot.sceneName || snapshot.sceneId}</Text>
+              </>
+            )}
+          </Box>
         )}
       </Box>
     </Box>

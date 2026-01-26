@@ -14,6 +14,10 @@ export interface VisualTestContext {
     store: SparseEntityStore;
     expect: (description: string, fn: () => void) => void;
     assertions?: AssertionResult[];  // Will be populated by test executor
+    
+    // Optional scene system support
+    game?: any;  // GameManager - use any to avoid circular dependency
+    scene?: any; // Scene - for single-scene tests with metadata
 }
 
 export interface VisualTestDefinition {
