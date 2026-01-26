@@ -16,12 +16,12 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 ## The 8 Layers
 
 ### Layer 0: BACKGROUND
-**Purpose**: Visual decoration with no gameplay effect
+**Purpose**: Static background visual elements with no gameplay effect
 
 **Typical Contents**:
-- Decorative patterns (clouds, stars, wallpaper)
-- Parallax elements
+- Background textures (static, tiled)
 - Ambient visual details
+- Decorative patterns
 
 **Data Storage**:
 - `values[0]`: Background tile type/ID
@@ -29,10 +29,12 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 
 **Gameplay Impact**: None - purely cosmetic
 
+**Rendering Note**: This layer stores static background tiles aligned to the grid. Parallax scrolling is not supported in the Spartan Framework.
+
 **Example Uses**:
-- Roguelike: Dungeon floor variations
-- Shmup: Scrolling starfield
-- Puzzle: Background pattern
+- Roguelike: Dungeon floor base texture
+- Shmup: Static starfield pattern
+- Puzzle: Background wallpaper
 
 ---
 
@@ -49,9 +51,21 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 - `items[1]`: Rarely used (terrain is typically in values)
 
 **Gameplay Impact**: 
-- Characters can walk on floor tiles
+- Characters can walk on most floor tiles
+- **Certain floor types block movement** (pits, deep water, void)
 - May trigger effects (damage from lava, slipping on ice)
-- Does not block movement or vision
+- Does not block vision
+
+**Floor Blocking Examples**:
+```typescript
+// Define blocking floor types
+const FLOOR_PIT = 10;
+const FLOOR_DEEP_WATER = 11;
+const FLOOR_VOID = 12;
+
+// These floor values will block movement
+cell.values[GameLayers.FLOOR] = FLOOR_PIT;  // Can't walk here
+```
 
 **Example Uses**:
 - Roguelike: Stone floor, lava (damages player)
@@ -163,30 +177,41 @@ The Spartan Framework uses a fixed 8-layer architecture for all games created wi
 ---
 
 ### Layer 6: EPHEMERALS
-**Purpose**: Temporary visual effects and projectiles
+**Purpose**: Temporary visual effects, projectiles, and permanent decals
 
 **Typical Contents**:
-- Projectiles (bullets, arrows, fireballs)
-- Explosions
-- Particle effects
-- Energy beams
-- Animation overlays
-- Screen shake markers
+- **Temporary**: Projectiles (bullets, arrows, fireballs)
+- **Temporary**: Explosions, particle effects
+- **Temporary**: Energy beams, animation overlays
+- **Permanent**: Blood splatters, scorch marks, decals
 
 **Data Storage**:
 - `values[6]`: Rarely used
 - `items[6]`: Ephemeral entity IDs
 
 **Gameplay Impact**:
-- Short lifespan (typically frames to seconds)
+- Temporary effects have short lifespan (frames to seconds)
+- Permanent decals persist but don't affect gameplay
 - May or may not block movement (depends on game)
-- Cleaned up frequently
 - Entity exclusivity applies (one ephemeral per cell)
 
+**Lifetime Management**:
+```typescript
+// Temporary effect
+spatial.spawn('explosion', x, y, GameLayers.EPHEMERALS, {
+  lifetime: 30  // Removed after 30 frames
+});
+
+// Permanent decal
+spatial.spawn('bloodstain', x, y, GameLayers.EPHEMERALS, {
+  lifetime: Infinity  // Never removed automatically
+});
+```
+
 **Example Uses**:
-- Roguelike: Magic missile, explosion sprites
-- Shmup: Bullet trails, laser beams
-- Platformer: Jump dust, coin sparkle
+- Roguelike: Magic missile, explosion sprites, blood pools
+- Shmup: Bullet trails, laser beams, explosion marks
+- Platformer: Jump dust, coin sparkle, footprints
 
 ---
 
@@ -295,20 +320,41 @@ cell.distances[2] = 3;    // Distance to nearest exit
 ## Blocking and Vision
 
 ### Movement Blocking
-Typically checked for layers:
-- `WALLS` (layer 4)
-- `ACTORS` (layer 5)
+Movement can be blocked by:
+- Static walls in `values[WALLS]`
+- Dynamic entities in `items[WALLS]` (doors)
+- Actors in `items[ACTORS]`
+- Certain floor types (pits, deep water)
 
 ```typescript
 function isBlocked(cell: LinkedCell): boolean {
-  return cell.items[GameLayers.WALLS] !== undefined ||
-         cell.items[GameLayers.ACTORS] !== undefined;
+  // Check floor blocking (pits, deep water)
+  const floorType = cell.values[GameLayers.FLOOR];
+  if (floorType === FLOOR_PIT || floorType === FLOOR_DEEP_WATER) {
+    return true;
+  }
+  
+  // Check walls (static terrain or dynamic entities)
+  if (cell.values[GameLayers.WALLS] !== undefined ||
+      cell.items[GameLayers.WALLS] !== undefined) {
+    return true;
+  }
+  
+  // Check actors
+  if (cell.items[GameLayers.ACTORS] !== undefined) {
+    return true;
+  }
+  
+  return false;
 }
 ```
 
+**Note on Floor Blocking**: While Layer 1 (FLOOR) is generally walkable, specific floor types can block movement. This allows pits, chasms, and deep water to be represented as floor tiles that prevent passage.
+
 ### Vision Blocking
-Typically checked for:
-- `WALLS` (layer 4) - both values and items
+Vision can be blocked by:
+- Static walls in `values[WALLS]`
+- Dynamic entities in `items[WALLS]`
 
 ```typescript
 function blocksVision(cell: LinkedCell): boolean {
@@ -316,6 +362,8 @@ function blocksVision(cell: LinkedCell): boolean {
          cell.items[GameLayers.WALLS] !== undefined;
 }
 ```
+
+**Note**: Typically only WALLS layer blocks vision. Actors and floor don't block line-of-sight in most games.
 
 ---
 
@@ -469,10 +517,35 @@ export const ALL_LAYERS = [
 ```typescript
 /**
  * Check if a cell blocks movement.
+ * Considers floor blocking, wall terrain, wall entities, and actors.
  */
 export function isBlocked(cell: LinkedCell | null): boolean {
   if (!cell) return true;
-  return BLOCKING_LAYERS.some(layer => cell.items[layer] !== undefined);
+  
+  // Check if floor type blocks movement (pits, deep water)
+  const floorType = cell.values[GameLayers.FLOOR];
+  if (floorType === FLOOR_PIT || 
+      floorType === FLOOR_DEEP_WATER || 
+      floorType === FLOOR_VOID) {
+    return true;
+  }
+  
+  // Check wall terrain (static tilemap)
+  if (cell.values[GameLayers.WALLS] !== undefined) {
+    return true;
+  }
+  
+  // Check wall entities (doors, destructibles)
+  if (cell.items[GameLayers.WALLS] !== undefined) {
+    return true;
+  }
+  
+  // Check actors
+  if (cell.items[GameLayers.ACTORS] !== undefined) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -510,6 +583,109 @@ export function getTopmostEntity(
   return undefined;
 }
 ```
+
+
+
+## Known Limitations & Workarounds
+
+The fixed 8-layer architecture provides simplicity and consistency, but creates certain design constraints. This section documents known limitations and recommended workarounds.
+
+### 1. No Overhead/Foreground Elements
+
+**Limitation**: WALLS (layer 4) render below ACTORS (layer 5). The framework does not support "overhead" elements like archways or tree canopies that obscure the player.
+
+**Design Constraint**: Games must use a flat 2.5D perspective. Actors cannot walk "under" foreground elements.
+
+**This is a fundamental constraint of the 8-layer system and will not be changed.**
+
+### 2. No Actor Stacking
+
+**Limitation**: Only one entity per layer. A flying bird and ground soldier cannot occupy the same cell (both are ACTORS).
+
+**Impact**: 
+- Flying units cannot pass over ground units
+- Party members cannot stack on one tile
+- Ghosts cannot pass through walls if walls are entities
+
+**Design Constraint**: Plan levels and mechanics around single-actor-per-cell rule.
+
+**This is a fundamental constraint of the 8-layer system and will not be changed.**
+
+**Workaround for "Ghosting"**: Use collision masks on entities:
+```typescript
+const ghost = spatial.spawn('ghost', x, y, GameLayers.ACTORS, {
+  ignoresWalls: true  // Game logic allows movement through walls
+});
+
+// Modified movement check:
+function canMove(entity, cell) {
+  if (entity.ignoresWalls) {
+    return cell.items[GameLayers.ACTORS] === undefined;  // Only check actors
+  }
+  return !isBlocked(cell);  // Normal blocking
+}
+```
+
+### 3. Multiple Collectibles Per Cell
+
+**Limitation**: `items[layer]` stores a single entity ID. Cannot have two collectibles (coin + key) in one cell.
+
+**Impact**: Level designers must spread collectibles across adjacent cells.
+
+**Workarounds**:
+- **Container entities**: Create a "LootPile" entity that contains multiple items
+  ```typescript
+  spatial.spawn('lootpile', x, y, GameLayers.COLLECTIBLES, {
+    contains: [ITEM_COIN, ITEM_KEY, ITEM_POTION]
+  });
+  ```
+- **Adjacent placement**: Force collectibles into neighboring cells
+- **Accept the constraint**: Design levels with sufficient space between items
+
+### 4. No Parallax Scrolling
+
+**Limitation**: The framework does not support parallax background scrolling (multiple background layers moving at different speeds).
+
+**Design Constraint**: Background layer is static and grid-aligned.
+
+**Rationale**: Parallax typically requires procedural generation and camera-relative positioning, which is beyond the scope of the Spartan Framework's grid-based design.
+
+**This is a fundamental constraint and will not be changed.**
+
+### 5. Wall Decorations & Variations
+
+**Limitation**: Adding visual variations to walls (torches, banners, cracks) requires either new tile types or sprite states.
+
+**Solution**: Use the built-in sprite system (5 states × 5 frames per entity):
+```typescript
+// Define wall with sprite states
+spatial.spawn('wall', x, y, GameLayers.WALLS, {
+  baseType: WALL_STONE,
+  spriteState: 'torch'  // States: 'plain', 'torch', 'banner', 'cracked', etc.
+});
+```
+
+Each entity can have up to 5 different sprite states with 5 animation frames each, providing 25 visual variations per entity type.
+
+---
+
+## Rendering Architecture (Out of Scope)
+
+The 8-layer system is designed at the game logic level and is agnostic to rendering implementation. However, for reference, the layer architecture naturally maps to two rendering strategies:
+
+**Grid-Aligned Layers (0-5, 7)**: 
+- Typically rendered using static geometry with data textures
+- Content is cell-aligned
+- Efficient for large grids with mostly static content
+- Single draw call per layer possible
+
+**Dynamic Layer (6 - EPHEMERALS)**:
+- Typically rendered using dynamic sprite pool with free quads
+- Supports per-entity transforms (rotation, scale, fade)
+- Can have sub-grid positioning during interpolation
+- Optimized for frequent spawning/despawning
+
+This separation is a rendering optimization detail and does not affect the game logic layer system described in this specification.
 
 ---
 
@@ -555,6 +731,214 @@ The semantic names make code self-documenting and prevent mistakes.
 
 ---
 
+## Advanced Usage
+
+### Entity Sprite System
+
+All entities support up to 5 sprite states with 5 animation frames each (25 total variations):
+
+```typescript
+// Create entity with sprite configuration
+spatial.spawn('player', x, y, GameLayers.ACTORS, {
+  // Current sprite state (0-4)
+  spriteState: 0,  // 0=idle, 1=walk, 2=attack, 3=hurt, 4=dead
+  
+  // Current animation frame (0-4)
+  spriteFrame: 0,
+  
+  // Animation speed (frames between sprite updates)
+  animSpeed: 6
+});
+
+// Game loop updates animation
+function updateAnimation(entity) {
+  entity.frameCounter = (entity.frameCounter || 0) + 1;
+  
+  if (entity.frameCounter >= entity.animSpeed) {
+    entity.frameCounter = 0;
+    entity.spriteFrame = (entity.spriteFrame + 1) % 5;
+  }
+}
+
+// Change state based on action
+function attackEnemy(entity) {
+  entity.spriteState = 2;  // Switch to attack state
+  entity.spriteFrame = 0;  // Reset to first frame
+}
+```
+
+**Sprite Editor**: The sprite editor allows creators to define all 25 sprite variations visually (5 states × 5 frames).
+
+### Floor Type Blocking
+
+Using floor values to create hazards:
+
+```typescript
+// Define blocking floor types
+const FLOOR_GRASS = 0;      // Walkable
+const FLOOR_LAVA = 1;       // Walkable but damages
+const FLOOR_PIT = 2;        // Blocks movement
+const FLOOR_DEEP_WATER = 3; // Blocks movement
+const FLOOR_ICE = 4;        // Walkable but slippery
+
+// Floor blocking check (called by isBlocked)
+const BLOCKING_FLOOR_TYPES = [FLOOR_PIT, FLOOR_DEEP_WATER];
+
+function isFloorBlocking(floorType: number): boolean {
+  return BLOCKING_FLOOR_TYPES.includes(floorType);
+}
+```
+
+### Dynamic Floor Effects
+
+Using floor values to trigger gameplay effects:
+
+```typescript
+// Define floor effect types
+const FLOOR_EFFECTS = {
+  [FLOOR_LAVA]: (entity) => damageEntity(entity, 5),
+  [FLOOR_ICE]: (entity) => applySlippery(entity),
+  [FLOOR_TELEPORT]: (entity) => teleportEntity(entity),
+};
+
+// Game loop checks floor effects
+function updateActorOnFloor(actorId: number, cell: LinkedCell) {
+  const floorType = cell.values[GameLayers.FLOOR];
+  const effectFn = FLOOR_EFFECTS[floorType];
+  if (effectFn) {
+    effectFn(actorId);
+  }
+}
+```
+
+### Fog of War with Masks
+
+Using cell masks for visibility state:
+
+```typescript
+const MASK_EXPLORED = 0;
+const MASK_VISIBLE = 1;
+
+// Mark cells as explored but not visible
+cell.applyFogOfWar(
+  visionRadius,
+  c => c.values[GameLayers.WALLS] !== undefined,
+  MASK_VISIBLE,    // Currently visible
+  MASK_EXPLORED    // Previously explored
+);
+
+// Renderer checks masks
+if (cell.masks[MASK_VISIBLE]) {
+  renderCell(cell, 'full');
+} else if (cell.masks[MASK_EXPLORED]) {
+  renderCell(cell, 'dimmed');
+} else {
+  renderCell(cell, 'hidden');
+}
+```
+
+### Entity State Transitions Between Layers
+
+Entities can change layers when entering special states. This is the recommended pattern for mechanics like "ghosting", "returning to base", or temporary invulnerability.
+
+**Pattern: Remove from one layer, spawn on another**
+
+```typescript
+// Example: Pacman ghost eaten, returns to base
+class GhostSystem {
+  eatGhost(ghostId: number, x: number, y: number) {
+    const ghost = spatial.getEntityData(ghostId);
+    
+    // Remove from ACTORS layer
+    spatial.remove(x, y, GameLayers.ACTORS);
+    
+    // Spawn on EPHEMERALS layer with new state
+    spatial.spawn('ghost_returning', x, y, GameLayers.EPHEMERALS, {
+      originalType: ghost.type,
+      state: 'returning',
+      targetX: BASE_X,
+      targetY: BASE_Y,
+      lifetime: Infinity
+    });
+  }
+  
+  updateReturningGhosts() {
+    // Find all returning ghosts on EPHEMERALS layer
+    const returning = this.findEntitiesByState('returning');
+    
+    for (const ghost of returning) {
+      // Move toward base (can pass through walls and actors)
+      const pos = this.getEntityPosition(ghost.id);
+      const next = this.getNextCellToward(pos, ghost.targetX, ghost.targetY);
+      
+      spatial.move(pos.x, pos.y, next.x, next.y, GameLayers.EPHEMERALS);
+      
+      // Reached base?
+      if (next.x === ghost.targetX && next.y === ghost.targetY) {
+        spatial.remove(next.x, next.y, GameLayers.EPHEMERALS);
+        spatial.spawn(ghost.originalType, BASE_X, BASE_Y, GameLayers.ACTORS);
+      }
+    }
+    
+    spatial.commit();
+  }
+}
+```
+
+**Why this works:**
+- ACTORS layer: Normal collision and blocking
+- EPHEMERALS layer: Can pass through walls and overlap other actors
+- Layer switch = behavior change
+- One entity per layer maintained
+
+**Common use cases:**
+- Ghost returning to base (ACTORS → EPHEMERALS → ACTORS)
+- Player death animation (ACTORS → EPHEMERALS, then respawn)
+- Teleportation effects (ACTORS → EPHEMERALS for flash, then ACTORS at new location)
+- Temporary invulnerability (ACTORS → EPHEMERALS briefly)
+
+### Special Movement Abilities
+
+Using entity properties to override normal blocking:
+
+```typescript
+// Ghost that passes through walls
+const ghost = spatial.spawn('ghost', x, y, GameLayers.ACTORS, {
+  ignoresWalls: true,
+  spriteState: 0
+});
+
+// Modified movement validation
+function canEntityMove(entityId: number, cell: LinkedCell): boolean {
+  const entity = spatial.getEntityData(entityId);
+  
+  // Check floor blocking (applies to all entities)
+  const floorType = cell.values[GameLayers.FLOOR];
+  if (isFloorBlocking(floorType)) {
+    return false;
+  }
+  
+  // Check walls (can be ignored by special entities)
+  if (!entity.ignoresWalls) {
+    if (cell.values[GameLayers.WALLS] !== undefined ||
+        cell.items[GameLayers.WALLS] !== undefined) {
+      return false;
+    }
+  }
+  
+  // Check actors (always blocked)
+  if (cell.items[GameLayers.ACTORS] !== undefined) {
+    return false;
+  }
+  
+  return true;
+}
+```
+
+**Note**: This allows phasing through walls but NOT through other actors. For full overlap capability, use layer transitions instead.
+
+---
+
 ## Future Considerations
 
 ### Advanced Features (Optional)
@@ -572,6 +956,7 @@ The semantic names make code self-documenting and prevent mistakes.
 
 ## Version History
 
+- **v1.1** (2026-01-25): Added floor blocking mechanics, clarified parallax, added limitations section, fixed `isBlocked` implementation
 - **v1.0** (2026-01-25): Initial specification with 8-layer architecture
 
 ---
@@ -584,5 +969,19 @@ The Spartan Framework's 8-layer architecture provides:
 - **Simplicity**: Fixed count reduces decision fatigue
 - **Power**: Sufficient for diverse game genres
 - **Learnability**: Semantic names are self-documenting
+
+**Known Limitations**:
+- No overhead/foreground elements (flat 2.5D only)
+- No actor stacking (single actor per cell)
+- Single collectible per cell (use container entities for multiple)
+- No parallax scrolling
+- All entities limited to 5 sprite states × 5 animation frames
+
+**Key Implementation Details**:
+- Check BOTH `values[]` AND `items[]` for blocking
+- Some floor types can block movement (pits, water)
+- EPHEMERALS layer handles both temporary effects and permanent decals
+- Entity sprite system provides 25 visual variations per entity type
+- Entity properties provide extension points for special abilities (ghosting, etc.)
 
 This specification should be treated as the authoritative reference for all Spartan Framework implementations and game creator tools.
