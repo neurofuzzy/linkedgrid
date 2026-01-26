@@ -27,11 +27,7 @@ export function isBlocked(
 ): boolean {
     if (!cell) return true;
 
-    if (emptyFloorsBlock && cell.values[GameLayers.FLOOR] === undefined) {
-        return true;
-    }
-
-    if (cell.values[GameLayers.WALLS] !== undefined) {
+    if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
         return true;
     }
 
@@ -51,8 +47,7 @@ export function isBlocked(
  */
 export function blocksVision(cell: LinkedCell | null): boolean {
     if (!cell) return true;
-    return cell.values[GameLayers.WALLS] !== undefined ||
-        cell.getValue(GameLayers.WALLS) !== undefined;
+    return cell.getValue(GameLayers.WALLS) !== undefined;
 }
 
 /**
