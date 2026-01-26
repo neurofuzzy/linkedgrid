@@ -18,7 +18,7 @@ interface Props {
   snapshot: Snapshot | null;
 }
 
-export function AssertionPanel({ 
+export function InfoPanel({ 
   currentIndex,
   totalSnapshots,
   isPlaying,

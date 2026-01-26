@@ -27,18 +27,14 @@ export function usePlayback(
   
   const isAtEnd = state.currentIndex >= snapshots.length - 1;
   
-  // Reset to beginning when snapshots change
-  useEffect(() => {
-    setState({ type: 'paused', currentIndex: 0 });
-  }, [snapshots]);
-  
-  // Auto-start playing when autoPlay is true and we have snapshots
-  // Only triggers on snapshots change or autoPlay change, not on state changes
+  // Reset and auto-play when snapshots change
   useEffect(() => {
     if (autoPlay && snapshots.length > 1) {
       setState({ type: 'playing', currentIndex: 0 });
+    } else {
+      setState({ type: 'paused', currentIndex: 0 });
     }
-  }, [autoPlay, snapshots]);
+  }, [snapshots, autoPlay]);
   
   // Call onComplete when playback reaches the end
   useEffect(() => {

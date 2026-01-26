@@ -4,7 +4,7 @@ import Spinner from 'ink-spinner';
 import { useInput } from 'ink';
 import { TestSidebar } from './TestSidebar.js';
 import { GridRenderer } from './GridRenderer.js';
-import { AssertionPanel } from './AssertionPanel.js';
+import { InfoPanel } from './InfoPanel.js';
 import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
 import { usePlayback } from '../hooks/usePlayback.js';
@@ -183,19 +183,11 @@ export function App() {
     } else if (key.escape) {
       // Go back to test selection (useEffect will clear screen)
       setState({ type: 'selecting' });
-    } else if (state.type !== 'selecting' && key.upArrow) {
-      // Navigate to previous test
-      let newIndex = state.testIndex;
-      if (newIndex > 0) {
-        newIndex = newIndex - 1;
-        const test = flatTests[newIndex];
-        handleSelectTest(test.file, test.testName, newIndex);
-      }
-    } else if (state.type !== 'selecting' && key.downArrow) {
-      // Navigate to next test
-      let newIndex = state.testIndex;
-      if (newIndex < flatTests.length - 1) {
-        newIndex = newIndex + 1;
+    } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
+      // Navigate between tests
+      const direction = key.upArrow ? -1 : 1;
+      const newIndex = state.testIndex + direction;
+      if (newIndex >= 0 && newIndex < flatTests.length) {
         const test = flatTests[newIndex];
         handleSelectTest(test.file, test.testName, newIndex);
       }
@@ -213,17 +205,8 @@ export function App() {
       } else {
         stepForward();
       }
-    } else if (state.type !== 'selecting' && input === ' ') {
+    } else if (state.type !== 'selecting' && (input === ' ' || key.return)) {
       // Toggle play/pause or trigger action
-      if (state.type === 'loaded') {
-        handleStart();
-      } else if (state.type === 'completed') {
-        handleRestart();
-      } else {
-        togglePlayback();
-      }
-    } else if (state.type !== 'selecting' && key.return) {
-      // Start/restart or play
       if (state.type === 'loaded') {
         handleStart();
       } else if (state.type === 'completed') {
@@ -342,7 +325,7 @@ export function App() {
             <Box flexDirection="column" flexGrow={1}>
               <Box>
                 <GridRenderer snapshot={snapshot} />
-                <AssertionPanel 
+                <InfoPanel 
                   currentIndex={currentIndex}
                   totalSnapshots={snapshots.length}
                   isPlaying={isPlaying}
