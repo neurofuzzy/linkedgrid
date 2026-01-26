@@ -39,10 +39,21 @@ visual('Multi-layer occupancy - multiple entities in same cell', {
         });
         
         expect('Each entity has correct type', () => {
-            const bg = spatial.getEntityData(cell?.getValue(GameLayers.BACKGROUND)!);
-            const floor = spatial.getEntityData(cell?.getValue(GameLayers.FLOOR)!);
-            const item = spatial.getEntityData(cell?.getValue(GameLayers.COLLECTIBLES)!);
-            const actor = spatial.getEntityData(cell?.getValue(GameLayers.ACTORS)!);
+            if (!cell) throw new Error('Cell not found');
+            
+            const bgId = cell.getValue(GameLayers.BACKGROUND);
+            const floorId = cell.getValue(GameLayers.FLOOR);
+            const itemId = cell.getValue(GameLayers.COLLECTIBLES);
+            const actorId = cell.getValue(GameLayers.ACTORS);
+            
+            if (!bgId || !floorId || !itemId || !actorId) {
+                throw new Error('Missing entity ID on expected layer');
+            }
+            
+            const bg = spatial.getEntityData(bgId);
+            const floor = spatial.getEntityData(floorId);
+            const item = spatial.getEntityData(itemId);
+            const actor = spatial.getEntityData(actorId);
             
             if (bg?.type !== 'background' || floor?.type !== 'floor' || 
                 item?.type !== 'collectible' || actor?.type !== 'player') {
