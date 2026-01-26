@@ -29,6 +29,7 @@ export default defineConfig(({ command: _command, mode }) => {
         server: {
             host: '0.0.0.0', // Allow access from all network interfaces (including geoff.local)
             port: 5183,
+            open: '/dev/visual-runner.html', // Auto-open visual test runner
         },
         build: {
             lib: {

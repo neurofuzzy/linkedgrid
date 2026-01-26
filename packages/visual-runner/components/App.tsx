@@ -1,0 +1,340 @@
+import React, { useState, useEffect } from 'react';
+import { Box, Text, useStdout } from 'ink';
+import Spinner from 'ink-spinner';
+import { useInput } from 'ink';
+import { TestSidebar } from './TestSidebar.js';
+import { GridRenderer } from './GridRenderer.js';
+import { PlaybackControls } from './PlaybackControls.js';
+import { InfoBar } from './InfoBar.js';
+import { AssertionPanel } from './AssertionPanel.js';
+import { discoverTests, type TestFile } from '../lib/test-discovery.js';
+import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
+import { usePlayback } from '../hooks/usePlayback.js';
+
+// Discriminated union - makes invalid states impossible
+type TestRunnerState = 
+  | { type: 'selecting' }
+  | { 
+      type: 'loaded';
+      testName: string;
+      testIndex: number;
+      snapshot: Snapshot;
+      definition: VisualTestDefinition;
+      executor: TestExecutor;
+    }
+  | { 
+      type: 'running';
+      testName: string;
+      testIndex: number;
+      snapshots: Snapshot[];
+      definition: VisualTestDefinition;
+      executor: TestExecutor;
+      result: TestResult;  // Store result while playing
+    }
+  | { 
+      type: 'completed';
+      testName: string;
+      testIndex: number;
+      snapshots: Snapshot[];
+      result: TestResult;
+      definition: VisualTestDefinition;
+    };
+
+export function App() {
+  const [tests, setTests] = useState<TestFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<TestRunnerState>({ type: 'selecting' });
+  const [showSidebar, setShowSidebar] = useState(false); // Only used within test view
+  
+  const handleStart = async () => {
+    if (state.type !== 'loaded') return; // Type guard!
+    
+    const { definition, executor, snapshot, testName, testIndex } = state;
+    
+    try {
+      // Run act & assert phases
+      const result = await executor.executeActAssert(definition);
+      
+      // If act phase is empty, stay in loaded state (nothing to animate)
+      if (result.snapshots.length === 0) {
+        // Test completed successfully with no actions to animate
+        setState({
+          type: 'completed',
+          testName,
+          testIndex,
+          snapshots: [snapshot], // Just the arrange snapshot
+          result: { ...result, snapshots: [snapshot] },
+          definition
+        });
+        return;
+      }
+      
+      // Prepend arrange snapshot to results
+      const allSnapshots = [snapshot, ...result.snapshots];
+      
+      // Transition to running state with result stored (triggers auto-play)
+      setState({
+        type: 'running',
+        testName,
+        testIndex,
+        snapshots: allSnapshots,
+        definition,
+        executor,
+        result  // Store result for when playback completes
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  
+  const handleComplete = () => {
+    if (state.type !== 'running') return; // Type guard!
+    
+    const { snapshots, testName, testIndex, definition, result } = state;
+    
+    setState({
+      type: 'completed',
+      testName,
+      testIndex,
+      snapshots,
+      result,
+      definition
+    });
+  };
+  
+  const handleRestart = async () => {
+    if (state.type !== 'completed') return; // Type guard!
+    
+    const { definition, testName, testIndex, snapshots: currentSnapshots } = state;
+    
+    // Keep showing the last frame while we restart
+    try {
+      // Create fresh executor and re-run arrange
+      const executor = new TestExecutor();
+      const snapshot = await executor.executeArrange(definition);
+      
+      // Transition directly to loaded state (no intermediate state change)
+      setState({
+        type: 'loaded',
+        testName,
+        testIndex,
+        snapshot,
+        definition,
+        executor
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  
+  // Derive props from state
+  const snapshots = state.type === 'running' || state.type === 'completed' 
+    ? state.snapshots 
+    : state.type === 'loaded' 
+    ? [state.snapshot] 
+    : [];
+
+  const { currentIndex, isPlaying, snapshot } = usePlayback(
+    snapshots,
+    state.type === 'loaded' ? handleStart : 
+    state.type === 'completed' ? handleRestart : 
+    undefined,
+    state.type === 'running',  // Auto-play when running
+    state.type === 'running' ? () => handleComplete() : undefined
+  );
+  const { write } = useStdout();
+  
+  // Flatten tests for navigation
+  const flatTests = tests.flatMap(testFile =>
+    testFile.tests.map(testName => ({
+      file: testFile.file,
+      testName
+    }))
+  );
+  
+  // Clear terminal on mount
+  useEffect(() => {
+    write('\x1Bc'); // Clear entire screen and scrollback
+  }, []);
+  
+  // Load tests on mount
+  useEffect(() => {
+    discoverTests()
+      .then(setTests)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+  
+  // Clear screen when returning to selection
+  useEffect(() => {
+    if (state.type === 'selecting') {
+      write('\x1Bc');
+    }
+  }, [state.type, write]);
+  
+  // Keyboard controls
+  useInput((input, key) => {
+    if (input === 's') {
+      setShowSidebar(prev => !prev);
+    } else if (input === 'q') {
+      process.exit(0);
+    } else if (key.escape) {
+      // Go back to test selection (useEffect will clear screen)
+      setState({ type: 'selecting' });
+    } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
+      // Navigate between tests when viewing a test
+      let newIndex = state.testIndex;
+      if (key.upArrow && newIndex > 0) {
+        newIndex = newIndex - 1;
+      } else if (key.downArrow && newIndex < flatTests.length - 1) {
+        newIndex = newIndex + 1;
+      }
+      
+      if (newIndex !== state.testIndex) {
+        const test = flatTests[newIndex];
+        handleSelectTest(test.file, test.testName, newIndex);
+      }
+    }
+  });
+  
+  // Handle test selection - load and execute arrange phase
+  const handleSelectTest = async (file: string, testName: string, index: number) => {
+    setShowSidebar(false);
+    
+    try {
+      const modulePath = `../../${file}`;
+      await import(modulePath);
+      
+      const testRegistry = (globalThis as any).visualTests || [];
+      const testEntry = testRegistry.find((t: any) => t.name === testName);
+      
+      if (!testEntry) {
+        throw new Error(`Test "${testName}" not found in registry`);
+      }
+      
+      const definition = testEntry.definition;
+      const executor = new TestExecutor();
+      
+      // Execute arrange phase
+      const snapshot = await executor.executeArrange(definition);
+      
+      // Transition to loaded state
+      setState({
+        type: 'loaded',
+        testName,
+        testIndex: index,
+        snapshot,
+        definition,
+        executor
+      });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  
+  // Render status indicator
+  const renderStatus = () => {
+    switch (state.type) {
+      case 'selecting':
+        return null;
+      case 'loaded':
+        return <Text dimColor> [IDLE - press enter to start]</Text>;
+      case 'running':
+        return <Text color="blue"> [⟳ RUNNING]</Text>;
+      case 'completed':
+        return (
+          <Text color={state.result.passed ? 'green' : 'red'}>
+            {' '}[{state.result.passed ? '✓ PASS' : '✗ FAIL'}]
+          </Text>
+        );
+    }
+  };
+  
+  if (loading) {
+    return (
+      <Box>
+        <Text color="cyan">
+          <Spinner type="dots" />
+        </Text>
+        <Text> Loading tests...</Text>
+      </Box>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Box flexDirection="column">
+        <Text color="red">Error: {error}</Text>
+        <Text dimColor>Press q to quit</Text>
+      </Box>
+    );
+  }
+  
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Box marginBottom={1}>
+        <Text bold>LinkedGrid Visual Test Runner</Text>
+        {state.type !== 'selecting' && (
+          <>
+            <Text dimColor> - {state.testName} ({state.testIndex + 1}/{flatTests.length})</Text>
+            {renderStatus()}
+          </>
+        )}
+      </Box>
+      
+      <Box>
+        {state.type === 'selecting' ? (
+          // Show test selection sidebar
+          <TestSidebar tests={tests} onSelect={handleSelectTest} />
+        ) : (
+          // Show test runner interface
+          <>
+            {showSidebar && (
+              <Box marginRight={1} width="40%">
+                <TestSidebar tests={tests} onSelect={handleSelectTest} />
+              </Box>
+            )}
+            
+            <Box flexDirection="column" flexGrow={1}>
+              <Box>
+                <GridRenderer snapshot={snapshot} />
+                {state.type === 'completed' && (
+                  <AssertionPanel assertions={state.result.assertions} />
+                )}
+              </Box>
+              <Box marginTop={1}>
+                <InfoBar snapshot={snapshot} />
+              </Box>
+              {state.type === 'completed' && !state.result.passed && (
+                <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
+                  <Text color="red" bold>Test Failed: </Text>
+                  <Text color="red">{state.result.error}</Text>
+                </Box>
+              )}
+              <Box marginTop={1}>
+                <PlaybackControls
+                  currentIndex={currentIndex}
+                  totalSnapshots={snapshots.length}
+                  isPlaying={isPlaying}
+                  interval={500}
+                />
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>
+                  [esc] menu | [↑↓] switch test | {
+                    state.type === 'loaded' 
+                      ? '[enter/space] start test' 
+                      : state.type === 'completed'
+                      ? '[enter/space] restart'
+                      : '[enter] play | [space] play/pause | [←→] step'
+                  } | [r] restart | [q] quit
+                </Text>
+              </Box>
+            </Box>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}
