@@ -18,7 +18,7 @@ export function TestSidebar({ tests, onSelect }: Props) {
   );
   
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" padding={1}>
+    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={2} paddingY={1}>
       <Text bold color="cyan">Visual Tests</Text>
       <Box marginTop={1}>
         <SelectInput

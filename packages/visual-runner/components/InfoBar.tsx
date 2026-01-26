@@ -21,7 +21,7 @@ export function InfoBar({ snapshot }: Props) {
     : '';
   
   return (
-    <Box borderStyle="single" padding={1}>
+    <Box borderStyle="single" paddingX={2} paddingY={1}>
       <Text>
         {chalk.yellow(snapshot.operation)}
         {argsStr && chalk.dim(`(${argsStr})`)}

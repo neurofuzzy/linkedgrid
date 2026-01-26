@@ -25,10 +25,17 @@ export function GridRenderer({ snapshot }: Props) {
   for (let y = 0; y < grid.h; y++) {
     let line = '';
     for (let x = 0; x < grid.w; x++) {
-      const entity = snapshot?.entities.find(e => e.x === x && e.y === y);
-      if (entity) {
-        const char = entity.type[0].toUpperCase();
-        const colorFn = ENTITY_COLORS[entity.type] || chalk.white;
+      // Get all entities at this position
+      const entitiesHere = snapshot?.entities.filter(e => e.x === x && e.y === y) || [];
+      
+      if (entitiesHere.length > 0) {
+        // Show entity on highest layer (Rule 8: higher layer indexes are "on top")
+        const topEntity = entitiesHere.reduce((highest, current) => 
+          current.layer > highest.layer ? current : highest
+        );
+        
+        const char = topEntity.type[0].toUpperCase();
+        const colorFn = ENTITY_COLORS[topEntity.type] || chalk.white;
         line += colorFn(char) + ' ';
       } else {
         line += chalk.dim('·') + ' ';
@@ -38,7 +45,7 @@ export function GridRenderer({ snapshot }: Props) {
   }
   
   return (
-    <Box flexDirection="column" borderStyle="single" padding={1}>
+    <Box flexDirection="column" borderStyle="single" paddingX={2} paddingY={1} width={grid.w * 2 + 6}>
       {lines.map((line, i) => (
         <Text key={i}>{line}</Text>
       ))}

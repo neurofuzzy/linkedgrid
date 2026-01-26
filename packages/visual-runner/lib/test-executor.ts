@@ -11,6 +11,7 @@ export interface Snapshot {
     type: string;
     x: number;
     y: number;
+    layer: number;
   }>;
   grid: { w: number; h: number };
 }
@@ -39,6 +40,7 @@ export class TestExecutor {
   private store!: SparseEntityStore;
   private spatial!: SpatialSystem;
   private wrappedSpatial!: SpatialSystem;
+  private captureEnabled = true; // Control whether proxy captures snapshots
   
   /**
    * Execute arrange phase only - sets up initial state
@@ -58,12 +60,18 @@ export class TestExecutor {
       store: this.store 
     };
     
+    // Disable snapshot capture during arrange - we only want the final state
+    this.captureEnabled = false;
+    
     // Run arrange phase if present
     if (definition.arrange) {
       await definition.arrange(ctx);
     }
     
-    // Capture initial state
+    // Re-enable capture
+    this.captureEnabled = true;
+    
+    // Capture initial state AFTER all arrange operations complete
     this.captureSnapshot(this.spatial, 'initial', [], null);
     
     return this.snapshots[0];
@@ -114,7 +122,8 @@ export class TestExecutor {
         return (...args: unknown[]) => {
           const result = target[prop].apply(target, args);
           
-          if (['spawn', 'move', 'remove'].includes(prop as string)) {
+          // Only capture if enabled (disabled during arrange phase)
+          if (this.captureEnabled && ['spawn', 'move', 'remove'].includes(prop as string)) {
             this.captureSnapshot(target, prop as string, args, result);
           }
           
@@ -135,13 +144,18 @@ export class TestExecutor {
     
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
-        const ids = spatial.getEntityIdsInCell(x, y);
-        ids.forEach(id => {
-          const data = spatial.getEntityData(id);
-          if (data) {
-            entities.push({ id, type: data.type, x, y });
-          }
-        });
+        const cell = grid.cell(x, y);
+        if (cell) {
+          // Iterate through all layers in the cell
+          cell.items.forEach((entityId: number | undefined, layer: number) => {
+            if (entityId !== undefined) {
+              const data = spatial.getEntityData(entityId);
+              if (data) {
+                entities.push({ id: entityId, type: data.type, x, y, layer });
+              }
+            }
+          });
+        }
       }
     }
     

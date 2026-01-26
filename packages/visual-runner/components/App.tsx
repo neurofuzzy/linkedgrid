@@ -44,7 +44,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<TestRunnerState>({ type: 'selecting' });
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false); // Only used within test view
   
   const handleStart = async () => {
     if (state.type !== 'loaded') return; // Type guard!
@@ -172,10 +172,9 @@ export function App() {
     } else if (input === 'q') {
       process.exit(0);
     } else if (key.escape || (key as any).home) {
-      // Go back to test selection (home key might not be in Key type)
+      // Go back to test selection
       setState({ type: 'selecting' });
-      setShowSidebar(true);
-    } else if (!showSidebar && state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
+    } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
       // Navigate between tests when viewing a test
       let newIndex = state.testIndex;
       if (key.upArrow && newIndex > 0) {
@@ -193,7 +192,6 @@ export function App() {
   
   // Handle test selection - load and execute arrange phase
   const handleSelectTest = async (file: string, testName: string, index: number) => {
-    setState({ type: 'selecting' }); // Clear previous state
     setShowSidebar(false);
     
     try {
@@ -269,7 +267,7 @@ export function App() {
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1}>
         <Text bold>LinkedGrid Visual Test Runner</Text>
-        {state.type !== 'selecting' && !showSidebar && (
+        {state.type !== 'selecting' && (
           <>
             <Text dimColor> - {state.testName} ({state.testIndex + 1}/{flatTests.length})</Text>
             {renderStatus()}
@@ -278,45 +276,51 @@ export function App() {
       </Box>
       
       <Box>
-        {showSidebar && (
-          <Box marginRight={1} width="40%">
-            <TestSidebar tests={tests} onSelect={handleSelectTest} />
-          </Box>
+        {state.type === 'selecting' ? (
+          // Show test selection sidebar
+          <TestSidebar tests={tests} onSelect={handleSelectTest} />
+        ) : (
+          // Show test runner interface
+          <>
+            {showSidebar && (
+              <Box marginRight={1} width="40%">
+                <TestSidebar tests={tests} onSelect={handleSelectTest} />
+              </Box>
+            )}
+            
+            <Box flexDirection="column" flexGrow={1}>
+              <GridRenderer snapshot={snapshot} />
+              <Box marginTop={1}>
+                <InfoBar snapshot={snapshot} />
+              </Box>
+              {state.type === 'completed' && !state.result.passed && (
+                <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
+                  <Text color="red" bold>Test Failed: </Text>
+                  <Text color="red">{state.result.error}</Text>
+                </Box>
+              )}
+              <Box marginTop={1}>
+                <PlaybackControls
+                  currentIndex={currentIndex}
+                  totalSnapshots={snapshots.length}
+                  isPlaying={isPlaying}
+                  interval={500}
+                />
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>
+                  [home] menu | [↑↓] switch test | {
+                    state.type === 'loaded' 
+                      ? '[enter/space] start test' 
+                      : state.type === 'completed'
+                      ? '[enter/space] restart'
+                      : '[enter] play | [space] play/pause | [←→] step'
+                  } | [r] restart | [q] quit
+                </Text>
+              </Box>
+            </Box>
+          </>
         )}
-        
-        <Box flexDirection="column" flexGrow={1}>
-          <GridRenderer snapshot={snapshot} />
-          <Box marginTop={1}>
-            <InfoBar snapshot={snapshot} />
-          </Box>
-          {state.type === 'completed' && !state.result.passed && (
-            <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
-              <Text color="red" bold>Test Failed: </Text>
-              <Text color="red">{state.result.error}</Text>
-            </Box>
-          )}
-          <Box marginTop={1}>
-            <PlaybackControls
-              currentIndex={currentIndex}
-              totalSnapshots={snapshots.length}
-              isPlaying={isPlaying}
-              interval={500}
-            />
-          </Box>
-          {!showSidebar && (
-            <Box marginTop={1}>
-              <Text dimColor>
-                [home] menu | [↑↓] switch test | {
-                  state.type === 'loaded' 
-                    ? '[enter/space] start test' 
-                    : state.type === 'completed'
-                    ? '[enter/space] restart'
-                    : '[enter] play | [space] play/pause | [←→] step'
-                } | [r] restart | [q] quit
-              </Text>
-            </Box>
-          )}
-        </Box>
       </Box>
     </Box>
   );

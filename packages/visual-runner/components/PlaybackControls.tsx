@@ -16,8 +16,8 @@ export function PlaybackControls({
   interval
 }: Props) {
   return (
-    <Box borderStyle="single" padding={1}>
-      <Box marginRight={2}>
+    <Box borderStyle="single" paddingX={2} paddingY={1}>
+      <Box marginRight={2}> 
         <Text>
           {isPlaying ? chalk.green('▶ Playing') : chalk.gray('⏸ Paused')}
         </Text>
@@ -29,7 +29,7 @@ export function PlaybackControls({
       </Box>
       <Box>
         <Text dimColor>
-          {interval}ms interval | [enter] play | [space] play/pause | [→] step | [q] quit
+          {interval}ms interval | [enter] play | [space] play/pause | [→] step
         </Text>
       </Box>
     </Box>
