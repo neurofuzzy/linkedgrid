@@ -10,7 +10,9 @@ visual('AAA: entity movement', {
     act: ({ spatial }) => {
         // Action: Move player toward enemy
         spatial.move(5, 5, 6, 5, 1);
+        spatial.commit();
         spatial.move(6, 5, 7, 5, 1);
+        spatial.commit();
     },
     assert: ({ spatial, expect }) => {
         expect('Player moved to (7, 5)', () => {
@@ -46,6 +48,7 @@ visual('AAA: collision detection (FAIL)', {
     act: ({ spatial }) => {
         // Try to move into wall (this will fail because layer is occupied)
         spatial.move(5, 5, 6, 5, 1);
+        spatial.commit();
     },
     assert: ({ spatial, expect }) => {
         expect('Player blocked by wall', () => {
@@ -77,6 +80,7 @@ visual('AAA: collision detection (FAIL)', {
 visual('simple movement test', ({ spatial, expect }) => {
     spatial.spawn('player', 5, 5, 1);
     spatial.move(5, 5, 6, 5, 1);
+    spatial.commit();
     
     if (expect) {
         expect('Player at (6, 5)', () => {

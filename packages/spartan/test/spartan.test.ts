@@ -188,9 +188,8 @@ describe('SpatialSystem', () => {
     describe('move', () => {
         it('moves entity to new cell', () => {
             const id = spatial.spawn('player', 5, 5, 1);
-            const moved = spatial.move(5, 5, 6, 5, 1);
-
-            expect(moved).toBe(true);
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
             
             const oldCell = grid.cell(5, 5);
             const newCell = grid.cell(6, 5);
@@ -201,43 +200,90 @@ describe('SpatialSystem', () => {
         it('cleans up old cell (Rule 6)', () => {
             spatial.spawn('player', 5, 5, 1);
             spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
 
             const oldCell = grid.cell(5, 5);
             expect(oldCell?.items[1]).toBeUndefined();
         });
 
-        it('returns false when destination is occupied (Rule 3)', () => {
-            spatial.spawn('player', 5, 5, 1);
+        it('does not move when destination is occupied (Rule 3)', () => {
+            const playerId = spatial.spawn('player', 5, 5, 1);
             spatial.spawn('enemy', 6, 5, 1);
 
-            const moved = spatial.move(5, 5, 6, 5, 1);
-            expect(moved).toBe(false);
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
 
             // Player should still be at original position
             const cell = grid.cell(5, 5);
-            expect(cell?.items[1]).toBeDefined();
+            expect(cell?.items[1]).toBe(playerId);
         });
 
-        it('returns false for invalid coordinates', () => {
-            spatial.spawn('player', 5, 5, 1);
-            const moved = spatial.move(5, 5, 100, 100, 1);
-            expect(moved).toBe(false);
+        it('does not move for invalid coordinates', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.move(5, 5, 100, 100, 1);
+            spatial.commit();
+            
+            // Player should still be at original position
+            const cell = grid.cell(5, 5);
+            expect(cell?.items[1]).toBe(id);
         });
 
-        it('returns false when no entity at source', () => {
-            const moved = spatial.move(5, 5, 6, 5, 1);
-            expect(moved).toBe(false);
+        it('does not move when no entity at source', () => {
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
+            
+            // Nothing should have happened
+            const cell = grid.cell(6, 5);
+            expect(cell?.items[1]).toBeUndefined();
         });
 
         it('can move multiple times', () => {
             spatial.spawn('player', 0, 0, 1);
             
-            expect(spatial.move(0, 0, 1, 0, 1)).toBe(true);
-            expect(spatial.move(1, 0, 2, 0, 1)).toBe(true);
-            expect(spatial.move(2, 0, 3, 0, 1)).toBe(true);
+            spatial.move(0, 0, 1, 0, 1);
+            spatial.commit();
+            spatial.move(1, 0, 2, 0, 1);
+            spatial.commit();
+            spatial.move(2, 0, 3, 0, 1);
+            spatial.commit();
 
             const cell = grid.cell(3, 0);
             expect(cell?.items[1]).toBeDefined();
+        });
+
+        it('allows adjacent entities to move in same direction (convoy)', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 6, 5, 1);
+            const id3 = spatial.spawn('unit', 7, 5, 1);
+
+            // All three units move right
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.move(6, 5, 7, 5, 1);
+            spatial.move(7, 5, 8, 5, 1);
+            spatial.commit();
+
+            // All should have moved successfully
+            expect(grid.cell(6, 5)?.items[1]).toBe(id1);
+            expect(grid.cell(7, 5)?.items[1]).toBe(id2);
+            expect(grid.cell(8, 5)?.items[1]).toBe(id3);
+            
+            // Old positions should be cleaned up
+            expect(grid.cell(5, 5)?.items[1]).toBeUndefined();
+        });
+
+        it('detects conflicts when two entities want same destination', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 5, 7, 1);
+
+            // Both try to move to (5, 6)
+            spatial.move(5, 5, 5, 6, 1);
+            spatial.move(5, 7, 5, 6, 1);
+            spatial.commit();
+
+            // Neither should have moved
+            expect(grid.cell(5, 5)?.items[1]).toBe(id1);
+            expect(grid.cell(5, 7)?.items[1]).toBe(id2);
+            expect(grid.cell(5, 6)?.items[1]).toBeUndefined();
         });
     });
 
@@ -384,6 +430,7 @@ describe('SpatialSystem', () => {
         it('Rule 1: Entities can only occupy one cell at a time', () => {
             const id = spatial.spawn('player', 5, 5, 1);
             spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
 
             // Entity should only be in new cell
             expect(grid.cell(5, 5)?.items[1]).toBeUndefined();
@@ -400,11 +447,14 @@ describe('SpatialSystem', () => {
         });
 
         it('Rule 3: Check destination before moving', () => {
-            spatial.spawn('player', 5, 5, 1);
+            const playerId = spatial.spawn('player', 5, 5, 1);
             spatial.spawn('wall', 6, 5, 1);
 
-            const moved = spatial.move(5, 5, 6, 5, 1);
-            expect(moved).toBe(false);
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
+            
+            // Move should not have happened
+            expect(grid.cell(5, 5)?.items[1]).toBe(playerId);
         });
 
         it('Rule 4: Multiple entities per cell on different layers', () => {
@@ -421,6 +471,7 @@ describe('SpatialSystem', () => {
         it('Rule 6: Clean up old cell on move', () => {
             spatial.spawn('player', 5, 5, 1);
             spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
 
             const oldCell = grid.cell(5, 5);
             expect(oldCell?.items[1]).toBeUndefined();

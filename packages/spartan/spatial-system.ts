@@ -17,6 +17,12 @@ import type { EntityData, Layer } from './types';
  * - Clean up old cell on move (Rule 6)
  * - Overlap detection, not collision (Rule 7)
  * 
+ * Movement system:
+ * - Uses two-phase commit for atomic movement resolution
+ * - Call move() to record movement intents
+ * - Call commit() to execute all pending moves
+ * - Allows adjacent entities to move together without blocking
+ * 
  * @example
  * ```typescript
  * const grid = new LinkedGrid(20, 20);
@@ -26,14 +32,39 @@ import type { EntityData, Layer } from './types';
  * // Spawn player at (10, 10) on layer 1
  * const playerId = spatial.spawn('player', 10, 10, 1, { hp: 100 });
  * 
- * // Move player right
- * const moved = spatial.move(10, 10, 11, 10, 1);
+ * // Record movement intent and execute
+ * spatial.move(10, 10, 11, 10, 1);
+ * spatial.commit();
  * 
  * // Query entities in radius
  * const nearby = spatial.getEntityIdsInRadius(11, 10, 3);
  * ```
+ * 
+ * @example
+ * ```typescript
+ * // Convoy movement - adjacent entities move together
+ * spatial.spawn('unit', 5, 5, 1);
+ * spatial.spawn('unit', 6, 5, 1);
+ * spatial.spawn('unit', 7, 5, 1);
+ * 
+ * // All units move right simultaneously
+ * spatial.move(5, 5, 6, 5, 1);
+ * spatial.move(6, 5, 7, 5, 1);
+ * spatial.move(7, 5, 8, 5, 1);
+ * spatial.commit(); // All three move successfully
+ * ```
  */
 export class SpatialSystem {
+    /** Pending movement intents to be resolved on commit */
+    private pendingMoves: Array<{
+        entityId: number;
+        fromX: number;
+        fromY: number;
+        toX: number;
+        toY: number;
+        layer: Layer;
+    }> = [];
+
     /**
      * Create a new SpatialSystem.
      * 
@@ -85,52 +116,171 @@ export class SpatialSystem {
     }
 
     /**
-     * Move an entity from one cell to another on the same layer.
+     * Record an intent to move an entity from one cell to another on the same layer.
      * 
-     * Validates destination is unoccupied, then atomically updates both cells.
+     * The move is not executed immediately - call commit() to resolve all pending
+     * movements atomically. This allows adjacent entities to move in the same
+     * direction without blocking each other.
      * 
      * @param fromX - Source X coordinate
      * @param fromY - Source Y coordinate
      * @param toX - Destination X coordinate
      * @param toY - Destination Y coordinate
      * @param layer - Layer the entity occupies
-     * @returns true if move succeeded, false if destination occupied or invalid
      * 
      * @example
      * ```typescript
-     * // Move entity right by one cell
-     * if (spatial.move(5, 5, 6, 5, 1)) {
-     *   console.log('Moved successfully');
-     * } else {
-     *   console.log('Move blocked');
-     * }
+     * // Record movement intents for a convoy
+     * spatial.move(5, 5, 6, 5, 1);
+     * spatial.move(6, 5, 7, 5, 1);
+     * spatial.move(7, 5, 8, 5, 1);
+     * 
+     * // Execute all moves atomically
+     * spatial.commit();
      * ```
      */
-    move(fromX: number, fromY: number, toX: number, toY: number, layer: Layer): boolean {
+    move(fromX: number, fromY: number, toX: number, toY: number, layer: Layer): void {
         const fromCell = this.grid.cell(fromX, fromY);
         const toCell = this.grid.cell(toX, toY);
 
+        // Validate coordinates are in bounds
         if (!fromCell || !toCell) {
-            return false; // Invalid coordinates
+            return; // Invalid coordinates - silently ignore
         }
 
         const entityId = fromCell.items[layer];
         if (entityId === undefined) {
-            return false; // No entity at source
+            return; // No entity at source - silently ignore
         }
 
-        // Rule 3: Check if destination is occupied
-        if (toCell.items[layer] !== undefined) {
-            return false; // Destination occupied
+        // Record the intent
+        this.pendingMoves.push({
+            entityId,
+            fromX,
+            fromY,
+            toX,
+            toY,
+            layer
+        });
+    }
+
+    /**
+     * Execute all pending movement intents using two-phase commit logic.
+     * 
+     * Phase 1 - Validation:
+     * - Build set of cells being vacated by moves
+     * - Check each move's destination is empty OR being vacated
+     * - Detect conflicts (two entities want same destination)
+     * 
+     * Phase 2 - Execution:
+     * - Apply all valid moves atomically
+     * - Clear pending moves array
+     * 
+     * This allows convoys of adjacent entities to move together without
+     * order-dependent blocking.
+     * 
+     * @example
+     * ```typescript
+     * // Move a convoy of units right
+     * spatial.move(5, 5, 6, 5, 1);
+     * spatial.move(6, 5, 7, 5, 1);
+     * spatial.move(7, 5, 8, 5, 1);
+     * spatial.commit(); // All three move successfully
+     * ```
+     */
+    commit(): void {
+        if (this.pendingMoves.length === 0) {
+            return;
         }
 
-        // Atomic move
-        toCell.items[layer] = entityId;
-        
-        // Rule 6: Clean up old cell
-        fromCell.items[layer] = undefined;
+        // Phase 1: Validation
+        const sources = new Set<string>();
+        const destinations = new Map<string, number[]>(); // Map destination to list of entity indices trying to move there
+        const validMoves: boolean[] = [];
 
-        return true;
+        // Build set of cells being vacated
+        for (const move of this.pendingMoves) {
+            const key = `${move.fromX},${move.fromY},${move.layer}`;
+            sources.add(key);
+        }
+
+        // Collect all destination requests
+        for (let i = 0; i < this.pendingMoves.length; i++) {
+            const move = this.pendingMoves[i];
+            const destKey = `${move.toX},${move.toY},${move.layer}`;
+            
+            if (!destinations.has(destKey)) {
+                destinations.set(destKey, []);
+            }
+            destinations.get(destKey)!.push(i);
+        }
+
+        // Validate each move
+        for (let i = 0; i < this.pendingMoves.length; i++) {
+            const move = this.pendingMoves[i];
+            const destKey = `${move.toX},${move.toY},${move.layer}`;
+            const toCell = this.grid.cell(move.toX, move.toY);
+
+            if (!toCell) {
+                validMoves.push(false);
+                continue;
+            }
+
+            // Check if destination is occupied
+            const isOccupied = toCell.items[move.layer] !== undefined;
+            const isBeingVacated = sources.has(destKey);
+            
+            // Check for conflicts (multiple entities want same destination)
+            const requestsForThisDest = destinations.get(destKey) || [];
+            const hasConflict = requestsForThisDest.length > 1;
+
+            if (hasConflict || (isOccupied && !isBeingVacated)) {
+                validMoves.push(false);
+            } else {
+                validMoves.push(true);
+            }
+        }
+
+        // Phase 2: Execution
+        // First, clear all source cells for VALID moves
+        for (let i = 0; i < this.pendingMoves.length; i++) {
+            if (validMoves[i]) {
+                const move = this.pendingMoves[i];
+                const fromCell = this.grid.cell(move.fromX, move.fromY);
+                if (fromCell) {
+                    fromCell.items[move.layer] = undefined;
+                }
+            }
+        }
+
+        // Then, write all entities to their destinations for VALID moves
+        for (let i = 0; i < this.pendingMoves.length; i++) {
+            if (validMoves[i]) {
+                const move = this.pendingMoves[i];
+                const toCell = this.grid.cell(move.toX, move.toY);
+                if (toCell) {
+                    toCell.items[move.layer] = move.entityId;
+                }
+            }
+        }
+
+        // Clear pending moves
+        this.pendingMoves = [];
+    }
+
+    /**
+     * Clear all pending movement intents without executing them.
+     * 
+     * Useful for canceling movements or resetting state in tests.
+     * 
+     * @example
+     * ```typescript
+     * spatial.move(5, 5, 6, 5, 1);
+     * spatial.clearIntents(); // Movement is canceled
+     * ```
+     */
+    clearIntents(): void {
+        this.pendingMoves = [];
     }
 
     /**
