@@ -166,14 +166,21 @@ export function App() {
       .finally(() => setLoading(false));
   }, []);
   
+  // Clear screen when returning to selection
+  useEffect(() => {
+    if (state.type === 'selecting') {
+      write('\x1Bc');
+    }
+  }, [state.type, write]);
+  
   // Keyboard controls
   useInput((input, key) => {
     if (input === 's') {
       setShowSidebar(prev => !prev);
     } else if (input === 'q') {
       process.exit(0);
-    } else if (key.escape || (key as any).home) {
-      // Go back to test selection
+    } else if (key.escape) {
+      // Go back to test selection (useEffect will clear screen)
       setState({ type: 'selecting' });
     } else if (state.type !== 'selecting' && (key.upArrow || key.downArrow)) {
       // Navigate between tests when viewing a test
@@ -315,7 +322,7 @@ export function App() {
               </Box>
               <Box marginTop={1}>
                 <Text dimColor>
-                  [home] menu | [↑↓] switch test | {
+                  [esc] menu | [↑↓] switch test | {
                     state.type === 'loaded' 
                       ? '[enter/space] start test' 
                       : state.type === 'completed'
