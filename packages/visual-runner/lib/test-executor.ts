@@ -90,6 +90,9 @@ export class TestExecutor {
       await definition.arrange(this.context);
     }
     
+    // If game/scene was set up, update ctx.spatial to be a smart delegate
+    this.setupSceneSpatialDelegate(this.context);
+    
     // Wrap GameManager if present after arrange (when it's been assigned)
     this.setupGameManagerWrapping(this.context);
     
@@ -97,7 +100,8 @@ export class TestExecutor {
     this.captureEnabled = true;
     
     // Capture initial state AFTER all arrange operations complete
-    this.captureSnapshot(this.spatial, 'initial', [], null);
+    const spatialForSnapshot = this.getActiveSpatial(this.context);
+    this.captureSnapshot(spatialForSnapshot, 'initial', [], null);
     
     return this.snapshots[0];
   }
@@ -246,6 +250,65 @@ export class TestExecutor {
       sceneId,
       sceneName
     });
+  }
+  
+  private getActiveSpatial(ctx: VisualTestContext): SpatialSystem {
+    // If there's a game manager, use the active scene's spatial
+    if (ctx.game) {
+      const activeScene = ctx.game.sceneManager?.getActiveScene();
+      if (activeScene) {
+        return activeScene.spatial;
+      }
+    }
+    
+    // If there's a single scene, use its spatial
+    if (ctx.scene) {
+      return ctx.scene.spatial;
+    }
+    
+    // Otherwise use the default spatial
+    return this.spatial;
+  }
+  
+  private setupSceneSpatialDelegate(ctx: VisualTestContext): void {
+    // If game or scene is present, replace ctx.spatial with a smart delegate
+    if (ctx.game || ctx.scene) {
+      const self = this;
+      
+      // Create a proxy that delegates all calls to the active scene's spatial
+      ctx.spatial = new Proxy({} as SpatialSystem, {
+        get(_, prop) {
+          const activeSpatial = self.getActiveSpatial(ctx);
+          const value = activeSpatial[prop as keyof SpatialSystem];
+          
+          // If it's a function, bind it and potentially wrap it for snapshot capture
+          if (typeof value === 'function') {
+            const boundMethod = value.bind(activeSpatial);
+            
+            return (...args: unknown[]) => {
+              const result = boundMethod(...args);
+              
+              const handleResult = (res: unknown) => {
+                // Capture snapshots for key operations
+                if (self.captureEnabled && ['spawn', 'move', 'remove', 'commit'].includes(prop as string)) {
+                  self.captureSnapshot(activeSpatial, prop as string, args, res);
+                }
+                return res;
+              };
+              
+              // Handle async methods
+              if (result instanceof Promise) {
+                return result.then(handleResult);
+              }
+              
+              return handleResult(result);
+            };
+          }
+          
+          return value;
+        }
+      });
+    }
   }
   
   private setupGameManagerWrapping(ctx: VisualTestContext): void {

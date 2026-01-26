@@ -31,26 +31,24 @@ visual('player teleports between rooms', {
       throw new Error('Game manager not found in context - arrange phase may have failed');
     }
     
-    // Walk in room1
-    const scene1 = game.sceneManager.getActiveScene();
-    scene1!.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
-    scene1!.spatial.commit();
+    // Walk in room1 (ctx.spatial delegates to active scene)
+    ctx.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
     // Walk again
-    scene1!.spatial.move(5, 6, 5, 7, GameLayers.ACTORS);
-    scene1!.spatial.commit();
+    ctx.spatial.move(5, 6, 5, 7, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
-    // Teleport to room2
+    // Teleport to room2 (this captures a snapshot automatically)
     game.movePlayerToScene('room2', 3, 3, GameLayers.ACTORS);
     
-    // Walk in room2
-    const scene2 = game.sceneManager.getActiveScene();
-    scene2!.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
-    scene2!.spatial.commit();
+    // Walk in room2 (ctx.spatial now delegates to room2's spatial)
+    ctx.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
     // Walk toward treasure
-    scene2!.spatial.move(4, 3, 5, 3, GameLayers.ACTORS);
-    scene2!.spatial.commit();
+    ctx.spatial.move(4, 3, 5, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
   }
 });
 
@@ -91,34 +89,31 @@ visual('multi-scene world with connections', {
       throw new Error('Game manager not found in context - arrange phase may have failed');
     }
     
-    // Move through entrance
-    const entrance = game.sceneManager.getScene('entrance');
-    entrance!.spatial.move(4, 4, 4, 5, GameLayers.ACTORS);
-    entrance!.spatial.commit();
+    // Move through entrance (ctx.spatial delegates to active scene)
+    ctx.spatial.move(4, 4, 4, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
-    entrance!.spatial.move(4, 5, 4, 6, GameLayers.ACTORS);
-    entrance!.spatial.commit();
+    ctx.spatial.move(4, 5, 4, 6, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
     // Teleport to hallway via connection
     const hallwayEntry = game.gameState.getConnections('entrance-to-hallway')[0];
     game.movePlayerToScene(hallwayEntry.sceneId, hallwayEntry.x, hallwayEntry.y, hallwayEntry.layer);
     
-    // Walk through hallway
-    const hallway = game.sceneManager.getActiveScene();
-    hallway!.spatial.move(0, 3, 1, 3, GameLayers.ACTORS);
-    hallway!.spatial.commit();
+    // Walk through hallway (ctx.spatial now delegates to hallway scene)
+    ctx.spatial.move(0, 3, 1, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
-    hallway!.spatial.move(1, 3, 2, 3, GameLayers.ACTORS);
-    hallway!.spatial.commit();
+    ctx.spatial.move(1, 3, 2, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
     // Teleport to boss chamber
     const bossEntry = game.gameState.getConnections('hallway-to-boss')[0];
     game.movePlayerToScene(bossEntry.sceneId, bossEntry.x, bossEntry.y, bossEntry.layer);
     
-    // Approach boss
-    const bossRoom = game.sceneManager.getActiveScene();
-    bossRoom!.spatial.move(6, 0, 6, 1, GameLayers.ACTORS);
-    bossRoom!.spatial.commit();
+    // Approach boss (ctx.spatial now delegates to boss chamber)
+    ctx.spatial.move(6, 0, 6, 1, GameLayers.ACTORS);
+    ctx.spatial.commit();
   }
 });
 
@@ -146,14 +141,13 @@ visual('scene with metadata and player tracking', {
     if (!game) {
       throw new Error('Game manager not found in context - arrange phase may have failed');
     }
-    const scene = game.sceneManager.getActiveScene();
     
-    // Player moves
-    scene!.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
-    scene!.spatial.commit();
+    // Player moves (ctx.spatial delegates to active scene)
+    ctx.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
     
-    scene!.spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
-    scene!.spatial.commit();
+    ctx.spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
   },
   assert: (ctx) => {
     const game = ctx.game;
