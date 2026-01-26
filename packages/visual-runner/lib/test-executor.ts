@@ -36,6 +36,7 @@ export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
   store: SparseEntityStore;
+  expect?: (description: string, fn: () => void) => void;
   
   // Optional scene system support
   game?: any;  // GameManager - use any to avoid circular dependency
@@ -56,6 +57,7 @@ export class TestExecutor {
   private wrappedSpatial!: SpatialSystem;
   private captureEnabled = true; // Control whether proxy captures snapshots
   private assertions: Array<{ description: string; passed: boolean; error?: string }> = [];
+  private context?: VisualTestContext; // Store context between arrange and act/assert phases
   
   /**
    * Execute arrange phase only - sets up initial state
@@ -69,25 +71,27 @@ export class TestExecutor {
     this.spatial = new SpatialSystem(this.grid, this.store);
     this.wrappedSpatial = this.wrapSpatial(this.spatial);
     
-    const ctx = { 
+    this.context = { 
       grid: this.grid, 
       spatial: this.wrappedSpatial, 
-      store: this.store 
+      store: this.store,
+      game: undefined,
+      scene: undefined
     };
     
     // Store context globally for snapshot capture to access scene info
-    (globalThis as any).__currentTestContext = ctx;
+    (globalThis as any).__currentTestContext = this.context;
     
     // Disable snapshot capture during arrange - we only want the final state
     this.captureEnabled = false;
     
     // Run arrange phase if present
     if (definition.arrange) {
-      await definition.arrange(ctx);
+      await definition.arrange(this.context);
     }
     
     // Wrap GameManager if present after arrange (when it's been assigned)
-    this.setupGameManagerWrapping(ctx);
+    this.setupGameManagerWrapping(this.context);
     
     // Re-enable capture
     this.captureEnabled = true;
@@ -123,23 +127,24 @@ export class TestExecutor {
       }
     };
     
-    const ctx = { 
-      grid: this.grid, 
-      spatial: this.wrappedSpatial, 
-      store: this.store,
-      expect
-    };
+    // Reuse context from arrange phase to preserve game/scene references
+    if (!this.context) {
+      throw new Error('Context not initialized - executeArrange must be called first');
+    }
+    
+    // Add expect helper to existing context
+    this.context.expect = expect;
     
     // Update global context with expect function
-    (globalThis as any).__currentTestContext = ctx;
+    (globalThis as any).__currentTestContext = this.context;
     
     try {
       // Act phase
-      await definition.act(ctx);
+      await definition.act(this.context);
       
       // Assert phase
       if (definition.assert) {
-        await definition.assert(ctx);
+        await definition.assert(this.context);
       }
       
       const testPassed = this.assertions.every(a => a.passed);

@@ -27,6 +27,9 @@ visual('player teleports between rooms', {
   },
   act: (ctx) => {
     const game = ctx.game;
+    if (!game) {
+      throw new Error('Game manager not found in context - arrange phase may have failed');
+    }
     
     // Walk in room1
     const scene1 = game.sceneManager.getActiveScene();
@@ -84,6 +87,9 @@ visual('multi-scene world with connections', {
   },
   act: (ctx) => {
     const game = ctx.game;
+    if (!game) {
+      throw new Error('Game manager not found in context - arrange phase may have failed');
+    }
     
     // Move through entrance
     const entrance = game.sceneManager.getScene('entrance');
@@ -137,6 +143,9 @@ visual('scene with metadata and player tracking', {
   },
   act: (ctx) => {
     const game = ctx.game;
+    if (!game) {
+      throw new Error('Game manager not found in context - arrange phase may have failed');
+    }
     const scene = game.sceneManager.getActiveScene();
     
     // Player moves
@@ -148,6 +157,9 @@ visual('scene with metadata and player tracking', {
   },
   assert: (ctx) => {
     const game = ctx.game;
+    if (!game) {
+      throw new Error('Game manager not found in context - arrange phase may have failed');
+    }
     const playerPos = game.getPlayerPosition();
     
     ctx.expect('player in correct scene', () => {

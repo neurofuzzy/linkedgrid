@@ -71,7 +71,14 @@ export function visual(
                     }
                 };
                 
-                const ctx = { grid, spatial, store, expect };
+                const ctx: VisualTestContext = { 
+                    grid, 
+                    spatial, 
+                    store, 
+                    expect,
+                    game: undefined,
+                    scene: undefined 
+                };
                 
                 // Run all phases for Vitest
                 if (normalized.arrange) await normalized.arrange(ctx);
