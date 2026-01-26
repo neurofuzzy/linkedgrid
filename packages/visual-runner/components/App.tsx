@@ -4,8 +4,6 @@ import Spinner from 'ink-spinner';
 import { useInput } from 'ink';
 import { TestSidebar } from './TestSidebar.js';
 import { GridRenderer } from './GridRenderer.js';
-import { PlaybackControls } from './PlaybackControls.js';
-import { InfoBar } from './InfoBar.js';
 import { AssertionPanel } from './AssertionPanel.js';
 import { discoverTests, type TestFile } from '../lib/test-discovery.js';
 import { TestExecutor, type Snapshot, type TestResult, type VisualTestDefinition } from '../lib/test-executor.js';
@@ -299,12 +297,14 @@ export function App() {
             <Box flexDirection="column" flexGrow={1}>
               <Box>
                 <GridRenderer snapshot={snapshot} />
-                {state.type === 'completed' && (
-                  <AssertionPanel assertions={state.result.assertions} />
-                )}
-              </Box>
-              <Box marginTop={1}>
-                <InfoBar snapshot={snapshot} />
+                <AssertionPanel 
+                  currentIndex={currentIndex}
+                  totalSnapshots={snapshots.length}
+                  isPlaying={isPlaying}
+                  interval={500}
+                  assertions={state.type === 'completed' ? state.result.assertions : undefined}
+                  snapshot={snapshot}
+                />
               </Box>
               {state.type === 'completed' && !state.result.passed && (
                 <Box marginTop={1} borderStyle="single" borderColor="red" padding={1}>
@@ -312,14 +312,6 @@ export function App() {
                   <Text color="red">{state.result.error}</Text>
                 </Box>
               )}
-              <Box marginTop={1}>
-                <PlaybackControls
-                  currentIndex={currentIndex}
-                  totalSnapshots={snapshots.length}
-                  isPlaying={isPlaying}
-                  interval={500}
-                />
-              </Box>
               <Box marginTop={1}>
                 <Text dimColor>
                   [esc] menu | [↑↓] switch test | {
