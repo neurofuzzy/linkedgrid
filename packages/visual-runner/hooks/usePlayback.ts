@@ -20,10 +20,16 @@ export function usePlayback(
   
   // Use ref for callback to avoid dependency issues
   const onCompleteRef = useRef(onComplete);
+  const hasCalledCompleteRef = useRef(false);
   
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+  
+  // Reset the complete flag when snapshots change
+  useEffect(() => {
+    hasCalledCompleteRef.current = false;
+  }, [snapshots]);
   
   const isAtEnd = state.currentIndex >= snapshots.length - 1;
   
@@ -40,7 +46,9 @@ export function usePlayback(
   useEffect(() => {
     if (state.type === 'playing' && state.currentIndex >= snapshots.length - 1) {
       setState({ type: 'paused', currentIndex: state.currentIndex });
-      if (onCompleteRef.current) {
+      // Only call onComplete once per playback session
+      if (onCompleteRef.current && !hasCalledCompleteRef.current) {
+        hasCalledCompleteRef.current = true;
         onCompleteRef.current();
       }
     }

@@ -21,10 +21,10 @@
 
 Questions (ANSWERED):
 1. LinkedCells can only contain numbers. What is the meaning of that number? Is that an entity ID?
-   **ANSWER**: Yes! The numbers stored in `cell.items[layer]` are entity IDs. These IDs are auto-generated 
+   **ANSWER**: Yes! The numbers stored in `cell.values[layer]` are entity IDs. These IDs are auto-generated 
    by `SparseEntityStore` and can be looked up to retrieve full entity metadata. The spatial position is 
    implicit (the cell itself), while the ID references additional data (type, hp, etc.) stored externally.
-   Example: `cell.items[1] = 42` means entity #42 occupies layer 1 of this cell.
+   Example: `cell.values[1] = 42` means entity #42 occupies layer 1 of this cell.
 
 2. How might we provide a fast way to look up entities in a cell?
    **ANSWER**: Use `SpatialSystem.getEntityIdsInCell(x, y)` which iterates through the cell's items array

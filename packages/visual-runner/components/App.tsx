@@ -127,6 +127,7 @@ export function App() {
   };
   
   // Derive props from state - memoize to prevent recreating array on every render
+  // Use specific dependencies instead of entire state object to prevent infinite loops
   const snapshots = useMemo(() => {
     if (state.type === 'running' || state.type === 'completed') {
       return state.snapshots;
@@ -134,7 +135,11 @@ export function App() {
       return [state.snapshot];
     }
     return [];
-  }, [state]);
+  }, [
+    state.type,
+    state.type === 'running' || state.type === 'completed' ? state.snapshots : null,
+    state.type === 'loaded' ? state.snapshot : null
+  ]);
 
   const { currentIndex, isPlaying, snapshot, togglePlayback, stepForward, stepBackward } = usePlayback(
     snapshots,

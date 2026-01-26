@@ -1,4 +1,4 @@
-import { LinkedGrid } from '../grid/linked-grid';
+import { LinkedCell, LinkedGrid } from '../grid';
 import { SparseEntityStore } from './entity-store';
 import type { EntityData, Layer } from './types';
 
@@ -6,7 +6,7 @@ import type { EntityData, Layer } from './types';
  * SpatialSystem - Spatial operations for the Spartan framework.
  * 
  * Architecture B: Cell-centric operations where cells are the primary
- * storage for entity positions via cell.items[layer].
+ * storage for entity positions via cell.values[layer].
  * 
  * Core principles:
  * - Entities occupy one cell at a time (Rule 1)
@@ -63,6 +63,7 @@ export class SpatialSystem {
         toX: number;
         toY: number;
         layer: Layer;
+        blockFn?: (cell: LinkedCell | null) => boolean;
     }> = [];
 
     /**
@@ -79,7 +80,7 @@ export class SpatialSystem {
     /**
      * Spawn a new entity at a position and layer.
      * 
-     * Creates entity metadata in store and writes ID to cell.items[layer].
+     * Creates entity metadata in store and writes ID to cell.values[layer].
      * 
      * @param type - Entity type identifier
      * @param x - X coordinate (column)
@@ -102,15 +103,15 @@ export class SpatialSystem {
         }
 
         // Rule 3: Check if destination layer is occupied
-        if (cell.items[layer] !== undefined) {
-            throw new Error(`Layer ${layer} at (${x}, ${y}) is already occupied by entity ${cell.items[layer]}`);
+        if (cell.getValue(layer) !== undefined) {
+            throw new Error(`Layer ${layer} at (${x}, ${y}) is already occupied by entity ${cell.getValue(layer)}`);
         }
 
         // Create entity in store
         const entityId = this.store.createId(type, props);
 
         // Write to cell layer (Rule 2: entities occupy a layer)
-        cell.items[layer] = entityId;
+        cell.setValue(layer, entityId);
 
         return entityId;
     }
@@ -127,6 +128,7 @@ export class SpatialSystem {
      * @param toX - Destination X coordinate
      * @param toY - Destination Y coordinate
      * @param layer - Layer the entity occupies
+     * @param blockFn - Optional function to check if destination is blocked
      * 
      * @example
      * ```typescript
@@ -138,8 +140,26 @@ export class SpatialSystem {
      * // Execute all moves atomically
      * spatial.commit();
      * ```
+     * 
+     * @example
+     * ```typescript
+     * // Use blocking function for collision detection
+     * import { isBlocked } from './layer-utils';
+     * const emptyFloorsBlock = true;
+     * spatial.move(5, 5, 6, 5, GameLayers.ACTORS, 
+     *   (cell) => isBlocked(cell, emptyFloorsBlock)
+     * );
+     * spatial.commit();
+     * ```
      */
-    move(fromX: number, fromY: number, toX: number, toY: number, layer: Layer): void {
+    move(
+        fromX: number, 
+        fromY: number, 
+        toX: number, 
+        toY: number, 
+        layer: Layer,
+        blockFn?: (cell: LinkedCell | null) => boolean
+    ): void {
         const fromCell = this.grid.cell(fromX, fromY);
         const toCell = this.grid.cell(toX, toY);
 
@@ -148,7 +168,7 @@ export class SpatialSystem {
             return; // Invalid coordinates - silently ignore
         }
 
-        const entityId = fromCell.items[layer];
+        const entityId = fromCell.getValue(layer);
         if (entityId === undefined) {
             return; // No entity at source - silently ignore
         }
@@ -160,7 +180,8 @@ export class SpatialSystem {
             fromY,
             toX,
             toY,
-            layer
+            layer,
+            blockFn
         });
     }
 
@@ -226,8 +247,14 @@ export class SpatialSystem {
                 continue;
             }
 
+            // Check custom blocking function if provided
+            if (move.blockFn && move.blockFn(toCell)) {
+                validMoves.push(false);
+                continue;
+            }
+
             // Check if destination is occupied
-            const isOccupied = toCell.items[move.layer] !== undefined;
+            const isOccupied = toCell.getValue(move.layer) !== undefined;
             const isBeingVacated = sources.has(destKey);
             
             // Check for conflicts (multiple entities want same destination)
@@ -248,7 +275,7 @@ export class SpatialSystem {
                 const move = this.pendingMoves[i];
                 const fromCell = this.grid.cell(move.fromX, move.fromY);
                 if (fromCell) {
-                    fromCell.items[move.layer] = undefined;
+                    fromCell.clearValue(move.layer);
                 }
             }
         }
@@ -259,7 +286,7 @@ export class SpatialSystem {
                 const move = this.pendingMoves[i];
                 const toCell = this.grid.cell(move.toX, move.toY);
                 if (toCell) {
-                    toCell.items[move.layer] = move.entityId;
+                    toCell.setValue(move.layer, move.entityId);
                 }
             }
         }
@@ -305,13 +332,13 @@ export class SpatialSystem {
             return false;
         }
 
-        const entityId = cell.items[layer];
+        const entityId = cell.getValue(layer);
         if (entityId === undefined) {
             return false;
         }
 
         // Clean up cell
-        cell.items[layer] = undefined;
+        cell.clearValue(layer);
 
         // Remove from store
         this.store.remove(entityId);
@@ -337,7 +364,7 @@ export class SpatialSystem {
      */
     getEntityIdAt(x: number, y: number, layer: Layer): number | undefined {
         const cell = this.grid.cell(x, y);
-        return cell?.items[layer];
+        return cell?.getValue(layer);
     }
 
     /**
@@ -369,7 +396,7 @@ export class SpatialSystem {
         }
 
         const ids: number[] = [];
-        for (const id of cell.items) {
+        for (const id of cell.values) {
             if (id !== undefined) {
                 ids.push(id);
             }
@@ -409,7 +436,7 @@ export class SpatialSystem {
         const ids: number[] = [];
         
         for (const c of cells) {
-            for (const id of c.items) {
+            for (const id of c.values) {
                 if (id !== undefined) {
                     ids.push(id);
                 }
@@ -453,7 +480,7 @@ export class SpatialSystem {
         const ids: number[] = [];
 
         for (const cell of cells) {
-            for (const id of cell.items) {
+            for (const id of cell.values) {
                 if (id !== undefined) {
                     ids.push(id);
                 }

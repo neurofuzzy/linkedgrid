@@ -268,9 +268,9 @@ Each `LinkedCell` contains four parallel arrays for different data types:
 
 **Example**:
 ```typescript
-cell.items[GameLayers.WALLS] = undefined;       // No wall
-cell.items[GameLayers.ACTORS] = 42;            // Player (entity ID 42)
-cell.items[GameLayers.COLLECTIBLES] = 108;     // Coin (entity ID 108)
+cell.values[GameLayers.WALLS] = undefined;       // No wall
+cell.values[GameLayers.ACTORS] = 42;            // Player (entity ID 42)
+cell.values[GameLayers.COLLECTIBLES] = 108;     // Coin (entity ID 108)
 ```
 
 ### `values[layer]`: Terrain/Tile Types
@@ -328,14 +328,13 @@ function isBlocked(cell: LinkedCell): boolean {
     return true;
   }
   
-  // Check walls (static terrain or dynamic entities)
-  if (cell.values[GameLayers.WALLS] !== undefined ||
-      cell.items[GameLayers.WALLS] !== undefined) {
+  // Check walls
+  if (cell.values[GameLayers.WALLS] !== undefined) {
     return true;
   }
   
   // Check actors
-  if (cell.items[GameLayers.ACTORS] !== undefined) {
+  if (cell.values[GameLayers.ACTORS] !== undefined) {
     return true;
   }
   
@@ -346,14 +345,11 @@ function isBlocked(cell: LinkedCell): boolean {
 **Note on Floor Blocking**: While Layer 1 (FLOOR) is generally walkable, specific floor types can block movement. This allows pits, chasms, and deep water to be represented as floor tiles that prevent passage.
 
 ### Vision Blocking
-Vision can be blocked by:
-- Static walls in `values[WALLS]`
-- Dynamic entities in `items[WALLS]`
+Vision is blocked by walls on the WALLS layer:
 
 ```typescript
 function blocksVision(cell: LinkedCell): boolean {
-  return cell.values[GameLayers.WALLS] !== undefined ||
-         cell.items[GameLayers.WALLS] !== undefined;
+  return cell.values[GameLayers.WALLS] !== undefined;
 }
 ```
 
@@ -523,18 +519,13 @@ export function isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): bo
     return true;
   }
   
-  // Check wall terrain (static tilemap)
+  // Check walls
   if (cell.values[GameLayers.WALLS] !== undefined) {
     return true;
   }
   
-  // Check wall entities (doors, destructibles)
-  if (cell.items[GameLayers.WALLS] !== undefined) {
-    return true;
-  }
-  
   // Check actors
-  if (cell.items[GameLayers.ACTORS] !== undefined) {
+  if (cell.values[GameLayers.ACTORS] !== undefined) {
     return true;
   }
   
@@ -547,7 +538,7 @@ export function isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): bo
 export function blocksVision(cell: LinkedCell | null): boolean {
   if (!cell) return true;
   return VISION_BLOCKING_LAYERS.some(layer => 
-    cell.values[layer] !== undefined || cell.items[layer] !== undefined
+    cell.values[layer] !== undefined
   );
 }
 
@@ -568,7 +559,7 @@ export function getTopmostEntity(
   // Check from top to bottom
   for (let i = visibleLayers.length - 1; i >= 0; i--) {
     const layer = visibleLayers[i];
-    const entityId = cell.items[layer];
+    const entityId = cell.values[layer];
     if (entityId !== undefined) {
       return entityId;
     }
@@ -613,7 +604,7 @@ const ghost = spatial.spawn('ghost', x, y, GameLayers.ACTORS, {
 // Modified movement check:
 function canMove(entity, cell) {
   if (entity.ignoresWalls) {
-    return cell.items[GameLayers.ACTORS] === undefined;  // Only check actors
+    return cell.values[GameLayers.ACTORS] === undefined;  // Only check actors
   }
   return !isBlocked(cell);  // Normal blocking
 }
@@ -695,14 +686,14 @@ If migrating from an abstract layer system:
 ```typescript
 const PLAYER_LAYER = 5;
 const WALL_LAYER = 3;
-cell.items[PLAYER_LAYER] = playerId;
+cell.values[PLAYER_LAYER] = playerId;
 ```
 
 **After** (concrete):
 ```typescript
 import { GameLayers } from './layers';
-cell.items[GameLayers.ACTORS] = playerId;
-cell.items[GameLayers.WALLS] = wallId;
+cell.values[GameLayers.ACTORS] = playerId;
+cell.values[GameLayers.WALLS] = wallId;
 ```
 
 The semantic names make code self-documenting and prevent mistakes.
@@ -884,14 +875,13 @@ function canEntityMove(entityId: number, cell: LinkedCell, emptyFloorsBlock = fa
   
   // Check walls (can be ignored by special entities)
   if (!entity.ignoresWalls) {
-    if (cell.values[GameLayers.WALLS] !== undefined ||
-        cell.items[GameLayers.WALLS] !== undefined) {
+    if (cell.values[GameLayers.WALLS] !== undefined) {
       return false;
     }
   }
   
   // Check actors (always blocked)
-  if (cell.items[GameLayers.ACTORS] !== undefined) {
+  if (cell.values[GameLayers.ACTORS] !== undefined) {
     return false;
   }
   
