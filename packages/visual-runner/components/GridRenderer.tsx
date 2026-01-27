@@ -14,6 +14,7 @@ const ENTITY_COLORS: Record<string, (s: string) => string> = {
   item: chalk.yellow,
   projectile: chalk.magenta,
   wall: chalk.gray,
+  teleporter: chalk.cyan,
 };
 
 const DEFAULT_GRID_SIZE = { w: 20, h: 20 };

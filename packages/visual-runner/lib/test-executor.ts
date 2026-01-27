@@ -180,7 +180,8 @@ export class TestExecutor {
           
           const handleResult = (res: unknown) => {
             // Only capture if enabled (disabled during arrange phase)
-            if (this.captureEnabled && ['spawn', 'move', 'remove', 'commit'].includes(prop as string)) {
+            // Don't capture on 'move' (stages only) - wait for 'commit' (executes)
+            if (this.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
               this.captureSnapshot(target, prop as string, args, res);
             }
             return res;
@@ -289,8 +290,9 @@ export class TestExecutor {
               const result = boundMethod(...args);
               
               const handleResult = (res: unknown) => {
-                // Capture snapshots for key operations
-                if (self.captureEnabled && ['spawn', 'move', 'remove', 'commit'].includes(prop as string)) {
+                // Capture snapshots only for operations that change visible state
+                // Don't capture on 'move' (stages only) - wait for 'commit' (executes)
+                if (self.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
                   self.captureSnapshot(activeSpatial, prop as string, args, res);
                 }
                 return res;

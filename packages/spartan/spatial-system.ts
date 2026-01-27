@@ -548,6 +548,62 @@ export class SpatialSystem {
     }
 
     /**
+     * Get all tracked entity positions.
+     * 
+     * Used for overlap detection and iteration over all entities.
+     * Returns an iterator of [entityId, {x, y, layer}] entries.
+     * 
+     * @returns Iterator of entity positions
+     * 
+     * @example
+     * ```typescript
+     * for (const [entityId, pos] of spatial.getAllPositions()) {
+     *   console.log(`Entity ${entityId} at (${pos.x}, ${pos.y})`);
+     * }
+     * ```
+     */
+    getAllPositions(): IterableIterator<[number, {x: number, y: number, layer: Layer}]> {
+        return this.positions.entries();
+    }
+
+    /**
+     * Detect all overlaps (multiple entities at same position).
+     * 
+     * Returns positions with 2+ entities across all layers.
+     * Used by game loop for overlap-based mechanics (items, triggers, etc.).
+     * 
+     * @returns Array of overlaps
+     * 
+     * @example
+     * ```typescript
+     * const overlaps = spatial.detectOverlaps();
+     * for (const overlap of overlaps) {
+     *   console.log(`${overlap.entityIds.length} entities at (${overlap.position.x}, ${overlap.position.y})`);
+     * }
+     * ```
+     */
+    detectOverlaps(): Array<{position: {x: number, y: number}, entityIds: number[]}> {
+        const overlaps: Array<{position: {x: number, y: number}, entityIds: number[]}> = [];
+        const checked = new Set<string>();
+        
+        for (const [_, pos] of this.getAllPositions()) {
+            const key = `${pos.x},${pos.y}`;
+            if (checked.has(key)) continue;
+            checked.add(key);
+            
+            const entities = this.getEntityIdsInCell(pos.x, pos.y);
+            if (entities.length > 1) {
+                overlaps.push({
+                    position: { x: pos.x, y: pos.y },
+                    entityIds: entities
+                });
+            }
+        }
+        
+        return overlaps;
+    }
+
+    /**
      * Get the grid used by this spatial system.
      * 
      * @returns The LinkedGrid instance
