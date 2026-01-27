@@ -33,6 +33,10 @@
 // Core framework
 export { SparseEntityStore } from './entity-store';
 export { SpatialSystem } from './spatial-system';
+export { GameState } from './game-state';
+export { Scene } from './scene';
+export { SceneManager } from './scene-manager';
+export { GameManager } from './game-manager';
 
 // Types and layer constants
 export type { EntityData, Layer, Position, GameLayer } from './types';
@@ -47,3 +51,10 @@ export {
 // Blocking utilities
 // Layer utilities
 export { getTopmostEntity, isBlocked, blocksVision, isWalkable } from './layer-helpers';
+
+// Game loop and runtime
+export { GameLoop } from './game-loop.js';
+export { GameRuntime } from './game-runtime.js';
+export type { GameRuntimeConfig } from './game-runtime.js';
+export { TeleporterSystem } from './teleporter-system.js';
+export type { GameSystem, GameContext, Overlap } from './types.js';

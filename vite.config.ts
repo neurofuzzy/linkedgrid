@@ -13,7 +13,7 @@ const commonConfig = {
     },
 };
 
-export default defineConfig(({ command: _command, mode }) => {
+export default defineConfig(() => {
 
     // Library build mode (npm run build)
     return {
@@ -43,6 +43,10 @@ export default defineConfig(({ command: _command, mode }) => {
         test: {
             globals: true,
             environment: 'node',
+            include: [
+                'packages/**/test/**/*.test.ts',
+                'packages/**/test/**/*.visual.test.ts',
+            ],
             exclude: [
                 '**/node_modules/**',
                 '**/dist/**',

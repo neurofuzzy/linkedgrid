@@ -151,6 +151,7 @@ describe('SpatialSystem', () => {
     describe('spawn', () => {
         it('creates entity and places in cell', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit deferred spawn
 
             expect(id).toBe(1);
             const cell = grid.cell(5, 5);
@@ -165,19 +166,33 @@ describe('SpatialSystem', () => {
             expect(data?.hp).toBe(100);
         });
 
-        it('throws on invalid coordinates', () => {
-            expect(() => spatial.spawn('player', -1, 5, 1)).toThrow('Invalid coordinates');
-            expect(() => spatial.spawn('player', 100, 5, 1)).toThrow('Invalid coordinates');
+        it('does not place entity at invalid coordinates', () => {
+            // Spawn stages operation but doesn't validate coordinates yet
+            const id1 = spatial.spawn('player', -1, 5, 1);
+            const id2 = spatial.spawn('player', 100, 5, 1);
+            spatial.commit(); // Validation happens at commit
+            
+            // Entities created but not placed (invalid coordinates)
+            expect(spatial.getEntityPosition(id1)).toBeNull();
+            expect(spatial.getEntityPosition(id2)).toBeNull();
         });
 
-        it('throws when layer is occupied (Rule 3)', () => {
-            spatial.spawn('player', 5, 5, 1);
-            expect(() => spatial.spawn('enemy', 5, 5, 1)).toThrow('Layer 1 at (5, 5) is already occupied');
+        it('does not place entity when layer is occupied (Rule 3)', () => {
+            const id1 = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit first spawn
+            
+            const id2 = spatial.spawn('enemy', 5, 5, 1); // Same position/layer
+            spatial.commit(); // Validation happens at commit
+            
+            // First entity placed, second not placed (occupied)
+            expect(spatial.getEntityPosition(id1)).toEqual({x: 5, y: 5, layer: 1});
+            expect(spatial.getEntityPosition(id2)).toBeNull(); // Not placed
         });
 
         it('allows multiple entities on same cell with different layers (Rule 4)', () => {
             const id1 = spatial.spawn('player', 5, 5, 1);
             const id2 = spatial.spawn('enemy', 5, 5, 2);
+            spatial.commit(); // Commit spawns
 
             const cell = grid.cell(5, 5);
             expect(cell?.getValue(1)).toBe(id1);
@@ -188,6 +203,7 @@ describe('SpatialSystem', () => {
     describe('move', () => {
         it('moves entity to new cell', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
             
@@ -199,6 +215,7 @@ describe('SpatialSystem', () => {
 
         it('cleans up old cell (Rule 6)', () => {
             spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
 
@@ -209,6 +226,7 @@ describe('SpatialSystem', () => {
         it('does not move when destination is occupied (Rule 3)', () => {
             const playerId = spatial.spawn('player', 5, 5, 1);
             spatial.spawn('enemy', 6, 5, 1);
+            spatial.commit(); // Commit spawns
 
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
@@ -220,6 +238,7 @@ describe('SpatialSystem', () => {
 
         it('does not move for invalid coordinates', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             spatial.move(5, 5, 100, 100, 1);
             spatial.commit();
             
@@ -239,6 +258,7 @@ describe('SpatialSystem', () => {
 
         it('can move multiple times', () => {
             spatial.spawn('player', 0, 0, 1);
+            spatial.commit(); // Commit spawn
             
             spatial.move(0, 0, 1, 0, 1);
             spatial.commit();
@@ -255,6 +275,7 @@ describe('SpatialSystem', () => {
             const id1 = spatial.spawn('unit', 5, 5, 1);
             const id2 = spatial.spawn('unit', 6, 5, 1);
             const id3 = spatial.spawn('unit', 7, 5, 1);
+            spatial.commit(); // Commit spawns
 
             // All three units move right
             spatial.move(5, 5, 6, 5, 1);
@@ -290,10 +311,12 @@ describe('SpatialSystem', () => {
     describe('remove', () => {
         it('removes entity from cell and store', () => {
             const id = spatial.spawn('player', 5, 5, 1);
-            const removed = spatial.remove(5, 5, 1);
-
-            expect(removed).toBe(true);
+            spatial.commit(); // Commit spawn
             
+            const removed = spatial.remove(5, 5, 1);
+            expect(removed).toBe(true);
+            spatial.commit(); // Commit removal
+
             const cell = grid.cell(5, 5);
             expect(cell?.getValue(1)).toBeUndefined();
             expect(store.getData(id)).toBeUndefined();
@@ -313,6 +336,7 @@ describe('SpatialSystem', () => {
     describe('getEntityIdAt', () => {
         it('returns entity ID at position and layer', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             const found = spatial.getEntityIdAt(5, 5, 1);
             expect(found).toBe(id);
         });
@@ -333,6 +357,7 @@ describe('SpatialSystem', () => {
             const id1 = spatial.spawn('player', 5, 5, 1);
             const id2 = spatial.spawn('item', 5, 5, 2);
             const id3 = spatial.spawn('projectile', 5, 5, 3);
+            spatial.commit(); // Commit spawns
 
             const ids = spatial.getEntityIdsInCell(5, 5);
             expect(ids).toContain(id1);
@@ -358,6 +383,7 @@ describe('SpatialSystem', () => {
             const id2 = spatial.spawn('enemy', 6, 5, 1); // Distance 1
             const id3 = spatial.spawn('enemy', 7, 5, 1); // Distance 2
             const id4 = spatial.spawn('enemy', 9, 5, 1); // Distance 4 (outside radius 3)
+            spatial.commit(); // Commit spawns
 
             const ids = spatial.getEntityIdsInRadius(5, 5, 3);
             
@@ -385,6 +411,7 @@ describe('SpatialSystem', () => {
             const id1 = spatial.spawn('enemy', 2, 0, 1);
             const id2 = spatial.spawn('enemy', 4, 0, 1);
             spatial.spawn('enemy', 0, 4, 1); // Not in line
+            spatial.commit(); // Commit spawns
 
             const ids = spatial.getEntityIdsInLine(0, 0, 5, 0);
             
@@ -416,6 +443,125 @@ describe('SpatialSystem', () => {
         });
     });
 
+    describe('getEntityPosition', () => {
+        it('returns position after spawn', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit deferred spawn
+            const pos = spatial.getEntityPosition(id);
+
+            expect(pos).not.toBeNull();
+            expect(pos?.x).toBe(5);
+            expect(pos?.y).toBe(5);
+            expect(pos?.layer).toBe(1);
+        });
+
+        it('updates position after move', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit initial spawn
+            spatial.move(5, 5, 7, 8, 1);
+            spatial.commit();
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(7);
+            expect(pos?.y).toBe(8);
+            expect(pos?.layer).toBe(1);
+        });
+
+        it('updates position after multiple moves', () => {
+            const id = spatial.spawn('player', 0, 0, 1);
+            spatial.commit(); // Commit initial spawn
+            
+            spatial.move(0, 0, 1, 0, 1);
+            spatial.commit();
+            let pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(1);
+            expect(pos?.y).toBe(0);
+
+            spatial.move(1, 0, 1, 1, 1);
+            spatial.commit();
+            pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(1);
+            expect(pos?.y).toBe(1);
+
+            spatial.move(1, 1, 2, 2, 1);
+            spatial.commit();
+            pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(2);
+            expect(pos?.y).toBe(2);
+        });
+
+        it('does not update position when move fails', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.spawn('wall', 6, 5, 1);
+            spatial.commit(); // Commit spawns
+            
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.commit();
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos?.x).toBe(5);
+            expect(pos?.y).toBe(5);
+        });
+
+        it('returns null after entity is removed', () => {
+            const id = spatial.spawn('player', 5, 5, 1);
+            spatial.remove(5, 5, 1);
+
+            const pos = spatial.getEntityPosition(id);
+            expect(pos).toBeNull();
+        });
+
+        it('returns null for non-existent entity', () => {
+            const pos = spatial.getEntityPosition(999);
+            expect(pos).toBeNull();
+        });
+
+        it('tracks multiple entities independently', () => {
+            const id1 = spatial.spawn('player', 5, 5, 1);
+            const id2 = spatial.spawn('enemy', 7, 8, 2);
+            const id3 = spatial.spawn('item', 1, 2, 3);
+            spatial.commit(); // Commit all spawns
+
+            const pos1 = spatial.getEntityPosition(id1);
+            const pos2 = spatial.getEntityPosition(id2);
+            const pos3 = spatial.getEntityPosition(id3);
+
+            expect(pos1).toEqual({ x: 5, y: 5, layer: 1 });
+            expect(pos2).toEqual({ x: 7, y: 8, layer: 2 });
+            expect(pos3).toEqual({ x: 1, y: 2, layer: 3 });
+        });
+
+        it('handles convoy movements correctly', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 6, 5, 1);
+            const id3 = spatial.spawn('unit', 7, 5, 1);
+            spatial.commit(); // Commit spawns
+
+            spatial.move(5, 5, 6, 5, 1);
+            spatial.move(6, 5, 7, 5, 1);
+            spatial.move(7, 5, 8, 5, 1);
+            spatial.commit();
+
+            expect(spatial.getEntityPosition(id1)).toEqual({ x: 6, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id2)).toEqual({ x: 7, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id3)).toEqual({ x: 8, y: 5, layer: 1 });
+        });
+
+        it('maintains position when move conflicts', () => {
+            const id1 = spatial.spawn('unit', 5, 5, 1);
+            const id2 = spatial.spawn('unit', 5, 7, 1);
+
+            // Both try to move to same destination
+            spatial.move(5, 5, 5, 6, 1);
+            spatial.move(5, 7, 5, 6, 1);
+            spatial.commit();
+
+            // Neither should have moved
+            expect(spatial.getEntityPosition(id1)).toEqual({ x: 5, y: 5, layer: 1 });
+            expect(spatial.getEntityPosition(id2)).toEqual({ x: 5, y: 7, layer: 1 });
+        });
+    });
+
     describe('getGrid and getStore', () => {
         it('returns grid instance', () => {
             expect(spatial.getGrid()).toBe(grid);
@@ -429,6 +575,7 @@ describe('SpatialSystem', () => {
     describe('Spartan rules integration', () => {
         it('Rule 1: Entities can only occupy one cell at a time', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
 
@@ -439,6 +586,7 @@ describe('SpatialSystem', () => {
 
         it('Rule 2: Entities occupy a layer on a cell', () => {
             const id = spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             const cell = grid.cell(5, 5);
             
             expect(cell?.getValue(1)).toBe(id);
@@ -449,6 +597,7 @@ describe('SpatialSystem', () => {
         it('Rule 3: Check destination before moving', () => {
             const playerId = spatial.spawn('player', 5, 5, 1);
             spatial.spawn('wall', 6, 5, 1);
+            spatial.commit(); // Commit spawns
 
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
@@ -461,6 +610,7 @@ describe('SpatialSystem', () => {
             const player = spatial.spawn('player', 5, 5, 1);
             const item = spatial.spawn('item', 5, 5, 2);
             const effect = spatial.spawn('effect', 5, 5, 3);
+            spatial.commit(); // Commit spawns
 
             const cell = grid.cell(5, 5);
             expect(cell?.getValue(1)).toBe(player);
@@ -470,6 +620,7 @@ describe('SpatialSystem', () => {
 
         it('Rule 6: Clean up old cell on move', () => {
             spatial.spawn('player', 5, 5, 1);
+            spatial.commit(); // Commit spawn
             spatial.move(5, 5, 6, 5, 1);
             spatial.commit();
 
@@ -480,6 +631,7 @@ describe('SpatialSystem', () => {
         it('Rule 7: Overlap detection, not collision', () => {
             const player = spatial.spawn('player', 5, 5, 1);
             const projectile = spatial.spawn('projectile', 5, 5, 2);
+            spatial.commit(); // Commit spawns
 
             // Both occupy the same cell - this is overlap
             const overlapping = spatial.getEntityIdsInCell(5, 5);

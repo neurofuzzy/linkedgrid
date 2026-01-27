@@ -7,6 +7,7 @@ visual('AAA: entity movement', {
         // Setup: Spawn initial entities
         spatial.spawn('player', 5, 5, GameLayers.ACTORS);
         spatial.spawn('enemy', 10, 10, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Action: Move player toward enemy
@@ -45,6 +46,7 @@ visual('AAA: collision detection (FAIL)', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 5, 5, GameLayers.ACTORS);
         spatial.spawn('wall', 6, 5, GameLayers.WALLS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Try to move into wall (player and wall on different layers, so this succeeds)
@@ -80,6 +82,7 @@ visual('AAA: collision detection (FAIL)', {
 // Backward compatible: simple function form (all in act phase)
 visual('simple movement test', ({ spatial, expect }) => {
     spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    spatial.commit();
     spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
     spatial.commit();
     

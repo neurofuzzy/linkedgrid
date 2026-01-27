@@ -1,0 +1,70 @@
+import { SpatialSystem } from '../spatial-system.js';
+import { Layer } from '../types.js';
+
+/**
+ * Test fixture helper for setting up initial spatial state.
+ * 
+ * Operations auto-commit for convenience during test setup.
+ * Use this for arranging test state, not for testing spatial behavior.
+ * 
+ * @example
+ * ```typescript
+ * const fixture = new TestSpatialFixture(spatial);
+ * 
+ * // Place entities with auto-commit
+ * const playerId = fixture.placeEntity('player', 5, 5, GameLayers.ACTORS);
+ * const enemyId = fixture.placeEntity('enemy', 10, 10, GameLayers.ACTORS);
+ * 
+ * // Now test actual spatial behavior
+ * spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+ * spatial.commit();
+ * // ...assertions...
+ * ```
+ */
+export class TestSpatialFixture {
+    constructor(private spatial: SpatialSystem) {}
+    
+    /**
+     * Place entity and auto-commit.
+     * 
+     * Use this for test setup, not for testing spatial behavior.
+     * 
+     * @param type - Entity type
+     * @param x - X coordinate
+     * @param y - Y coordinate
+     * @param layer - Layer
+     * @param props - Optional entity properties
+     * @returns Entity ID
+     */
+    placeEntity(type: string, x: number, y: number, layer: Layer, props?: object): number {
+        const id = this.spatial.spawn(type, x, y, layer, props);
+        this.spatial.commit();
+        return id;
+    }
+    
+    /**
+     * Remove entity and auto-commit.
+     * 
+     * @param x - X coordinate
+     * @param y - Y coordinate
+     * @param layer - Layer
+     */
+    removeEntity(x: number, y: number, layer: Layer): void {
+        this.spatial.remove(x, y, layer);
+        this.spatial.commit();
+    }
+    
+    /**
+     * Move entity and auto-commit.
+     * 
+     * @param fromX - Source X
+     * @param fromY - Source Y
+     * @param toX - Destination X
+     * @param toY - Destination Y
+     * @param layer - Layer
+     */
+    moveEntity(fromX: number, fromY: number, toX: number, toY: number, layer: Layer): void {
+        this.spatial.move(fromX, fromY, toX, toY, layer);
+        this.spatial.commit();
+    }
+}

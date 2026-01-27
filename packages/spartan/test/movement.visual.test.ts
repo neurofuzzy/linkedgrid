@@ -4,6 +4,7 @@ import { GameLayers } from '../types';
 visual('player moves right 3 times', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 5, 5, GameLayers.ACTORS, { hp: 100 });
+        spatial.commit();
     },
     act: ({ spatial }) => {
         spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
@@ -44,12 +45,14 @@ visual('player moves right 3 times', {
 visual('spawn multiple entities', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 10, 10, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Add entities one at a time to show spawning process
         spatial.spawn('enemy', 12, 10, GameLayers.ACTORS);
         spatial.spawn('enemy', 10, 12, GameLayers.ACTORS);
         spatial.spawn('item', 11, 11, GameLayers.COLLECTIBLES);
+        spatial.commit();
     },
     assert: ({ spatial, expect }) => {
         expect('Player at (10, 10) ACTORS layer', () => {
@@ -85,6 +88,7 @@ visual('spawn multiple entities', {
 visual('entity moves in a square', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Right
@@ -131,10 +135,12 @@ visual('projectile hits enemy', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 2, 5, GameLayers.ACTORS);
         spatial.spawn('enemy', 8, 5, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Fire projectile
         spatial.spawn('projectile', 3, 5, GameLayers.EPHEMERALS);
+        spatial.commit();
         spatial.move(3, 5, 4, 5, GameLayers.EPHEMERALS);
         spatial.commit();
         spatial.move(4, 5, 5, 5, GameLayers.EPHEMERALS);
@@ -149,6 +155,7 @@ visual('projectile hits enemy', {
         // Hit! (Rule 7: overlap detection, not collision)
         spatial.remove(8, 5, GameLayers.EPHEMERALS); // Remove projectile
         spatial.remove(8, 5, GameLayers.ACTORS); // Remove enemy
+        spatial.commit();
     },
     assert: ({ spatial, expect }) => {
         expect('Player still exists at (2, 5)', () => {
@@ -184,6 +191,7 @@ visual('multiple layers at same cell', {
     arrange: ({ spatial }) => {
         spatial.spawn('item', 11, 10, GameLayers.COLLECTIBLES);
         spatial.spawn('player', 8, 10, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Player walks onto the item
@@ -234,6 +242,7 @@ visual('convoy movement: adjacent entities move together', {
         spatial.spawn('unit', 6, 5, GameLayers.ACTORS);
         spatial.spawn('unit', 7, 5, GameLayers.ACTORS);
         spatial.spawn('unit', 8, 5, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // All units move right simultaneously

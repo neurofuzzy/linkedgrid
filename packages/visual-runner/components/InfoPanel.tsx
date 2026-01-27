@@ -52,21 +52,6 @@ export function InfoPanel({
         </Box>
       </Box>
       
-      {/* Layer Legend */}
-      <Box marginTop={1} flexDirection="column">
-        <Text bold dimColor>Layers</Text>
-        <Box marginTop={0.5} flexDirection="column">
-          <Text dimColor>0 BACKGROUND   - Static visuals</Text>
-          <Text dimColor>1 FLOOR        - Terrain (walkable)</Text>
-          <Text dimColor>2 LOGIC        - Invisible helpers</Text>
-          <Text dimColor>3 COLLECTIBLES - Pickups</Text>
-          <Text dimColor>4 WALLS        - Static blocking</Text>
-          <Text dimColor>5 ACTORS       - Moving entities</Text>
-          <Text dimColor>6 EPHEMERALS   - Effects/projectiles</Text>
-          <Text dimColor>7 TEXT         - UI overlays</Text>
-        </Box>
-      </Box>
-      
       {/* Assertions in the middle if present */}
       {assertions && assertions.length > 0 && (
         <>
@@ -92,14 +77,31 @@ export function InfoPanel({
       )}
       
       {/* InfoBar at the bottom */}
-      <Box marginTop={1} paddingTop={1}>
-        {!snapshot || snapshot.operation === 'initial' ? (
-          <Text dimColor>No operation</Text>
-        ) : (
-          <Text>
-            {chalk.yellow(snapshot.operation)}
-            {argsStr && chalk.dim(` (${argsStr})`)}
-          </Text>
+      <Box marginTop={1} paddingTop={1} flexDirection="column">
+        <Box>
+          {!snapshot || snapshot.operation === 'initial' ? (
+            <Text dimColor>No operation</Text>
+          ) : (
+            <Text>
+              {chalk.yellow(snapshot.operation)}
+              {argsStr && chalk.dim(` (${argsStr})`)}
+            </Text>
+          )}
+        </Box>
+        
+        {/* Scene metadata */}
+        {snapshot && (
+          <Box marginTop={1}>
+            <Text dimColor>Grid: </Text>
+            <Text>{snapshot.grid.w}×{snapshot.grid.h}</Text>
+            
+            {snapshot.sceneId && (
+              <>
+                <Text dimColor> | Scene: </Text>
+                <Text>{snapshot.sceneName || snapshot.sceneId}</Text>
+              </>
+            )}
+          </Box>
         )}
       </Box>
     </Box>

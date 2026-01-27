@@ -140,3 +140,46 @@ export const ALL_LAYERS = [
     GameLayers.EPHEMERALS,
     GameLayers.TEXT,
 ] as const;
+
+/**
+ * Overlap - Position where multiple entities exist.
+ * 
+ * Used by overlap detection to identify cells with 2+ entities
+ * across all layers (e.g., player on teleporter pad).
+ */
+export interface Overlap {
+    position: { x: number; y: number };
+    entityIds: number[];
+}
+
+/**
+ * GameContext - Context passed to systems each tick.
+ * 
+ * Provides systems with overlap data and spatial access.
+ * Optional references for cross-scene operations.
+ */
+export interface GameContext {
+    overlaps: Overlap[];
+    spatial: any; // SpatialSystem - avoid circular import
+    sceneManager?: any; // SceneManager - optional for cross-scene operations
+    gameManager?: any;  // GameManager - optional for scene transitions
+}
+
+/**
+ * GameSystem - Interface for game logic systems.
+ * 
+ * Systems implement game rules by responding to overlaps and
+ * staging movement intents each tick.
+ * 
+ * @example
+ * ```typescript
+ * class EnemyAISystem implements GameSystem {
+ *   update(context: GameContext): void {
+ *     // Read overlaps, stage moves via context.spatial.move()
+ *   }
+ * }
+ * ```
+ */
+export interface GameSystem {
+    update(context: GameContext): void;
+}
