@@ -542,10 +542,18 @@ export class InputManager {
      */
     private getDirectionFromKey(key: string): Direction | null {
         switch (key) {
-            case 'ArrowUp': return Direction.UP;
-            case 'ArrowDown': return Direction.DN;
-            case 'ArrowLeft': return Direction.LT;
-            case 'ArrowRight': return Direction.RT;
+            case 'ArrowUp':
+            case 'w':
+                return Direction.UP;
+            case 'ArrowDown':
+            case 's':
+                return Direction.DN;
+            case 'ArrowLeft':
+            case 'a':
+                return Direction.LT;
+            case 'ArrowRight':
+            case 'd':
+                return Direction.RT;
             default: return null;
         }
     }
