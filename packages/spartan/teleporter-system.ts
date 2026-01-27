@@ -68,25 +68,29 @@ export class TeleporterSystem implements GameSystem {
      */
     private handlePlayerTeleporterOverlap(teleporterId: number, spatial: any): void {
         const state = this.states.get(teleporterId) || 'ready';
-        
-        if (state === 'ready') {
-            const teleporter = spatial.getEntityData(teleporterId);
-            const dest = teleporter.destination;
-            
-            if (!dest) return; // No destination configured
-            
-            // Trigger cross-scene transition
-            this.gameManager.movePlayerToScene(
-                dest.sceneId,
-                dest.x,
-                dest.y,
-                dest.layer
-            );
-            
-            // Mark destination pad as inactive (prevent bounce-back)
-            if (dest.destinationPadId) {
-                this.states.set(dest.destinationPadId, 'inactive');
-            }
+
+        if (state !== 'ready') return;
+
+        const teleporter = spatial.getEntityData(teleporterId);
+        if (!teleporter) return;
+
+        const dest = teleporter.destination;
+        if (!dest) return; // No destination configured
+
+        // Mark source pad inactive to prevent re-triggering in the same tick
+        this.states.set(teleporterId, 'inactive');
+
+        // Trigger cross-scene transition
+        this.gameManager.movePlayerToScene(
+            dest.sceneId,
+            dest.x,
+            dest.y,
+            dest.layer
+        );
+
+        // Mark destination pad as inactive (prevent bounce-back)
+        if (dest.destinationPadId) {
+            this.states.set(dest.destinationPadId, 'inactive');
         }
     }
     
@@ -106,9 +110,15 @@ export class TeleporterSystem implements GameSystem {
                 
                 // If player not on pad, re-enable
                 // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
-                if (!padPos || 
-                    padPos.x !== playerPos.x || 
-                    padPos.y !== playerPos.y) {
+                if (!padPos) {
+                    this.states.delete(teleporterId);
+                    continue;
+                }
+
+                if (
+                    padPos.x !== playerPos.x ||
+                    padPos.y !== playerPos.y
+                ) {
                     this.states.set(teleporterId, 'ready');
                 }
             }

@@ -317,18 +317,23 @@ export class TestExecutor {
       const originalMove = ctx.game.movePlayerToScene.bind(ctx.game);
       ctx.game.movePlayerToScene = (...args: any[]) => {
         const result = originalMove(...args);
-        
-        // Capture snapshot after scene transition
+
+        // Visual tests expect immediate scene change: execute queued transition now
+        if (ctx.game.executePendingTransition) {
+          ctx.game.executePendingTransition();
+        }
+
+        // Capture snapshot after transition has been applied
         const activeScene = ctx.game.sceneManager?.getActiveScene();
         if (activeScene && this.captureEnabled) {
           this.captureSnapshot(
-            activeScene.spatial, 
-            'movePlayerToScene', 
-            args, 
+            activeScene.spatial,
+            'movePlayerToScene',
+            args,
             result
           );
         }
-        
+
         return result;
       };
     }

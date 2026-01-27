@@ -172,16 +172,16 @@ export class GameState {
      */
     static deserialize(data: any): GameState {
         const state = new GameState();
-        state.playerEntityId = data.playerEntityId || 0;
-        state.lives = data.lives || 3;
-        state.score = data.score || 0;
-        state.inventory = new Map(data.inventory || []);
-        state.buffs = new Map(data.buffs || []);
-        state.upgrades = new Set(data.upgrades || []);
-        state.flags = new Map(data.flags || []);
-        state.data = new Map(data.data || []);
-        state.connections = new Map(data.connections || []);
-        state.nextEntityId = data.nextEntityId || 1;
+        state.playerEntityId = data.playerEntityId ?? 0;
+        state.lives = data.lives ?? 3;
+        state.score = data.score ?? 0;
+        state.inventory = new Map(data.inventory ?? []);
+        state.buffs = new Map(data.buffs ?? []);
+        state.upgrades = new Set(data.upgrades ?? []);
+        state.flags = new Map(data.flags ?? []);
+        state.data = new Map(data.data ?? []);
+        state.connections = new Map(data.connections ?? []);
+        state.nextEntityId = data.nextEntityId ?? 1;
         return state;
     }
 }

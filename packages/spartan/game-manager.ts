@@ -245,6 +245,15 @@ export class GameManager {
         delete playerProps.id;
         delete playerProps.type;
 
+        // Pre-check destination before destructively removing player
+        const targetCell = targetScene.grid.cell(x, y);
+        if (!targetCell) {
+            return false; // Invalid destination
+        }
+        if (targetCell.getValue(layer) !== undefined) {
+            return false; // Occupied destination
+        }
+
         // Phase 1: Remove player from current scene using transaction system
         currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
         currentScene.spatial.commit();
@@ -252,23 +261,23 @@ export class GameManager {
         // Phase 2: Try to spawn player in target scene using transaction system
         targetScene.spatial.spawnWithId(playerId, playerData.type, x, y, layer, playerProps);
         
+        let transitioned = false;
         try {
             targetScene.spatial.commit();
-            
-            // Verify spawn was successful by checking position
+
             const newPos = targetScene.spatial.getEntityPosition(playerId);
-            if (newPos && newPos.x === x && newPos.y === y && newPos.layer === layer) {
-                // Success! Update active scene
-                this.sceneManager.setActiveScene(targetSceneId);
-                return true;
-            }
-            
-            // Spawn failed (occupied or invalid position)
-            // Fall through to rollback
+            transitioned = !!(newPos && newPos.x === x && newPos.y === y && newPos.layer === layer);
         } catch (_error) {
-            // Commit failed
-            // Fall through to rollback
+            transitioned = false;
         }
+
+        if (transitioned) {
+            this.sceneManager.setActiveScene(targetSceneId);
+            return true;
+        }
+
+        // Cleanup failed spawn to prevent orphan/duplicate IDs in target scene store
+        targetScene.spatial.cancelSpawn(playerId);
 
         // Phase 3: Rollback - restore player to original scene
         currentScene.spatial.spawnWithId(playerId, playerData.type, currentPos.x, currentPos.y, currentPos.layer, playerProps);

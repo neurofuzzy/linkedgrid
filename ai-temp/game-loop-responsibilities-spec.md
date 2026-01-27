@@ -101,7 +101,7 @@ getEntityIdsInCell(x: number, y: number): number[] {
   if (!cell) return [];
   
   const ids: number[] = [];
-  for (const id of cell.values) {
+  for (const id of cell.items) {
     if (id !== undefined) {
       ids.push(id);
     }

@@ -798,6 +798,11 @@ export class SpatialSystem {
         if (index === -1) return false;
         
         this.pendingOps.splice(index, 1);
+
+        // Defensive cleanup of any tracking/state
+        this.pendingRemovals.delete(entityId);
+        this.positions.delete(entityId);
+
         // Clean up entity data from store to prevent orphaned entities
         this.store.remove(entityId);
         return true;

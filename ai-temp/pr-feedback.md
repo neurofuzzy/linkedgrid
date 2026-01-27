@@ -1,15 +1,512 @@
 ## PR Code Suggestions ✨
+<!-- 3750909 -->
 
-<!-- 147d10c -->
-
-Explore these optional code suggestions:
-
-<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=4>Possible issue</td>
+Latest suggestions up to 3750909
+<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=4>Incremental <sup><a href='https://qodo-merge-docs.qodo.ai/core-abilities/incremental_update/'>[*]</a></sup></td>
 <td>
 
 
 
-<details><summary>Use atomic commits for scene transitions</summary>
+<details><summary>Prevent duplicates on failed migration</summary>
+
+___
+
+**Prevent duplicate entity IDs during a failed scene transition by pre-checking <br>the destination validity and using <code>cancelSpawn</code> to clean up the target scene's <br>store on failure.**
+
+[packages/spartan/game-manager.ts [248-277]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-99b97162ed56d2486f3746c9042e236f6cffc6710365dc6ac669ce3f73e61bf7R248-R277)
+
+```diff
++// Pre-check destination before destructively removing player
++const targetCell = targetScene.grid.cell(x, y);
++if (!targetCell) {
++    return false; // Invalid destination
++}
++if (targetCell.getValue(layer) !== undefined) {
++    return false; // Occupied destination
++}
++
+ // Phase 1: Remove player from current scene using transaction system
+ currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
+ currentScene.spatial.commit();
+ 
+ // Phase 2: Try to spawn player in target scene using transaction system
+ targetScene.spatial.spawnWithId(playerId, playerData.type, x, y, layer, playerProps);
+ 
++let transitioned = false;
+ try {
+     targetScene.spatial.commit();
+-    
+-    // Verify spawn was successful by checking position
++
+     const newPos = targetScene.spatial.getEntityPosition(playerId);
+-    if (newPos && newPos.x === x && newPos.y === y && newPos.layer === layer) {
+-        // Success! Update active scene
+-        this.sceneManager.setActiveScene(targetSceneId);
+-        return true;
+-    }
+-    
+-    // Spawn failed (occupied or invalid position)
+-    // Fall through to rollback
++    transitioned = !!(newPos && newPos.x === x && newPos.y === y && newPos.layer === layer);
+ } catch (_error) {
+-    // Commit failed
+-    // Fall through to rollback
++    transitioned = false;
+ }
++
++if (transitioned) {
++    this.sceneManager.setActiveScene(targetSceneId);
++    return true;
++}
++
++// Cleanup failed spawn to prevent orphan/duplicate IDs in target scene store
++targetScene.spatial.cancelSpawn(playerId);
+ 
+ // Phase 3: Rollback - restore player to original scene
+ currentScene.spatial.spawnWithId(playerId, playerData.type, currentPos.x, currentPos.y, currentPos.layer, playerProps);
+ currentScene.spatial.commit();
+ 
+ return false;
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=0 -->
+
+
+<details><summary>Suggestion importance[1-10]: 9</summary>
+
+__
+
+Why: This suggestion correctly identifies a critical bug in the scene transition logic where a failed transition could lead to a corrupted state with duplicate entity IDs across scenes, which would cause unpredictable behavior.
+
+</details></details></td><td align=center>High
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Prevent restored ID collisions</summary>
+
+___
+
+**Prevent ID collisions in <code>createWithId</code> by updating the internal <code>nextId</code> counter to <br>avoid reusing restored IDs, and add a check to prevent overwriting existing <br>entities.**
+
+[packages/spartan/entity-store.ts [137-144]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-8ce66d5d826499bd12b35c39058f9da681771240afcba9b1d158d9ce11e17709R137-R144)
+
+```diff
+ createWithId(id: number, type: string, props?: Record<string, unknown>): void {
++    if (this.data.has(id)) return;
++
+     const entityData: EntityData = {
+         id,
+         type,
+         ...props
+     };
++
+     this.data.set(id, entityData);
++
++    // Prevent collisions when this store is using the internal counter.
++    if (!this.idGenerator && id >= this.nextId) {
++        this.nextId = id + 1;
++    }
+ }
+```
+
+
+
+`[To ensure code accuracy, apply this suggestion manually]`
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This is a valid and critical bug fix that prevents data corruption from ID collisions when using the store's internal ID generator after deserializing entities, which is a core feature.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Prune stale state entries</summary>
+
+___
+
+**Fix a memory leak in <code>TeleporterSystem</code> by deleting the state entry for a <br>teleporter pad if it no longer exists, instead of incorrectly marking it as <br>'ready'.**
+
+[packages/spartan/teleporter-system.ts [109-113]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-2f10f54a2a95b5bf33995172b5101cf5ebdaa5060612460a6d03407d90165f5aR109-R113)
+
+```diff
+ // If player not on pad, re-enable
+ // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
+-if (!padPos || 
+-    padPos.x !== playerPos.x || 
+-    padPos.y !== playerPos.y) {
++if (!padPos) {
++    this.states.delete(teleporterId);
++    continue;
++}
++
++if (
++    padPos.x !== playerPos.x ||
++    padPos.y !== playerPos.y
++) {
+     this.states.set(teleporterId, 'ready');
+ }
+```
+
+
+
+`[To ensure code accuracy, apply this suggestion manually]`
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: The suggestion correctly identifies a memory leak where stale teleporter states are not cleaned up, improving the long-term stability and resource management of the `TeleporterSystem`.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Fully clean up canceled spawns</summary>
+
+___
+
+**Improve the <code>cancelSpawn</code> method by adding defensive cleanup logic to also remove <br>the entity from the <code>positions</code> map and <code>pendingRemovals</code> set, ensuring a more <br>consistent state.**
+
+[packages/spartan/spatial-system.ts [800-803]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-51ee831c19536e2e2d134182a19fa3996c4cbf5034c4b6b79e75dc6c23af3be0R800-R803)
+
+```diff
+ this.pendingOps.splice(index, 1);
++
++// Defensive cleanup of any tracking/state
++this.pendingRemovals.delete(entityId);
++this.positions.delete(entityId);
++
+ // Clean up entity data from store to prevent orphaned entities
+ this.store.remove(entityId);
+ return true;
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
+
+
+<details><summary>Suggestion importance[1-10]: 5</summary>
+
+__
+
+Why: The suggestion proposes a defensive cleanup in `cancelSpawn` which, while not fixing a current bug, improves the method's robustness and prevents potential future issues by ensuring a more complete state reset.
+
+</details></details></td><td align=center>Low
+
+</td></tr><tr><td rowspan=4>Possible issue</td>
+<td>
+
+
+
+<details><summary>Apply queued transitions in tests</summary>
+
+___
+
+**In the visual test wrapper for <code>movePlayerToScene</code>, immediately execute the <br>pending scene transition to ensure the test environment reflects the change and <br>snapshots are captured correctly.**
+
+[packages/visual-runner/lib/test-executor.ts [314-335]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-14d4273e752ba49bf24b630049e400057576abfe3cc4e3c03909bfa11730f95bR314-R335)
+
+```diff
+ private setupGameManagerWrapping(ctx: VisualTestContext): void {
+   // Wrap GameManager.movePlayerToScene if present
+   if (ctx.game && ctx.game.movePlayerToScene) {
+     const originalMove = ctx.game.movePlayerToScene.bind(ctx.game);
+     ctx.game.movePlayerToScene = (...args: any[]) => {
+       const result = originalMove(...args);
+-      
+-      // Capture snapshot after scene transition
++
++      // Visual tests expect immediate scene change: execute queued transition now
++      if (ctx.game.executePendingTransition) {
++        ctx.game.executePendingTransition();
++      }
++
++      // Capture snapshot after transition has been applied
+       const activeScene = ctx.game.sceneManager?.getActiveScene();
+       if (activeScene && this.captureEnabled) {
+         this.captureSnapshot(
+-          activeScene.spatial, 
+-          'movePlayerToScene', 
+-          args, 
++          activeScene.spatial,
++          'movePlayerToScene',
++          args,
+           result
+         );
+       }
+-      
++
+       return result;
+     };
+   }
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This suggestion correctly identifies that visual tests will fail because they assume an immediate scene change, while the implementation queues it. The proposed fix makes the visual tests work as intended by executing the transition immediately.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Preserve zero values on load</summary>
+
+___
+
+**In <code>deserialize</code>, replace the logical OR (<code>||</code>) operator with the nullish coalescing <br>operator (<code>??</code>) to correctly handle falsy values like <code>0</code> when restoring game state.**
+
+[packages/spartan/game-state.ts [173-186]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-7c2100b1d3dc998419d1e4f1461c5de1d55d82468101031fc7642c85a30a6887R173-R186)
+
+```diff
+ static deserialize(data: any): GameState {
+     const state = new GameState();
+-    state.playerEntityId = data.playerEntityId || 0;
+-    state.lives = data.lives || 3;
+-    state.score = data.score || 0;
+-    state.inventory = new Map(data.inventory || []);
+-    state.buffs = new Map(data.buffs || []);
+-    state.upgrades = new Set(data.upgrades || []);
+-    state.flags = new Map(data.flags || []);
+-    state.data = new Map(data.data || []);
+-    state.connections = new Map(data.connections || []);
+-    state.nextEntityId = data.nextEntityId || 1;
++    state.playerEntityId = data.playerEntityId ?? 0;
++    state.lives = data.lives ?? 3;
++    state.score = data.score ?? 0;
++    state.inventory = new Map(data.inventory ?? []);
++    state.buffs = new Map(data.buffs ?? []);
++    state.upgrades = new Set(data.upgrades ?? []);
++    state.flags = new Map(data.flags ?? []);
++    state.data = new Map(data.data ?? []);
++    state.connections = new Map(data.connections ?? []);
++    state.nextEntityId = data.nextEntityId ?? 1;
+     return state;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This suggestion fixes a significant bug in the `deserialize` method where valid game state values like `lives: 0` would be incorrectly reset to defaults, ensuring the save/load functionality is correct.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Prevent teleporter crashes and repeats</summary>
+
+___
+
+**In <code>handlePlayerTeleporterOverlap</code>, add a null check for <code>teleporter</code> data to <br>prevent crashes. Also, immediately set the source teleporter's state to <br>'inactive' to prevent re-triggering within the same tick.**
+
+[packages/spartan/teleporter-system.ts [69-91]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-2f10f54a2a95b5bf33995172b5101cf5ebdaa5060612460a6d03407d90165f5aR69-R91)
+
+```diff
+ private handlePlayerTeleporterOverlap(teleporterId: number, spatial: any): void {
+     const state = this.states.get(teleporterId) || 'ready';
+-    
+-    if (state === 'ready') {
+-        const teleporter = spatial.getEntityData(teleporterId);
+-        const dest = teleporter.destination;
+-        
+-        if (!dest) return; // No destination configured
+-        
+-        // Trigger cross-scene transition
+-        this.gameManager.movePlayerToScene(
+-            dest.sceneId,
+-            dest.x,
+-            dest.y,
+-            dest.layer
+-        );
+-        
+-        // Mark destination pad as inactive (prevent bounce-back)
+-        if (dest.destinationPadId) {
+-            this.states.set(dest.destinationPadId, 'inactive');
+-        }
++
++    if (state !== 'ready') return;
++
++    const teleporter = spatial.getEntityData(teleporterId);
++    if (!teleporter) return;
++
++    const dest = teleporter.destination;
++    if (!dest) return; // No destination configured
++
++    // Mark source pad inactive to prevent re-triggering in the same tick
++    this.states.set(teleporterId, 'inactive');
++
++    // Trigger cross-scene transition
++    this.gameManager.movePlayerToScene(
++        dest.sceneId,
++        dest.x,
++        dest.y,
++        dest.layer
++    );
++
++    // Mark destination pad as inactive (prevent bounce-back)
++    if (dest.destinationPadId) {
++        this.states.set(dest.destinationPadId, 'inactive');
+     }
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=6 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: This suggestion improves the robustness of the `TeleporterSystem` by adding a necessary null check and preventing a potential re-trigger bug, making the system more reliable.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Use correct entity storage array</summary>
+
+___
+
+**In the <code>getEntityIdsInCell</code> example within <br><code>ai-temp/game-loop-responsibilities-spec.md</code>, update the loop to iterate over <br><code>cell.items</code> instead of <code>cell.values</code> to correctly find entity IDs.**
+
+[ai-temp/game-loop-responsibilities-spec.md [99-110]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-5183f5433baab04a82f216423bca6373aafd52a7e30b4b29c520ce467752f66bR99-R110)
+
+```diff
+ getEntityIdsInCell(x: number, y: number): number[] {
+   const cell = this.grid.cell(x, y);
+   if (!cell) return [];
+   
+   const ids: number[] = [];
+-  for (const id of cell.values) {
++  for (const id of cell.items) {
+     if (id !== undefined) {
+       ids.push(id);
+     }
+   }
+   return ids;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=7 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: The suggestion correctly identifies a significant contradiction between two specification documents, where an example function iterates `cell.values` instead of `cell.items` to find entities.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=1>General</td>
+<td>
+
+
+
+<details><summary>Fix entity occupancy example</summary>
+
+___
+
+**In the <code>items[layer]</code> example within <code>specs/spartan-layer-rules.md</code>, update <br><code>cell.values</code> to <code>cell.items</code> to correctly demonstrate storing entity IDs, ensuring <br>consistency with the specification.**
+
+[specs/spartan-layer-rules.md [96-101]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-7d0b85b0d8dd26763a442b9aed3916ba55476c8cf42d6313b7b96d363d1a7b52R96-R101)
+
+```diff
+ ### `items[layer]`: Entity Occupancy
+ Entity IDs managed by `SpatialSystem`. One entity per layer.
+ ```typescript
+-cell.values[GameLayers.ACTORS] = 42;        // Player entity
+-cell.values[GameLayers.COLLECTIBLES] = 108; // Coin entity
++cell.items[GameLayers.ACTORS] = 42;        // Player entity
++cell.items[GameLayers.COLLECTIBLES] = 108; // Coin entity
+ ```
+```
+
+
+
+`[To ensure code accuracy, apply this suggestion manually]`
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: The suggestion fixes a significant contradiction in the specification document where an example incorrectly uses `cell.values` instead of `cell.items` to store entity IDs.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr>
+<tr><td align="center" colspan="2">
+
+- [ ] More <!-- /improve --more_suggestions=true -->
+
+</td><td></td></tr></tbody></table>
+
+___
+
+#### Previous suggestions
+<details><summary>✅ Suggestions up to commit 147d10c</summary>
+<br><table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=4>Possible issue</td>
+<td>
+
+
+
+<details><summary>✅ <s>Use atomic commits for scene transitions</s></summary>
+
+___
+
+<details><summary><b>Suggestion Impact:</b></summary>The commit partially implements the suggestion by committing the spatial removal immediately after removing the player from the current scene, aligning with the proposed transactional/atomic transition approach. No other suggested refactor (transactional spawn/rollback changes) is present in this patch.
+
+
+code diff:
+
+```diff
+         // Remove player from current scene
+         currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
++        currentScene.spatial.commit();
+```
+
+</details>
+
 
 ___
 
@@ -130,7 +627,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=0 -->
+`[Suggestion processed]`
 
 
 <details><summary>Suggestion importance[1-10]: 9</summary>
@@ -145,7 +642,25 @@ Why: The suggestion correctly identifies a critical architectural flaw where the
 
 
 
-<details><summary>Exclude pending removals from positions</summary>
+<details><summary>✅ <s>Exclude pending removals from positions</s></summary>
+
+___
+
+<details><summary><b>Suggestion Impact:</b></summary>getEntityPosition was modified to check pendingRemovals and return null for entities staged for removal, preventing "zombie" positions from being returned prior to commit().
+
+
+code diff:
+
+```diff
+     getEntityPosition(id: number): {x: number, y: number, layer: Layer} | null {
++        // Don't return position for entities pending removal
++        if (this.pendingRemovals.has(id)) return null;
+         return this.positions.get(id) ?? null;
+     }
+```
+
+</details>
+
 
 ___
 
@@ -161,7 +676,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
+`[Suggestion processed]`
 
 
 <details><summary>Suggestion importance[1-10]: 8</summary>
@@ -176,7 +691,29 @@ Why: This is a critical fix for game logic consistency, ensuring that entities s
 
 
 
-<details><summary>Fix incorrect layer comparison bug</summary>
+<details><summary>✅ <s>Fix incorrect layer comparison bug</s></summary>
+
+___
+
+<details><summary><b>Suggestion Impact:</b></summary>The commit removed the `padPos.layer !== playerPos.layer` check from the re-enable condition, ensuring teleporters re-activate when the player steps off the pad regardless of layer. It also added a clarifying comment explaining why layer is not compared.
+
+
+code diff:
+
+```diff
+                 // If player not on pad, re-enable
++                // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
+                 if (!padPos || 
+                     padPos.x !== playerPos.x || 
+-                    padPos.y !== playerPos.y ||
+-                    padPos.layer !== playerPos.layer) {
++                    padPos.y !== playerPos.y) {
+                     this.states.set(teleporterId, 'ready');
+                 }
+```
+
+</details>
+
 
 ___
 
@@ -196,7 +733,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
+`[Suggestion processed]`
 
 
 <details><summary>Suggestion importance[1-10]: 8</summary>
@@ -236,7 +773,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
+ <!-- /improve --apply_suggestion=3 -->
 
 
 <details><summary>Suggestion importance[1-10]: 8</summary>
@@ -253,7 +790,7 @@ Why: This suggestion correctly identifies a significant bug in the example code 
 
 
 
-<details><summary>Use deserialization methods for loading state</summary>
+<details><summary>Use deserialization methods for loading state<!-- not_implemented --></summary>
 
 ___
 
@@ -309,7 +846,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+ <!-- /improve --apply_suggestion=4 -->
 
 
 <details><summary>Suggestion importance[1-10]: 7</summary>
@@ -324,7 +861,27 @@ Why: The suggestion correctly points out that the `load` method breaks encapsula
 
 
 
-<details><summary>Clean up store on spawn cancellation</summary>
+<details><summary>✅ <s>Clean up store on spawn cancellation</s></summary>
+
+___
+
+<details><summary><b>Suggestion Impact:</b></summary>The commit adds a call to this.store.remove(entityId) in cancelSpawn after removing the pending spawn operation, matching the suggested cleanup to prevent orphaned entities.
+
+
+code diff:
+
+```diff
+@@ -760,6 +798,8 @@
+         if (index === -1) return false;
+         
+         this.pendingOps.splice(index, 1);
++        // Clean up entity data from store to prevent orphaned entities
++        this.store.remove(entityId);
+         return true;
+```
+
+</details>
+
 
 ___
 
@@ -347,7 +904,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
+`[Suggestion processed]`
 
 
 <details><summary>Suggestion importance[1-10]: 7</summary>
@@ -413,7 +970,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=6 -->
+ <!-- /improve --apply_suggestion=6 -->
 
 
 <details><summary>Suggestion importance[1-10]: 7</summary>
@@ -453,7 +1010,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=7 -->
+ <!-- /improve --apply_suggestion=7 -->
 
 
 <details><summary>Suggestion importance[1-10]: 6</summary>
@@ -496,7 +1053,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=8 -->
+ <!-- /improve --apply_suggestion=8 -->
 
 
 <details><summary>Suggestion importance[1-10]: 6</summary>
@@ -546,7 +1103,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=9 -->
+ <!-- /improve --apply_suggestion=9 -->
 
 
 <details><summary>Suggestion importance[1-10]: 6</summary>
@@ -604,7 +1161,7 @@ ___
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=10 -->
+ <!-- /improve --apply_suggestion=10 -->
 
 
 <details><summary>Suggestion importance[1-10]: 5</summary>
@@ -618,7 +1175,8 @@ Why: The suggestion correctly identifies a potential inconsistency in the `debug
 </td></tr>
 <tr><td align="center" colspan="2">
 
-- [ ] More <!-- /improve --more_suggestions=true -->
+ <!-- /improve_multi --more_suggestions=true -->
 
 </td><td></td></tr></tbody></table>
 
+</details>

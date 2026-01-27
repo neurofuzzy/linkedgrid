@@ -96,8 +96,8 @@ cell.values[GameLayers.WALLS] = WALL_STONE;
 ### `items[layer]`: Entity Occupancy
 Entity IDs managed by `SpatialSystem`. One entity per layer.
 ```typescript
-cell.values[GameLayers.ACTORS] = 42;        // Player entity
-cell.values[GameLayers.COLLECTIBLES] = 108; // Coin entity
+cell.items[GameLayers.ACTORS] = 42;        // Player entity
+cell.items[GameLayers.COLLECTIBLES] = 108; // Coin entity
 ```
 
 ### `masks[layer]`: Boolean Properties

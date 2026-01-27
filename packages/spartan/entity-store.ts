@@ -135,12 +135,20 @@ export class SparseEntityStore {
      * ```
      */
     createWithId(id: number, type: string, props?: Record<string, unknown>): void {
+        if (this.data.has(id)) return;
+
         const entityData: EntityData = {
             id,
             type,
             ...props
         };
+
         this.data.set(id, entityData);
+
+        // Prevent collisions when this store is using the internal counter.
+        if (!this.idGenerator && id >= this.nextId) {
+            this.nextId = id + 1;
+        }
     }
 
     /**
