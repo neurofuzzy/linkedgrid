@@ -1,5 +1,6 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../types';
+import { isBlocked } from '../layer-helpers';
 
 // Example test with AAA pattern
 visual('AAA: entity movement', {
@@ -44,40 +45,39 @@ visual('AAA: entity movement', {
     }
 });
 
-// Test with intentional failure to demonstrate assertion display
-visual('AAA: collision detection (FAIL)', {
+// Test blocking logic - movement into walls should be prevented
+visual('AAA: collision detection', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 5, 5, GameLayers.ACTORS);
         spatial.spawn('wall', 6, 5, GameLayers.WALLS);
         spatial.commit();
     },
     act: ({ spatial }) => {
-        // Try to move into wall (player and wall on different layers, so this succeeds)
-        // This test name says FAIL but it actually succeeds now with proper layer usage
+        // Try to move into wall - should be blocked by isBlocked function
         const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
-        spatial.moveEntity(playerId, 6, 5);
+        spatial.moveEntity(playerId, 6, 5, isBlocked);
         spatial.commit();
     },
     assert: ({ spatial, expect }) => {
-        expect('Player can overlap wall (different layers)', () => {
-            // Player on ACTORS layer can exist at same position as wall on WALLS layer
-            const playerIds = spatial.getEntityIdsInCell(6, 5);
-            if (playerIds.length < 2) {
-                throw new Error('Expected both player and wall at (6, 5)');
+        expect('Movement was blocked by wall', () => {
+            // Player should still be at original position (5, 5)
+            const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS);
+            if (playerId === undefined) {
+                throw new Error('Player moved when it should have been blocked');
             }
         });
         
-        expect('Wall still at (6, 5) on WALLS layer', () => {
+        expect('Wall still at (6, 5)', () => {
             const wallId = spatial.getEntityIdAt(6, 5, GameLayers.WALLS);
             if (wallId === undefined) {
                 throw new Error('Wall disappeared');
             }
         });
         
-        expect('Player at (6, 5) on ACTORS layer', () => {
+        expect('Player not at (6, 5)', () => {
             const playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS);
-            if (playerId === undefined) {
-                throw new Error('Player not at (6, 5)');
+            if (playerId !== undefined) {
+                throw new Error('Player moved through wall');
             }
         });
     }
