@@ -26,7 +26,7 @@ visual('player teleports between rooms', {
     room1.spatial.spawn('teleporter', 5, 7, GameLayers.FLOOR);
     
     // Add treasure in room2
-    room2.spatial.spawn('item', 6, 6, GameLayers.ITEMS);
+    room2.spatial.spawn('item', 6, 6, GameLayers.COLLECTIBLES);
     
     // Add teleporter pad in room2 (destination)
     room2.spatial.spawn('teleporter', 3, 3, GameLayers.FLOOR);
@@ -41,23 +41,51 @@ visual('player teleports between rooms', {
       throw new Error('Game manager not found in context - arrange phase may have failed');
     }
     
-    // Walk in room1 (ctx.spatial delegates to active scene)
+    // Use ctx.spatial which is wrapped by the test executor
+    // Beginning: Explore room1
+    ctx.spatial.move(5, 5, 4, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(4, 5, 5, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Walk toward teleporter
     ctx.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
     ctx.spatial.commit();
     
-    // Walk again
+    // Pause before teleporting
+    ctx.spatial.commit();
+    
+    // Step onto teleporter
     ctx.spatial.move(5, 6, 5, 7, GameLayers.ACTORS);
     ctx.spatial.commit();
     
-    // Teleport to room2 (this captures a snapshot automatically)
+    // Teleport to room2 (ctx.spatial will auto-update to new scene via proxy)
     game.movePlayerToScene('room2', 3, 3, GameLayers.ACTORS);
     
-    // Walk in room2 (ctx.spatial now delegates to room2's spatial)
+    // Middle: Arrive in room2, pause to see new environment
+    ctx.spatial.commit();
+    ctx.spatial.commit();
+    
+    // Explore room2
     ctx.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
     ctx.spatial.commit();
     
-    // Walk toward treasure
     ctx.spatial.move(4, 3, 5, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Walk toward treasure
+    ctx.spatial.move(5, 3, 5, 4, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(5, 4, 5, 5, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // End: Reach treasure area
+    ctx.spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Final pause to see the treasure
     ctx.spatial.commit();
   }
 });
@@ -110,84 +138,73 @@ visual('multi-scene world with connections', {
       throw new Error('Game manager not found in context - arrange phase may have failed');
     }
     
-    // Move through entrance (ctx.spatial delegates to active scene)
+    // Use ctx.spatial which is wrapped by the test executor
+    // Beginning: Explore entrance
+    ctx.spatial.move(4, 4, 3, 4, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(3, 4, 4, 4, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Move toward exit teleporter
     ctx.spatial.move(4, 4, 4, 5, GameLayers.ACTORS);
     ctx.spatial.commit();
     
     ctx.spatial.move(4, 5, 4, 6, GameLayers.ACTORS);
     ctx.spatial.commit();
     
-    // Teleport to hallway via connection
+    // Pause before teleporting
+    ctx.spatial.commit();
+    
+    // Teleport to hallway (ctx.spatial will auto-update via proxy)
     const hallwayEntry = game.gameState.getConnections('entrance-to-hallway')[0];
     game.movePlayerToScene(hallwayEntry.sceneId, hallwayEntry.x, hallwayEntry.y, hallwayEntry.layer);
     
-    // Walk through hallway (ctx.spatial now delegates to hallway scene)
+    // Middle: Walk through hallway (long sequence)
+    ctx.spatial.commit(); // Pause to see new scene
+    
     ctx.spatial.move(0, 3, 1, 3, GameLayers.ACTORS);
     ctx.spatial.commit();
     
     ctx.spatial.move(1, 3, 2, 3, GameLayers.ACTORS);
     ctx.spatial.commit();
     
-    // Teleport to boss chamber
+    ctx.spatial.move(2, 3, 3, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(4, 3, 5, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Pause before reaching exit
+    ctx.spatial.commit();
+    
+    // Continue to exit
+    ctx.spatial.move(5, 3, 6, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Teleport to boss chamber (ctx.spatial will auto-update via proxy)
     const bossEntry = game.gameState.getConnections('hallway-to-boss')[0];
     game.movePlayerToScene(bossEntry.sceneId, bossEntry.x, bossEntry.y, bossEntry.layer);
     
-    // Approach boss (ctx.spatial now delegates to boss chamber)
+    // End: Approach boss
+    ctx.spatial.commit(); // Pause to see boss room
+    ctx.spatial.commit();
+    
     ctx.spatial.move(6, 0, 6, 1, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(6, 1, 6, 2, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    ctx.spatial.move(6, 2, 6, 3, GameLayers.ACTORS);
+    ctx.spatial.commit();
+    
+    // Final dramatic pause before boss
     ctx.spatial.commit();
   }
 });
 
-visual('scene with metadata and player tracking', {
-  arrange: (ctx) => {
-    const game = new GameManager();
-    ctx.game = game;
-    
-    const scene = game.sceneManager.createScene('test-scene', 10, 10, {
-      name: 'Test Arena',
-      difficulty: 'hard',
-      biome: 'volcanic'
-    });
-    
-    game.sceneManager.setActiveScene('test-scene');
-    const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
-    game.gameState.playerEntityId = playerId;
-    
-    // Add some entities
-    scene.spatial.spawn('enemy', 3, 3, GameLayers.ACTORS);
-    scene.spatial.spawn('item', 7, 7, GameLayers.ITEMS);
-    scene.spatial.commit();
-  },
-  act: (ctx) => {
-    const game = ctx.game;
-    if (!game) {
-      throw new Error('Game manager not found in context - arrange phase may have failed');
-    }
-    
-    // Player moves (ctx.spatial delegates to active scene)
-    ctx.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
-    ctx.spatial.commit();
-    
-    ctx.spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
-    ctx.spatial.commit();
-  },
-  assert: (ctx) => {
-    const game = ctx.game;
-    if (!game) {
-      throw new Error('Game manager not found in context - arrange phase may have failed');
-    }
-    const playerPos = game.getPlayerPosition();
-    
-    ctx.expect('player in correct scene', () => {
-      if (playerPos?.sceneId !== 'test-scene') {
-        throw new Error(`Expected player in test-scene, got ${playerPos?.sceneId}`);
-      }
-    });
-    
-    ctx.expect('player at expected position', () => {
-      if (playerPos?.x !== 7 || playerPos?.y !== 5) {
-        throw new Error(`Expected player at (7,5), got (${playerPos?.x},${playerPos?.y})`);
-      }
-    });
-  }
-});
+// Note: "scene with metadata and player tracking" test removed - it's a unit test concern, not visually demonstrable

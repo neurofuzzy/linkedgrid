@@ -434,6 +434,34 @@ export class SpatialSystem {
     }
 
     /**
+     * Create a pause frame for visual tests.
+     * 
+     * This creates a snapshot that holds the current state for an additional frame,
+     * useful for dramatic timing or letting users observe a state.
+     * 
+     * Use sparingly - primarily for dramatic timing in visual tests.
+     * 
+     * @example
+     * ```typescript
+     * // Show entities facing each other
+     * spatial.moveEntity(player, 5, 5);
+     * spatial.commit();
+     * 
+     * // Pause to let user observe the standoff
+     * spatial.pause();
+     * spatial.pause(); // Second pause for longer duration
+     * 
+     * // Then action continues
+     * spatial.removeEntity(enemy);
+     * spatial.commit();
+     * ```
+     */
+    pause(): void {
+        // This is a marker method that the test executor will capture
+        // to create a pause snapshot showing the current state
+    }
+
+    /**
      * Stage a remove operation for an entity.
      * 
      * The removal is not executed immediately - call commit() to execute.

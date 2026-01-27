@@ -35,11 +35,24 @@ export function usePlayback(
   
   // Reset and auto-play when snapshots change
   useEffect(() => {
-    if (autoPlay && snapshots.length > 1) {
-      setState({ type: 'playing', currentIndex: 0 });
-    } else {
-      setState({ type: 'paused', currentIndex: 0 });
-    }
+    // Only reset if we're starting fresh (no snapshots before) or snapshots length changed
+    setState(current => {
+      // If we're already showing a valid frame from the same snapshots, don't reset
+      if (current.currentIndex < snapshots.length && current.currentIndex >= 0) {
+        // Keep current position
+        if (autoPlay && snapshots.length > 1 && current.type === 'paused') {
+          return { type: 'playing', currentIndex: current.currentIndex };
+        }
+        return current;
+      }
+      
+      // Otherwise reset to beginning
+      if (autoPlay && snapshots.length > 1) {
+        return { type: 'playing', currentIndex: 0 };
+      } else {
+        return { type: 'paused', currentIndex: 0 };
+      }
+    });
   }, [snapshots, autoPlay]);
   
   // Call onComplete when playback reaches the end
