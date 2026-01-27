@@ -29,7 +29,7 @@ export default defineConfig(() => {
         server: {
             host: '0.0.0.0', // Allow access from all network interfaces (including geoff.local)
             port: 5183,
-            open: '/dev/visual-runner.html', // Auto-open visual test runner
+            open: '/dev/index.html', // Auto-open interactive playground
         },
         build: {
             lib: {

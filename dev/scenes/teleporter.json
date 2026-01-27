@@ -1,0 +1,994 @@
+{
+  "scenes": [
+    {
+      "id": "room1",
+      "name": "Starting Room",
+      "width": 20,
+      "height": 20,
+      "entities": [
+        {
+          "type": "player",
+          "x": 10,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "hp": 100
+          }
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 1,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 2,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 3,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 4,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 5,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 6,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 7,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 9,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 10,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 11,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 12,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 13,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 14,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 15,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 16,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 17,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 18,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 1,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 2,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 3,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 4,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 5,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 6,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 7,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 9,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 10,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 11,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 12,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 13,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 14,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 15,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 16,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 17,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 18,
+          "layer": 4
+        },
+        {
+          "type": "teleporter",
+          "x": 15,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "destination": {
+              "sceneId": "room2",
+              "x": 5,
+              "y": 5,
+              "layer": 5,
+              "destinationPadId": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "room2",
+      "name": "Destination Room",
+      "width": 20,
+      "height": 20,
+      "entities": [
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 0,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 19,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 1,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 2,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 3,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 4,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 5,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 6,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 7,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 9,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 10,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 11,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 12,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 13,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 14,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 15,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 16,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 17,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 18,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 1,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 2,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 3,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 4,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 5,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 6,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 7,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 9,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 10,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 11,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 12,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 13,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 14,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 15,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 16,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 17,
+          "layer": 4
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 18,
+          "layer": 4
+        },
+        {
+          "type": "teleporter",
+          "x": 5,
+          "y": 5,
+          "layer": 1,
+          "data": {
+            "destination": {
+              "sceneId": "room1",
+              "x": 15,
+              "y": 15,
+              "layer": 5,
+              "destinationPadId": 1
+            }
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 10,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "damage": 10
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 12,
+          "y": 8,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "damage": 10
+          }
+        }
+      ]
+    }
+  ],
+  "initialScene": "room1",
+  "systems": ["TeleporterSystem"],
+  "tickRate": 10
+}
