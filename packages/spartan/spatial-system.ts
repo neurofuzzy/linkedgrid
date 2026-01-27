@@ -238,6 +238,48 @@ export class SpatialSystem {
     }
 
     /**
+     * Stage a move operation for a specific entity (entity-centric API).
+     * 
+     * Convenience method that looks up the entity's current position and
+     * delegates to the coordinate-based move(). Useful when systems already
+     * have entity IDs (e.g., from overlap detection).
+     * 
+     * @param entityId - Entity ID to move
+     * @param toX - Destination X coordinate
+     * @param toY - Destination Y coordinate
+     * @param blockFn - Optional function to check if destination is blocked
+     * @returns true if entity found and move staged, false if entity not on grid
+     * 
+     * @example
+     * ```typescript
+     * // Move entity by ID (common in system logic)
+     * for (const overlap of overlaps) {
+     *   for (const entityId of overlap.entityIds) {
+     *     const pos = spatial.getEntityPosition(entityId);
+     *     if (pos) {
+     *       spatial.moveEntity(entityId, pos.x + 1, pos.y); // Move right
+     *     }
+     *   }
+     * }
+     * spatial.commit();
+     * ```
+     */
+    moveEntity(
+        entityId: number,
+        toX: number,
+        toY: number,
+        blockFn?: (cell: LinkedCell | null) => boolean
+    ): boolean {
+        const pos = this.getEntityPosition(entityId);
+        if (!pos) {
+            return false; // Entity not on grid
+        }
+
+        this.move(pos.x, pos.y, toX, toY, pos.layer, blockFn);
+        return true;
+    }
+
+    /**
      * Execute all pending operations atomically.
      * 
      * Processes operations in order:
@@ -434,6 +476,34 @@ export class SpatialSystem {
         this.pendingRemovals.add(entityId);
 
         return true;
+    }
+
+    /**
+     * Stage a remove operation for a specific entity (entity-centric API).
+     * 
+     * Convenience method that looks up the entity's current position and
+     * delegates to the coordinate-based remove(). Useful when systems already
+     * have entity IDs.
+     * 
+     * @param entityId - Entity ID to remove
+     * @returns true if entity found and staged for removal, false if not on grid
+     * 
+     * @example
+     * ```typescript
+     * // Remove entities by ID (common in combat/death logic)
+     * for (const deadEntityId of deadEntities) {
+     *   spatial.removeEntity(deadEntityId);
+     * }
+     * spatial.commit();
+     * ```
+     */
+    removeEntity(entityId: number): boolean {
+        const pos = this.getEntityPosition(entityId);
+        if (!pos) {
+            return false; // Entity not on grid
+        }
+
+        return this.remove(pos.x, pos.y, pos.layer);
     }
 
     /**

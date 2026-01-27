@@ -74,7 +74,11 @@
 
 **Provides:**
 - **Lifecycle:** `spawn()` (deferred), `remove()` (deferred), `isAlive()` (checks pending removals)
-- **Movement:** `move()` (stage), `commit()` (execute all), `clearIntents()`
+- **Movement (Coordinate-based):** `move(fromX, fromY, toX, toY, layer)` - stage move by cell position
+- **Movement (Entity-based):** `moveEntity(entityId, toX, toY)` - stage move by entity ID
+- **Removal (Coordinate-based):** `remove(x, y, layer)` - stage removal by cell position
+- **Removal (Entity-based):** `removeEntity(entityId)` - stage removal by entity ID
+- **Commit:** `commit()` (execute all), `clearIntents()`
 - **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()` (with `includePendingRemovals` option), `getEntityIdsInLine()`
 - **Overlap:** `detectOverlaps()` - find cells with 2+ entities
 - **Iteration:** `getAllPositions()` - all tracked positions
@@ -95,6 +99,7 @@
 - Each scene has its own SpatialSystem. They don't talk to each other.
 - **All operations are deferred** - nothing happens until `commit()`
 - **Lifecycle queries** prevent interaction with "zombie entities" (pending removals)
+- **Hybrid API** - Provides both coordinate-based (cell-centric) and entity-based (entity-centric) operations for flexibility
 
 ---
 

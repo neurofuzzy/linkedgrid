@@ -211,6 +211,42 @@ spatial.remove(x, y, GameLayers.ACTORS);
 spatial.commit();
 ```
 
+### Hybrid API: Coordinate-Based vs Entity-Based
+
+**SpatialSystem provides two complementary APIs:**
+
+**Coordinate-Based (Cell-Centric):**
+```typescript
+// Use when you know the cell position
+spatial.move(fromX, fromY, toX, toY, layer);
+spatial.remove(x, y, layer);
+```
+
+**Entity-Based (Entity-Centric):**
+```typescript
+// Use when you already have the entity ID
+spatial.moveEntity(entityId, toX, toY);
+spatial.removeEntity(entityId);
+
+// Example: Move entities from overlap detection
+for (const overlap of overlaps) {
+    for (const entityId of overlap.entityIds) {
+        const pos = spatial.getEntityPosition(entityId);
+        if (pos) {
+            spatial.moveEntity(entityId, pos.x + 1, pos.y); // Move right
+        }
+    }
+}
+```
+
+**When to use each:**
+- **Entity-based (Preferred)**: System logic, AI, overlap responses, entity-centric game logic
+- **Coordinate-based**: Direct cell manipulation, convoy movement, blocking function tests, map editors
+
+Both stage operations that execute on `commit()`.
+
+**Best Practice:** Use entity-based API in game systems for clearer, more maintainable code. Use coordinate-based API for low-level cell operations and specialized cases like convoy movement.
+
 **Benefits:**
 - All systems see the same immutable grid state during a tick
 - No temporal coupling between systems
@@ -426,8 +462,9 @@ visual('test name', {
         spatial.commit(); // IMPORTANT: Commit in arrange
     },
     act: ({ spatial }) => {
-        // Perform actions (each creates a snapshot)
-        spatial.move(5, 5, 6, 5, 1);
+        // Perform actions using entity-based API (preferred)
+        const playerId = spatial.getEntityIdAt(5, 5, 1)!;
+        spatial.moveEntity(playerId, 6, 5);
         spatial.commit(); // IMPORTANT: Commit after staging
     },
     assert: ({ spatial, expect }) => {
@@ -485,7 +522,11 @@ npm test
 
 - **`packages/spartan/spatial-system.ts`** - Main API: 
   - **Lifecycle:** `spawn()`, `remove()` (deferred), `isAlive()`
-  - **Movement:** `move()` (deferred), `commit()`, `clearIntents()`
+  - **Movement (Coordinate-based):** `move(fromX, fromY, toX, toY, layer)` (deferred)
+  - **Movement (Entity-based):** `moveEntity(entityId, toX, toY)` (deferred)
+  - **Removal (Coordinate-based):** `remove(x, y, layer)` (deferred)
+  - **Removal (Entity-based):** `removeEntity(entityId)` (deferred)
+  - **Commit:** `commit()`, `clearIntents()`
   - **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()` (with `includePendingRemovals`), `getEntityIdsInLine()`, `detectOverlaps()`
   - **Inspection:** `getPendingOps()`, `getPendingRemovals()`, `debug()`
   - **Cancellation:** `cancelRemoval()`, `cancelSpawn()`
@@ -640,4 +681,4 @@ When modifying the codebase, ask:
 ---
 
 **Last Updated:** 2026-01-27  
-**Version:** After unified transaction model implementation (deferred spawn/move/remove, lifecycle queries, queued scene transitions)
+**Version:** After unified transaction model implementation (deferred spawn/move/remove, lifecycle queries, queued scene transitions) + hybrid API (entity-based convenience methods)
