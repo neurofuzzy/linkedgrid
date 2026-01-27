@@ -33,6 +33,14 @@ export class GameManager {
     /** Scene manager for all spatial scenes */
     readonly sceneManager: SceneManager;
 
+    /** Pending scene transition (queued until tick boundary) */
+    private pendingSceneTransition?: {
+        sceneId: string;
+        x: number;
+        y: number;
+        layer: Layer;
+    };
+
     /**
      * Create a new GameManager.
      * 
@@ -121,7 +129,69 @@ export class GameManager {
     }
 
     /**
-     * Move player entity from current scene to target scene.
+     * Queue a scene transition to execute at tick boundary.
+     * 
+     * Queues the transition instead of executing immediately to prevent
+     * zombie scenes (systems running in old scene after player leaves).
+     * 
+     * Call executePendingTransition() to execute the queued transition.
+     * 
+     * @param targetSceneId - Scene to move player to
+     * @param x - X coordinate in target scene
+     * @param y - Y coordinate in target scene
+     * @param layer - Layer in target scene
+     * 
+     * @example
+     * ```typescript
+     * // Teleport player to dungeon entrance (queued)
+     * game.movePlayerToScene('dungeon', 5, 5, 5);
+     * // Transition executes at end of tick
+     * ```
+     */
+    movePlayerToScene(
+        targetSceneId: string,
+        x: number,
+        y: number,
+        layer: Layer
+    ): void {
+        // Queue instead of executing immediately
+        this.pendingSceneTransition = { sceneId: targetSceneId, x, y, layer };
+    }
+
+    /**
+     * Execute pending scene transition, if any.
+     * 
+     * Should be called by GameRuntime after game loop tick completes.
+     * Returns true if a transition was executed.
+     * 
+     * @returns true if transition executed, false if no pending transition
+     * 
+     * @example
+     * ```typescript
+     * // In GameRuntime.tick()
+     * gameLoop.tick();
+     * const sceneChanged = game.executePendingTransition();
+     * if (sceneChanged) {
+     *   // Rebuild game loop for new scene
+     * }
+     * ```
+     */
+    executePendingTransition(): boolean {
+        if (!this.pendingSceneTransition) return false;
+        
+        const { sceneId, x, y, layer } = this.pendingSceneTransition;
+        
+        // Execute the actual transition
+        const success = this._movePlayerToSceneImmediate(sceneId, x, y, layer);
+        
+        this.pendingSceneTransition = undefined;
+        return success;
+    }
+
+    /**
+     * Move player entity from current scene to target scene (immediate execution).
+     * 
+     * Internal method - use movePlayerToScene() to queue transitions safely.
      * 
      * Safely transfers player entity between scenes:
      * 1. Gets player data from current scene
@@ -134,16 +204,8 @@ export class GameManager {
      * @param y - Y coordinate in target scene
      * @param layer - Layer in target scene
      * @returns true if successful, false if failed
-     * 
-     * @example
-     * ```typescript
-     * // Teleport player to dungeon entrance
-     * if (game.movePlayerToScene('dungeon', 5, 5, 5)) {
-     *   console.log('Player entered dungeon');
-     * }
-     * ```
      */
-    movePlayerToScene(
+    private _movePlayerToSceneImmediate(
         targetSceneId: string,
         x: number,
         y: number,

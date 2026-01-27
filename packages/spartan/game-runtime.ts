@@ -217,14 +217,19 @@ export class GameRuntime {
     tick(): void {
         const sceneBefore = this.game.sceneManager.getActiveScene();
         
-        // Run game tick
+        // 1. Run game loop (systems stage intents)
         this.gameLoop.tick();
         this._tickCount++;
         
-        // Check if scene changed
-        const sceneAfter = this.game.sceneManager.getActiveScene();
-        if (sceneAfter && sceneAfter !== sceneBefore) {
-            this.onSceneTransition(sceneAfter);
+        // 2. Execute queued scene transition (if any)
+        const sceneChanged = this.game.executePendingTransition();
+        
+        // 3. If scene changed, rebuild game loop
+        if (sceneChanged) {
+            const sceneAfter = this.game.sceneManager.getActiveScene();
+            if (sceneAfter && sceneAfter !== sceneBefore) {
+                this.onSceneTransition(sceneAfter);
+            }
         }
     }
     
@@ -369,11 +374,20 @@ export class GameRuntime {
         while (this.accumulator >= this.tickInterval) {
             // Call internal tick logic (without double-incrementing count)
             const sceneBefore = this.game.sceneManager.getActiveScene();
+            
+            // 1. Run game loop
             this.gameLoop.tick();
             this._tickCount++;
-            const sceneAfter = this.game.sceneManager.getActiveScene();
-            if (sceneAfter && sceneAfter !== sceneBefore) {
-                this.onSceneTransition(sceneAfter);
+            
+            // 2. Execute queued scene transition
+            const sceneChanged = this.game.executePendingTransition();
+            
+            // 3. Rebuild game loop if scene changed
+            if (sceneChanged) {
+                const sceneAfter = this.game.sceneManager.getActiveScene();
+                if (sceneAfter && sceneAfter !== sceneBefore) {
+                    this.onSceneTransition(sceneAfter);
+                }
             }
             
             this.accumulator -= this.tickInterval;

@@ -54,17 +54,30 @@ import type { EntityData, Layer } from './types';
  * spatial.commit(); // All three move successfully
  * ```
  */
+/**
+ * Pending operation types for unified transaction model.
+ */
+interface PendingOperation {
+    type: 'move' | 'remove' | 'spawn';
+    entityId?: number;
+    fromX?: number;
+    fromY?: number;
+    toX?: number;
+    toY?: number;
+    x?: number;
+    y?: number;
+    layer: Layer;
+    blockFn?: (cell: LinkedCell | null) => boolean;
+    typeStr?: string;
+    props?: object;
+}
+
 export class SpatialSystem {
-    /** Pending movement intents to be resolved on commit */
-    private pendingMoves: Array<{
-        entityId: number;
-        fromX: number;
-        fromY: number;
-        toX: number;
-        toY: number;
-        layer: Layer;
-        blockFn?: (cell: LinkedCell | null) => boolean;
-    }> = [];
+    /** Pending operations to be resolved on commit */
+    private pendingOps: PendingOperation[] = [];
+
+    /** Track pending removals for lifecycle queries */
+    private pendingRemovals = new Set<number>();
 
     /** Entity position tracking: entity ID → {x, y, layer} */
     private positions: Map<number, {x: number, y: number, layer: Layer}> = new Map();
@@ -81,9 +94,11 @@ export class SpatialSystem {
     ) {}
 
     /**
-     * Spawn a new entity at a position and layer.
+     * Stage a spawn operation for a new entity.
      * 
-     * Creates entity metadata in store and writes ID to cell.values[layer].
+     * Creates entity metadata in store but defers placement until commit().
+     * The entity ID is returned immediately but the entity won't be on the
+     * grid until commit() is called.
      * 
      * @param type - Entity type identifier
      * @param x - X coordinate (column)
@@ -91,39 +106,33 @@ export class SpatialSystem {
      * @param layer - Layer index to occupy
      * @param props - Optional additional entity properties
      * @returns The newly created entity ID
-     * @throws Error if coordinates are invalid or layer is occupied
      * 
      * @example
      * ```typescript
      * const player = spatial.spawn('player', 5, 5, 1, { hp: 100 });
-     * const enemy = spatial.spawn('enemy', 10, 10, 2, { hp: 50 });
+     * spatial.commit(); // Entity placed on grid
      * ```
      */
     spawn(type: string, x: number, y: number, layer: Layer, props?: Record<string, unknown>): number {
-        const cell = this.grid.cell(x, y);
-        if (!cell) {
-            throw new Error(`Invalid coordinates: (${x}, ${y})`);
-        }
-
-        // Rule 3: Check if destination layer is occupied
-        if (cell.getValue(layer) !== undefined) {
-            throw new Error(`Layer ${layer} at (${x}, ${y}) is already occupied by entity ${cell.getValue(layer)}`);
-        }
-
-        // Create entity in store
+        // Generate ID immediately but don't place yet
         const entityId = this.store.createId(type, props);
-
-        // Write to cell layer (Rule 2: entities occupy a layer)
-        cell.setValue(layer, entityId);
-
-        // Track entity position
-        this.positions.set(entityId, { x, y, layer });
-
+        
+        // Stage the spawn operation
+        this.pendingOps.push({
+            type: 'spawn',
+            entityId,
+            x,
+            y,
+            layer,
+            typeStr: type,
+            props
+        });
+        
         return entityId;
     }
 
     /**
-     * Record an intent to move an entity from one cell to another on the same layer.
+     * Stage a move operation for an entity.
      * 
      * The move is not executed immediately - call commit() to resolve all pending
      * movements atomically. This allows adjacent entities to move in the same
@@ -179,8 +188,9 @@ export class SpatialSystem {
             return; // No entity at source - silently ignore
         }
 
-        // Record the intent
-        this.pendingMoves.push({
+        // Stage the move operation
+        this.pendingOps.push({
+            type: 'move',
             entityId,
             fromX,
             fromY,
@@ -192,48 +202,62 @@ export class SpatialSystem {
     }
 
     /**
-     * Execute all pending movement intents using two-phase commit logic.
+     * Execute all pending operations atomically.
      * 
-     * Phase 1 - Validation:
-     * - Build set of cells being vacated by moves
-     * - Check each move's destination is empty OR being vacated
-     * - Detect conflicts (two entities want same destination)
+     * Processes operations in order:
+     * 1. Removals - entities removed from grid and store
+     * 2. Moves - two-phase validation and execution
+     * 3. Spawns - place new entities on grid
      * 
-     * Phase 2 - Execution:
-     * - Apply all valid moves atomically
-     * - Clear pending moves array
-     * 
-     * This allows convoys of adjacent entities to move together without
-     * order-dependent blocking.
+     * This order prevents ghost entities from conflicting operations.
      * 
      * @example
      * ```typescript
-     * // Move a convoy of units right
+     * // Stage operations
+     * spatial.spawn('enemy', 10, 10, 1);
      * spatial.move(5, 5, 6, 5, 1);
-     * spatial.move(6, 5, 7, 5, 1);
-     * spatial.move(7, 5, 8, 5, 1);
-     * spatial.commit(); // All three move successfully
+     * spatial.remove(7, 7, 1);
+     * 
+     * // Execute all atomically
+     * spatial.commit();
      * ```
      */
     commit(): void {
-        if (this.pendingMoves.length === 0) {
+        if (this.pendingOps.length === 0) {
             return;
         }
 
-        // Phase 1: Validation
+        // Phase 1: Process removals first
+        const removals = this.pendingOps.filter(op => op.type === 'remove');
+        for (const op of removals) {
+            const cell = this.grid.cell(op.x!, op.y!);
+            if (cell) {
+                cell.clearValue(op.layer);
+            }
+            this.store.remove(op.entityId!);
+            this.positions.delete(op.entityId!);
+        }
+
+        // Phase 2: Process moves (existing two-phase logic)
+        const moves = this.pendingOps.filter(op => op.type === 'move');
+        
+        // Filter out moves for removed entities (prevent ghost entities)
+        const validMoveCandidates = moves.filter(op => !this.pendingRemovals.has(op.entityId!));
+        
+        // Two-phase commit for movements
         const sources = new Set<string>();
-        const destinations = new Map<string, number[]>(); // Map destination to list of entity indices trying to move there
-        const validMoves: boolean[] = [];
+        const destinations = new Map<string, number[]>();
+        const validMoves: boolean[] = new Array(validMoveCandidates.length).fill(false);
 
         // Build set of cells being vacated
-        for (const move of this.pendingMoves) {
+        for (const move of validMoveCandidates) {
             const key = `${move.fromX},${move.fromY},${move.layer}`;
             sources.add(key);
         }
 
         // Collect all destination requests
-        for (let i = 0; i < this.pendingMoves.length; i++) {
-            const move = this.pendingMoves[i];
+        for (let i = 0; i < validMoveCandidates.length; i++) {
+            const move = validMoveCandidates[i];
             const destKey = `${move.toX},${move.toY},${move.layer}`;
             
             if (!destinations.has(destKey)) {
@@ -243,19 +267,17 @@ export class SpatialSystem {
         }
 
         // Validate each move
-        for (let i = 0; i < this.pendingMoves.length; i++) {
-            const move = this.pendingMoves[i];
+        for (let i = 0; i < validMoveCandidates.length; i++) {
+            const move = validMoveCandidates[i];
             const destKey = `${move.toX},${move.toY},${move.layer}`;
-            const toCell = this.grid.cell(move.toX, move.toY);
+            const toCell = this.grid.cell(move.toX!, move.toY!);
 
             if (!toCell) {
-                validMoves.push(false);
                 continue;
             }
 
             // Check custom blocking function if provided
             if (move.blockFn && move.blockFn(toCell)) {
-                validMoves.push(false);
                 continue;
             }
 
@@ -267,75 +289,89 @@ export class SpatialSystem {
             const requestsForThisDest = destinations.get(destKey) || [];
             const hasConflict = requestsForThisDest.length > 1;
 
-            if (hasConflict || (isOccupied && !isBeingVacated)) {
-                validMoves.push(false);
-            } else {
-                validMoves.push(true);
+            if (!hasConflict && (!isOccupied || isBeingVacated)) {
+                validMoves[i] = true;
             }
         }
 
-        // Phase 2: Execution
-        // First, clear all source cells for VALID moves
-        for (let i = 0; i < this.pendingMoves.length; i++) {
+        // Execute valid moves: clear sources first
+        for (let i = 0; i < validMoveCandidates.length; i++) {
             if (validMoves[i]) {
-                const move = this.pendingMoves[i];
-                const fromCell = this.grid.cell(move.fromX, move.fromY);
+                const move = validMoveCandidates[i];
+                const fromCell = this.grid.cell(move.fromX!, move.fromY!);
                 if (fromCell) {
                     fromCell.clearValue(move.layer);
                 }
             }
         }
 
-        // Then, write all entities to their destinations for VALID moves
-        for (let i = 0; i < this.pendingMoves.length; i++) {
+        // Then write to destinations
+        for (let i = 0; i < validMoveCandidates.length; i++) {
             if (validMoves[i]) {
-                const move = this.pendingMoves[i];
-                const toCell = this.grid.cell(move.toX, move.toY);
+                const move = validMoveCandidates[i];
+                const toCell = this.grid.cell(move.toX!, move.toY!);
                 if (toCell) {
-                    toCell.setValue(move.layer, move.entityId);
-                    // Update position tracking
-                    this.positions.set(move.entityId, {
-                        x: move.toX,
-                        y: move.toY,
+                    toCell.setValue(move.layer, move.entityId!);
+                    this.positions.set(move.entityId!, {
+                        x: move.toX!,
+                        y: move.toY!,
                         layer: move.layer
                     });
                 }
             }
         }
 
-        // Clear pending moves
-        this.pendingMoves = [];
+        // Phase 3: Process spawns last
+        const spawns = this.pendingOps.filter(op => op.type === 'spawn');
+        for (const op of spawns) {
+            const cell = this.grid.cell(op.x!, op.y!);
+            if (!cell) continue;
+            if (cell.getValue(op.layer) !== undefined) continue; // Occupied
+
+            // Place entity on grid
+            cell.setValue(op.layer, op.entityId!);
+            this.positions.set(op.entityId!, { x: op.x!, y: op.y!, layer: op.layer });
+        }
+
+        // Phase 4: Clear all pending operations
+        this.pendingOps = [];
+        this.pendingRemovals.clear();
     }
 
     /**
-     * Clear all pending movement intents without executing them.
+     * Clear all pending operations without executing them.
      * 
-     * Useful for canceling movements or resetting state in tests.
+     * Useful for canceling operations or resetting state in tests.
      * 
      * @example
      * ```typescript
      * spatial.move(5, 5, 6, 5, 1);
-     * spatial.clearIntents(); // Movement is canceled
+     * spatial.spawn('enemy', 10, 10, 1);
+     * spatial.clearIntents(); // All operations canceled
      * ```
      */
     clearIntents(): void {
-        this.pendingMoves = [];
+        this.pendingOps = [];
+        this.pendingRemovals.clear();
     }
 
     /**
-     * Remove an entity from a cell and destroy its data.
+     * Stage a remove operation for an entity.
      * 
-     * Cleans up both the cell layer and the entity store.
+     * The removal is not executed immediately - call commit() to execute.
+     * The entity will be marked as "not alive" immediately (for lifecycle queries)
+     * but will remain on the grid until commit().
      * 
      * @param x - X coordinate
      * @param y - Y coordinate
      * @param layer - Layer the entity occupies
-     * @returns true if entity was removed, false if not found
+     * @returns true if entity found and staged for removal, false if not found
      * 
      * @example
      * ```typescript
-     * // Remove entity (e.g., projectile hit)
+     * // Stage entity removal
      * spatial.remove(10, 10, 3);
+     * spatial.commit(); // Entity removed from grid
      * ```
      */
     remove(x: number, y: number, layer: Layer): boolean {
@@ -349,14 +385,17 @@ export class SpatialSystem {
             return false;
         }
 
-        // Clean up cell
-        cell.clearValue(layer);
+        // Stage the removal operation
+        this.pendingOps.push({
+            type: 'remove',
+            entityId,
+            x,
+            y,
+            layer
+        });
 
-        // Remove from store
-        this.store.remove(entityId);
-
-        // Remove position tracking
-        this.positions.delete(entityId);
+        // Mark as pending removal for lifecycle queries
+        this.pendingRemovals.add(entityId);
 
         return true;
     }
@@ -423,15 +462,17 @@ export class SpatialSystem {
      * Get all entity IDs within a circular radius (Euclidean distance).
      * 
      * Rule 5: Spatial queries for area effects, vision, etc.
+     * By default, excludes entities pending removal (zombie entities).
      * 
      * @param x - Center X coordinate
      * @param y - Center Y coordinate
      * @param radius - Radius in cells
+     * @param options - Query options (includePendingRemovals)
      * @returns Array of entity IDs within radius
      * 
      * @example
      * ```typescript
-     * // Find enemies near player
+     * // Find enemies near player (excludes corpses)
      * const nearby = spatial.getEntityIdsInRadius(playerX, playerY, 5);
      * for (const id of nearby) {
      *   const data = spatial.getEntityData(id);
@@ -440,8 +481,19 @@ export class SpatialSystem {
      *   }
      * }
      * ```
+     * 
+     * @example
+     * ```typescript
+     * // Include pending removals for area effect that hits corpses
+     * const all = spatial.getEntityIdsInRadius(x, y, 3, { includePendingRemovals: true });
+     * ```
      */
-    getEntityIdsInRadius(x: number, y: number, radius: number): number[] {
+    getEntityIdsInRadius(
+        x: number, 
+        y: number, 
+        radius: number,
+        options?: { includePendingRemovals?: boolean }
+    ): number[] {
         const cell = this.grid.cell(x, y);
         if (!cell) {
             return [];
@@ -458,7 +510,12 @@ export class SpatialSystem {
             }
         }
 
-        return ids;
+        // Filter out pending removals by default
+        if (options?.includePendingRemovals) {
+            return ids;
+        }
+        
+        return ids.filter(id => !this.pendingRemovals.has(id));
     }
 
     /**
@@ -548,6 +605,28 @@ export class SpatialSystem {
     }
 
     /**
+     * Check if entity is valid for targeting/interaction.
+     * 
+     * Returns false if entity is pending removal (staged for death).
+     * Use this in game systems to avoid targeting "zombie entities".
+     * 
+     * @param entityId - Entity to check
+     * @returns true if entity is alive and not pending removal
+     * 
+     * @example
+     * ```typescript
+     * // CombatSystem checks if target is still alive
+     * if (spatial.isAlive(targetId)) {
+     *   applyDamage(targetId, 10);
+     * }
+     * ```
+     */
+    isAlive(entityId: number): boolean {
+        if (this.pendingRemovals.has(entityId)) return false;
+        return this.store.getData(entityId) !== undefined;
+    }
+
+    /**
      * Get all tracked entity positions.
      * 
      * Used for overlap detection and iteration over all entities.
@@ -619,5 +698,155 @@ export class SpatialSystem {
      */
     getStore(): SparseEntityStore {
         return this.store;
+    }
+
+    /**
+     * Cancel a pending removal (e.g., for resurrection).
+     * 
+     * Removes the removal operation from pending queue and clears the
+     * pending removal flag, allowing the entity to be targeted again.
+     * 
+     * @param entityId - Entity to resurrect
+     * @returns true if removal was canceled, false if not pending
+     * 
+     * @example
+     * ```typescript
+     * // CombatSystem stages removal
+     * spatial.remove(x, y, layer);
+     * 
+     * // HealingSystem resurrects
+     * const data = spatial.getEntityData(entityId);
+     * data.hp = data.maxHp;
+     * spatial.cancelRemoval(entityId);
+     * ```
+     */
+    cancelRemoval(entityId: number): boolean {
+        if (!this.pendingRemovals.has(entityId)) return false;
+        
+        // Remove from pending removals
+        this.pendingRemovals.delete(entityId);
+        
+        // Remove from pending ops
+        const index = this.pendingOps.findIndex(
+            op => op.type === 'remove' && op.entityId === entityId
+        );
+        if (index !== -1) {
+            this.pendingOps.splice(index, 1);
+        }
+        
+        return true;
+    }
+
+    /**
+     * Cancel a pending spawn.
+     * 
+     * Removes the spawn operation from pending queue.
+     * Note: entity ID is still in store, but won't be placed on grid.
+     * 
+     * @param entityId - Entity to cancel
+     * @returns true if spawn was canceled, false if not pending
+     * 
+     * @example
+     * ```typescript
+     * const id = spatial.spawn('enemy', 10, 10, 1);
+     * spatial.cancelSpawn(id); // Entity won't appear on grid
+     * ```
+     */
+    cancelSpawn(entityId: number): boolean {
+        const index = this.pendingOps.findIndex(
+            op => op.type === 'spawn' && op.entityId === entityId
+        );
+        
+        if (index === -1) return false;
+        
+        this.pendingOps.splice(index, 1);
+        return true;
+    }
+
+    /**
+     * Get pending operations for debugging/visualization.
+     * 
+     * Returns read-only view of staged operations.
+     * Useful for visual runner and debugging.
+     * 
+     * @returns Array of pending operations
+     * 
+     * @example
+     * ```typescript
+     * const pending = spatial.getPendingOps();
+     * console.log(`${pending.length} pending operations`);
+     * ```
+     */
+    getPendingOps(): ReadonlyArray<PendingOperation> {
+        return this.pendingOps;
+    }
+
+    /**
+     * Get entities staged for removal.
+     * 
+     * Returns read-only set of entity IDs pending removal.
+     * 
+     * @returns Set of entity IDs pending removal
+     * 
+     * @example
+     * ```typescript
+     * const pendingRemovals = spatial.getPendingRemovals();
+     * if (pendingRemovals.has(entityId)) {
+     *   console.log('Entity is a zombie - pending removal');
+     * }
+     * ```
+     */
+    getPendingRemovals(): ReadonlySet<number> {
+        return this.pendingRemovals;
+    }
+
+    /**
+     * Debug output showing current and pending state.
+     * 
+     * Returns human-readable string with:
+     * - Current entity count
+     * - Pending operations count
+     * - Detailed list of pending operations
+     * 
+     * @returns Debug string
+     * 
+     * @example
+     * ```typescript
+     * console.log(spatial.debug());
+     * // === SpatialSystem Debug ===
+     * // Entities: 5
+     * // Pending ops: 3
+     * //   - Moves: 2
+     * //   - Removals: 1
+     * //   - Spawns: 0
+     * ```
+     */
+    debug(): string {
+        const entityCount = Array.from(this.positions.keys()).length;
+        const pendingMoves = this.pendingOps.filter(op => op.type === 'move').length;
+        const pendingRemovals = this.pendingRemovals.size;
+        const pendingSpawns = this.pendingOps.filter(op => op.type === 'spawn').length;
+        
+        let output = '=== SpatialSystem Debug ===\n';
+        output += `Entities: ${entityCount}\n`;
+        output += `Pending ops: ${this.pendingOps.length}\n`;
+        output += `  - Moves: ${pendingMoves}\n`;
+        output += `  - Removals: ${pendingRemovals}\n`;
+        output += `  - Spawns: ${pendingSpawns}\n`;
+        
+        if (this.pendingOps.length > 0) {
+            output += '\nPending operations:\n';
+            for (const op of this.pendingOps) {
+                if (op.type === 'move') {
+                    output += `  MOVE: entity ${op.entityId} (${op.fromX},${op.fromY}) → (${op.toX},${op.toY}) layer ${op.layer}\n`;
+                } else if (op.type === 'remove') {
+                    output += `  REMOVE: entity ${op.entityId} at (${op.x},${op.y}) layer ${op.layer}\n`;
+                } else if (op.type === 'spawn') {
+                    output += `  SPAWN: entity ${op.entityId} (${op.typeStr}) at (${op.x},${op.y}) layer ${op.layer}\n`;
+                }
+            }
+        }
+        
+        return output;
     }
 }
