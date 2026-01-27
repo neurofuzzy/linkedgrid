@@ -15,6 +15,7 @@ describe('GameLoop', () => {
         // Spawn two entities at same position (different layers)
         spatial.spawn('player', 5, 5, 1);
         spatial.spawn('item', 5, 5, 2);
+        spatial.commit();
         
         let detectedOverlap = false;
         const testSystem: GameSystem = {
@@ -40,6 +41,7 @@ describe('GameLoop', () => {
         const gameLoop = new GameLoop(spatial);
         
         const playerId = spatial.spawn('player', 5, 5, 1);
+        spatial.commit();
         
         const moveSystem: GameSystem = {
             update: (context: GameContext) => {
@@ -90,6 +92,7 @@ describe('GameLoop', () => {
         
         spatial.spawn('player', 5, 5, 1);
         spatial.spawn('enemy', 7, 7, 1);
+        spatial.commit();
         
         let detectedOverlaps = false;
         const testSystem: GameSystem = {

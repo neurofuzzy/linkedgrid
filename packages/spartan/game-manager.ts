@@ -251,6 +251,7 @@ export class GameManager {
 
         // Remove player from current scene
         currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
+        currentScene.spatial.commit();
 
         // Spawn player in target scene
         try {

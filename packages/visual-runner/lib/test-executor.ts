@@ -290,8 +290,8 @@ export class TestExecutor {
               const handleResult = (res: unknown) => {
                 // Capture snapshots only for operations that change visible state
                 // Don't capture on 'move' (stages only) - wait for 'commit' (executes)
-                if (self.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
-                  self.captureSnapshot(activeSpatial, prop as string, args, res);
+                if (this.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
+                  this.captureSnapshot(activeSpatial, prop as string, args, res);
                 }
                 return res;
               };

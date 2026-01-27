@@ -23,6 +23,7 @@ describe('GameRuntime', () => {
         });
         
         const playerId = runtime.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        runtime.spatial.commit();
         runtime.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
         
         runtime.tick();
@@ -39,6 +40,7 @@ describe('GameRuntime', () => {
         });
         
         const playerId = runtime1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        runtime1.spatial.commit();
         runtime1.game.gameState.playerEntityId = playerId;
         runtime1.game.gameState.score = 1000;
         runtime1.game.gameState.lives = 3;
@@ -75,6 +77,7 @@ describe('GameRuntime', () => {
         // Spawn entities and run ticks
         runtime.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
         runtime.spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
+        runtime.spatial.commit();
         runtime.tick();
         runtime.tick();
         
@@ -104,6 +107,7 @@ describe('GameRuntime', () => {
         // Spawn player in room1
         const room1 = runtime.game.sceneManager.getScene('room1')!;
         const playerId = room1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        room1.spatial.commit();
         runtime.game.gameState.playerEntityId = playerId;
         
         expect(runtime.activeScene.id).toBe('room1');
@@ -129,6 +133,7 @@ describe('GameRuntime', () => {
         
         // Should access active scene's spatial
         const playerId = runtime.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        runtime.spatial.commit();
         
         const pos = runtime.spatial.getEntityPosition(playerId);
         expect(pos).toEqual({ x: 5, y: 5, layer: GameLayers.ACTORS });

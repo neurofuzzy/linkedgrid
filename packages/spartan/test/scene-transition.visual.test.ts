@@ -30,6 +30,10 @@ visual('player teleports between rooms', {
     
     // Add teleporter pad in room2 (destination)
     room2.spatial.spawn('teleporter', 3, 3, GameLayers.FLOOR);
+    
+    // Commit all spawned entities
+    room1.spatial.commit();
+    room2.spatial.commit();
   },
   act: (ctx) => {
     const game = ctx.game;
@@ -94,6 +98,11 @@ visual('multi-scene world with connections', {
     
     // Add boss in boss chamber
     boss.spatial.spawn('enemy', 6, 6, GameLayers.ACTORS);
+    
+    // Commit all spawned entities
+    entrance.spatial.commit();
+    hallway.spatial.commit();
+    boss.spatial.commit();
   },
   act: (ctx) => {
     const game = ctx.game;
@@ -147,6 +156,7 @@ visual('scene with metadata and player tracking', {
     // Add some entities
     scene.spatial.spawn('enemy', 3, 3, GameLayers.ACTORS);
     scene.spatial.spawn('item', 7, 7, GameLayers.ITEMS);
+    scene.spatial.commit();
   },
   act: (ctx) => {
     const game = ctx.game;

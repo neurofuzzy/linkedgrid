@@ -19,10 +19,12 @@ visual('Multi-layer occupancy - multiple entities in same cell', {
         spatial.spawn('background', 5, 5, GameLayers.BACKGROUND);
         spatial.spawn('floor', 5, 5, GameLayers.FLOOR);
         spatial.spawn('collectible', 5, 5, GameLayers.COLLECTIBLES);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Add an actor on top
         spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        spatial.commit();
     },
     assert: ({ grid, spatial, expect }) => {
         const cell = grid.cell(5, 5);
@@ -70,10 +72,12 @@ visual('Layer priority - topmost entity selection', {
         spatial.spawn('floor', 7, 7, GameLayers.FLOOR);
         spatial.spawn('wall', 7, 7, GameLayers.WALLS);
         spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Add ephemeral effect on top
         spatial.spawn('explosion', 7, 7, GameLayers.EPHEMERALS);
+        spatial.commit();
     },
     assert: ({ grid, spatial, expect }) => {
         const cell = grid.cell(7, 7);
@@ -110,6 +114,7 @@ visual('Wall blocking - both terrain and entities block', {
         
         // Place player to move
         spatial.spawn('player', 2, 3, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Try to move into wall terrain (should fail)
@@ -149,6 +154,7 @@ visual('Actor blocking - actors block other actors', {
     arrange: ({ spatial }) => {
         spatial.spawn('player', 10, 10, GameLayers.ACTORS);
         spatial.spawn('enemy', 11, 10, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Try to move player into enemy cell (should fail)
@@ -187,6 +193,7 @@ visual('Empty floor blocking - voids block when setting enabled', {
         
         // Place player on floor
         spatial.spawn('player', 5, 8, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // First: Move into void with emptyFloorsBlock=false (should succeed)
@@ -223,6 +230,7 @@ visual('Collectibles non-blocking - player walks over items', {
     arrange: ({ spatial }) => {
         spatial.spawn('coin', 8, 5, GameLayers.COLLECTIBLES);
         spatial.spawn('player', 7, 5, GameLayers.ACTORS);
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Move player onto collectible (should succeed)
@@ -267,10 +275,12 @@ visual('Vision blocking - only WALLS layer blocks vision', {
         
         spatial.spawn('enemy', 12, 5, GameLayers.ACTORS); // Actor doesn't block vision
         spatial.spawn('coin', 13, 5, GameLayers.COLLECTIBLES); // Collectible doesn't block
+        spatial.commit();
     },
     act: ({ spatial }) => {
         // Spawn wall entity
         spatial.spawn('door', 14, 5, GameLayers.WALLS);
+        spatial.commit();
     },
     assert: ({ grid, expect }) => {
         expect('Wall terrain blocks vision', () => {

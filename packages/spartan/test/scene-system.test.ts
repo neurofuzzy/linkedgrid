@@ -135,6 +135,7 @@ describe('Scene', () => {
     it('uses global entity ID generation', () => {
         const id1 = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
         const id2 = scene.spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
+        scene.spatial.commit();
 
         expect(id1).toBe(1);
         expect(id2).toBe(2);
@@ -147,6 +148,7 @@ describe('Scene', () => {
 
     it('getPlayerPosition returns position when player in scene', () => {
         const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+        scene.spatial.commit();
         gameState.playerEntityId = playerId;
 
         const pos = scene.getPlayerPosition();
@@ -165,6 +167,7 @@ describe('Scene', () => {
             // Spawn some entities
             const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS, { hp: 100 });
             scene.spatial.spawn('enemy', 7, 7, GameLayers.ACTORS, { hp: 50 });
+            scene.spatial.commit();
             
             // Set some cell data
             const cell = scene.grid.cell(3, 3);
@@ -284,6 +287,8 @@ describe('SceneManager', () => {
 
         const id1 = scene1.spatial.spawn('entity1', 5, 5, GameLayers.ACTORS);
         const id2 = scene2.spatial.spawn('entity2', 5, 5, GameLayers.ACTORS);
+        scene1.spatial.commit();
+        scene2.spatial.commit();
 
         expect(id1).not.toBe(id2);
         expect(id1).toBe(1);
@@ -326,6 +331,7 @@ describe('GameManager', () => {
             game.sceneManager.createScene('room2', 10, 10);
 
             const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+            scene1.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
             const playerScene = game.getPlayerScene();
@@ -336,6 +342,7 @@ describe('GameManager', () => {
             const scene = game.sceneManager.createScene('room1', 10, 10);
 
             const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+            scene.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
             const pos = game.getPlayerPosition();
@@ -355,10 +362,12 @@ describe('GameManager', () => {
 
             // Spawn player in room1
             const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, { hp: 100 });
+            scene1.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
             // Move to room2
-            const success = game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
+            game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
+            const success = game.executePendingTransition();
             expect(success).toBe(true);
 
             // Verify player removed from room1
@@ -380,9 +389,11 @@ describe('GameManager', () => {
         it('fails when target scene does not exist', () => {
             const scene = game.sceneManager.createScene('room1', 10, 10);
             const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+            scene.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
-            const success = game.movePlayerToScene('nonexistent', 7, 7, GameLayers.ACTORS);
+            game.movePlayerToScene('nonexistent', 7, 7, GameLayers.ACTORS);
+            const success = game.executePendingTransition();
             expect(success).toBe(false);
 
             // Player should still be in original scene
@@ -395,12 +406,15 @@ describe('GameManager', () => {
             const scene2 = game.sceneManager.createScene('room2', 10, 10);
 
             const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+            scene1.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
             // Occupy target position
             scene2.spatial.spawn('obstacle', 7, 7, GameLayers.ACTORS);
+            scene2.spatial.commit();
 
-            const success = game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
+            game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
+            const success = game.executePendingTransition();
             expect(success).toBe(false);
 
             // Player should still be in original scene
@@ -418,9 +432,11 @@ describe('GameManager', () => {
                 damage: 10,
                 inventory: ['sword', 'shield']
             });
+            scene1.spatial.commit();
             game.gameState.playerEntityId = playerId;
 
             game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
+            game.executePendingTransition();
 
             const playerData = scene2.store.getData(playerId);
             expect(playerData?.hp).toBe(100);
@@ -442,8 +458,10 @@ describe('GameManager', () => {
             const scene2 = game.sceneManager.createScene('room2', 15, 15);
 
             const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, { hp: 100 });
+            scene1.spatial.commit();
             game.gameState.playerEntityId = playerId;
             scene2.spatial.spawn('enemy', 7, 7, GameLayers.ACTORS, { hp: 50 });
+            scene2.spatial.commit();
 
             game.sceneManager.setActiveScene('room2');
 

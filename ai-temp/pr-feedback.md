@@ -1,308 +1,174 @@
 ## PR Code Suggestions ✨
 
-<!-- 68b0c1a -->
+<!-- 147d10c -->
 
 Explore these optional code suggestions:
 
-
-<details><summary>Merge entity and terrain layers</summary>
-
-___
-
-**Enforce a strict separation between terrain layers and entity layers to resolve <br>ambiguity. For example, use a <code>WALLS</code> layer for terrain and a new <code>WALL_ENTITIES</code> <br>layer for dynamic objects like doors.**
-
-
-### Examples:
-
-
-
-<details>
-<summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-9c566eaaaaefffb477d9935a83df50bd17779277d411695bab7d06146ba79f37R91-R133">packages/spartan/test/layers.visual.test.ts [91-133]</a>
-</summary>
-
-
-
-```typescript
-visual('Wall blocking - both terrain and entities block', {
-    arrange: ({ spatial, grid }) => {
-        // Create walls using values (terrain)
-        const cell1 = grid.cell(3, 3);
-        if (cell1) cell1.values[GameLayers.WALLS] = 1; // Wall terrain
-        
-        // Create wall entity (door)
-        spatial.spawn('door', 4, 3, GameLayers.WALLS);
-        
-        // Place player to move
-
- ... (clipped 33 lines)
-```
-</details>
-
-
-
-<details>
-<summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-a0d6dedd0483b488ea6b6e59802708e62baa72fd87bb2603ded7811967b19ff0R24-R43">packages/spartan/layer-helpers.ts [24-43]</a>
-</summary>
-
-
-
-```typescript
-export function isBlocked(
-    cell: LinkedCell | null,
-    emptyFloorsBlock = false
-): boolean {
-    if (!cell) return true;
-
-    if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
-        return true;
-    }
-
-
- ... (clipped 10 lines)
-```
-</details>
-
-
-
-
-### Solution Walkthrough:
-
-
-
-#### Before:
-```typescript
-// packages/spartan/layer-helpers.ts
-export function isBlocked(cell: LinkedCell | null): boolean {
-    if (!cell) return true;
-
-    // A single WALLS layer holds both terrain walls and entity walls (e.g., doors)
-    if (cell.getValue(GameLayers.WALLS) !== undefined) {
-        return true;
-    }
-
-    if (cell.getValue(GameLayers.ACTORS) !== undefined) {
-        return true;
-    }
-
-    return false;
-}
-
-```
-
-
-
-#### After:
-```typescript
-// packages/spartan/layer-helpers.ts
-export function isBlocked(cell: LinkedCell | null): boolean {
-    if (!cell) return true;
-
-    // WALLS layer is for terrain only.
-    if (cell.getValue(GameLayers.WALLS) !== undefined) {
-        return true;
-    }
-
-    // A new WALL_ENTITIES layer is for dynamic wall-like entities.
-    if (cell.getValue(GameLayers.WALL_ENTITIES) !== undefined) {
-        return true;
-    }
-
-    if (cell.getValue(GameLayers.ACTORS) !== undefined) {
-        return true;
-    }
-
-    return false;
-}
-
-```
-
-
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: This suggestion correctly identifies a significant design ambiguity where `cell.values` now holds both terrain and entity data, which could lead to complex logic and bugs, proposing a cleaner separation of concerns.
-
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td rowspan=3>Possible issue</td>
+<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=4>Possible issue</td>
 <td>
 
 
 
-<details><summary>Fix BFS logic in find method</summary>
+<details><summary>Use atomic commits for scene transitions</summary>
 
 ___
 
-**Refactor the <code>find</code> method to use a standard queue-based BFS algorithm. This fixes <br>a bug where the starting cell was not added to the <code>visited</code> set and simplifies <br>the implementation.**
+**Refactor <code>_movePlayerToSceneImmediate</code> to use the transactional <code>spawn</code>, <code>remove</code>, and <br><code>commit</code> methods instead of directly manipulating internal state, ensuring atomic <br>scene transitions.**
 
-[packages/grid/linked-cell-utils.ts [263-303]](https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-97806adee125093fcc002fe826d2abb0e6b9781b32f6cfbd2fe956b339bf8d1aR263-R303)
+[packages/spartan/game-manager.ts [252-317]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-99b97162ed56d2486f3746c9042e236f6cffc6710365dc6ac669ce3f73e61bf7R252-R317)
 
 ```diff
- static find(
-     cell: LinkedCell,
-     passFn: (lc: LinkedCell | null) => boolean,
-     matchFn: (lc: LinkedCell | null) => boolean,
-     maxRange = 10,
-     findLimit = 1
- ): { cell: LinkedCell, dist: number }[] {
-     const visited = new WeakSet<LinkedCell>();
--    const lcs: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
+-// Remove player from current scene
++// Remove player from current scene and commit immediately
+ currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
++currentScene.spatial.commit();
+ 
+-// Spawn player in target scene
+-try {
+-    // We need to spawn with the same ID, so we'll manually handle this
+-    // First, create the entity data in the target store
+-    targetStore.data.set(playerId, playerData);
++// Try to spawn player in target scene
++const targetSpatial = targetScene.spatial;
++targetSpatial.spawn(playerData.type, x, y, layer, playerProps);
+ 
+-    // Then place in spatial system
+-    const targetCell = targetScene.grid.cell(x, y);
+-    if (!targetCell) {
+-        // Rollback: restore player to original scene
+-        const originalPos = currentScene.spatial.getEntityPosition(playerId);
+-        if (originalPos) {
+-            currentScene.spatial.spawn(playerData.type, originalPos.x, originalPos.y, originalPos.layer, playerProps);
+-        }
+-        return false;
+-    }
 -
--    let ns = cell.neighbors();
--    let nns: (LinkedCell | null)[] = [];
--    let d = 0;
-+    const queue: { cell: LinkedCell, dist: number }[] = [{ cell, dist: 0 }];
-+    visited.add(cell);
- 
-     const matches: { cell: LinkedCell, dist: number }[] = [];
--    let findLimitReached = false;
-+    let head = 0;
- 
--    while (ns.length) {
--        d++;
--        for (const n of ns) {
--            if (n && matchFn(n)) {
--                matches.push({ cell: n, dist: d });
--                if (findLimit > 0 && matches.length === findLimit) {
--                    findLimitReached = true;
--                    break;
-+    while (head < queue.length) {
-+        const { cell: current, dist } = queue[head++];
-+
-+        if (dist >= maxRange) continue;
-+
-+        for (const neighbor of current.neighbors()) {
-+            if (neighbor && !visited.has(neighbor)) {
-+                visited.add(neighbor);
-+
-+                if (matchFn(neighbor)) {
-+                    matches.push({ cell: neighbor, dist: dist + 1 });
-+                    if (findLimit > 0 && matches.length >= findLimit) {
-+                        return matches;
-+                    }
-+                }
-+
-+                if (passFn(neighbor)) {
-+                    queue.push({ cell: neighbor, dist: dist + 1 });
-                 }
-             }
--            if (n && n !== cell && !visited.has(n) && passFn(n)) {
--                nns.push(...n.neighbors());
--                visited.add(n);
--                lcs.push({ cell: n, dist: d });
--            }
-         }
--        ns = nns.filter(n => !!n);
--        nns = [];
--        if (d == maxRange) break;
--        if (findLimitReached) break;
-     }
- 
-     return matches;
+-    // Check if layer is occupied
+-    if (targetCell.getValue(layer) !== undefined) {
+-        // Rollback: restore player to original scene
+-        // Restore entity data in store
+-        currentStore.data.set(playerId, playerData);
+-        
+-        // Restore in grid
+-        const restoreCell = currentScene.grid.cell(currentPos.x, currentPos.y);
+-        if (restoreCell) {
+-            restoreCell.setValue(currentPos.layer, playerId);
+-            const positions = (currentScene.spatial as any).positions;
+-            positions.set(playerId, currentPos);
+-        }
+-        return false;
+-    }
+-
+-    // Place player entity in target cell
+-    targetCell.setValue(layer, playerId);
+-
+-    // Update position tracking
+-    const positions = (targetScene.spatial as any).positions;
+-    positions.set(playerId, { x, y, layer });
+-
+-    // Update active scene
+-    this.sceneManager.setActiveScene(targetSceneId);
+-
+-    return true;
+-} catch (error) {
+-    // If anything fails, attempt to restore player to original scene
+-    try {
+-        // Restore entity data in store
+-        currentStore.data.set(playerId, playerData);
+-        
+-        // Restore in grid
+-        const restoreCell = currentScene.grid.cell(currentPos.x, currentPos.y);
+-        if (restoreCell) {
+-            restoreCell.setValue(currentPos.layer, playerId);
+-            const positions = (currentScene.spatial as any).positions;
+-            positions.set(playerId, currentPos);
+-        }
+-    } catch (e) {
+-        // Player lost - this is bad but we can't recover
+-        console.error('Failed to restore player after failed scene transition', e);
+-    }
+-    return false;
++// Manually set the entity ID to be the same, as spawn creates a new one
++const pendingOps = targetSpatial.getPendingOps() as any[];
++const spawnOp = pendingOps.find(op => op.type === 'spawn');
++if (spawnOp) {
++    // Clean up the new ID created by spawn()
++    targetScene.store.remove(spawnOp.entityId);
++    // Assign the correct player ID
++    spawnOp.entityId = playerId;
  }
-```
-
-
-
-`[To ensure code accuracy, apply this suggestion manually]`
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: This suggestion correctly identifies a bug in the BFS implementation where the starting cell is not added to the `visited` set, potentially causing it to be processed multiple times. The proposed refactoring to a standard queue-based BFS is a significant improvement for both correctness and code clarity.
-
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td>
-
-
-
-<details><summary>Fix Dijkstra map generation logic</summary>
-
-___
-
-**Rewrite the <code>setDistance</code> method using a standard BFS with a queue to correctly <br>calculate and propagate distances from the source cell. This fixes a bug in the <br>current distance calculation logic.**
-
-[packages/grid/linked-cell-utils.ts [393-424]](https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-97806adee125093fcc002fe826d2abb0e6b9781b32f6cfbd2fe956b339bf8d1aR393-R424)
-
-```diff
- static setDistance(
-     cell: LinkedCell,
-     passFn: (lc: LinkedCell | null) => boolean,
-     distLayer = 0,
-     dist = 1,
-     doAdd = false,
-     maxRange = 50
- ) {
-     const visited = new WeakSet<LinkedCell>();
-+    const queue: { cell: LinkedCell, dist: number }[] = [];
+ 
++// Restore player data
++targetScene.store.createWithId(playerId, playerData.type, playerProps);
 +
-+    if (!doAdd) {
-+        // This is likely a bug in the original logic.
-+        // If not adding, we should probably clear all distances, not just the start cell.
-+        // For now, we set start to 0.
-+        cell.distances[distLayer] = 0;
++// Attempt to commit the spawn
++try {
++    targetSpatial.commit();
++    
++    // Verify spawn was successful
++    if (targetSpatial.getEntityPosition(playerId)) {
++        this.sceneManager.setActiveScene(targetSceneId);
++        return true;
 +    }
-     
--    if (!doAdd) cell.distances[distLayer] = 0;
--    const currentDist = cell.distances[distLayer] ?? 0;
--    cell.distances[distLayer] = currentDist + dist;
-+    const startDist = cell.distances[distLayer] ?? 0;
-+    queue.push({ cell, dist: startDist });
-+    visited.add(cell);
- 
--    let ns = cell.neighbors();
--    let nns: (LinkedCell | null)[] = [];
--    let d = dist;
-+    let head = 0;
-+    while (head < queue.length) {
-+        const { cell: current, dist: currentDist } = queue[head++];
- 
--    while (ns.length) {
--        d++;
--        ns.forEach(n => {
--            if (n && n !== cell && !visited.has(n) && passFn(n)) {
--                nns.push(...n.neighbors());
--                n.distances[distLayer] = d;
--                visited.add(n);
-+        if (currentDist >= maxRange) continue;
++} catch (e) {
++    // Commit failed, state is unchanged.
++}
 +
-+        for (const neighbor of current.neighbors()) {
-+            if (neighbor && !visited.has(neighbor) && passFn(neighbor)) {
-+                visited.add(neighbor);
-+                const newDist = currentDist + dist;
-+                neighbor.distances[distLayer] = newDist;
-+                queue.push({ cell: neighbor, dist: newDist });
-             }
--        });
--        ns = nns.filter(n => !!n);
--        nns = [];
--        if (d == maxRange) break;
-+        }
-     }
++// If spawn failed, we must restore the player in the original scene
++currentScene.spatial.spawn(playerData.type, currentPos.x, currentPos.y, currentPos.layer, playerProps);
++const currentPendingOps = currentScene.spatial.getPendingOps() as any[];
++const restoreOp = currentPendingOps.find(op => op.type === 'spawn');
++if (restoreOp) {
++    currentScene.store.remove(restoreOp.entityId);
++    restoreOp.entityId = playerId;
++}
++currentScene.store.createWithId(playerId, playerData.type, playerProps);
++currentScene.spatial.commit();
++
++return false;
++
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=0 -->
+
+
+<details><summary>Suggestion importance[1-10]: 9</summary>
+
+__
+
+Why: The suggestion correctly identifies a critical architectural flaw where the `_movePlayerToSceneImmediate` method bypasses the new transactional system, leading to complex, brittle, and bug-prone manual state manipulation and rollback logic.
+
+</details></details></td><td align=center>High
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Exclude pending removals from positions</summary>
+
+___
+
+**Update <code>getEntityPosition</code> to check <code>pendingRemovals</code> and return <code>null</code> for entities <br>that are staged for removal, even before <code>commit()</code> is called.**
+
+[packages/spartan/spatial-system.ts [603-605]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-51ee831c19536e2e2d134182a19fa3996c4cbf5034c4b6b79e75dc6c23af3be0R603-R605)
+
+```diff
+ getEntityPosition(id: number): {x: number, y: number, layer: Layer} | null {
++    if (this.pendingRemovals.has(id)) return null;
+     return this.positions.get(id) ?? null;
  }
 ```
 
 
-
-`[To ensure code accuracy, apply this suggestion manually]`
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
 
 
 <details><summary>Suggestion importance[1-10]: 8</summary>
 
 __
 
-Why: This suggestion correctly identifies a significant bug in the `setDistance` method's distance calculation logic, where all cells at the same depth were assigned the same incorrect distance. The proposed fix using a proper BFS with a queue correctly calculates path distances, fixing the core functionality of this utility method.
-
+Why: This is a critical fix for game logic consistency, ensuring that entities staged for removal are not considered to have a valid position, which prevents systems from targeting "zombie" entities.
 
 </details></details></td><td align=center>Medium
 
@@ -310,21 +176,62 @@ Why: This suggestion correctly identifies a significant bug in the `setDistance`
 
 
 
-<details><summary>Fix redundant check in documentation example</summary>
+<details><summary>Fix incorrect layer comparison bug</summary>
 
 ___
 
-**In the <code>specs/spartan-layer-rules.md</code> file, remove the redundant condition in the <br><code>blocksVision</code> code example.**
+**Fix a bug in teleporter re-activation logic by removing the incorrect layer <br>comparison, which prevents instant bounce-back.**
 
-[specs/spartan-layer-rules.md [547-552]](https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-7d0b85b0d8dd26763a442b9aed3916ba55476c8cf42d6313b7b96d363d1a7b52R547-R552)
+[packages/spartan/teleporter-system.ts [107-113]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-2f10f54a2a95b5bf33995172b5101cf5ebdaa5060612460a6d03407d90165f5aR107-R113)
 
 ```diff
- export function blocksVision(cell: LinkedCell | null): boolean {
-   if (!cell) return true;
-   return VISION_BLOCKING_LAYERS.some(layer => 
--    cell.values[layer] !== undefined || cell.values[layer] !== undefined
-+    cell.values[layer] !== undefined
-   );
+ // If player not on pad, re-enable
+-if (!padPos || 
+-    padPos.x !== playerPos.x || 
+-    padPos.y !== playerPos.y ||
+-    padPos.layer !== playerPos.layer) {
++if (!padPos || padPos.x !== playerPos.x || padPos.y !== playerPos.y) {
+     this.states.set(teleporterId, 'ready');
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This suggestion correctly identifies and fixes a logic bug in the `TeleporterSystem` that would prevent the bounce-back prevention mechanism from working as intended.
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Correctly check for entities in <code>items</code></summary>
+
+___
+
+**Correct the <code>isBlocked</code> function to check for actors and dynamic walls in the <br><code>cell.items</code> array instead of <code>cell.values</code>, aligning the example code with the <br>specification.**
+
+[specs/spartan-layer-rules.md [121-130]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-7d0b85b0d8dd26763a442b9aed3916ba55476c8cf42d6313b7b96d363d1a7b52R121-R130)
+
+```diff
+ function isBlocked(cell: LinkedCell, emptyFloorsBlock = false): boolean {
+   // Empty floor blocks (game setting)
+   if (emptyFloorsBlock && cell.values[GameLayers.FLOOR] === undefined) {
+     return true;
+   }
+   
+-  // Check walls and actors
++  // Check walls (static terrain and dynamic entities) and actors
+   return cell.values[GameLayers.WALLS] !== undefined ||
+-         cell.values[GameLayers.ACTORS] !== undefined;
++         cell.items[GameLayers.WALLS] !== undefined ||
++         cell.items[GameLayers.ACTORS] !== undefined;
  }
 ```
 
@@ -332,47 +239,72 @@ ___
 - [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
 
 
-<details><summary>Suggestion importance[1-10]: 5</summary>
+<details><summary>Suggestion importance[1-10]: 8</summary>
 
 __
 
-Why: This suggestion correctly identifies and fixes a copy-paste error in a code example within a markdown documentation file. While it doesn't affect the running code, correcting documentation is important for maintainability and preventing future confusion.
+Why: This suggestion correctly identifies a significant bug in the example code where `cell.values` is used instead of `cell.items` for checking actor and dynamic wall entities, which contradicts the specification defined in the same document.
 
 
-</details></details></td><td align=center>Low
+</details></details></td><td align=center>Medium
 
-</td></tr><tr><td rowspan=2>General</td>
+</td></tr><tr><td rowspan=7>General</td>
 <td>
 
 
 
-<details><summary>Validate layer index bounds</summary>
+<details><summary>Use deserialization methods for loading state</summary>
 
 ___
 
-**Add validation to the <code>getValue</code> and <code>setValue</code> methods in <code>LinkedCell</code> to throw an <br>error if the provided <code>layer</code> index is outside the valid range of 0-7.**
+**Refactor the <code>load</code> method to use <code>GameState.deserialize</code> and <code>SceneManager</code>'s public <br>API for restoring state, instead of directly setting internal properties.**
 
-[packages/grid/linked-cell.ts [115-136]](https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-504d30ddc0c752608c657deb406ddddcfccdf347996afda3ce035d6975130b64R115-R136)
+[packages/spartan/game-manager.ts [361-388]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-99b97162ed56d2486f3746c9042e236f6cffc6710365dc6ac669ce3f73e61bf7R361-R388)
 
 ```diff
--getValue(layer: number): (number | undefined) {
--    return this.values[layer];
-+private static readonly MAX_LAYERS = 8;
-+
-+getValue(layer: number): number | undefined {
-+    if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
-+        throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
-+    }
-+    return this._values[layer];
- }
+ static load(data: any): GameManager {
+     const game = new GameManager();
  
--setValue(layer: number, val: (number | undefined)) {
-+setValue(layer: number, val: number | undefined) {
-+    if (layer < 0 || layer >= LinkedCell.MAX_LAYERS) {
-+        throw new RangeError(`Layer index ${layer} out of bounds (0-${LinkedCell.MAX_LAYERS - 1})`);
+-    // Restore game state
+-    game.gameState.playerEntityId = data.gameState.playerEntityId || 0;
+-    game.gameState.lives = data.gameState.lives || 3;
+-    game.gameState.score = data.gameState.score || 0;
+-    game.gameState.inventory = new Map(data.gameState.inventory || []);
+-    game.gameState.buffs = new Map(data.gameState.buffs || []);
+-    game.gameState.upgrades = new Set(data.gameState.upgrades || []);
+-    game.gameState.flags = new Map(data.gameState.flags || []);
+-    game.gameState.data = new Map(data.gameState.data || []);
+-    game.gameState.connections = new Map(data.gameState.connections || []);
+-    (game.gameState as any).nextEntityId = data.gameState.nextEntityId || 1;
++    // Restore game state using its own deserialization logic
++    if (data.gameState) {
++        const restoredGameState = GameState.deserialize(data.gameState);
++        // Replace the default gameState with the restored one
++        (game as any).gameState = restoredGameState;
++        // Connect the scene manager to the new game state instance
++        (game.sceneManager as any).gameState = restoredGameState;
 +    }
-     this._values[layer] = val;
-     return this;
+ 
+     // Restore scenes
+-    for (const sceneData of data.scenes || []) {
+-        const scene = Scene.deserialize(sceneData, game.gameState);
+-        (game.sceneManager as any).scenes.set(scene.id, scene);
++    if (data.scenes) {
++        for (const sceneData of data.scenes) {
++            const scene = Scene.deserialize(sceneData, game.gameState);
++            (game.sceneManager as any).scenes.set(scene.id, scene);
++        }
+     }
+ 
+     // Restore active scene
+     if (data.activeSceneId) {
+         game.sceneManager.setActiveScene(data.activeSceneId);
++    } else if (data.scenes?.length > 0) {
++        // Fallback to the first scene if activeId is missing
++        game.sceneManager.setActiveScene(data.scenes[0].id);
+     }
+ 
+     return game;
  }
 ```
 
@@ -384,7 +316,111 @@ ___
 
 __
 
-Why: The suggestion correctly proposes adding boundary checks for layer access in `getValue` and `setValue`. This improves the robustness of the `LinkedCell` class by providing fail-fast behavior for invalid layer indices, which is a valuable addition for error handling.
+Why: The suggestion correctly points out that the `load` method breaks encapsulation by setting internal properties directly, and proposes a much cleaner, more maintainable approach using dedicated deserialization methods.
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Clean up store on spawn cancellation</summary>
+
+___
+
+**In <code>cancelSpawn</code>, call <code>this.store.remove(entityId)</code> after removing the operation <br>from <code>pendingOps</code> to prevent leaving orphaned entity data in the store.**
+
+[packages/spartan/spatial-system.ts [755-764]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-51ee831c19536e2e2d134182a19fa3996c4cbf5034c4b6b79e75dc6c23af3be0R755-R764)
+
+```diff
+ cancelSpawn(entityId: number): boolean {
+     const index = this.pendingOps.findIndex(
+         op => op.type === 'spawn' && op.entityId === entityId
+     );
+     
+     if (index === -1) return false;
+     
+     this.pendingOps.splice(index, 1);
++    this.store.remove(entityId);
+     return true;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: The suggestion correctly identifies that canceling a spawn should also clean up the entity data from the store to prevent orphaned entities and potential memory leaks, which is a significant improvement.
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Avoid creating a temporary initial scene</summary>
+
+___
+
+**Refactor the static <code>load</code> method to use a private constructor pattern, avoiding <br>the creation of a temporary, unused scene and aligning with the cleaner <br>architecture proposed in the document.**
+
+[ai-temp/game-runtime-spec.md [367-394]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-0e9a28e673d5b892cf874299bb2fab5e9a798a3feb3a72b14e54b0a8e9405695R367-R394)
+
+```diff
+-static load(saveData: SaveData, systems: GameSystem[], tickRate = 10): GameRuntime {
+-  // Create minimal config for construction
+-  const config: GameRuntimeConfig = {
+-    initialScene: {
+-      id: 'temp', // Will be replaced
+-      width: 10,
+-      height: 10
+-    },
+-    systems,
+-    tickRate
+-  };
++static load(saveData: SaveData, systems: GameSystem[], tickRate?: number): GameRuntime {
++  const game = GameManager.load(saveData);
++  const effectiveTickRate = tickRate ?? saveData.tickRate ?? 10;
+   
+-  // Create instance
+-  const runtime = new GameRuntime(config);
+-  
+-  // Replace game with loaded state
+-  runtime.game = GameManager.load(saveData);
+-  
+-  // Restore tick count if present
+-  if (saveData.tickCount !== undefined) {
+-    runtime._tickCount = saveData.tickCount;
+-  }
++  // Assumes a private constructor: 
++  // private constructor(game: GameManager, systems: GameSystem[], tickRate: number, initialTickCount = 0)
++  const runtime = new GameRuntime(
++    game, 
++    systems, 
++    effectiveTickRate, 
++    saveData.tickCount || 0
++  );
+   
+   // Initialize loop for loaded active scene
+   runtime.initializeLoop();
+   
+   return runtime;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=6 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: The suggestion correctly points out an inefficiency in the `load` method's implementation and proposes adopting a cleaner pattern that is already mentioned as a better alternative within the same specification document.
 
 
 </details></details></td><td align=center>Medium
@@ -393,53 +429,189 @@ Why: The suggestion correctly proposes adding boundary checks for layer access i
 
 
 
-<details><summary>Simplify boolean logic in helper function</summary>
+<details><summary>Improve deserialization by adding a method</summary>
 
 ___
 
-**Refactor the <code>isBlocked</code> function to use a single boolean expression instead of <br>multiple <code>if</code> statements for conciseness.**
+**Refactor deserialization to use a dedicated <code>rebuildPositionTracking</code> method on <br><code>SpatialSystem</code> instead of directly accessing its private <code>positions</code> map.**
 
-[packages/spartan/layer-helpers.ts [24-43]](https://github.com/neurofuzzy/linkedgrid/pull/5/files#diff-a0d6dedd0483b488ea6b6e59802708e62baa72fd87bb2603ded7811967b19ff0R24-R43)
+[packages/spartan/scene.ts [208-218]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-489381b9e0cc87aee1e04080bae459d260221a021599fbe8d80b3c8e2b7e18f7R208-R218)
 
 ```diff
- export function isBlocked(
-     cell: LinkedCell | null,
-     emptyFloorsBlock = false
- ): boolean {
--    if (!cell) return true;
--
--    if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
-+    if (!cell) {
-         return true;
-     }
- 
--    if (cell.getValue(GameLayers.WALLS) !== undefined) {
--        return true;
+ // Rebuild position tracking in spatial system
+-for (const cellData of data.cells || []) {
+-    for (let layer = 0; layer < cellData.values.length; layer++) {
+-        const entityId = cellData.values[layer];
+-        if (entityId !== undefined) {
+-            // Update position tracking directly
+-            const positions = (scene.spatial as any).positions;
+-            positions.set(entityId, { x: cellData.x, y: cellData.y, layer });
+-        }
 -    }
--
--    if (cell.getValue(GameLayers.ACTORS) !== undefined) {
--        return true;
--    }
--
--    return false;
-+    return (
-+        (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) ||
-+        cell.getValue(GameLayers.WALLS) !== undefined ||
-+        cell.getValue(GameLayers.ACTORS) !== undefined
-+    );
+-}
++scene.spatial.rebuildPositionTracking();
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=7 -->
+
+
+<details><summary>Suggestion importance[1-10]: 6</summary>
+
+__
+
+Why: The suggestion correctly identifies a violation of encapsulation and proposes a robust solution that improves code quality and maintainability.
+
+</details></details></td><td align=center>Low
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Improve entity restoration with a method</summary>
+
+___
+
+**Refactor entity deserialization to use a dedicated <code>restoreEntity</code> method on <br><code>SparseEntityStore</code> instead of directly accessing its private <code>data</code> map.**
+
+[packages/spartan/scene.ts [168-180]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-489381b9e0cc87aee1e04080bae459d260221a021599fbe8d80b3c8e2b7e18f7R168-R180)
+
+```diff
+ // Restore entities first
+ for (const entityData of data.entities || []) {
+-    // Manually create entity in store (bypass ID generation since we're restoring)
+-    const id = entityData.id;
+-    const type = entityData.type;
+-    const props = { ...entityData };
+-    delete props.id;
+-    delete props.type;
+-    
+-    // Create entity with original ID by temporarily using a custom generator
+-    const tempStore = scene.store as any;
+-    tempStore.data.set(id, entityData);
++    if (entityData) {
++        scene.store.restoreEntity(entityData.id, entityData);
++    }
  }
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=8 -->
 
 
-<details><summary>Suggestion importance[1-10]: 3</summary>
+<details><summary>Suggestion importance[1-10]: 6</summary>
 
 __
 
-Why: The suggestion proposes a minor refactoring to combine multiple `if` statements into a single boolean expression. While this improves conciseness, the performance impact is negligible and it's primarily a stylistic improvement.
+Why: The suggestion correctly identifies a violation of encapsulation and proposes a robust solution that improves code quality and maintainability.
 
+</details></details></td><td align=center>Low
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Improve overlap detection performance by iterating cells</summary>
+
+___
+
+**Optimize the <code>detectOverlaps</code> function by iterating through the grid's cells <br>directly instead of all entity positions. This ensures each cell is checked only <br>once, improving performance.**
+
+[ai-temp/game-loop-responsibilities-spec.md [272-291]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-5183f5433baab04a82f216423bca6373aafd52a7e30b4b29c520ce467752f66bR272-R291)
+
+```diff
+ detectOverlaps(): Overlap[] {
+   const overlaps: Overlap[] = [];
+-  const checked = new Set<string>();
+   
+-  for (const [_, pos] of this.getAllPositions()) {
+-    const key = `${pos.x},${pos.y}`;
+-    if (checked.has(key)) continue;
+-    checked.add(key);
+-    
+-    const entities = this.getEntityIdsInCell(pos.x, pos.y);
++  for (const cell of this.grid.cells) {
++    const entities = this.getEntityIdsInCell(cell.x, cell.y);
+     if (entities.length > 1) {
+       overlaps.push({
+-        position: { x: pos.x, y: pos.y },
++        position: { x: cell.x, y: cell.y },
+         entityIds: entities
+       });
+     }
+   }
+   
+   return overlaps;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=9 -->
+
+
+<details><summary>Suggestion importance[1-10]: 6</summary>
+
+__
+
+Why: The suggestion offers a valid performance optimization for the `detectOverlaps` function by iterating over grid cells instead of entity positions, which avoids redundant checks on the same cell.
+
+
+</details></details></td><td align=center>Low
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Ensure consistent counting in debug output</summary>
+
+___
+
+**In the <code>debug</code> method, calculate the pending removals count by filtering <br><code>this.pendingOps</code> to ensure consistency with how pending moves and spawns are <br>counted.**
+
+[packages/spartan/spatial-system.ts [824-851]](https://github.com/neurofuzzy/linkedgrid/pull/7/files#diff-51ee831c19536e2e2d134182a19fa3996c4cbf5034c4b6b79e75dc6c23af3be0R824-R851)
+
+```diff
+ debug(): string {
+     const entityCount = Array.from(this.positions.keys()).length;
+     const pendingMoves = this.pendingOps.filter(op => op.type === 'move').length;
+-    const pendingRemovals = this.pendingRemovals.size;
++    const pendingRemovalsCount = this.pendingOps.filter(op => op.type === 'remove').length;
+     const pendingSpawns = this.pendingOps.filter(op => op.type === 'spawn').length;
+     
+     let output = '=== SpatialSystem Debug ===\n';
+     output += `Entities: ${entityCount}\n`;
+     output += `Pending ops: ${this.pendingOps.length}\n`;
+     output += `  - Moves: ${pendingMoves}\n`;
+-    output += `  - Removals: ${pendingRemovals}\n`;
++    output += `  - Removals: ${pendingRemovalsCount}\n`;
+     output += `  - Spawns: ${pendingSpawns}\n`;
+     
+     if (this.pendingOps.length > 0) {
+         output += '\nPending operations:\n';
+         for (const op of this.pendingOps) {
+             if (op.type === 'move') {
+                 output += `  MOVE: entity ${op.entityId} (${op.fromX},${op.fromY}) → (${op.toX},${op.toY}) layer ${op.layer}\n`;
+             } else if (op.type === 'remove') {
+                 output += `  REMOVE: entity ${op.entityId} at (${op.x},${op.y}) layer ${op.layer}\n`;
+             } else if (op.type === 'spawn') {
+                 output += `  SPAWN: entity ${op.entityId} (${op.typeStr}) at (${op.x},${op.y}) layer ${op.layer}\n`;
+             }
+         }
+     }
+     
+     return output;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=10 -->
+
+
+<details><summary>Suggestion importance[1-10]: 5</summary>
+
+__
+
+Why: The suggestion correctly identifies a potential inconsistency in the `debug` output and proposes a fix that makes the counting logic more robust by using a single source of truth (`pendingOps`).
 
 </details></details></td><td align=center>Low
 

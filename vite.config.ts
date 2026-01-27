@@ -13,7 +13,7 @@ const commonConfig = {
     },
 };
 
-export default defineConfig(({ command: _command, mode: _mode }) => {
+export default defineConfig(() => {
 
     // Library build mode (npm run build)
     return {
