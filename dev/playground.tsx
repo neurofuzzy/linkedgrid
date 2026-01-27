@@ -87,11 +87,12 @@ function Playground() {
           cellSize: 24,
           cellGap: 0,
           bufferInput: false, // Don't use legacy buffering
-          directionMode: 'tap' // TAP mode: each keypress = one move (better for grid games)
+          directionMode: 'continuous' // CONTINUOUS mode: hold key = keep moving
         });
         
-        // Enable keyboard only (tap mode doesn't need buffering - it already captures every keypress)
-        loadedInputManager.enableKeyboard();
+        // Enable keyboard and buffering for continuous mode
+        // Buffer catches quick taps that happen between ticks
+        loadedInputManager.enableKeyboard().enableBuffering(true);
         
         // Create player input system
         const loadedPlayerInputSystem = new PlayerInputSystem(loadedRuntime.game, loadedInputManager);

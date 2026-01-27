@@ -786,7 +786,8 @@ export class InputManager {
     getState(): InputState {
         // First, ensure the current state is up-to-date before we copy it.
         // This is crucial for tap mode, which relies on `keysJustPressed`.
-        this.updateStateFromEvents();
+        // Pass true to consume from buffer (only getState() should drain buffer)
+        this.updateStateFromEvents(true);
 
         // Create a copy of the fully updated state to return to the caller.
         const result = { ...this.state };
@@ -809,15 +810,17 @@ export class InputManager {
     /**
      * Update state from event-captured data.
      * Called automatically by event handlers and when getState() is called.
+     * 
+     * @param consumeBuffer - Whether to consume from the buffer (default: false)
      */
-    private updateStateFromEvents(): void {
-        // Get direction from held keys
-        this.state.direction = this.getCurrentDirection();
-        
-        // If buffering is enabled and we have no current held direction,
-        // try to use buffered direction
-        if (this.bufferEnabled && this.state.direction === Direction.NONE && this.directionBuffer.length > 0) {
+    private updateStateFromEvents(consumeBuffer: boolean = false): void {
+        // PRIORITY 1: Check buffer first (ensures quick taps aren't dropped)
+        // BUT: Only consume buffer when explicitly requested (from getState())
+        if (consumeBuffer && this.bufferEnabled && this.directionBuffer.length > 0) {
             this.state.direction = this.directionBuffer.shift()!;
+        } else {
+            // PRIORITY 2: Fall back to currently held keys
+            this.state.direction = this.getCurrentDirection();
         }
         
         // Shoot direction (WASD for twin-stick shooters)

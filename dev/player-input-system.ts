@@ -37,17 +37,18 @@ export class PlayerInputSystem implements GameSystem {
   /**
    * Update called by GameLoop each tick.
    *
-   * Reads input state and stages player movement.
+   * Drains entire input buffer and processes most recent input.
    */
   update(context: GameContext): void {
     // Reset tick stats
     this.debugStats.movesThisTick = 0;
     
-    // Capture buffer state before getState() consumes it
+    // Capture buffer state before consuming
     const bufferState = (this.inputManager as any).directionBuffer;
     const keysHeld = (this.inputManager as any).keysDown;
     this.debugStats.bufferSize = bufferState.length;
     this.debugStats.keysHeld = keysHeld.size;
+    
     // Get player entity ID
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId || playerId === 0) return;
@@ -56,15 +57,29 @@ export class PlayerInputSystem implements GameSystem {
     const pos = context.spatial.getEntityPosition(playerId);
     if (!pos) return;
 
-    // Get input state (this also clears one-shot events)
-    const input = this.inputManager.getState();
-    this.debugStats.lastDirection = input.direction;
+    // Drain entire buffer, keeping only the LAST direction for responsiveness
+    let lastDirection = Direction.NONE;
+    
+    while (bufferState.length > 0) {
+      const input = this.inputManager.getState();
+      if (input.direction !== Direction.NONE) {
+        lastDirection = input.direction;
+      }
+    }
+    
+    // If buffer was empty, check held keys once
+    if (lastDirection === Direction.NONE) {
+      const input = this.inputManager.getState();
+      lastDirection = input.direction;
+    }
+    
+    this.debugStats.lastDirection = lastDirection;
 
     // No direction input
-    if (input.direction === Direction.NONE) return;
+    if (lastDirection === Direction.NONE) return;
 
     // Convert direction to delta
-    const delta = this.directionToDelta(input.direction);
+    const delta = this.directionToDelta(lastDirection);
     const newX = pos.x + delta.dx;
     const newY = pos.y + delta.dy;
 
