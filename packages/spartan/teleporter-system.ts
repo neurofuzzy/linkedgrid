@@ -105,10 +105,10 @@ export class TeleporterSystem implements GameSystem {
                 const padPos = spatial.getEntityPosition(teleporterId);
                 
                 // If player not on pad, re-enable
+                // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
                 if (!padPos || 
                     padPos.x !== playerPos.x || 
-                    padPos.y !== playerPos.y ||
-                    padPos.layer !== playerPos.layer) {
+                    padPos.y !== playerPos.y) {
                     this.states.set(teleporterId, 'ready');
                 }
             }

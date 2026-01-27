@@ -132,6 +132,42 @@ export class SpatialSystem {
     }
 
     /**
+     * Stage a spawn operation with a specific entity ID (for restoration/transitions).
+     * 
+     * WARNING: Use sparingly! Only for save/load and scene transitions.
+     * Normal spawning should use spawn() for proper ID management.
+     * 
+     * @param entityId - Specific entity ID to use
+     * @param type - Entity type identifier
+     * @param x - X coordinate
+     * @param y - Y coordinate
+     * @param layer - Layer index
+     * @param props - Optional additional entity properties
+     * 
+     * @example
+     * ```typescript
+     * // Scene transition: move player entity #42 to new scene
+     * spatial.spawnWithId(42, 'player', 10, 10, GameLayers.ACTORS, { hp: 100 });
+     * spatial.commit();
+     * ```
+     */
+    spawnWithId(entityId: number, type: string, x: number, y: number, layer: Layer, props?: Record<string, unknown>): void {
+        // Create entity in store with specific ID
+        this.store.createWithId(entityId, type, props);
+        
+        // Stage the spawn operation
+        this.pendingOps.push({
+            type: 'spawn',
+            entityId,
+            x,
+            y,
+            layer,
+            typeStr: type,
+            props
+        });
+    }
+
+    /**
      * Stage a move operation for an entity.
      * 
      * The move is not executed immediately - call commit() to resolve all pending
@@ -601,6 +637,8 @@ export class SpatialSystem {
      * ```
      */
     getEntityPosition(id: number): {x: number, y: number, layer: Layer} | null {
+        // Don't return position for entities pending removal
+        if (this.pendingRemovals.has(id)) return null;
         return this.positions.get(id) ?? null;
     }
 
@@ -760,6 +798,8 @@ export class SpatialSystem {
         if (index === -1) return false;
         
         this.pendingOps.splice(index, 1);
+        // Clean up entity data from store to prevent orphaned entities
+        this.store.remove(entityId);
         return true;
     }
 

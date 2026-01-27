@@ -119,6 +119,31 @@ export class SparseEntityStore {
     }
 
     /**
+     * Create an entity with a specific ID (for deserialization/restoration).
+     * 
+     * WARNING: Use sparingly! Only for save/load and scene transitions.
+     * Normal entity creation should use createId() for proper ID management.
+     * 
+     * @param id - Entity ID to use
+     * @param type - Entity type identifier
+     * @param props - Optional additional properties
+     * 
+     * @example
+     * ```typescript
+     * // Restore saved entity
+     * store.createWithId(42, 'player', { hp: 100 });
+     * ```
+     */
+    createWithId(id: number, type: string, props?: Record<string, unknown>): void {
+        const entityData: EntityData = {
+            id,
+            type,
+            ...props
+        };
+        this.data.set(id, entityData);
+    }
+
+    /**
      * Remove entity data from the store.
      * 
      * Note: This only removes from the store. Caller is responsible for
