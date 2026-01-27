@@ -33,7 +33,7 @@ visual('Wall blocking - players blocked by terrain and doors', {
     },
     act: ({ spatial }) => {
         // Left player approaches wall
-        let leftId = spatial.getEntityIdAt(2, 4, GameLayers.ACTORS)!;
+        const leftId = spatial.getEntityIdAt(2, 4, GameLayers.ACTORS)!;
         spatial.moveEntity(leftId, 3, 4, (cell) => isBlocked(cell, false));
         spatial.commit();
         
@@ -45,7 +45,7 @@ visual('Wall blocking - players blocked by terrain and doors', {
         spatial.commit();
         
         // Right player approaches wall/door
-        let rightId = spatial.getEntityIdAt(8, 4, GameLayers.ACTORS)!;
+        const rightId = spatial.getEntityIdAt(8, 4, GameLayers.ACTORS)!;
         spatial.moveEntity(rightId, 7, 4, (cell) => isBlocked(cell, false));
         spatial.commit();
         
@@ -162,7 +162,7 @@ visual('Collectibles non-blocking - player walks through items', {
     },
     act: ({ spatial }) => {
         // Approach collectible
-        let playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
+        const playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
         spatial.moveEntity(playerId, 7, 5, (cell) => isBlocked(cell, false));
         spatial.commit();
         
