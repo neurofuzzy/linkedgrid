@@ -193,6 +193,16 @@ export function DebugPanel({ runtime, inputManager, playerInputSystem }: DebugPa
           <span className="label">Player:</span> ({playerPos.x}, {playerPos.y})
         </p>
       )}
+      {inputManager && (
+        <p>
+          <span className="label">Input Mode:</span>{' '}
+          <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
+            {(inputManager as any).config.directionMode}
+          </span>
+          {' '}
+          <span style={{ color: '#808080', fontSize: '11px' }}>(press K to toggle)</span>
+        </p>
+      )}
       {playerInputSystem && (
         <>
           <p>
