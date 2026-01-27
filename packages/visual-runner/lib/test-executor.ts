@@ -274,12 +274,10 @@ export class TestExecutor {
   private setupSceneSpatialDelegate(ctx: VisualTestContext): void {
     // If game or scene is present, replace ctx.spatial with a smart delegate
     if (ctx.game || ctx.scene) {
-      const self = this;
-      
       // Create a proxy that delegates all calls to the active scene's spatial
       ctx.spatial = new Proxy({} as SpatialSystem, {
-        get(_, prop) {
-          const activeSpatial = self.getActiveSpatial(ctx);
+        get: (_, prop) => {
+          const activeSpatial = this.getActiveSpatial(ctx);
           const value = activeSpatial[prop as keyof SpatialSystem];
           
           // If it's a function, bind it and potentially wrap it for snapshot capture
