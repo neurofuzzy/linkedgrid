@@ -7,10 +7,11 @@ import { GridRenderer, DebugPanel } from "./grid-renderer";
 import type { GameRuntime } from "../packages/spartan/game-runtime";
 
 /**
- * Scene selector dropdown.
+ * Available game configurations.
+ * Each game can contain multiple scenes.
  */
-const AVAILABLE_SCENES = [
-  { id: "basic", name: "Basic Scene", path: "/dev/scenes/basic.json" },
+const AVAILABLE_GAMES = [
+  { id: "basic", name: "Basic Game", path: "/dev/scenes/basic.json" },
   {
     id: "teleporter",
     name: "Teleporter Test",
@@ -37,8 +38,8 @@ function Playground() {
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedScene, setSelectedScene] = useState(AVAILABLE_SCENES[0].path);
-  const [sceneKey, setSceneKey] = useState(0); // For forcing remount on hot reload
+  const [selectedGame, setSelectedGame] = useState(AVAILABLE_GAMES[0].path);
+  const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
 
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
@@ -67,10 +68,10 @@ function Playground() {
           inputManagerRef.current = null;
         }
 
-        // Fetch scene config
-        const response = await fetch(selectedScene);
+        // Fetch game config
+        const response = await fetch(selectedGame);
         if (!response.ok) {
-          throw new Error(`Failed to load scene: ${response.statusText}`);
+          throw new Error(`Failed to load game: ${response.statusText}`);
         }
 
         const config: SceneConfig = await response.json();
@@ -79,10 +80,10 @@ function Playground() {
         const loader = new SceneLoader();
         const errors = SceneLoader.validate(config);
         if (errors.length > 0) {
-          throw new Error(`Scene validation failed:\n${errors.join("\n")}`);
+          throw new Error(`Game validation failed:\n${errors.join("\n")}`);
         }
 
-        // Load scene and create runtime first (need gameManager)
+        // Load game and create runtime first (need gameManager)
         loadedRuntime = loader.load(config);
 
         // Create input manager with buffering enabled for low tick rate
@@ -104,7 +105,9 @@ function Playground() {
           loadedInputManager,
         );
 
-        // Register input system with game loop
+        // Register input system with runtime (not just gameLoop)
+        // This ensures it persists across scene transitions
+        (loadedRuntime as any).systems.push(loadedPlayerInputSystem);
         (loadedRuntime as any).gameLoop.addSystem(loadedPlayerInputSystem);
 
         // Start runtime
@@ -121,7 +124,7 @@ function Playground() {
           setLoading(false);
         }
       } catch (err) {
-        console.error("Failed to load scene:", err);
+        console.error("Failed to load game:", err);
         if (mounted) {
           setError((err as Error).message);
           setLoading(false);
@@ -140,7 +143,7 @@ function Playground() {
         loadedInputManager.destroy();
       }
     };
-  }, [selectedScene, sceneKey]);
+  }, [selectedGame, gameKey]);
 
   // Re-render on tick (60fps check, but only update if tick changed)
   useEffect(() => {
@@ -162,17 +165,18 @@ function Playground() {
   // Hot reload support - listen for Vite HMR events
   useEffect(() => {
     if (import.meta.hot) {
-      // When any JSON file changes, reload the scene
+      // When any JSON file changes, reload the game
       import.meta.hot.on("vite:beforeUpdate", () => {
-        console.log("Hot reload triggered - reloading scene...");
-        setSceneKey((prev) => prev + 1);
+        console.log("Hot reload triggered - reloading game...");
+        setGameKey((prev) => prev + 1);
       });
     }
   }, []);
 
-  // Keyboard shortcut: K to toggle input mode
+  // Keyboard shortcuts: K to toggle input mode, TAB to cycle games
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // K: Toggle input mode
       if (e.key === "k" || e.key === "K") {
         if (!inputManagerRef.current) return;
 
@@ -196,21 +200,31 @@ function Playground() {
 
         console.log(`Input mode: ${newMode}`);
       }
+      
+      // TAB: Cycle to next game
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const currentIndex = AVAILABLE_GAMES.findIndex(g => g.path === selectedGame);
+        const nextIndex = (currentIndex + 1) % AVAILABLE_GAMES.length;
+        const nextGame = AVAILABLE_GAMES[nextIndex];
+        setSelectedGame(nextGame.path);
+        console.log(`Switched to: ${nextGame.name}`);
+      }
     };
 
     document.addEventListener("keydown", handleKeyPress);
     return () => document.removeEventListener("keydown", handleKeyPress);
-  }, []);
+  }, [selectedGame]);
 
-  const handleSceneChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedScene(e.target.value);
+  const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedGame(e.target.value);
   };
 
   if (loading) {
     return (
       <div style={{ padding: "20px" }}>
         <h1>Spartan Playground</h1>
-        <p style={{ color: "#4ec9b0" }}>Loading scene...</p>
+        <p style={{ color: "#4ec9b0" }}>Loading game...</p>
       </div>
     );
   }
@@ -229,14 +243,14 @@ function Playground() {
             color: "#f48771",
           }}
         >
-          <h3 style={{ marginBottom: "10px" }}>Error Loading Scene</h3>
+          <h3 style={{ marginBottom: "10px" }}>Error Loading Game</h3>
           <pre style={{ whiteSpace: "pre-wrap", fontSize: "12px" }}>
             {error}
           </pre>
         </div>
         <div style={{ marginTop: "20px" }}>
           <button
-            onClick={() => setSceneKey((prev) => prev + 1)}
+            onClick={() => setGameKey((prev) => prev + 1)}
             style={{
               padding: "8px 16px",
               background: "#4ec9b0",
@@ -266,10 +280,11 @@ function Playground() {
       >
         <h1 style={{ margin: 0 }}>Spartan Playground</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <label style={{ color: "#9cdcfe", fontSize: "14px" }}>Scene:</label>
+          <label style={{ color: "#9cdcfe", fontSize: "14px" }}>Game:</label>
+          <span style={{ color: "#808080", fontSize: "12px", marginRight: "10px" }}>(TAB to cycle)</span>
           <select
-            value={selectedScene}
-            onChange={handleSceneChange}
+            value={selectedGame}
+            onChange={handleGameChange}
             style={{
               padding: "6px 12px",
               background: "#252526",
@@ -281,9 +296,9 @@ function Playground() {
               cursor: "pointer",
             }}
           >
-            {AVAILABLE_SCENES.map((scene) => (
-              <option key={scene.id} value={scene.path}>
-                {scene.name}
+            {AVAILABLE_GAMES.map((game) => (
+              <option key={game.id} value={game.path}>
+                {game.name}
               </option>
             ))}
           </select>
@@ -302,7 +317,7 @@ function Playground() {
           />
 
           <div className="debug-panel">
-            <h3>Scene Info</h3>
+            <h3>Active Scene</h3>
             {runtime?.activeScene && (
               <>
                 <p>
@@ -313,7 +328,7 @@ function Playground() {
                   <span className="label">ID:</span> {runtime.activeScene.id}
                 </p>
                 <p>
-                  <span className="label">Grid Size:</span>{" "}
+                  <span className="label">Grid:</span>{" "}
                   {runtime.activeScene.grid.width} ×{" "}
                   {runtime.activeScene.grid.height}
                 </p>
@@ -322,7 +337,7 @@ function Playground() {
             <p
               style={{ fontSize: "12px", color: "#808080", marginTop: "10px" }}
             >
-              Edit JSON files in{" "}
+              Edit JSON in{" "}
               <code
                 style={{
                   background: "#1e1e1e",
@@ -333,7 +348,7 @@ function Playground() {
               >
                 dev/scenes/
               </code>{" "}
-              and see changes instantly!
+              for hot reload
             </p>
           </div>
         </div>
