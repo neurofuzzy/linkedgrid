@@ -22,11 +22,6 @@ const DEFAULT_GRID_SIZE = { w: 20, h: 20 };
 export function GridRenderer({ snapshot, previousSnapshot }: Props) {
   const grid = snapshot?.grid || DEFAULT_GRID_SIZE;
   
-  // Detect scene change
-  const sceneChanged = previousSnapshot && 
-                       snapshot?.sceneId && 
-                       previousSnapshot.sceneId !== snapshot.sceneId;
-  
   // Build ASCII grid
   const lines: string[] = [];
   for (let y = 0; y < grid.h; y++) {
@@ -54,17 +49,6 @@ export function GridRenderer({ snapshot, previousSnapshot }: Props) {
   
   return (
     <Box flexDirection="column">
-      {/* Scene transition indicator */}
-      {sceneChanged && (
-        <Box marginBottom={1} borderStyle="single" borderColor="yellow" paddingX={1}>
-          <Text color="yellow" bold>→ Scene Transition</Text>
-          <Text dimColor> from </Text>
-          <Text>{previousSnapshot.sceneName || previousSnapshot.sceneId}</Text>
-          <Text dimColor> to </Text>
-          <Text color="yellow">{snapshot.sceneName || snapshot.sceneId}</Text>
-        </Box>
-      )}
-      
       {/* Scene header */}
       {snapshot?.sceneId && (
         <Box marginBottom={1}>
