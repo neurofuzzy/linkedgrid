@@ -481,8 +481,7 @@
               "sceneId": "room2",
               "x": 5,
               "y": 5,
-              "layer": 5,
-              "destinationPadId": 2
+              "layer": 5
             }
           }
         }
@@ -960,8 +959,7 @@
               "sceneId": "room1",
               "x": 15,
               "y": 15,
-              "layer": 5,
-              "destinationPadId": 1
+              "layer": 5
             }
           }
         },

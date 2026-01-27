@@ -128,6 +128,8 @@ export class SceneLoader {
         }
         
         const system = systemFactory(runtime.game);
+        // Add to both systems array (persists across scene transitions) and gameLoop
+        (runtime as any).systems.push(system);
         (runtime as any).gameLoop.addSystem(system);
       }
     }

@@ -35,6 +35,14 @@ export class TeleporterSystem implements GameSystem {
     constructor(private gameManager: GameManager) {}
     
     /**
+     * Reset all teleporter states.
+     * Call this after scene transitions to prevent stale state.
+     */
+    resetStates(): void {
+        this.states.clear();
+    }
+    
+    /**
      * Process teleporter overlaps each tick.
      * 
      * Called by GameLoop during system update phase.
@@ -88,9 +96,24 @@ export class TeleporterSystem implements GameSystem {
             dest.layer
         );
 
-        // Mark destination pad as inactive (prevent bounce-back)
-        if (dest.destinationPadId) {
-            this.states.set(dest.destinationPadId, 'inactive');
+        // Mark destination pad as inactive by looking it up in the destination scene
+        // This prevents immediate bounce-back when landing on the pad
+        const destScene = this.gameManager.sceneManager.getScene(dest.sceneId);
+        if (destScene) {
+            const destCell = destScene.grid.cell(dest.x, dest.y);
+            if (destCell) {
+                // Find teleporter entity at destination coordinates
+                for (let layer = 0; layer < 8; layer++) {
+                    const entityId = destCell.values[layer];
+                    if (entityId) {
+                        const entityData = destScene.store.getData(entityId);
+                        if (entityData?.type === 'teleporter') {
+                            this.states.set(entityId, 'inactive');
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -98,6 +121,7 @@ export class TeleporterSystem implements GameSystem {
      * Update teleporter states based on player position.
      * 
      * Inactive pads become ready when player steps off.
+     * Only checks pads in the current scene to avoid premature cleanup.
      */
     private updateTeleporterStates(spatial: any, playerId: number): void {
         const playerPos = spatial.getEntityPosition(playerId);
@@ -108,13 +132,14 @@ export class TeleporterSystem implements GameSystem {
             if (state === 'inactive') {
                 const padPos = spatial.getEntityPosition(teleporterId);
                 
-                // If player not on pad, re-enable
-                // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
+                // Skip pads not in current scene (they may be in other scenes)
+                // Don't delete their state - they need to stay inactive
                 if (!padPos) {
-                    this.states.delete(teleporterId);
                     continue;
                 }
 
+                // If player not on pad, re-enable
+                // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
                 if (
                     padPos.x !== playerPos.x ||
                     padPos.y !== playerPos.y
