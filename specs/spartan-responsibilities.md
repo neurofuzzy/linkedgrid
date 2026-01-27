@@ -6,10 +6,10 @@
 |-----------|-------------|------|-------------|-----------|--------------|
 | **LinkedGrid** | Topology | Cells, neighbor links | 2D coordinate space | Created once per scene | None |
 | **LinkedCell** | Storage | values[], masks[], distances[] | Self (one cell) | Lives with grid | Grid reference |
-| **SpatialSystem** | Entity positioning | Position map, pending moves | Entities in one grid | Lives with scene | Grid + Store |
+| **SpatialSystem** | Entity positioning | Position map, pending ops queue, pending removals set | Entities in one grid | Lives with scene | Grid + Store |
 | **Scene** | Scene container | Grid + Spatial + Store | One game area | Created by SceneManager | GameState (for IDs) |
 | **SceneManager** | Multi-scene bookkeeping | Scene map, active ID | All scenes | Lives with GameManager | GameState |
-| **GameManager** | Top-level coordinator | GameState + SceneManager | Cross-scene operations | Root object | None |
+| **GameManager** | Top-level coordinator | GameState + SceneManager + pending transition | Cross-scene operations | Root object | None |
 | **GameLoop** | Tick orchestration | Systems list | ONE SpatialSystem | Created per scene | SpatialSystem |
 | **GameRuntime** | Real-time execution | GameManager + GameLoop + timer | Active scene | Root object | GameManager |
 
@@ -64,19 +64,27 @@
 ---
 
 ### SpatialSystem
-**One Job:** Manage entity positions and movement within ONE grid
+**One Job:** Manage entity positions and deferred spatial operations within ONE grid
 
 **Owns:**
 - `positions: Map<entityId, {x, y, layer}>` - position tracking
-- `pendingMoves[]` - staged movement intents
+- `pendingOps: PendingOperation[]` - queue of all staged operations (spawn/move/remove)
+- `pendingRemovals: Set<entityId>` - entities staged for removal
 - Reference to grid and store
 
 **Provides:**
-- **Lifecycle:** `spawn()`, `remove()`
-- **Movement:** `move()` (stage), `commit()` (execute), `clearIntents()`
-- **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()`, `getEntityIdsInLine()`
+- **Lifecycle:** `spawn()` (deferred), `remove()` (deferred), `isAlive()` (checks pending removals)
+- **Movement (Coordinate-based):** `move(fromX, fromY, toX, toY, layer)` - stage move by cell position
+- **Movement (Entity-based):** `moveEntity(entityId, toX, toY)` - stage move by entity ID
+- **Removal (Coordinate-based):** `remove(x, y, layer)` - stage removal by cell position
+- **Removal (Entity-based):** `removeEntity(entityId)` - stage removal by entity ID
+- **Commit:** `commit()` (execute all), `clearIntents()`
+- **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()` (with `includePendingRemovals` option), `getEntityIdsInLine()`
 - **Overlap:** `detectOverlaps()` - find cells with 2+ entities
 - **Iteration:** `getAllPositions()` - all tracked positions
+- **Inspection:** `getPendingOps()`, `getPendingRemovals()`, `debug()` - for debugging/visualization
+- **Cancellation:** `cancelRemoval()`, `cancelSpawn()` - undo staged operations
+- **Scene Transitions:** `spawnWithId()` - spawn with pre-determined ID (for player migration)
 
 **Does NOT:**
 - Know about scenes (just operates on its grid)
@@ -87,7 +95,11 @@
 
 **Boundary Test:** Could you have two SpatialSystems operating on different grids independently? **YES** ✓
 
-**Key Insight:** Each scene has its own SpatialSystem. They don't talk to each other.
+**Key Insights:** 
+- Each scene has its own SpatialSystem. They don't talk to each other.
+- **All operations are deferred** - nothing happens until `commit()`
+- **Lifecycle queries** prevent interaction with "zombie entities" (pending removals)
+- **Hybrid API** - Provides both coordinate-based (cell-centric) and entity-based (entity-centric) operations for flexibility
 
 ---
 
@@ -152,10 +164,12 @@
 **Owns:**
 - GameState (global: lives, score, player ID, etc.)
 - SceneManager (all scenes)
+- `pendingSceneTransition` - queued scene transition
 
 **Provides:**
 - **Player Tracking:** `getPlayerScene()`, `getPlayerPosition()` (with sceneId)
-- **Cross-Scene Transfer:** `movePlayerToScene()` - safely move player between scenes
+- **Cross-Scene Transfer:** `movePlayerToScene()` - queues transition for end of tick
+- **Transition Execution:** `executePendingTransition()` - executes queued transition (called by GameRuntime)
 - **Save/Load:** `save()`, `load()` - entire game state
 
 **Does NOT:**
@@ -167,7 +181,10 @@
 
 **Boundary Test:** Could you use GameManager without any game loop, just as state container? **YES** ✓
 
-**Key Insight:** Manages data and cross-scene operations, but doesn't drive execution.
+**Key Insights:** 
+- Manages data and cross-scene operations, but doesn't drive execution
+- **Scene transitions are queued**, not executed immediately
+- Uses transactional spatial operations (`remove()` + `spawnWithId()` + `commit()`) with rollback on failure
 
 ---
 
@@ -211,6 +228,7 @@
 **Provides:**
 - **Lifecycle:** `start()`, `stop()`, `restart()`
 - **Execution:** Fixed-timestep loop with accumulator
+- **Tick:** `tick()` - executes game loop THEN pending scene transition
 - **Save/Load:** `save()`, `load()` (wraps GameManager)
 - **Access:** `game`, `spatial`, `activeScene`, `isRunning`, `tickCount`
 
@@ -221,7 +239,10 @@
 
 **Boundary Test:** Could you swap GameRuntime for a different runtime (e.g., turn-based) without changing game logic? **YES** ✓
 
-**Key Insight:** Runtime environment. Drives execution but doesn't contain game logic.
+**Key Insights:** 
+- Runtime environment. Drives execution but doesn't contain game logic
+- **Executes queued scene transitions** at tick boundaries (after `gameLoop.tick()`)
+- Recreates GameLoop when scene changes
 
 ---
 
@@ -231,16 +252,18 @@
 
 ```
 Input Handler
-  → stages: spatial.move(x1, y1, x2, y2, layer)
+  → stages: spatial.move(x1, y1, x2, y2, layer) [DEFERRED - not visible yet]
 GameRuntime.tick()
   → GameLoop.tick()
-    → spatial.detectOverlaps() [before move commits]
-    → systems.forEach(s => s.update(context)) [systems read overlaps, stage more moves]
-    → spatial.commit() [execute all moves atomically]
-  → check if scene changed [it didn't]
+    → spatial.detectOverlaps() [reads COMMITTED state from previous tick]
+    → systems.forEach(s => s.update(context)) [systems stage more operations]
+    → spatial.commit() [execute ALL pending operations atomically: removals → moves → spawns]
+  → game.executePendingTransition() [no transition queued, returns false]
 ```
 
 **Flow:** Input → Runtime → Loop → Spatial
+
+**Key:** All operations are **deferred** until `commit()`. Systems see the same immutable state during the entire tick.
 
 ---
 
@@ -250,13 +273,17 @@ GameRuntime.tick()
 Tick N (in scene1):
   GameRuntime.tick()
     → GameLoop.tick() [on scene1.spatial]
-      → detect overlaps: player + teleporter
+      → detect overlaps: player + teleporter [from COMMITTED state]
       → TeleporterSystem.update()
-        → gameManager.movePlayerToScene('scene2', x, y)
-          → remove from scene1.spatial
-          → add to scene2.spatial
-          → sceneManager.setActiveScene('scene2')
-      → commit [no-op, player already moved]
+        → gameManager.movePlayerToScene('scene2', x, y, layer)
+          → QUEUES transition (doesn't execute yet)
+      → spatial.commit() [commits any other pending operations]
+      → player STILL in scene1 (other systems can still see them)
+    → game.executePendingTransition() [NOW transition executes]
+      → scene1.spatial.remove(x, y, layer) + commit() [transactional]
+      → scene2.spatial.spawnWithId(playerId, x, y, layer) + commit() [transactional]
+      → sceneManager.setActiveScene('scene2')
+      → IF target invalid: rollback with spawnWithId() in scene1
     → scene changed detected!
     → recreate GameLoop for scene2.spatial
     
@@ -266,9 +293,12 @@ Tick N+1 (now in scene2):
       → player now in scene2, different grid entirely
 ```
 
-**Flow:** Loop → System → GameManager → SpatialSystem(s) → SceneManager
+**Flow:** Loop → System → GameManager (queue) → Runtime → GameManager (execute) → SpatialSystem(s) → SceneManager
 
-**Key:** Cross-scene operations go through GameManager, not SpatialSystem.
+**Key:** 
+- Scene transitions are **queued** during tick, **executed** after tick
+- Uses **transactional operations** (`remove()` + `spawnWithId()` + `commit()`)
+- Includes **rollback** if target scene invalid or occupied
 
 ---
 
@@ -359,20 +389,23 @@ GameLoop (separate)
 
 ### ✓ CLEAN: GameLoop ↔ SpatialSystem
 - Loop orchestrates
-- Spatial executes
+- Spatial stages and executes deferred operations
+- Loop calls `detectOverlaps()` and `commit()` at right times
 - Loop doesn't care about scenes
 - **One-way dependency:** GameLoop → SpatialSystem
 
 ### ✓ CLEAN: GameRuntime ↔ GameManager
 - Runtime drives execution
-- Manager holds state
+- Manager holds state and queues scene transitions
+- Runtime calls `executePendingTransition()` after each tick
 - Runtime doesn't modify state directly (goes through APIs)
 - **One-way dependency:** GameRuntime → GameManager
 
 ### ✓ CLEAN: GameManager ↔ Scenes
 - Manager handles cross-scene operations
 - Scenes don't know about manager
-- `movePlayerToScene()` touches multiple scenes atomically
+- `movePlayerToScene()` queues, `executePendingTransition()` executes atomically
+- Uses transactional spatial operations with rollback
 - **One-way dependency:** GameManager → Scenes (via SceneManager)
 
 ---
@@ -465,4 +498,9 @@ Each component:
 - Can be tested in isolation
 - Could be reused in different contexts
 
-**No refactoring needed.** The architecture is Spartan and clean.
+**Recent enhancements maintain clarity:**
+- **SpatialSystem** - Now handles all spatial operations consistently (deferred until commit)
+- **GameManager** - Now queues scene transitions for tick-boundary execution
+- **GameRuntime** - Now executes queued transitions after game loop completes
+
+**No refactoring needed.** The architecture remains Spartan and clean.

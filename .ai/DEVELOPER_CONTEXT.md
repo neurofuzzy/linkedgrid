@@ -193,7 +193,91 @@ expect('Player at (10, 10)', () => {
 
 Results appear in `AssertionPanel` after playback completes.
 
-## Game Loop & Runtime System
+## Transaction System & Game Loop
+
+### Unified Transaction Model
+
+**All spatial operations are deferred until `commit()`:**
+
+```typescript
+// Stage operations (no immediate side effects)
+const id = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+spatial.remove(x, y, GameLayers.ACTORS);
+
+// Nothing visible yet...
+
+// Execute atomically at tick boundary
+spatial.commit();
+```
+
+**Benefits:**
+- All systems see the same immutable grid state during a tick
+- No temporal coupling between systems
+- No ghost entities from operation conflicts
+- Clear causality: stage intents → commit atomically → next tick
+
+### Pending Operations
+
+**Tracked internally:**
+- `pendingOps: PendingOperation[]` - Queue of all staged operations
+- `pendingRemovals: Set<number>` - Entity IDs staged for removal
+- Operations execute in order: **removals → moves → spawns**
+
+### Lifecycle Queries (Zombie Entity Prevention)
+
+Systems need to avoid interacting with entities staged for removal:
+
+```typescript
+// Check if entity is alive (not pending removal)
+if (spatial.isAlive(entityId)) {
+    // Safe to interact
+}
+
+// Get targets, excluding pending removals
+const targets = spatial.getEntityIdsInRadius(x, y, 5);
+// Dead entities excluded by default
+
+// Include "corpses" if needed
+const all = spatial.getEntityIdsInRadius(x, y, 5, { 
+    includePendingRemovals: true 
+});
+```
+
+### Inspection & Debug APIs
+
+```typescript
+// Get pending operations (read-only)
+const pending = spatial.getPendingOps();
+
+// Get entities staged for removal
+const removals = spatial.getPendingRemovals();
+
+// Debug output
+console.log(spatial.debug());
+// === SpatialSystem Debug ===
+// Entities: 5
+// Pending ops: 3
+//   - Moves: 2
+//   - Removals: 1
+//   - Spawns: 0
+```
+
+### Cancellation APIs
+
+```typescript
+// Cancel a pending removal (resurrection)
+spatial.remove(x, y, layer);
+if (healingOccurred) {
+    spatial.cancelRemoval(entityId);
+}
+
+// Cancel a pending spawn
+const id = spatial.spawn('enemy', x, y, layer);
+if (cancelled) {
+    spatial.cancelSpawn(id);
+}
+```
 
 ### GameLoop - Tick Orchestration
 
@@ -205,7 +289,7 @@ class GameLoop {
         // 1. Detect overlaps from committed state
         const overlaps = spatial.detectOverlaps();
         
-        // 2. Run all systems (stage movement intents)
+        // 2. Run all systems (stage intents)
         for (const system of systems) {
             system.update({ overlaps, spatial });
         }
@@ -235,6 +319,34 @@ interface GameContext {
 }
 ```
 
+### Queued Scene Transitions
+
+Scene transitions are **queued** and execute **after** the current tick completes:
+
+```typescript
+// In TeleporterSystem.update()
+gameManager.movePlayerToScene('dungeon', 5, 5, GameLayers.ACTORS);
+// Player still in current scene for rest of this tick
+
+// After GameLoop.tick() completes
+gameRuntime.tick();
+  // → gameLoop.tick() runs
+  // → game.executePendingTransition() runs
+  // → scene transition happens NOW
+```
+
+**Why:** Prevents systems from running in "zombie scenes" after the player has left.
+
+**Implementation:**
+- `GameManager.movePlayerToScene()` - Queues the transition
+- `GameManager.executePendingTransition()` - Executes queued transition
+- `GameRuntime.tick()` - Calls `executePendingTransition()` after game loop
+
+Scene transitions use the transactional system:
+- Remove player from old scene (with `spatial.remove()` + `commit()`)
+- Spawn player in new scene (with `spatial.spawnWithId()` + `commit()`)
+- Includes pre-checks for target validity and rollback on failure
+
 ### GameRuntime - Real-Time Execution
 
 `GameRuntime` provides a complete real-time game environment:
@@ -258,7 +370,7 @@ runtime.restart(); // Reset to initial state
 
 **Features:**
 - Fixed timestep with accumulator (consistent tick rate)
-- Automatic scene transition handling
+- Automatic scene transition handling at tick boundaries
 - Save/load/restart capabilities
 - Manual tick for testing (`runtime.tick()`)
 
@@ -311,10 +423,12 @@ visual('test name', {
     arrange: ({ spatial }) => {
         // Setup entities
         spatial.spawn('player', 5, 5, 1);
+        spatial.commit(); // IMPORTANT: Commit in arrange
     },
     act: ({ spatial }) => {
         // Perform actions (each creates a snapshot)
         spatial.move(5, 5, 6, 5, 1);
+        spatial.commit(); // IMPORTANT: Commit after staging
     },
     assert: ({ spatial, expect }) => {
         // Verify with expect helper
@@ -322,6 +436,31 @@ visual('test name', {
             const id = spatial.getEntityIdAt(6, 5, 1);
             if (!id) throw new Error('Not found');
         });
+    }
+});
+```
+
+### Test Fixtures for Setup
+
+Use `TestSpatialFixture` to simplify test setup (auto-commits):
+
+```typescript
+import { TestSpatialFixture } from './test-fixtures.js';
+
+visual('complex setup', {
+    arrange: ({ spatial, grid, store }) => {
+        const fixture = new TestSpatialFixture(spatial);
+        
+        // Auto-commits after each operation
+        const playerId = fixture.placeEntity('player', 5, 5, GameLayers.ACTORS);
+        fixture.placeEntity('enemy', 10, 10, GameLayers.ACTORS);
+        fixture.placeEntity('wall', 7, 7, GameLayers.WALLS);
+        // No manual commit() needed
+    },
+    act: ({ spatial }) => {
+        // Test the actual behavior
+        spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+        spatial.commit();
     }
 });
 ```
@@ -344,8 +483,13 @@ npm test
 
 ### Core Spatial System
 
-- **`packages/spartan/spatial-system.ts`** - Main API: `spawn()`, `move()`, `remove()`, `commit()`, spatial queries, `detectOverlaps()`
-- **`packages/spartan/entity-store.ts`** - Manages entity metadata (id → data)
+- **`packages/spartan/spatial-system.ts`** - Main API: 
+  - **Lifecycle:** `spawn()`, `remove()` (deferred), `isAlive()`
+  - **Movement:** `move()` (deferred), `commit()`, `clearIntents()`
+  - **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()` (with `includePendingRemovals`), `getEntityIdsInLine()`, `detectOverlaps()`
+  - **Inspection:** `getPendingOps()`, `getPendingRemovals()`, `debug()`
+  - **Cancellation:** `cancelRemoval()`, `cancelSpawn()`
+- **`packages/spartan/entity-store.ts`** - Manages entity metadata (id → data), `createWithId()` for scene transitions
 - **`packages/grid/linked-grid.ts`** - Grid with spatial navigation
 - **`packages/grid/linked-cell.ts`** - Individual cell with `items[]` array
 - **`packages/grid/linked-cell-utils.ts`** - Static geometric helpers
@@ -355,6 +499,9 @@ npm test
 - **`packages/spartan/scene.ts`** - Scene (isolated grid + spatial + entities)
 - **`packages/spartan/scene-manager.ts`** - SceneManager (manages multiple scenes)
 - **`packages/spartan/game-manager.ts`** - GameManager (cross-scene coordinator, save/load)
+  - **Queued Transitions:** `movePlayerToScene()` queues, `executePendingTransition()` executes
+  - **Transaction-based:** Uses `spatial.remove()` and `spatial.spawnWithId()` with rollback
+- **`packages/spartan/game-state.ts`** - GameState (lives, score, playerEntityId, global entity ID counter)
 
 ### Game Loop & Runtime
 
@@ -377,6 +524,8 @@ npm test
 - **`packages/spartan/test/scene-system.test.ts`** - Scene/SceneManager/GameManager unit tests
 - **`packages/spartan/test/game-loop.test.ts`** - GameLoop unit tests (overlap detection, system execution)
 - **`packages/spartan/test/game-runtime.test.ts`** - GameRuntime unit tests (save/load/restart)
+- **`packages/spartan/test/transaction-consistency.test.ts`** - Unified transaction model tests (deferred ops, zombie entities, cancellation)
+- **`packages/spartan/test/test-fixtures.ts`** - TestSpatialFixture helper for test setup (auto-commits)
 
 ## Responsibility Matrix (CRISP Architecture)
 
@@ -386,15 +535,19 @@ Each component has a single, clear responsibility with no blurred lines:
 |-----------|---------------|-----------------|
 | **LinkedGrid** | Grid topology, cell navigation | Entities, game logic |
 | **LinkedCell** | Cell properties (values/masks/distances) | Entity behavior, movement |
-| **SpatialSystem** | Entity positions, movement (2-phase commit), overlap detection | Game logic, scenes |
+| **SpatialSystem** | Entity positions, deferred operations (spawn/move/remove), lifecycle queries, overlap detection | Game logic, scenes |
 | **Scene** | Isolated game area (grid + spatial + entities) | Cross-scene ops, game loop |
 | **SceneManager** | Scene lifecycle, active scene tracking | Game state, player movement |
-| **GameManager** | Cross-scene coordinator, save/load, player scene transitions | Game loop, systems |
+| **GameManager** | Cross-scene coordinator, save/load, queued player scene transitions | Game loop, systems |
 | **GameLoop** | Tick orchestration (detect → systems → commit) | Real-time timing, scene transitions |
-| **GameRuntime** | Real-time execution, fixed timestep, lifecycle | Game logic (that's systems) |
+| **GameRuntime** | Real-time execution, fixed timestep, lifecycle, executing queued scene transitions | Game logic (that's systems) |
 | **GameSystem** | Game-specific logic responding to overlaps | Spatial operations (delegates to context) |
 
-**Key Insight:** Movement is 2-phase (stage via `move()`, execute via `commit()`). Overlaps are detected from committed state, enabling natural 1-tick delays.
+**Key Insights:** 
+- **All spatial operations are deferred** (stage via `spawn()`/`move()`/`remove()`, execute via `commit()`)
+- **Lifecycle queries** prevent "zombie entity" interactions (`isAlive()`, filtered radius queries)
+- **Scene transitions are queued** and execute at tick boundaries (after `commit()`)
+- Overlaps are detected from committed state, enabling natural 1-tick delays
 
 ## Troubleshooting
 
@@ -457,10 +610,14 @@ Both use the same test code, ensuring visual demos are real tests.
 4. **Assertions must be visual** - Use `expect()` helper, not bare throws
 5. **Layers matter** - Always consider layer ordering when rendering or querying
 6. **Clean up is automatic** - SpatialSystem handles cell cleanup (Rule 6)
-7. **Movement is 2-phase** - Always `commit()` after staging moves with `move()`
-8. **Scenes are isolated** - Each scene has its own grid, spatial, and entities
-9. **Systems are stateless** - Game logic in systems, state in GameContext
-10. **Overlaps drive gameplay** - Use overlap detection for triggers, items, collisions
+7. **All spatial operations are deferred** - Always `commit()` after staging `spawn()`/`move()`/`remove()`
+8. **Check lifecycle before interacting** - Use `isAlive()` to avoid zombie entities
+9. **Scenes are isolated** - Each scene has its own grid, spatial, and entities
+10. **Scene transitions are queued** - Executed at tick boundaries, not mid-tick
+11. **Systems are stateless** - Game logic in systems, state in GameContext
+12. **Overlaps drive gameplay** - Use overlap detection for triggers, items, collisions
+13. **Use test fixtures for setup** - `TestSpatialFixture` auto-commits for convenience
+14. **Inspection APIs for debugging** - `debug()`, `getPendingOps()` show staged state
 
 ## Questions to Ask
 
@@ -474,9 +631,13 @@ When modifying the codebase, ask:
 - Is the responsibility matrix still CRISP? (no blurred lines)
 - Are overlaps detected from committed state?
 - Do systems only stage intents, not commit them?
+- Are lifecycle queries used to prevent zombie entity interactions?
+- Are scene transitions queued and executed at tick boundaries?
 - Is scene isolation maintained?
+- Are all spatial operations deferred until `commit()`?
+- Do tests call `commit()` after staging operations?
 
 ---
 
 **Last Updated:** 2026-01-27  
-**Version:** After GameLoop and GameRuntime implementation with multi-scene system
+**Version:** After unified transaction model implementation (deferred spawn/move/remove, lifecycle queries, queued scene transitions)

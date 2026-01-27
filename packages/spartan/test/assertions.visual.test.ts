@@ -10,10 +10,13 @@ visual('AAA: entity movement', {
         spatial.commit();
     },
     act: ({ spatial }) => {
-        // Action: Move player toward enemy
-        spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+        // Action: Move player toward enemy (using entity-based API)
+        let playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
+        spatial.moveEntity(playerId, 6, 5);
         spatial.commit();
-        spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
+        
+        playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
+        spatial.moveEntity(playerId, 7, 5);
         spatial.commit();
     },
     assert: ({ spatial, expect }) => {
@@ -51,7 +54,8 @@ visual('AAA: collision detection (FAIL)', {
     act: ({ spatial }) => {
         // Try to move into wall (player and wall on different layers, so this succeeds)
         // This test name says FAIL but it actually succeeds now with proper layer usage
-        spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+        const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
+        spatial.moveEntity(playerId, 6, 5);
         spatial.commit();
     },
     assert: ({ spatial, expect }) => {
@@ -81,9 +85,9 @@ visual('AAA: collision detection (FAIL)', {
 
 // Backward compatible: simple function form (all in act phase)
 visual('simple movement test', ({ spatial, expect }) => {
-    spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    const playerId = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     spatial.commit();
-    spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+    spatial.moveEntity(playerId, 6, 5);
     spatial.commit();
     
     if (expect) {
