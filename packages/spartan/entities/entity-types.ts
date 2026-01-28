@@ -108,6 +108,10 @@ export type EnemyData = EntityData & {
  * - HasTeleportTarget - Connection key for destination lookup
  * - HasSceneLocation - Tracks which scene teleporter is in
  * 
+ * Additional properties:
+ * - destination - Target scene and coordinates for teleportation
+ * - teleporterState - State tracking for preventing bounce-back (optional)
+ * 
  * Typical usage:
  * - Portals between rooms
  * - Warp pads
@@ -129,6 +133,13 @@ export type EnemyData = EntityData & {
  */
 export type TeleporterData = EntityData & {
     type: 'teleporter';
+    destination?: {
+        sceneId: string;
+        x: number;
+        y: number;
+        layer: number;
+    };
+    teleporterState?: 'ready' | 'inactive';
 } & HasTeleportTarget & HasSceneLocation;
 
 /**

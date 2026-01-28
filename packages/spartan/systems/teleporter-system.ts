@@ -102,10 +102,7 @@ export class TeleporterSystem implements GameSystem {
         if (!dest) return; // No destination configured
 
         // Mark source pad inactive to prevent re-triggering in the same tick
-        const updatedTeleporter = spatial.getEntityData(teleporterId);
-        if (updatedTeleporter) {
-            updatedTeleporter.teleporterState = 'inactive';
-        }
+        this.gameManager.gameState.entityStore.setData(teleporterId, { teleporterState: 'inactive' });
 
         // Trigger cross-scene transition
         this.gameManager.movePlayerToScene(
@@ -128,7 +125,7 @@ export class TeleporterSystem implements GameSystem {
                         const entityData = this.gameManager.gameState.entityStore.getData(entityId);
                         // Use type guard instead of manual check
                         if (entityData && isTeleporter(entityData)) {
-                            entityData.teleporterState = 'inactive';
+                            this.gameManager.gameState.entityStore.setData(entityId, { teleporterState: 'inactive' });
                             break;
                         }
                     }
@@ -174,7 +171,7 @@ export class TeleporterSystem implements GameSystem {
                         padPos.x !== playerPos.x ||
                         padPos.y !== playerPos.y
                     ) {
-                        entity.teleporterState = 'ready';
+                        this.gameManager.gameState.entityStore.setData(entityId, { teleporterState: 'ready' });
                     }
                 }
             }

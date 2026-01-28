@@ -3,7 +3,8 @@ import {
   GameRuntimeConfig,
 } from "../packages/spartan/game-runtime";
 import { TeleporterSystem } from "../packages/spartan/systems/teleporter-system";
-import type { GameSystem } from "../packages/spartan/types";
+import type { GameSystem, EntityData } from "../packages/spartan/types";
+import { isPlayer, isEnemy, isTeleporter, hasHealth, hasAI, hasTeleportTarget } from "../packages/spartan/entities/trait-guards";
 
 /**
  * Entity definition in JSON scene.
@@ -161,6 +162,35 @@ export class SceneLoader {
         ...(entityDef.data || {}),
         sceneId: scene.id,
       };
+
+      // Validate entity data using trait guards
+      const tempEntityForValidation: EntityData = { 
+        id: 0, 
+        type: entityDef.type, 
+        ...entityData 
+      };
+
+      // Validate required traits for known entity types
+      if (isPlayer(tempEntityForValidation)) {
+        if (!hasHealth(tempEntityForValidation)) {
+          console.warn(`[SceneLoader] Player entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp). This may cause runtime errors.`);
+        }
+      }
+      
+      if (isEnemy(tempEntityForValidation)) {
+        if (!hasHealth(tempEntityForValidation)) {
+          console.warn(`[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp).`);
+        }
+        if (!hasAI(tempEntityForValidation)) {
+          console.warn(`[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing AI properties (aiState).`);
+        }
+      }
+      
+      if (isTeleporter(tempEntityForValidation)) {
+        if (!hasTeleportTarget(tempEntityForValidation)) {
+          console.warn(`[SceneLoader] Teleporter entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing teleport target (targetKey).`);
+        }
+      }
 
       const id = scene.spatial.spawn(
         entityDef.type,
