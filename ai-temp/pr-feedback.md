@@ -1,6 +1,6 @@
 ## PR Code Suggestions ✨
 
-<!-- 05b6d3d -->
+<!-- 24ac109 -->
 
 Explore these optional code suggestions:
 
@@ -9,11 +9,11 @@ Explore these optional code suggestions:
 
 
 
-<details><summary>Documentation describes features not in code</summary>
+<details><summary>Validate entity data during scene loading</summary>
 
 ___
 
-**The PR adds comprehensive documentation for a new transaction model but omits <br>all corresponding implementation code. This creates a significant discrepancy <br>where documented features do not exist in the codebase.**
+**In <code>SceneLoader</code>, use the new type guards to perform runtime validation on entity <br>data loaded from JSON files. This ensures that dynamically created entities <br>conform to their archetypes, preventing errors from malformed scene data.**
 
 
 ### Examples:
@@ -22,49 +22,24 @@ ___
 
 <details>
 <summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/8/files#diff-0376216016acddcca532c09c3ca2d1b7307d49708471e31cfddbd1f58a323fb9R196-R280">ai-temp/DEVELOPER_CONTEXT.md [196-280]</a>
+<a href="https://github.com/neurofuzzy/linkedgrid/pull/11/files#diff-950f0a4080831ca6034793672a2302efb2c0fe3af1f13faaa883e7fe9890b4b5R148-R189">dev/scene-loader.ts [148-189]</a>
 </summary>
 
 
-
-```markdown
-## Transaction System & Game Loop
-
-### Unified Transaction Model
-
-**All spatial operations are deferred until `commit()`:**
 
 ```typescript
-// Stage operations (no immediate side effects)
-const id = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
-spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+  private populateScene(runtime: GameRuntime, sceneDef: SceneDefinition): void {
+    const scene = runtime.game.sceneManager.getScene(sceneDef.id);
+    if (!scene) {
+      throw new Error(`Scene ${sceneDef.id} not found`);
+    }
 
- ... (clipped 75 lines)
-```
-</details>
+    const entities = sceneDef.entities || [];
+    let playerId: number | null = null;
 
+    // Spawn all entities
 
-
-<details>
-<summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/8/files#diff-f6981f5f29bde77411f5312531a83d4a88850a550d846600f119ae7157d5a164R67-R83">specs/spartan-responsibilities.md [67-83]</a>
-</summary>
-
-
-
-```markdown
-**One Job:** Manage entity positions and deferred spatial operations within ONE grid
-
-**Owns:**
-- `positions: Map<entityId, {x, y, layer}>` - position tracking
-- `pendingOps: PendingOperation[]` - queue of all staged operations (spawn/move/remove)
-- `pendingRemovals: Set<entityId>` - entities staged for removal
-- Reference to grid and store
-
-**Provides:**
-- **Lifecycle:** `spawn()` (deferred), `remove()` (deferred), `isAlive()` (checks pending removals)
-
- ... (clipped 7 lines)
+ ... (clipped 32 lines)
 ```
 </details>
 
@@ -76,39 +51,62 @@ spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
 
 
 #### Before:
-```markdown
-// PR contains only documentation files:
-.ai/README.md
-ai-temp/DEVELOPER_CONTEXT.md
-specs/spartan-responsibilities.md
-specs/spartan-review-rules.md
+```typescript
+// file: dev/scene-loader.ts
 
-// No implementation files (.ts, .js) are included.
-// The documentation describes features like:
-// spatial.isAlive(entityId)
-// spatial.cancelRemoval(entityId)
-// gameManager.executePendingTransition()
+private populateScene(runtime: GameRuntime, sceneDef: SceneDefinition): void {
+  // ...
+  const entities = sceneDef.entities || [];
+  
+  for (const entityDef of entities) {
+    const entityData = {
+      ...(entityDef.data || {}),
+      sceneId: scene.id,
+    };
+    
+    // No validation is performed on entityData.
+    // Malformed data from JSON can lead to runtime errors.
+    const id = scene.spatial.spawn(
+      entityDef.type,
+      entityDef.x,
+      entityDef.y,
+      entityDef.layer,
+      entityData
+    );
+    // ...
+  }
+  // ...
+}
 
 ```
 
 
 
 #### After:
-```markdown
-// PR should include implementation files alongside documentation:
-packages/spartan/spatial-system.ts
-packages/spartan/game-manager.ts
-// ... other relevant .ts files ...
+```typescript
+// file: dev/scene-loader.ts
+import { isPlayer, hasHealth, isEnemy, hasAI } from '../packages/spartan/entities/trait-guards';
 
-// The implementation files should contain the new features:
-class SpatialSystem {
-  isAlive(entityId) { /* ... */ }
-  cancelRemoval(entityId) { /* ... */ }
+private populateScene(runtime: GameRuntime, sceneDef: SceneDefinition): void {
   // ...
-}
+  const entities = sceneDef.entities || [];
+  
+  for (const entityDef of entities) {
+    const tempEntityForValidation = { id: 0, type: entityDef.type, ...entityDef.data };
 
-class GameManager {
-  executePendingTransition() { /* ... */ }
+    // Validate data using the new type guards
+    if (isPlayer(tempEntityForValidation) && !hasHealth(tempEntityForValidation)) {
+      console.warn(`Player in scene '${sceneDef.id}' is missing health properties.`);
+    }
+    if (isEnemy(tempEntityForValidation) && !hasAI(tempEntityForValidation)) {
+      console.warn(`Enemy in scene '${sceneDef.id}' is missing AI properties.`);
+    }
+    // ... other validations
+
+    const entityData = { ...(entityDef.data || {}), sceneId: scene.id };
+    const id = scene.spatial.spawn(entityDef.type, entityDef.x, entityDef.y, entityDef.layer, entityData);
+    // ...
+  }
   // ...
 }
 
@@ -117,35 +115,39 @@ class GameManager {
 
 
 
-<details><summary>Suggestion importance[1-10]: 10</summary>
+<details><summary>Suggestion importance[1-10]: 9</summary>
 
 __
 
-Why: The suggestion correctly identifies a critical flaw: the PR adds extensive documentation for major features that are not implemented, making the PR incomplete and misleading.
+Why: This suggestion correctly identifies a critical gap where entities loaded from scenes bypass the new trait system's safety checks, potentially causing runtime errors from malformed data.
 
 
 </details></details></td><td align=center>High
 
-</td></tr><tr><td rowspan=1>Possible issue</td>
+</td></tr><tr><td rowspan=1>General</td>
 <td>
 
 
 
-<details><summary>Use entity ID for spatial operations</summary>
+<details><summary>Define teleporter destination and state</summary>
 
 ___
 
-**Refactor the <code>spatial.move</code> and <code>spatial.remove</code> methods to accept an entity ID <br>instead of coordinates to prevent ambiguity when multiple entities occupy the <br>same cell.**
+**Update the <code>TeleporterData</code> type to include the <code>destination</code> and optional <br><code>teleporterState</code> properties to match its usage in the teleporter system.**
 
-[ai-temp/DEVELOPER_CONTEXT.md [203-206]](https://github.com/neurofuzzy/linkedgrid/pull/8/files#diff-0376216016acddcca532c09c3ca2d1b7307d49708471e31cfddbd1f58a323fb9R203-R206)
+[packages/spartan/entities/entity-types.ts [130-132]](https://github.com/neurofuzzy/linkedgrid/pull/11/files#diff-4a4e25575c5e16129b9a0b4dbd3bb2829ca535f10a38dbbf96535a136c2ebbefR130-R132)
 
 ```diff
- // Stage operations (no immediate side effects)
- const id = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
--spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
--spatial.remove(x, y, GameLayers.ACTORS);
-+spatial.move(id, 6, 5); // Moves entity `id` to new coordinates
-+spatial.remove(id); // Removes entity `id`
+ export type TeleporterData = EntityData & {
+     type: 'teleporter';
++    destination: {
++        sceneId: string;
++        x: number;
++        y: number;
++        layer: GameLayer;
++    };
++    teleporterState?: 'ready' | 'inactive';
+ } & HasTeleportTarget & HasSceneLocation;
 ```
 
 
@@ -156,28 +158,30 @@ ___
 
 __
 
-Why: The suggestion correctly identifies a significant ambiguity in the documented `move` and `remove` APIs, which could lead to bugs, and proposes a more robust ID-based alternative that aligns with the PR's goal of improving system correctness.
+Why: This suggestion correctly identifies that the `TeleporterData` type is missing the `destination` and `teleporterState` properties, which are essential for the `TeleporterSystem`'s logic, thus improving type safety and code correctness.
+
 
 </details></details></td><td align=center>Medium
 
-</td></tr><tr><td rowspan=1>General</td>
+</td></tr><tr><td rowspan=2>Possible issue</td>
 <td>
 
 
 
-<details><summary>Simplify scene transition method signature</summary>
+<details><summary>Persist teleporter state correctly</summary>
 
 ___
 
-**Simplify the <code>gameManager.movePlayerToScene</code> method signature by removing the <br><code>layer</code> parameter, as it should be managed internally by the <code>GameManager</code>.**
+**Use <code>spatial.setEntityData</code> to update the teleporter state to ensure the change is <br>correctly persisted, instead of directly mutating the object from <code>getEntityData</code>.**
 
-[ai-temp/DEVELOPER_CONTEXT.md [327-329]](https://github.com/neurofuzzy/linkedgrid/pull/8/files#diff-0376216016acddcca532c09c3ca2d1b7307d49708471e31cfddbd1f58a323fb9R327-R329)
+[packages/spartan/systems/teleporter-system.ts [105-108]](https://github.com/neurofuzzy/linkedgrid/pull/11/files#diff-287d06a4aff1aa552d746e14b38259b9911243c0dbdb552ec63774576a0c0fd8R105-R108)
 
 ```diff
- // In TeleporterSystem.update()
--gameManager.movePlayerToScene('dungeon', 5, 5, GameLayers.ACTORS);
-+gameManager.movePlayerToScene('dungeon', 5, 5);
- // Player still in current scene for rest of this tick
+-const updatedTeleporter = spatial.getEntityData(teleporterId);
+-if (updatedTeleporter) {
+-    updatedTeleporter.teleporterState = 'inactive';
+-}
++spatial.setEntityData(teleporterId, { teleporterState: 'inactive' });
 ```
 
 
@@ -188,7 +192,41 @@ ___
 
 __
 
-Why: The suggestion correctly identifies that passing the `layer` to `movePlayerToScene` is redundant and potentially inconsistent, as this information should be managed by the `GameManager` or derived from global state.
+Why: The suggestion correctly identifies a potential bug where direct mutation might not persist and proposes using `setEntityData`, which aligns with the new design patterns introduced in the PR and improves code robustness.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Use setEntityData for destination pad</summary>
+
+___
+
+**Replace the direct mutation of the destination teleporter's state with a call to <br><code>spatial.setEntityData</code> to ensure the update is reliably saved.**
+
+[packages/spartan/systems/teleporter-system.ts [130-133]](https://github.com/neurofuzzy/linkedgrid/pull/11/files#diff-287d06a4aff1aa552d746e14b38259b9911243c0dbdb552ec63774576a0c0fd8R130-R133)
+
+```diff
+ if (entityData && isTeleporter(entityData)) {
+-    entityData.teleporterState = 'inactive';
++    spatial.setEntityData(entityId, { teleporterState: 'inactive' });
+     break;
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: This suggestion correctly points out that direct mutation of entity data is risky and proposes using `setEntityData`, which aligns with the new design patterns and ensures the state update is persisted reliably.
+
 
 </details></details></td><td align=center>Medium
 

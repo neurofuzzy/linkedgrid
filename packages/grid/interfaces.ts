@@ -1,6 +1,6 @@
 /**
  * Interfaces for LinkedGrid library.
- * 
+ *
  * These interfaces break circular dependencies between LinkedCell and LinkedGrid
  * by defining the minimal contract each needs from the other.
  */
@@ -11,14 +11,14 @@ import { LinkedCell } from './linked-cell';
 /**
  * Minimal interface for a grid that LinkedCell can reference.
  * LinkedCell only needs cell lookup and dimensions.
- * 
+ *
  * C is the cell type (allows LinkedCell to know it gets LinkedCell back)
  */
-export interface ILinkedGrid{
-    readonly width: number;
-    readonly height: number;
-    readonly cells: LinkedCell[];
-    cell(x: number, y: number): LinkedCell | null;
+export interface ILinkedGrid {
+  readonly width: number;
+  readonly height: number;
+  readonly cells: LinkedCell[];
+  cell(x: number, y: number): LinkedCell | null;
 }
 
 /**
@@ -27,25 +27,25 @@ export interface ILinkedGrid{
  * All values are constrained to numbers.
  */
 export interface ILinkedCell {
-    /** Grid coordinates */
-    x: number;
-    y: number;
+  /** Grid coordinates */
+  x: number;
+  y: number;
 
-    /** Numeric game state values, one per layer */
-    values: number[];
+  /** Numeric game state values, one per layer */
+  values: number[];
 
-    /** Numeric values for distance fields, pathfinding costs, etc. */
-    distances: number[];
+  /** Numeric values for distance fields, pathfinding costs, etc. */
+  distances: number[];
 
-    /** Boolean masks for collision, visibility, etc. */
-    masks: boolean[];
+  /** Boolean masks for collision, visibility, etc. */
+  masks: boolean[];
 
-    /** Set a neighbor in a direction */
-    setNeighbor(dir: Direction, cell: ILinkedCell | null): this;
+  /** Set a neighbor in a direction */
+  setNeighbor(dir: Direction, cell: ILinkedCell | null): this;
 
-    /** Get a neighbor in a direction */
-    neighbor(dir: Direction): ILinkedCell | null;
+  /** Get a neighbor in a direction */
+  neighbor(dir: Direction): ILinkedCell | null;
 
-    /** Set value at layer */
-    setValue(layer: number, val: number): this;
+  /** Set value at layer */
+  setValue(layer: number, val: number): this;
 }

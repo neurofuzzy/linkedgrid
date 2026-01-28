@@ -31,13 +31,13 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
 
 /**
  * GridRenderer - Render scene grid with entities.
- * 
+ *
  * Features:
  * - Shows all entities on grid
  * - Highest layer entity renders "on top" (Rule 8)
  * - Color-coded by entity type
  * - Scene name display
- * 
+ *
  * @example
  * ```tsx
  * <GridRenderer scene={runtime.activeScene} />
@@ -46,64 +46,62 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
 export function GridRenderer({ scene }: Props) {
   if (!scene) {
     return (
-      <div style={{ padding: '20px', color: '#808080' }}>
-        No active scene
-      </div>
+      <div style={{ padding: '20px', color: '#808080' }}>No active scene</div>
     );
   }
-  
+
   const { grid, spatial } = scene;
   const width = grid.width;
   const height = grid.height;
-  
+
   // Build grid data structure
   const gridData: Array<Array<{ char: string; className: string }>> = [];
-  
+
   for (let y = 0; y < height; y++) {
     const row: Array<{ char: string; className: string }> = [];
-    
+
     for (let x = 0; x < width; x++) {
       const cell = grid.cell(x, y);
-      
+
       if (!cell) {
         row.push({ char: '·', className: 'empty' });
         continue;
       }
-      
+
       // Get all entity IDs at this cell across all layers
       const entityIds: Array<{ id: number; layer: number }> = [];
-      
+
       for (let layer = 0; layer < 8; layer++) {
         const id = cell.values[layer];
         if (id !== undefined && id !== 0) {
           entityIds.push({ id, layer });
         }
       }
-      
+
       if (entityIds.length === 0) {
         row.push({ char: '·', className: 'empty' });
       } else {
         // Rule 8: Show entity on highest layer
-        const topEntity = entityIds.reduce((highest, current) => 
+        const topEntity = entityIds.reduce((highest, current) =>
           current.layer > highest.layer ? current : highest
         );
-        
+
         const entityData = spatial.getEntityData(topEntity.id);
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
-        
+
         row.push({ char, className });
       }
     }
-    
+
     gridData.push(row);
   }
-  
+
   // Get scene metadata
   const metadata = scene.metadata || {};
-  const sceneName = metadata.name as string || scene.id;
-  
+  const sceneName = (metadata.name as string) || scene.id;
+
   return (
     <div
       className="grid"
@@ -129,13 +127,13 @@ export function GridRenderer({ scene }: Props) {
 
 /**
  * DebugPanel - Display runtime debug information.
- * 
+ *
  * Shows:
  * - Tick count
  * - Running state
  * - Player position
  * - Entity count
- * 
+ *
  * @example
  * ```tsx
  * <DebugPanel runtime={runtime} />
@@ -147,13 +145,18 @@ interface DebugPanelProps {
   playerInputSystem?: any; // PlayerInputSystem
 }
 
-export function DebugPanel({ runtime, inputManager, playerInputSystem }: DebugPanelProps) {
+export function DebugPanel({
+  runtime,
+  inputManager,
+  playerInputSystem,
+}: DebugPanelProps) {
   if (!runtime) return null;
-  
+
   const scene = runtime.activeScene;
   const playerId = runtime.game.gameState.playerEntityId;
-  const playerPos = playerId && scene ? scene.spatial.getEntityPosition(playerId) : null;
-  
+  const playerPos =
+    playerId && scene ? scene.spatial.getEntityPosition(playerId) : null;
+
   // Count entities in active scene
   let entityCount = 0;
   if (scene) {
@@ -170,7 +173,7 @@ export function DebugPanel({ runtime, inputManager, playerInputSystem }: DebugPa
       }
     }
   }
-  
+
   return (
     <div className="debug-panel">
       <h3>Debug Info</h3>
@@ -198,27 +201,33 @@ export function DebugPanel({ runtime, inputManager, playerInputSystem }: DebugPa
           <span className="label">Input Mode:</span>{' '}
           <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
             {(inputManager as any).config.directionMode}
+          </span>{' '}
+          <span style={{ color: '#808080', fontSize: '11px' }}>
+            (press K to toggle)
           </span>
-          {' '}
-          <span style={{ color: '#808080', fontSize: '11px' }}>(press K to toggle)</span>
         </p>
       )}
       {playerInputSystem && (
         <>
           <p>
-            <span className="label">Input Buffer:</span> {playerInputSystem.debugStats.bufferSize} queued
+            <span className="label">Input Buffer:</span>{' '}
+            {playerInputSystem.debugStats.bufferSize} queued
           </p>
           <p>
-            <span className="label">Keys Held:</span> {playerInputSystem.debugStats.keysHeld}
+            <span className="label">Keys Held:</span>{' '}
+            {playerInputSystem.debugStats.keysHeld}
           </p>
           <p>
-            <span className="label">Last Direction:</span> {playerInputSystem.debugStats.lastDirection}
+            <span className="label">Last Direction:</span>{' '}
+            {playerInputSystem.debugStats.lastDirection}
           </p>
           <p>
-            <span className="label">Moves/Tick:</span> {playerInputSystem.debugStats.movesThisTick}
+            <span className="label">Moves/Tick:</span>{' '}
+            {playerInputSystem.debugStats.movesThisTick}
           </p>
           <p>
-            <span className="label">Blocked:</span> {playerInputSystem.debugStats.blockedMoves}
+            <span className="label">Blocked:</span>{' '}
+            {playerInputSystem.debugStats.blockedMoves}
           </p>
         </>
       )}
@@ -234,7 +243,8 @@ export function ControlsPanel() {
     <div className="controls">
       <h3>Controls</h3>
       <p>
-        <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> - Move player
+        <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or <kbd>↑</kbd>{' '}
+        <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> - Move player
       </p>
       <p style={{ marginTop: '8px', fontSize: '12px', color: '#808080' }}>
         Movement is queued and processed at {10} ticks per second

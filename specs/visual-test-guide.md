@@ -110,7 +110,7 @@ spatial.commit(); // All move atomically
 
 ### Blocking
 ```typescript
-import { isBlocked } from '../layer-helpers';
+import { isBlocked } from '../layers/layer-helpers';
 spatial.moveEntity(id, 6, 5, isBlocked); // Try to move into wall
 spatial.commit();
 ```

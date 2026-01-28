@@ -1,11 +1,11 @@
 /**
  * Grid Package - LinkedGrid Data Structures
- * 
+ *
  * Core data structures for grid-based games:
  * - LinkedGrid with O(1) neighbor navigation
  * - Pathfinding, raycasting, field-of-view
  * - Distance fields for AI
- * 
+ *
  * All values are constrained to numbers for simplicity.
  */
 

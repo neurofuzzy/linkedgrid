@@ -1,30 +1,30 @@
 /**
  * Spartan Framework - Cell-centric game framework built on LinkedGrid
- * 
+ *
  * Architecture B: Sparse entity system with spatial-first operations.
- * 
+ *
  * Core principles:
  * - Entities stored primarily in cell layers
  * - Minimal external metadata storage
  * - Spatial queries are first-class
  * - Rule-based entity interactions
- * 
+ *
  * @example
  * ```typescript
  * import { LinkedGrid } from '../grid';
  * import { SparseEntityStore, SpatialSystem } from '@spartan';
- * 
+ *
  * const grid = new LinkedGrid(20, 20);
  * const store = new SparseEntityStore();
  * const spatial = new SpatialSystem(grid, store);
- * 
+ *
  * // Spawn entities
  * const player = spatial.spawn('player', 10, 10, 1, { hp: 100 });
  * const enemy = spatial.spawn('enemy', 15, 10, 2, { hp: 50 });
- * 
+ *
  * // Move entities
  * spatial.move(10, 10, 11, 10, 1);
- * 
+ *
  * // Spatial queries
  * const nearby = spatial.getEntityIdsInRadius(11, 10, 5);
  * ```
@@ -38,23 +38,91 @@ export { Scene } from './scene';
 export { SceneManager } from './scene-manager';
 export { GameManager } from './game-manager';
 
-// Types and layer constants
-export type { EntityData, Layer, Position, GameLayer } from './types';
-export { 
-    GameLayers, 
-    BLOCKING_LAYERS, 
-    VISION_BLOCKING_LAYERS, 
-    GAMEPLAY_VISIBLE_LAYERS,
-    ALL_LAYERS 
-} from './types';
+// Core framework types
+export type { EntityData, Layer, Position } from './types';
+export {
+  GameLayer,
+  GameLayers,
+  BLOCKING_LAYERS,
+  VISION_BLOCKING_LAYERS,
+  GAMEPLAY_VISIBLE_LAYERS,
+  ALL_LAYERS,
+} from './layers/types';
+
+// Layers
+
+/**
+ * Entity Traits and Archetypes
+ *
+ * Trait-based entity system for composable, type-safe entity patterns.
+ *
+ * - Traits: Passive data contracts (HasHealth, CanDealDamage, etc.)
+ * - Entities: Archetypes composed of traits (PlayerData, EnemyData, etc.)
+ * - Guards: Runtime type guards for traits and entity types
+ * - Helpers: Type-safe spawn functions for entity archetypes
+ *
+ * See entities/README.md for full documentation.
+ */
+
+// Entity traits (passive data contracts)
+export type {
+  HasHealth,
+  CanDealDamage,
+  HasAI,
+  HasSceneLocation,
+  HasTeleportTarget,
+} from './entities/traits';
+
+// Entity archetypes (example patterns)
+export type {
+  PlayerData,
+  EnemyData,
+  TeleporterData,
+  ItemData,
+  WallData,
+} from './entities/entity-types';
+
+// Trait guards (runtime checks)
+export {
+  hasHealth,
+  canDealDamage,
+  hasAI,
+  hasSceneLocation,
+  hasTeleportTarget,
+  isPlayer,
+  isEnemy,
+  isTeleporter,
+  isItem,
+  isWall,
+  isPlayerWithHealth,
+  isEnemyWithAI,
+  isTeleporterWithTarget,
+} from './entities/trait-guards';
+
+// Spawn helpers (type-safe entity creation)
+export {
+  spawnPlayer,
+  spawnEnemy,
+  spawnTeleporter,
+  spawnItem,
+  spawnWall,
+  spawnPlayerWithId,
+} from './entities/spawn-helpers';
 
 // Blocking utilities
 // Layer utilities
-export { getTopmostEntity, isBlocked, blocksVision, isWalkable } from './layer-helpers';
+export {
+  getTopmostEntity,
+  isBlocked,
+  blocksVision,
+  isWalkable,
+} from './layers/layer-helpers';
 
 // Game loop and runtime
 export { GameLoop } from './game-loop.js';
 export { GameRuntime } from './game-runtime.js';
 export type { GameRuntimeConfig } from './game-runtime.js';
-export { TeleporterSystem } from './teleporter-system.js';
+
+// Systems
+export { TeleporterSystem } from './systems/teleporter-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';

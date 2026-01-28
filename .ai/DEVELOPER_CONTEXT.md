@@ -25,16 +25,22 @@ The system uses **LinkedGrid** as the spatial foundation with a **sparse externa
 GameRuntime (real-time execution)
     └─> GameManager (cross-scene coordinator)
         └─> GameState (score, lives, playerEntityId)
+            └─> EntityStore (global entity metadata)  ← Pure data, no logic
         └─> SceneManager (manages multiple scenes)
             └─> Scene (isolated game area)
                 └─> LinkedGrid (20x20)
                     └─> LinkedCell (x, y)
                         └─> items: number[]  ← Entity IDs by layer
                 └─> SpatialSystem (spawn/move/query)
-                └─> EntityStore (metadata)
     └─> GameLoop (tick orchestration)
-        └─> Systems[] (game logic)
-            └─> TeleporterSystem, EnemyAISystem, etc.
+        └─> Systems[] (game logic)  ← Use trait guards for type safety
+            └─> TeleporterSystem, DamageSystem, etc.
+    
+Entity Trait System (type safety layer):
+    └─> Traits (interfaces) - HasHealth, CanDealDamage, etc.
+    └─> Entity Types (aliases) - PlayerData, EnemyData, etc.
+    └─> Type Guards (predicates) - hasHealth(), isPlayer(), etc.
+    └─> Spawn Helpers (factories) - spawnPlayer(), spawnEnemy(), etc.
 ```
 
 ### Multi-Scene Architecture
@@ -47,6 +53,94 @@ The framework supports **multiple isolated scenes** (rooms, levels, maps) with s
 - **GameState** - Persistent state (score, lives, inventory)
 
 Each scene is completely isolated with its own grid, spatial system, and entities.
+
+## Entity Trait System
+
+The framework uses a **trait-based entity pattern** that keeps entities as pure data while enabling type-safe interactions.
+
+### Core Principles
+
+1. **Entities are dumb** - Just data bags with an `id`, `type`, and extensible properties
+2. **Systems are smart** - All logic lives in systems
+3. **Traits define capabilities** - Interfaces describe what properties an entity *has*
+4. **Type guards enable safety** - Runtime checks that narrow types for systems
+
+### Architecture
+
+```typescript
+// Core entity (in types.ts)
+type EntityData = {
+    id: number;
+    type: string;
+    [key: string]: unknown;
+};
+
+// Trait interface (in entities/traits.ts)
+interface HasHealth {
+    health: number;
+    maxHealth: number;
+}
+
+// Entity archetype (in entities/entity-types.ts)
+type PlayerData = EntityData & HasHealth & { playerName: string };
+
+// Type guard (in entities/trait-guards.ts)
+function hasHealth(entity: EntityData): entity is EntityData & HasHealth {
+    return typeof entity.health === 'number';
+}
+
+// Spawn helper (in entities/spawn-helpers.ts)
+function spawnPlayer(spatial: SpatialSystem, x: number, y: number): number {
+    return spatial.spawn('player', x, y, GameLayers.ACTORS, {
+        health: 100,
+        maxHealth: 100,
+        playerName: 'Hero'
+    });
+}
+
+// System usage
+class DamageSystem implements GameSystem {
+    update({ spatial }: GameContext) {
+        const entities = spatial.getEntityIdsInRadius(x, y, 5);
+        for (const id of entities) {
+            const entity = spatial.getEntityData(id);
+            if (hasHealth(entity)) {
+                // TypeScript knows entity.health exists now
+                const newHealth = entity.health - damage;
+                // Update via entity store
+            }
+        }
+    }
+}
+```
+
+### Organization
+
+All entity-specific patterns live in `packages/spartan/entities/`:
+
+- **`traits.ts`** - Trait interfaces (passive properties)
+- **`entity-types.ts`** - Entity archetypes (composed traits)
+- **`trait-guards.ts`** - Runtime type predicates
+- **`spawn-helpers.ts`** - Type-safe factory functions
+- **`README.md`** - Full trait system documentation
+
+This keeps the core `spartan` package generic and game-agnostic.
+
+### Built-in Traits
+
+- `HasHealth` - Health and max health
+- `CanDealDamage` - Damage amount
+- `HasAI` - AI behavior type
+- `HasSceneLocation` - Scene ID for positioning
+- `HasTeleportTarget` - Teleporter destination info
+
+### Built-in Entity Types
+
+- `PlayerData` - Player with health
+- `EnemyData` - Enemy with health, damage, AI
+- `TeleporterData` - Teleporter with destination and state
+- `ItemData` - Collectible item
+- `WallData` - Static obstacle
 
 ## Project Structure
 
@@ -67,8 +161,15 @@ linkedgrid/
 │   │   ├── game-manager.ts      # GameManager (cross-scene operations)
 │   │   ├── game-loop.ts         # GameLoop (tick orchestration)
 │   │   ├── game-runtime.ts      # GameRuntime (real-time execution)
-│   │   ├── teleporter-system.ts # TeleporterSystem (example system)
-│   │   ├── types.ts             # Entity types, layers, GameSystem interface
+│   │   ├── types.ts             # Core types: EntityData, Layer, GameSystem interface
+│   │   ├── entities/            # Entity trait system (game-specific patterns)
+│   │   │   ├── README.md        # Trait system documentation
+│   │   │   ├── traits.ts        # Trait interfaces (HasHealth, CanDealDamage, etc.)
+│   │   │   ├── entity-types.ts  # Entity archetypes (PlayerData, EnemyData, etc.)
+│   │   │   ├── trait-guards.ts  # Type guards for runtime type safety
+│   │   │   └── spawn-helpers.ts # Type-safe spawn functions
+│   │   ├── systems/             # Game systems (logic components)
+│   │   │   └── teleporter-system.ts # TeleporterSystem (example overlap system)
 │   │   └── test/
 │   │       ├── visual-helpers.ts            # visual() helper + AAA pattern
 │   │       ├── movement.visual.test.ts      # 5 core spatial tests
@@ -76,7 +177,11 @@ linkedgrid/
 │   │       ├── scene-transition.visual.test.ts  # Multi-scene tests
 │   │       ├── scene-system.test.ts         # Scene unit tests
 │   │       ├── game-loop.test.ts            # GameLoop unit tests
-│   │       └── game-runtime.test.ts         # GameRuntime unit tests
+│   │       ├── game-runtime.test.ts         # GameRuntime unit tests
+│   │       ├── teleporter-roundtrip.test.ts # Teleporter system tests
+│   │       ├── transaction-consistency.test.ts # Transaction model tests
+│   │       ├── test-fixtures.ts             # TestSpatialFixture helper
+│   │       └── test-helpers.ts              # Test utilities
 │   │
 │   └── visual-runner/           # Ink-based terminal test runner
 │       ├── cli.tsx              # Entry point
@@ -84,12 +189,12 @@ linkedgrid/
 │       │   ├── App.tsx          # Main app with state machine
 │       │   ├── TestSidebar.tsx  # Test selection
 │       │   ├── GridRenderer.tsx # ASCII grid visualization
-│       │   ├── PlaybackControls.tsx  # Step/play controls
-│       │   ├── InfoBar.tsx      # Current operation display
-│       │   └── AssertionPanel.tsx    # Assertion results
+│       │   ├── CategoryTabs.tsx # Test categorization
+│       │   └── InfoPanel.tsx    # Test info and assertions
 │       ├── lib/
 │       │   ├── test-executor.ts    # Runs tests & captures snapshots
-│       │   └── test-discovery.ts   # Finds *.visual.test.ts files
+│       │   ├── test-discovery.ts   # Finds *.visual.test.ts files
+│       │   └── types.ts            # Visual runner type definitions
 │       └── hooks/
 │           └── usePlayback.ts      # Playback state & keyboard controls
 │
@@ -101,11 +206,8 @@ linkedgrid/
 │   └── spartan-responsibilities.md  # Component responsibility matrix
 │
 └── ai-temp/                     # Context for AI agents
-    ├── architecture-alternatives.md  # Original architecture decision doc
-    ├── game-loop-responsibilities-spec.md  # GameLoop design spec
-    ├── game-runtime-spec.md          # GameRuntime design spec
-    ├── teleporter-design-notes.md    # Future teleporter mechanics
-    └── DEVELOPER_CONTEXT.md          # This file
+    ├── DEVELOPER_CONTEXT.md          # This file
+    └── [various implementation notes and specs]
 ```
 
 ## The 10 Spartan Spatial Rules
@@ -376,17 +478,33 @@ runtime.restart(); // Reset to initial state
 
 ### TeleporterSystem Example
 
-Demonstrates overlap-based mechanics:
+Demonstrates overlap-based mechanics with trait guards:
 
 ```typescript
+import { isPlayer, isTeleporter } from '../entities/trait-guards.js';
+
 class TeleporterSystem implements GameSystem {
     update(context: GameContext) {
-        for (const overlap of context.overlaps) {
-            if (hasPlayer(overlap) && hasTeleporter(overlap)) {
-                // Trigger scene transition
-                this.gameManager.movePlayerToScene(
-                    destSceneId, x, y, layer
-                );
+        const { overlaps, spatial } = context;
+        
+        for (const overlap of overlaps) {
+            // Find player and teleporter using trait guards
+            const playerEntity = overlap.entities.find(e => isPlayer(e));
+            const teleporterEntity = overlap.entities.find(e => isTeleporter(e));
+            
+            if (playerEntity && teleporterEntity) {
+                // TypeScript knows teleporterEntity has destination properties
+                const { destination, teleporterState } = teleporterEntity;
+                
+                if (teleporterState === 'active' && destination) {
+                    // Queue scene transition
+                    this.gameManager.movePlayerToScene(
+                        destination.sceneId,
+                        destination.x,
+                        destination.y,
+                        destination.layer
+                    );
+                }
             }
         }
     }
@@ -415,30 +533,135 @@ Originally used multiple `useState` calls (`testStatus`, `testResult`, `snapshot
 
 ## Common Patterns
 
+### Adding a New Entity Type
+
+```typescript
+// 1. Define a trait in entities/traits.ts (if needed)
+export interface HasInventory {
+    inventory: string[];
+    maxInventorySize: number;
+}
+
+// 2. Define entity type in entities/entity-types.ts
+export type MerchantData = EntityData & HasHealth & HasInventory & {
+    shopItems: string[];
+};
+
+// 3. Add type guard in entities/trait-guards.ts
+export function isMerchant(entity: EntityData): entity is MerchantData {
+    return entity.type === 'merchant' 
+        && typeof entity.health === 'number'
+        && Array.isArray(entity.inventory);
+}
+
+// 4. Add spawn helper in entities/spawn-helpers.ts
+export function spawnMerchant(
+    spatial: SpatialSystem,
+    x: number,
+    y: number,
+    shopItems: string[]
+): number {
+    return spatial.spawn('merchant', x, y, GameLayers.ACTORS, {
+        health: 100,
+        maxHealth: 100,
+        inventory: [],
+        maxInventorySize: 10,
+        shopItems
+    });
+}
+
+// 5. Use in systems
+class ShopSystem implements GameSystem {
+    update({ overlaps, spatial }: GameContext) {
+        for (const overlap of overlaps) {
+            const player = overlap.entities.find(isPlayer);
+            const merchant = overlap.entities.find(isMerchant);
+            
+            if (player && merchant) {
+                // TypeScript knows merchant.shopItems exists
+                console.log('Shop items:', merchant.shopItems);
+            }
+        }
+    }
+}
+```
+
 ### Adding a New Visual Test
 
 ```typescript
 // In packages/spartan/test/movement.visual.test.ts
+import { spawnPlayer } from '../entities/spawn-helpers.js';
+import { isPlayer } from '../entities/trait-guards.js';
+
 visual('test name', {
-    arrange: ({ spatial }) => {
-        // Setup entities
-        spatial.spawn('player', 5, 5, 1);
+    arrange: ({ spatial, store }) => {
+        // Setup entities using spawn helpers
+        const playerId = spawnPlayer(spatial, 5, 5);
         spatial.commit(); // IMPORTANT: Commit in arrange
     },
     act: ({ spatial }) => {
         // Perform actions (each creates a snapshot)
-        spatial.move(5, 5, 6, 5, 1);
+        spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
         spatial.commit(); // IMPORTANT: Commit after staging
     },
-    assert: ({ spatial, expect }) => {
-        // Verify with expect helper
+    assert: ({ spatial, store, expect }) => {
+        // Verify with expect helper and trait guards
         expect('Player at new position', () => {
-            const id = spatial.getEntityIdAt(6, 5, 1);
-            if (!id) throw new Error('Not found');
+            const id = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS);
+            if (!id) throw new Error('Player not found');
+            
+            const entity = store.get(id);
+            if (!entity) throw new Error('Entity not in store');
+            if (!isPlayer(entity)) throw new Error('Not a player');
         });
     }
 });
 ```
+
+### Adding a New Game System
+
+```typescript
+// In packages/spartan/systems/damage-system.ts
+import type { GameSystem, GameContext } from '../types.js';
+import { hasHealth, canDealDamage } from '../entities/trait-guards.js';
+import type { GameManager } from '../game-manager.js';
+
+export class DamageSystem implements GameSystem {
+    constructor(private gameManager: GameManager) {}
+    
+    update({ overlaps, spatial }: GameContext): void {
+        for (const overlap of overlaps) {
+            // Find entities with relevant traits
+            const damagers = overlap.entities.filter(canDealDamage);
+            const targets = overlap.entities.filter(hasHealth);
+            
+            for (const damager of damagers) {
+                for (const target of targets) {
+                    if (damager.id === target.id) continue; // Can't damage self
+                    
+                    // TypeScript knows these properties exist
+                    const newHealth = target.health - damager.damage;
+                    
+                    // Update via global entity store (NOT spatial.setEntityData!)
+                    this.gameManager.gameState.entityStore.setData(target.id, { 
+                        health: newHealth 
+                    });
+                    
+                    // Stage removal if dead
+                    if (newHealth <= 0) {
+                        const pos = spatial.getEntityPosition(target.id);
+                        if (pos) {
+                            spatial.remove(pos.x, pos.y, pos.layer);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+**Important:** Entity data updates must go through `gameState.entityStore.setData()`, not through `SpatialSystem`. The spatial system only handles positions and spatial queries.
 
 ### Test Fixtures for Setup
 
@@ -507,8 +730,19 @@ npm test
 
 - **`packages/spartan/game-loop.ts`** - GameLoop (tick orchestration: detect → systems → commit)
 - **`packages/spartan/game-runtime.ts`** - GameRuntime (real-time execution with fixed timestep)
-- **`packages/spartan/teleporter-system.ts`** - TeleporterSystem (example overlap-based system)
-- **`packages/spartan/types.ts`** - GameSystem, GameContext, Overlap interfaces
+- **`packages/spartan/types.ts`** - GameSystem, GameContext, Overlap, EntityData, Layer interfaces
+
+### Entity Trait System
+
+- **`packages/spartan/entities/traits.ts`** - Trait interfaces (HasHealth, CanDealDamage, etc.)
+- **`packages/spartan/entities/entity-types.ts`** - Entity archetypes (PlayerData, EnemyData, etc.)
+- **`packages/spartan/entities/trait-guards.ts`** - Type guards (hasHealth, isPlayer, etc.)
+- **`packages/spartan/entities/spawn-helpers.ts`** - Type-safe spawn functions (spawnPlayer, spawnEnemy, etc.)
+- **`packages/spartan/entities/README.md`** - Complete trait system documentation
+
+### Game Systems
+
+- **`packages/spartan/systems/teleporter-system.ts`** - TeleporterSystem (example overlap-based system using traits)
 
 ### Visual Test Runner
 
@@ -535,7 +769,9 @@ Each component has a single, clear responsibility with no blurred lines:
 |-----------|---------------|-----------------|
 | **LinkedGrid** | Grid topology, cell navigation | Entities, game logic |
 | **LinkedCell** | Cell properties (values/masks/distances) | Entity behavior, movement |
+| **EntityData** | Entity identity and properties (pure data) | Logic, behavior, validation |
 | **SpatialSystem** | Entity positions, deferred operations (spawn/move/remove), lifecycle queries, overlap detection | Game logic, scenes |
+| **Entity Traits** | Define capabilities (interfaces), type guards, spawn helpers | Entity logic (that's systems) |
 | **Scene** | Isolated game area (grid + spatial + entities) | Cross-scene ops, game loop |
 | **SceneManager** | Scene lifecycle, active scene tracking | Game state, player movement |
 | **GameManager** | Cross-scene coordinator, save/load, queued player scene transitions | Game loop, systems |
@@ -575,6 +811,20 @@ Ensure `ctx.spatial` is correctly proxied to the active scene's spatial system. 
 
 `GameRuntime.tick()` should increment `_tickCount`. The internal loop also increments it.
 
+### "TypeError: spatial.setEntityData is not a function"
+
+`SpatialSystem` does not have a `setEntityData` method. Entity data updates must go through the global entity store:
+
+```typescript
+// ❌ Wrong - SpatialSystem doesn't have this method
+spatial.setEntityData(entityId, { health: 50 });
+
+// ✓ Correct - Use the global entity store
+gameManager.gameState.entityStore.setData(entityId, { health: 50 });
+```
+
+Systems that need to update entity data should receive `GameManager` in their constructor.
+
 ## Future Directions
 
 ### Implemented
@@ -605,25 +855,34 @@ Both use the same test code, ensuring visual demos are real tests.
 ## Key Takeaways for Agents
 
 1. **Respect the Spartan rules** - Keep changes minimal and explicit
-2. **The state machine is sacred** - Don't revert to boolean flags
-3. **AAA pattern is mandatory** - All visual tests must separate arrange/act/assert
-4. **Assertions must be visual** - Use `expect()` helper, not bare throws
-5. **Layers matter** - Always consider layer ordering when rendering or querying
-6. **Clean up is automatic** - SpatialSystem handles cell cleanup (Rule 6)
-7. **All spatial operations are deferred** - Always `commit()` after staging `spawn()`/`move()`/`remove()`
-8. **Check lifecycle before interacting** - Use `isAlive()` to avoid zombie entities
-9. **Scenes are isolated** - Each scene has its own grid, spatial, and entities
-10. **Scene transitions are queued** - Executed at tick boundaries, not mid-tick
-11. **Systems are stateless** - Game logic in systems, state in GameContext
-12. **Overlaps drive gameplay** - Use overlap detection for triggers, items, collisions
-13. **Use test fixtures for setup** - `TestSpatialFixture` auto-commits for convenience
-14. **Inspection APIs for debugging** - `debug()`, `getPendingOps()` show staged state
+2. **Entities are dumb, systems are smart** - Entities are pure data, all logic in systems
+3. **Use traits for type safety** - Define capabilities with interfaces, use type guards in systems
+4. **Keep game-specific patterns in entities/** - Core spartan package stays generic
+5. **The state machine is sacred** - Don't revert to boolean flags
+6. **AAA pattern is mandatory** - All visual tests must separate arrange/act/assert
+7. **Assertions must be visual** - Use `expect()` helper, not bare throws
+8. **Layers matter** - Always consider layer ordering when rendering or querying
+9. **Clean up is automatic** - SpatialSystem handles cell cleanup (Rule 6)
+10. **All spatial operations are deferred** - Always `commit()` after staging `spawn()`/`move()`/`remove()`
+11. **Check lifecycle before interacting** - Use `isAlive()` to avoid zombie entities
+12. **Scenes are isolated** - Each scene has its own grid, spatial, and entities
+13. **Scene transitions are queued** - Executed at tick boundaries, not mid-tick
+14. **Systems are stateless** - Game logic in systems, state in GameContext
+15. **Overlaps drive gameplay** - Use overlap detection for triggers, items, collisions
+16. **Use spawn helpers for type safety** - `spawnPlayer()`, `spawnEnemy()` provide compile-time checks
+17. **Use test fixtures for setup** - `TestSpatialFixture` auto-commits for convenience
+18. **Inspection APIs for debugging** - `debug()`, `getPendingOps()` show staged state
 
 ## Questions to Ask
 
 When modifying the codebase, ask:
 
 - Does this follow Spartan principles? (minimal, explicit, testable)
+- Are entities kept dumb (data only) with logic in systems?
+- Should this be a trait, an entity type, or neither?
+- Are game-specific patterns in `entities/` to keep core spartan generic?
+- Are type guards used for runtime type safety?
+- Should spawn helpers be created for type-safe entity creation?
 - Will this work in both Vitest and the visual runner?
 - Does the state machine remain impossible to break?
 - Are we maintaining backward compatibility with existing tests?
@@ -640,4 +899,4 @@ When modifying the codebase, ask:
 ---
 
 **Last Updated:** 2026-01-27  
-**Version:** After unified transaction model implementation (deferred spawn/move/remove, lifecycle queries, queued scene transitions)
+**Version:** After entity trait system implementation (trait-based entities, spawn helpers, type guards, systems subdirectory)

@@ -21,6 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "visual": "tsx packages/visual-runner/cli.tsx"
   },
   "repository": {
@@ -46,7 +48,9 @@
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
     "glob": "^11.0.0",
+    "prettier": "^3.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.19.2",
@@ -56,6 +60,5 @@
     "vite-plugin-dts": "^4.3.0",
     "vite-tsconfig-paths": "^6.0.4",
     "vitest": "^2.1.8"
-  },
-  "dependencies": {}
+  }
 }

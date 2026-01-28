@@ -1,8 +1,8 @@
-import type { GameSystem, GameContext } from "../packages/spartan/types";
-import { GameLayers } from "../packages/spartan/types";
-import { isWalkable } from "../packages/spartan/layer-helpers";
-import { InputManager } from "../packages/spartan/input/input-manager";
-import { Direction } from "../packages/grid/direction";
+import type { GameSystem, GameContext } from '../packages/spartan/types';
+import { GameLayers } from '../packages/spartan/layers/types';
+import { isWalkable } from '../packages/spartan/layers/layer-helpers';
+import { InputManager } from '../packages/spartan/input/input-manager';
+import { Direction } from '../packages/grid/direction';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.
@@ -31,7 +31,7 @@ export class PlayerInputSystem implements GameSystem {
 
   constructor(
     private gameManager: any,
-    private inputManager: InputManager,
+    private inputManager: InputManager
   ) {}
 
   /**
@@ -42,13 +42,13 @@ export class PlayerInputSystem implements GameSystem {
   update(context: GameContext): void {
     // Reset tick stats
     this.debugStats.movesThisTick = 0;
-    
+
     // Capture buffer state before consuming
     const bufferState = (this.inputManager as any).directionBuffer;
     const keysHeld = (this.inputManager as any).keysDown;
     this.debugStats.bufferSize = bufferState.length;
     this.debugStats.keysHeld = keysHeld.size;
-    
+
     // Get player entity ID
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId || playerId === 0) return;
@@ -59,20 +59,20 @@ export class PlayerInputSystem implements GameSystem {
 
     // Drain entire buffer, keeping only the LAST direction for responsiveness
     let lastDirection = Direction.NONE;
-    
+
     while (bufferState.length > 0) {
       const input = this.inputManager.getState();
       if (input.direction !== Direction.NONE) {
         lastDirection = input.direction;
       }
     }
-    
+
     // If buffer was empty, check held keys once
     if (lastDirection === Direction.NONE) {
       const input = this.inputManager.getState();
       lastDirection = input.direction;
     }
-    
+
     this.debugStats.lastDirection = lastDirection;
 
     // No direction input
