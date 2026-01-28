@@ -15,6 +15,9 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   teleporter: 'entity-teleporter',
   item: 'entity-item',
   projectile: 'entity-projectile',
+  door: 'entity-door',
+  'open-door': 'entity-open-door',
+  key: 'entity-key',
 };
 
 /**
@@ -27,6 +30,9 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   teleporter: 'T',
   item: '*',
   projectile: '•',
+  door: '▓',
+  'open-door': '░',
+  key: 'K',
 };
 
 /**
@@ -55,10 +61,12 @@ export function GridRenderer({ scene }: Props) {
   const height = grid.height;
 
   // Build grid data structure
-  const gridData: Array<Array<{ char: string; className: string }>> = [];
+  const gridData: Array<
+    Array<{ char: string; className: string; color?: string }>
+  > = [];
 
   for (let y = 0; y < height; y++) {
-    const row: Array<{ char: string; className: string }> = [];
+    const row: Array<{ char: string; className: string; color?: string }> = [];
 
     for (let x = 0; x < width; x++) {
       const cell = grid.cell(x, y);
@@ -90,8 +98,9 @@ export function GridRenderer({ scene }: Props) {
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
+        const color = (entityData as any)?.color;
 
-        row.push({ char, className });
+        row.push({ char, className, color });
       }
     }
 
@@ -116,6 +125,7 @@ export function GridRenderer({ scene }: Props) {
             key={`${x}-${y}`}
             className={`cell ${cell.className}`}
             title={`(${x}, ${y})`}
+            style={cell.color ? { color: cell.color } : undefined}
           >
             {cell.char}
           </div>

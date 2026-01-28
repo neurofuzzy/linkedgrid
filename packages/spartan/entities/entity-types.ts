@@ -45,6 +45,10 @@ import type {
   HasAI,
   HasSceneLocation,
   HasTeleportTarget,
+  HasInventory,
+  IsLockable,
+  IsCollectible,
+  HasColor,
 } from './traits.js';
 
 /**
@@ -54,6 +58,7 @@ import type {
  * - HasHealth - Can take damage and be destroyed
  * - CanDealDamage - Can damage other entities
  * - HasSceneLocation - Tracks which scene player is in
+ * - HasInventory - Can collect and hold items
  *
  * Typical usage:
  * - Player character in action/adventure games
@@ -66,7 +71,8 @@ import type {
  *   hp: 100,
  *   maxHp: 100,
  *   damage: 10,
- *   sceneId: 'room1'
+ *   sceneId: 'room1',
+ *   inventory: []
  * });
  * ```
  */
@@ -74,7 +80,8 @@ export type PlayerData = EntityData & {
   type: 'player';
 } & HasHealth &
   CanDealDamage &
-  HasSceneLocation;
+  HasSceneLocation &
+  HasInventory;
 
 /**
  * EnemyData - AI-controlled hostile entity.
@@ -185,20 +192,65 @@ export type ItemData = EntityData & {
  *
  * Typical usage:
  * - Walls and barriers
- * - Doors (can extend with door-specific properties)
  * - Blocking obstacles
  *
  * @example
  * ```typescript
  * const wallId = spawnWall(spatial, 10, 5);
- *
- * // Can extend with custom properties
- * const doorId = spatial.spawn('wall', 8, 8, GameLayers.WALLS, {
- *   doorType: 'locked',
- *   requiredKey: 'red'
- * });
  * ```
  */
 export type WallData = EntityData & {
   type: 'wall';
 };
+
+/**
+ * DoorData - Lockable door entity.
+ *
+ * Traits:
+ * - IsLockable - Can be locked/unlocked with a key
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Locked doors requiring keys
+ * - Puzzle barriers
+ * - Gated areas
+ *
+ * @example
+ * ```typescript
+ * const doorId = spatial.spawn('door', 10, 10, GameLayers.WALLS, {
+ *   color: 'red',
+ *   isLocked: true,
+ *   requiredKey: 'red-key'
+ * });
+ * ```
+ */
+export type DoorData = EntityData & {
+  type: 'door';
+} & IsLockable &
+  HasColor;
+
+/**
+ * KeyData - Collectible key entity.
+ *
+ * Traits:
+ * - IsCollectible - Can be picked up and added to inventory
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Keys for locked doors
+ * - Collectible items
+ * - Puzzle pieces
+ *
+ * @example
+ * ```typescript
+ * const keyId = spatial.spawn('key', 5, 5, GameLayers.COLLECTIBLES, {
+ *   color: 'red',
+ *   collectibleType: 'key',
+ *   collectibleId: 'red-key'
+ * });
+ * ```
+ */
+export type KeyData = EntityData & {
+  type: 'key';
+} & IsCollectible &
+  HasColor;

@@ -1,0 +1,176 @@
+{
+  "scenes": [
+    {
+      "id": "key-puzzle",
+      "name": "Key Puzzle - Three Rooms",
+      "width": 30,
+      "height": 20,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "key-puzzle",
+            "inventory": []
+          }
+        },
+        {
+          "type": "key",
+          "x": 5,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "color": "#ff4444",
+            "collectibleType": "key",
+            "collectibleId": "red-key"
+          }
+        },
+        {
+          "type": "key",
+          "x": 13,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "color": "#44ff44",
+            "collectibleType": "key",
+            "collectibleId": "green-key"
+          }
+        },
+        {
+          "type": "key",
+          "x": 20,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "color": "#4444ff",
+            "collectibleType": "key",
+            "collectibleId": "blue-key"
+          }
+        },
+        {
+          "type": "door",
+          "x": 10,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#ff4444",
+            "isLocked": true,
+            "requiredKey": "red-key"
+          }
+        },
+        {
+          "type": "door",
+          "x": 17,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#44ff44",
+            "isLocked": true,
+            "requiredKey": "green-key"
+          }
+        },
+        {
+          "type": "door",
+          "x": 24,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#4444ff",
+            "isLocked": true,
+            "requiredKey": "blue-key"
+          }
+        },
+        { "type": "wall", "x": 10, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 11, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 12, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 13, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 14, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 10, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 10, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 11, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 12, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 13, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 14, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 15, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 18, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 19, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 20, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 21, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 10, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 17, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 18, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 19, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 20, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 21, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 22, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 25, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 26, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 27, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 6, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 7, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 8, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 9, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 10, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 11, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 12, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 13, "layer": 4 },
+        { "type": "wall", "x": 24, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 25, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 26, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 27, "y": 14, "layer": 4 },
+        { "type": "wall", "x": 28, "y": 14, "layer": 4 },
+        {
+          "type": "item",
+          "x": 26,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "itemType": "trophy"
+          }
+        }
+      ]
+    }
+  ],
+  "initialScene": "key-puzzle",
+  "systems": ["CollectionSystem", "DoorSystem"],
+  "tickRate": 10
+}

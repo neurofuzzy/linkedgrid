@@ -3,6 +3,8 @@ import {
   GameRuntimeConfig,
 } from '../packages/spartan/game-runtime';
 import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
+import { CollectionSystem } from '../packages/spartan/systems/collection-system';
+import { DoorSystem } from '../packages/spartan/systems/door-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -52,6 +54,8 @@ export interface SceneConfig {
  */
 const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
+  CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
+  DoorSystem: (gameManager) => new DoorSystem(gameManager),
 };
 
 /**

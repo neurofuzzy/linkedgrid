@@ -17,7 +17,37 @@ const AVAILABLE_GAMES = [
     name: 'Teleporter Test',
     path: '/dev/games/teleporter.json',
   },
+  {
+    id: 'doors-keys',
+    name: 'Doors & Keys Puzzle',
+    path: '/dev/games/doors-keys.json',
+  },
 ];
+
+/**
+ * Get the game ID from a file path (e.g., '/dev/games/doors-keys.json' -> 'doors-keys')
+ */
+function getGameIdFromPath(path: string): string {
+  const filename = path.split('/').pop() || '';
+  return filename.replace('.json', '');
+}
+
+/**
+ * Get initial game from URL search params or default to first game
+ */
+function getInitialGame(): string {
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get('game');
+  
+  if (gameId) {
+    const game = AVAILABLE_GAMES.find(g => g.id === gameId);
+    if (game) {
+      return game.path;
+    }
+  }
+  
+  return AVAILABLE_GAMES[0].path;
+}
 
 /**
  * Playground - Interactive Spartan game runtime.
@@ -27,6 +57,7 @@ const AVAILABLE_GAMES = [
  * - Keyboard input (WASD/arrows)
  * - Hot reload when scene files change
  * - Debug panel with runtime stats
+ * - URL persistence for selected game
  *
  * @example
  * Entry point is dev/index.html which loads this component.
@@ -38,7 +69,7 @@ function Playground() {
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedGame, setSelectedGame] = useState(AVAILABLE_GAMES[0].path);
+  const [selectedGame, setSelectedGame] = useState(getInitialGame());
   const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
   const [, forceUpdate] = useState({}); // For forcing re-renders without corrupting tick
 
@@ -217,6 +248,15 @@ function Playground() {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [selectedGame]);
+
+  // Update URL when game selection changes
+  useEffect(() => {
+    const gameId = getGameIdFromPath(selectedGame);
+    const params = new URLSearchParams(window.location.search);
+    params.set('game', gameId);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
   }, [selectedGame]);
 
   const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

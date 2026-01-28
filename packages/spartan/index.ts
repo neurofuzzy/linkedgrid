@@ -71,6 +71,10 @@ export type {
   HasAI,
   HasSceneLocation,
   HasTeleportTarget,
+  HasInventory,
+  IsLockable,
+  IsCollectible,
+  HasColor,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -80,6 +84,8 @@ export type {
   TeleporterData,
   ItemData,
   WallData,
+  DoorData,
+  KeyData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -89,11 +95,17 @@ export {
   hasAI,
   hasSceneLocation,
   hasTeleportTarget,
+  hasInventory,
+  isLockable,
+  isCollectible,
+  hasColor,
   isPlayer,
   isEnemy,
   isTeleporter,
   isItem,
   isWall,
+  isDoor,
+  isKey,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -125,4 +137,6 @@ export type { GameRuntimeConfig } from './game-runtime.js';
 
 // Systems
 export { TeleporterSystem } from './systems/teleporter-system.js';
+export { CollectionSystem } from './systems/collection-system.js';
+export { DoorSystem } from './systems/door-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';
