@@ -11,11 +11,11 @@ import type { GameRuntime } from '../packages/spartan/game-runtime';
  * Each game can contain multiple scenes.
  */
 const AVAILABLE_GAMES = [
-  { id: 'basic', name: 'Basic Game', path: '/dev/scenes/basic.json' },
+  { id: 'basic', name: 'Basic Game', path: '/dev/games/basic.json' },
   {
     id: 'teleporter',
     name: 'Teleporter Test',
-    path: '/dev/scenes/teleporter.json',
+    path: '/dev/games/teleporter.json',
   },
 ];
 
@@ -353,7 +353,7 @@ function Playground() {
                   color: '#dcdcaa',
                 }}
               >
-                dev/scenes/
+                dev/games/
               </code>{' '}
               for hot reload
             </p>

@@ -66,7 +66,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
  * @example
  * ```typescript
  * const loader = new SceneLoader();
- * const config = await fetch('/dev/scenes/basic.json').then(r => r.json());
+ * const config = await fetch('/dev/games/basic.json').then(r => r.json());
  * const runtime = loader.load(config);
  * runtime.start();
  * ```
