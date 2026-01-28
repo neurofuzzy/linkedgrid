@@ -90,17 +90,8 @@ export class PlayerInputSystem implements GameSystem {
       return;
     }
 
-    // Get destination cell
-    const destCell = grid.cell(newX, newY);
-    if (!destCell) return;
-
-    // Check if walkable using spatial system
-    if (!context.spatial.isWalkable(destCell)) {
-      this.debugStats.blockedMoves++;
-      return;
-    }
-
-    // Stage move (will be committed by GameLoop)
+    // Always register move intent - SpatialSystem will validate during commit
+    // This allows other systems (like DoorSystem) to see intents and react
     context.spatial.move(pos.x, pos.y, newX, newY, GameLayers.ACTORS);
     this.debugStats.movesThisTick++;
   }

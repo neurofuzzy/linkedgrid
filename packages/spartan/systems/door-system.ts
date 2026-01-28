@@ -2,14 +2,16 @@ import type { GameSystem, GameContext } from '../types.js';
 import type { GameManager } from '../game-manager.js';
 import { GameLayers } from '../layers/types.js';
 import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards.js';
-import { Direction } from '../../grid/direction.js';
 
 /**
  * DoorSystem - Handles door unlocking with keys.
  *
- * Checks adjacent cells to players for locked doors.
- * If player has matching key, unlocks door BEFORE movement happens.
- * This allows instant door unlocking when walking into doors.
+ * Reactively checks player movement intents to unlock doors.
+ * When player tries to move onto a locked door and has the key,
+ * unlocks the door BEFORE commit validates moves.
+ *
+ * This is a reactive system - it responds to player movement intents
+ * rather than proactively checking adjacent cells every tick.
  *
  * Used for:
  * - Locked doors requiring keys
@@ -28,9 +30,9 @@ export class DoorSystem implements GameSystem {
   /**
    * Update called by GameLoop each tick.
    *
-   * Checks all adjacent cells to players for locked doors.
-   * Unlocks doors if player has matching key.
-   * Runs BEFORE PlayerInputSystem so doors are unlocked before movement.
+   * Checks pending move operations to see if player is trying to move onto a locked door.
+   * If player has matching key, unlocks door before spatial commit validates moves.
+   * Runs AFTER PlayerInputSystem (which stages moves) but BEFORE commit.
    */
   update({ spatial }: GameContext): void {
     const playerId = this.gameManager.gameState.playerEntityId;
@@ -42,23 +44,20 @@ export class DoorSystem implements GameSystem {
       return;
     }
 
-    // Get player position
-    const playerPos = spatial.getEntityPosition(playerId);
-    if (!playerPos) return;
-
-    // Get player's cell
-    const playerCell = spatial.grid.cell(playerPos.x, playerPos.y);
-    if (!playerCell) return;
-
-    // Check all 4 adjacent cells for locked doors
-    const directions = [Direction.UP, Direction.DN, Direction.LT, Direction.RT];
+    // Check pending move operations to see if player is trying to move onto a door
+    const pendingOps = spatial.getPendingOps();
     
-    for (const dir of directions) {
-      const adjacentCell = playerCell.neighbor(dir);
-      if (!adjacentCell) continue;
+    for (const op of pendingOps) {
+      // Only care about player moves on ACTORS layer
+      if (op.type !== 'move' || op.entityId !== playerId || op.layer !== GameLayers.ACTORS) {
+        continue;
+      }
 
-      // Check if there's a door on the WALLS layer
-      const doorEntityId = adjacentCell.getValue(GameLayers.WALLS);
+      // Check destination cell for a locked door
+      const destCell = spatial.grid.cell(op.toX, op.toY);
+      if (!destCell) continue;
+
+      const doorEntityId = destCell.getValue(GameLayers.WALLS);
       if (!doorEntityId) continue;
 
       const doorData = spatial.getEntityData(doorEntityId);
@@ -72,12 +71,14 @@ export class DoorSystem implements GameSystem {
         });
 
         // Remove door from WALLS layer (clears BLOCKING mask)
-        spatial.remove(adjacentCell.x, adjacentCell.y, GameLayers.WALLS);
+        spatial.remove(destCell.x, destCell.y, GameLayers.WALLS);
 
         // Spawn open door visual on FLOOR layer
-        spatial.spawn('open-door', adjacentCell.x, adjacentCell.y, GameLayers.FLOOR, {
+        spatial.spawn('open-door', destCell.x, destCell.y, GameLayers.FLOOR, {
           color: doorData.color,
         });
+
+        // Door is now unlocked - the move will succeed when commit validates
       }
     }
   }

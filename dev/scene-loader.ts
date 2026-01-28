@@ -146,7 +146,27 @@ export class SceneLoader {
       }
     }
 
-    // Register systems
+    // Create input manager and register PlayerInputSystem FIRST
+    // This ensures PlayerInputSystem runs before other systems can react to move intents
+    if (config.input && config.input.type !== 'none') {
+      const { manager, cleanup } = this.createInputManager(
+        config.input,
+        this.container
+      );
+
+      // Create and register PlayerInputSystem
+      // Runs FIRST to stage movement intents before reactive systems
+      const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
+      (runtime as any).systems.push(playerInputSystem);
+      (runtime as any).gameLoop.addSystem(playerInputSystem);
+
+      // Store references for external access
+      (runtime as any).inputManager = manager;
+      (runtime as any).inputCleanup = cleanup;
+    }
+
+    // Register other systems AFTER PlayerInputSystem
+    // This allows systems like DoorSystem to react to staged move intents
     if (config.systems && config.systems.length > 0) {
       for (const systemName of config.systems) {
         const systemFactory = SYSTEM_REGISTRY[systemName];
@@ -160,23 +180,6 @@ export class SceneLoader {
         (runtime as any).systems.push(system);
         (runtime as any).gameLoop.addSystem(system);
       }
-    }
-
-    // Create input manager if configured
-    if (config.input && config.input.type !== 'none') {
-      const { manager, cleanup } = this.createInputManager(
-        config.input,
-        this.container
-      );
-
-      // Create and register PlayerInputSystem
-      const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
-      (runtime as any).systems.push(playerInputSystem);
-      (runtime as any).gameLoop.addSystem(playerInputSystem);
-
-      // Store references for external access
-      (runtime as any).inputManager = manager;
-      (runtime as any).inputCleanup = cleanup;
     }
 
     return runtime;

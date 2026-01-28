@@ -379,9 +379,15 @@ export class SpatialSystem {
         continue;
       }
 
+      // Check if destination is walkable (not blocked by walls/actors)
+      // Only check if the cell isn't being vacated by another move
+      const isBeingVacated = sources.has(destKey);
+      if (!isBeingVacated && this.isBlocked(toCell)) {
+        continue;
+      }
+
       // Check if destination is occupied
       const isOccupied = toCell.getValue(move.layer) !== undefined;
-      const isBeingVacated = sources.has(destKey);
 
       // Check for conflicts (multiple entities want same destination)
       const requestsForThisDest = destinations.get(destKey) || [];
