@@ -1,8 +1,10 @@
+import { SparseEntityStore } from './entity-store.js';
+
 /**
  * GameState - Global game state that persists across scenes.
  * 
  * Manages player progression, inventory, upgrades, and entity ID generation.
- * Decoupled from spatial state (which lives in individual scenes).
+ * Now includes the global entity store - all entities exist here regardless of scene.
  * 
  * @example
  * ```typescript
@@ -11,12 +13,14 @@
  * gameState.score = 1000;
  * gameState.inventory.set('key', 3);
  * 
- * // Global entity ID generation
- * const id1 = gameState.generateEntityId(); // 1
- * const id2 = gameState.generateEntityId(); // 2
+ * // Global entity storage
+ * const playerId = gameState.entityStore.createId('player', { sceneId: 'room1', hp: 100 });
  * ```
  */
 export class GameState {
+    /** Global entity store - all entities in the game live here */
+    entityStore: SparseEntityStore;
+
     /** Player entity ID (tracked globally across scenes) */
     playerEntityId: number = 0;
 
@@ -47,11 +51,16 @@ export class GameState {
     /** Global entity ID counter (prevents collisions across scenes) */
     private nextEntityId: number = 1;
 
+    constructor() {
+        // Initialize global entity store with this GameState's ID generator
+        this.entityStore = new SparseEntityStore(() => this.generateEntityId());
+    }
+
     /**
      * Generate a globally unique entity ID.
      * 
      * This ensures entity IDs are unique across all scenes in the game.
-     * All SparseEntityStore instances should use this generator.
+     * Used internally by the global entityStore.
      * 
      * @returns A unique entity ID
      * 
@@ -146,10 +155,14 @@ export class GameState {
      * Serialize GameState to plain object for saving.
      * 
      * Converts Maps and Sets to arrays for JSON serialization.
+     * Includes all entities from the global entity store.
      * 
      * @returns Plain object representation
      */
     serialize(): object {
+        // Serialize all entities
+        const entities = this.entityStore.getAllIds().map(id => this.entityStore.getData(id));
+
         return {
             playerEntityId: this.playerEntityId,
             lives: this.lives,
@@ -161,6 +174,7 @@ export class GameState {
             data: Array.from(this.data.entries()),
             connections: Array.from(this.connections.entries()),
             nextEntityId: this.nextEntityId,
+            entities,
         };
     }
 
@@ -182,6 +196,16 @@ export class GameState {
         state.data = new Map(data.data ?? []);
         state.connections = new Map(data.connections ?? []);
         state.nextEntityId = data.nextEntityId ?? 1;
+
+        // Restore all entities to global store
+        for (const entityData of data.entities || []) {
+            state.entityStore.createWithId(
+                entityData.id,
+                entityData.type,
+                { ...entityData, id: undefined, type: undefined }
+            );
+        }
+
         return state;
     }
 }

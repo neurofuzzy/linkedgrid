@@ -234,8 +234,8 @@ export class GameManager {
             return false; // Player position not found
         }
 
-        // Get player data before removing
-        const playerData = currentScene.store.getData(playerId);
+        // Get player data from global entity store
+        const playerData = this.gameState.entityStore.getData(playerId);
         if (!playerData) {
             return false; // Player data not found
         }
@@ -244,6 +244,9 @@ export class GameManager {
         const playerProps = { ...playerData };
         delete playerProps.id;
         delete playerProps.type;
+        
+        // Update sceneId to reflect new scene
+        playerProps.sceneId = targetSceneId;
 
         // Pre-check destination before destructively removing player
         const targetCell = targetScene.grid.cell(x, y);
@@ -330,17 +333,12 @@ export class GameManager {
     static load(data: any): GameManager {
         const game = new GameManager();
 
-        // Restore game state
-        game.gameState.playerEntityId = data.gameState.playerEntityId || 0;
-        game.gameState.lives = data.gameState.lives || 3;
-        game.gameState.score = data.gameState.score || 0;
-        game.gameState.inventory = new Map(data.gameState.inventory || []);
-        game.gameState.buffs = new Map(data.gameState.buffs || []);
-        game.gameState.upgrades = new Set(data.gameState.upgrades || []);
-        game.gameState.flags = new Map(data.gameState.flags || []);
-        game.gameState.data = new Map(data.gameState.data || []);
-        game.gameState.connections = new Map(data.gameState.connections || []);
-        (game.gameState as any).nextEntityId = data.gameState.nextEntityId || 1;
+        // Restore game state (including global entity store)
+        const restoredGameState = GameState.deserialize(data.gameState);
+        
+        // Replace the new GameState with the restored one
+        (game as any).gameState = restoredGameState;
+        (game.sceneManager as any).gameState = restoredGameState;
 
         // Restore scenes
         for (const sceneData of data.scenes || []) {

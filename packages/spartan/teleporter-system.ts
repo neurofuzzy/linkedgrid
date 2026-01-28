@@ -12,6 +12,9 @@ type TeleporterState = 'ready' | 'inactive';
  * - Two-way travel
  * - Reset mechanism (pad inactive until player steps off)
  * 
+ * State is stored directly on entity props (teleporterState).
+ * Works seamlessly with global entity store architecture.
+ * 
  * @example
  * ```typescript
  * const system = new TeleporterSystem(gameManager);
@@ -19,28 +22,18 @@ type TeleporterState = 'ready' | 'inactive';
  * 
  * // In scene setup:
  * scene.spatial.spawn('teleporter', 10, 10, GameLayers.FLOOR, {
+ *   sceneId: 'room1',
  *   destination: {
  *     sceneId: 'room2',
  *     x: 5,
  *     y: 5,
- *     layer: GameLayers.ACTORS,
- *     destinationPadId: pad2Id
+ *     layer: GameLayers.ACTORS
  *   }
  * });
  * ```
  */
 export class TeleporterSystem implements GameSystem {
-    private states = new Map<number, TeleporterState>();
-    
     constructor(private gameManager: GameManager) {}
-    
-    /**
-     * Reset all teleporter states.
-     * Call this after scene transitions to prevent stale state.
-     */
-    resetStates(): void {
-        this.states.clear();
-    }
     
     /**
      * Process teleporter overlaps each tick.
@@ -75,18 +68,18 @@ export class TeleporterSystem implements GameSystem {
      * If pad is ready, trigger scene transition and mark destination inactive.
      */
     private handlePlayerTeleporterOverlap(teleporterId: number, spatial: any): void {
-        const state = this.states.get(teleporterId) || 'ready';
-
-        if (state !== 'ready') return;
-
         const teleporter = spatial.getEntityData(teleporterId);
         if (!teleporter) return;
+
+        // Check state from entity props (defaults to 'ready')
+        const state = (teleporter.teleporterState as TeleporterState) || 'ready';
+        if (state !== 'ready') return;
 
         const dest = teleporter.destination;
         if (!dest) return; // No destination configured
 
         // Mark source pad inactive to prevent re-triggering in the same tick
-        this.states.set(teleporterId, 'inactive');
+        spatial.getEntityData(teleporterId).teleporterState = 'inactive';
 
         // Trigger cross-scene transition
         this.gameManager.movePlayerToScene(
@@ -106,9 +99,9 @@ export class TeleporterSystem implements GameSystem {
                 for (let layer = 0; layer < 8; layer++) {
                     const entityId = destCell.values[layer];
                     if (entityId) {
-                        const entityData = destScene.store.getData(entityId);
+                        const entityData = this.gameManager.gameState.entityStore.getData(entityId);
                         if (entityData?.type === 'teleporter') {
-                            this.states.set(entityId, 'inactive');
+                            entityData.teleporterState = 'inactive';
                             break;
                         }
                     }
@@ -121,30 +114,38 @@ export class TeleporterSystem implements GameSystem {
      * Update teleporter states based on player position.
      * 
      * Inactive pads become ready when player steps off.
-     * Only checks pads in the current scene to avoid premature cleanup.
+     * Uses global entity store to check all teleporters across all scenes.
      */
     private updateTeleporterStates(spatial: any, playerId: number): void {
         const playerPos = spatial.getEntityPosition(playerId);
         if (!playerPos) return;
         
-        // Check all inactive teleporters
-        for (const [teleporterId, state] of this.states) {
-            if (state === 'inactive') {
-                const padPos = spatial.getEntityPosition(teleporterId);
-                
-                // Skip pads not in current scene (they may be in other scenes)
-                // Don't delete their state - they need to stay inactive
-                if (!padPos) {
-                    continue;
-                }
-
-                // If player not on pad, re-enable
-                // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
-                if (
-                    padPos.x !== playerPos.x ||
-                    padPos.y !== playerPos.y
-                ) {
-                    this.states.set(teleporterId, 'ready');
+        // Get player's current sceneId
+        const playerData = this.gameManager.gameState.entityStore.getData(playerId);
+        const playerSceneId = playerData?.sceneId;
+        if (!playerSceneId) return;
+        
+        // Check all teleporters in global entity store
+        const allEntityIds = this.gameManager.gameState.entityStore.getAllIds();
+        for (const entityId of allEntityIds) {
+            const entity = this.gameManager.gameState.entityStore.getData(entityId);
+            if (!entity || entity.type !== 'teleporter') continue;
+            
+            // Only check teleporters with inactive state
+            if (entity.teleporterState !== 'inactive') continue;
+            
+            // If teleporter is in same scene as player, check if player stepped off
+            if (entity.sceneId === playerSceneId) {
+                const padPos = spatial.getEntityPosition(entityId);
+                if (padPos) {
+                    // If player not on pad, re-enable
+                    // Note: We only check x,y position, not layer (player is on ACTORS, pad is on FLOOR)
+                    if (
+                        padPos.x !== playerPos.x ||
+                        padPos.y !== playerPos.y
+                    ) {
+                        entity.teleporterState = 'ready';
+                    }
                 }
             }
         }

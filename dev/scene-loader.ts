@@ -154,12 +154,18 @@ export class SceneLoader {
     
     // Spawn all entities
     for (const entityDef of entities) {
+      // Add sceneId to entity data
+      const entityData = {
+        ...(entityDef.data || {}),
+        sceneId: scene.id
+      };
+      
       const id = scene.spatial.spawn(
         entityDef.type,
         entityDef.x,
         entityDef.y,
         entityDef.layer,
-        entityDef.data || {}
+        entityData
       );
       
       // Track player entity

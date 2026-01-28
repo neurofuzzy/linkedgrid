@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { SceneLoader, type SceneConfig } from "./scene-loader";
 import { PlayerInputSystem } from "./player-input-system";
-import { InputManager } from "../packages/spartan/input/input-manager";
+import { InputManager } from "../packages/spartan/input";
 import { GridRenderer, DebugPanel } from "./grid-renderer";
 import type { GameRuntime } from "../packages/spartan/game-runtime";
 
@@ -40,6 +40,7 @@ function Playground() {
   const [error, setError] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState(AVAILABLE_GAMES[0].path);
   const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
+  const [, forceUpdate] = useState({}); // For forcing re-renders without corrupting tick
 
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
@@ -160,7 +161,7 @@ function Playground() {
         clearInterval(renderIntervalRef.current);
       }
     };
-  }, [runtime, tick]);
+  }, [runtime]); // Only recreate when runtime changes, not on every tick
 
   // Hot reload support - listen for Vite HMR events
   useEffect(() => {
@@ -196,7 +197,7 @@ function Playground() {
         }
 
         // Force re-render to update debug panel
-        setTick((prev) => prev + 1);
+        forceUpdate({});
 
         console.log(`Input mode: ${newMode}`);
       }

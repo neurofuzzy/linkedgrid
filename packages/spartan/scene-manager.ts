@@ -165,8 +165,8 @@ export class SceneManager {
     /**
      * Delete a scene.
      * 
-     * Removes the scene and cleans up its resources.
-     * If deleting the active scene, sets active to null.
+     * Removes the scene and all its entities from the global entity store.
+     * If deleting the active scene, sets active to another scene or null.
      * 
      * @param id - Scene identifier to delete
      * @returns true if scene was deleted, false if not found
@@ -184,8 +184,15 @@ export class SceneManager {
             return false;
         }
 
-        // Clear scene data
-        scene.store.clear();
+        // Remove all entities in this scene from global entity store
+        const allEntityIds = this.gameState.entityStore.getAllIds();
+        for (const entityId of allEntityIds) {
+            const entityData = this.gameState.entityStore.getData(entityId);
+            if (entityData?.sceneId === id) {
+                this.gameState.entityStore.remove(entityId);
+            }
+        }
+        
         // Note: LinkedGrid and SpatialSystem don't have explicit cleanup needed
 
         // Remove from map

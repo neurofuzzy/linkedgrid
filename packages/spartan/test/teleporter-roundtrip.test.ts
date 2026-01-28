@@ -17,12 +17,15 @@ describe('TeleporterSystem round-trip', () => {
     
     // Spawn player in room1
     const room1 = runtime.game.sceneManager.getActiveScene()!;
-    const playerId = room1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    const playerId = room1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+      sceneId: 'room1'
+    });
     runtime.game.gameState.playerEntityId = playerId;
     room1.spatial.commit();
     
     // Create teleporter in room1 at (5, 7) → room2 at (3, 3)
     const pad1Id = room1.spatial.spawn('teleporter', 5, 7, GameLayers.FLOOR, {
+      sceneId: 'room1',
       destination: {
         sceneId: 'room2',
         x: 3,
@@ -34,6 +37,7 @@ describe('TeleporterSystem round-trip', () => {
     
     // Create return teleporter in room2 at (3, 3) → room1 at (5, 7)
     const pad2Id = room2.spatial.spawn('teleporter', 3, 3, GameLayers.FLOOR, {
+      sceneId: 'room2',
       destination: {
         sceneId: 'room1',
         x: 5,

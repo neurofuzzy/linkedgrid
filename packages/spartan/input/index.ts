@@ -9,6 +9,7 @@ export * from './keyboard-input-manager';
 export * from './mouse-manager';
 export * from './gamepad-manager';
 export * from './headless-input-manager';
+export * from './input-manager';
 
 import type { KeyboardState } from './keyboard-input-manager';
 import type { MouseState } from './mouse-manager';
