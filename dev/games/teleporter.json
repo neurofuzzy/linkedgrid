@@ -988,5 +988,11 @@
   ],
   "initialScene": "room1",
   "systems": ["TeleporterSystem"],
-  "tickRate": 10
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
 }

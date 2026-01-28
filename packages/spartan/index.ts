@@ -136,4 +136,5 @@ export type { GameRuntimeConfig } from './game-runtime.js';
 export { TeleporterSystem } from './systems/teleporter-system.js';
 export { CollectionSystem } from './systems/collection-system.js';
 export { DoorSystem } from './systems/door-system.js';
+export { PlayerInputSystem } from './systems/player-input-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';

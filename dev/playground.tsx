@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
-import { PlayerInputSystem } from './player-input-system';
 import { InputManager } from '../packages/spartan/input';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import { GridRenderer, DebugPanel } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/game-runtime';
 
@@ -92,11 +92,15 @@ function Playground() {
         // Clean up existing runtime
         if (runtimeRef.current) {
           runtimeRef.current.stop();
+          // Clean up input manager if it exists
+          const cleanup = (runtimeRef.current as any).inputCleanup;
+          if (cleanup) {
+            cleanup();
+          }
           runtimeRef.current = null;
         }
 
         if (inputManagerRef.current) {
-          inputManagerRef.current.destroy();
           inputManagerRef.current = null;
         }
 
@@ -109,38 +113,23 @@ function Playground() {
         const config: SceneConfig = await response.json();
 
         // Validate config
-        const loader = new SceneLoader();
         const errors = SceneLoader.validate(config);
         if (errors.length > 0) {
           throw new Error(`Game validation failed:\n${errors.join('\n')}`);
         }
 
-        // Load game and create runtime first (need gameManager)
+        // Load game with input system automatically configured
+        // Pass document.body to enable DOM event listeners
+        const loader = new SceneLoader(document.body);
         loadedRuntime = loader.load(config);
 
-        // Create input manager with buffering enabled for low tick rate
-        // Pass document.body to enable DOM event listeners (keyboard attaches to document)
-        loadedInputManager = new InputManager(document.body, null, {
-          cellSize: 24,
-          cellGap: 0,
-          bufferInput: false, // Don't use legacy buffering
-          directionMode: 'continuous', // CONTINUOUS mode: hold key = keep moving
-        });
+        // Get input manager from runtime (created by loader)
+        loadedInputManager = (loadedRuntime as any).inputManager;
 
-        // Enable keyboard and buffering for continuous mode
-        // Buffer catches quick taps that happen between ticks
-        loadedInputManager.enableKeyboard().enableBuffering(true);
-
-        // Create player input system
-        const loadedPlayerInputSystem = new PlayerInputSystem(
-          loadedRuntime.game,
-          loadedInputManager
+        // Get player input system from runtime
+        const loadedPlayerInputSystem = (loadedRuntime as any).systems.find(
+          (s: any) => s instanceof PlayerInputSystem
         );
-
-        // Register input system with runtime (not just gameLoop)
-        // This ensures it persists across scene transitions
-        (loadedRuntime as any).systems.push(loadedPlayerInputSystem);
-        (loadedRuntime as any).gameLoop.addSystem(loadedPlayerInputSystem);
 
         // Start runtime
         loadedRuntime.start();

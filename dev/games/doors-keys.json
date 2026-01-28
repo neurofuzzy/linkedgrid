@@ -172,5 +172,11 @@
   ],
   "initialScene": "key-puzzle",
   "systems": ["CollectionSystem", "DoorSystem"],
-  "tickRate": 10
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
 }

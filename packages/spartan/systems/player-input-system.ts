@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../packages/spartan/types';
-import { GameLayers } from '../packages/spartan/layers/types';
-import { InputManager } from '../packages/spartan/input/input-manager';
-import { Direction } from '../packages/grid/direction';
+import type { GameSystem, GameContext } from '../types.js';
+import { GameLayers } from '../layers/types.js';
+import { InputManager } from '../input/input-manager.js';
+import { Direction } from '../../grid/direction.js';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.

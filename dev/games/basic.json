@@ -553,5 +553,11 @@
   ],
   "initialScene": "basic-room",
   "systems": [],
-  "tickRate": 10
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
 }
