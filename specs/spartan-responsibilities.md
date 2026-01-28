@@ -78,7 +78,9 @@
 - **Movement (Entity-based):** `moveEntity(entityId, toX, toY)` - stage move by entity ID
 - **Removal (Coordinate-based):** `remove(x, y, layer)` - stage removal by cell position
 - **Removal (Entity-based):** `removeEntity(entityId)` - stage removal by entity ID
-- **Commit:** `commit()` (execute all), `clearIntents()`
+- **Commit:** `commit()` (validate and execute all staged operations)
+- **Validation:** `isBlocked()`, `blocksVision()`, `isWalkable()` - cell state queries
+- **Mask Management:** `updateCellMasks()`, `syncMasks()` - automatic BLOCKING/VISION_BLOCKING mask updates
 - **Queries:** `getEntityPosition()`, `getEntityIdsInCell()`, `getEntityIdsInRadius()` (with `includePendingRemovals` option), `getEntityIdsInLine()`
 - **Overlap:** `detectOverlaps()` - find cells with 2+ entities
 - **Iteration:** `getAllPositions()` - all tracked positions
@@ -92,14 +94,18 @@
 - Handle input
 - Run game loops
 - Know about other spatial systems
+- Pre-validate operations (validation happens in commit)
 
 **Boundary Test:** Could you have two SpatialSystems operating on different grids independently? **YES** ✓
 
 **Key Insights:** 
 - Each scene has its own SpatialSystem. They don't talk to each other.
 - **All operations are deferred** - nothing happens until `commit()`
+- **Validation happens in commit** - moves are checked for blocking, occupancy, conflicts during execution
 - **Lifecycle queries** prevent interaction with "zombie entities" (pending removals)
+- **Pending operations are inspectable** - systems can react to intents via `getPendingOps()`
 - **Hybrid API** - Provides both coordinate-based (cell-centric) and entity-based (entity-centric) operations for flexibility
+- **Automatic mask management** - BLOCKING and VISION_BLOCKING masks updated on spawn/move/remove
 
 ---
 
@@ -188,19 +194,49 @@
 
 ---
 
+### PlayerInputSystem
+**One Job:** Translate input into movement intents (dumb translator)
+
+**Owns:**
+- Reference to InputManager
+- Reference to GameManager (for player ID)
+- Debug stats
+
+**Provides:**
+- `update(context)` - reads input and stages move intents
+  1. Get input direction from InputManager
+  2. Calculate target position
+  3. Stage move via `spatial.move()` (NO VALIDATION)
+
+**Does NOT:**
+- Validate moves (that's SpatialSystem.commit())
+- Know about doors, enemies, or game rules
+- Check if cells are walkable
+- Handle collision logic
+
+**Boundary Test:** Could you replace PlayerInputSystem with an AIInputSystem? **YES** ✓
+
+**Key Insights:** 
+- **Dumb by design** - just translates input to intents
+- **No validation** - always stages moves, even if blocked
+- **Registered first** - must run before reactive systems
+- Validation happens in `commit()`, not here
+
+---
+
 ### GameLoop
 **One Job:** Execute one game tick for ONE spatial system
 
 **Owns:**
-- `systems: GameSystem[]` - registered systems
+- `systems: GameSystem[]` - registered systems (in execution order)
 - Reference to ONE SpatialSystem
 
 **Provides:**
 - `addSystem(system)` - register systems
 - `tick()` - execute one game tick:
   1. Detect overlaps in this spatial system
-  2. Run all systems (they stage intents)
-  3. Commit all intents
+  2. Run all systems in order (they stage intents and react)
+  3. Commit all intents (validate and execute)
 
 **Does NOT:**
 - Know about scenes (just has a SpatialSystem reference)
@@ -208,10 +244,14 @@
 - Handle timing or frames
 - Run automatically (tick is called externally)
 - Operate on multiple spatial systems
+- Validate operations (that's SpatialSystem.commit())
 
 **Boundary Test:** Could you create two GameLoops for two different spatial systems? **YES** ✓
 
-**Key Insight:** Pure orchestrator. One loop per spatial system. Stateless with respect to scenes.
+**Key Insights:** 
+- Pure orchestrator. One loop per spatial system. Stateless with respect to scenes.
+- **System execution order matters** - input systems first, reactive systems second
+- Systems stage intents, commit validates and executes
 
 ---
 
@@ -246,24 +286,125 @@
 
 ---
 
-## Data Flow Examples
+## Reactive Intent-Based Architecture
 
-### Player Moves (Single Scene)
+### Core Pattern
+
+The framework uses a **reactive intent-based architecture** where:
+
+1. **Input systems** stage intents without validation (dumb)
+2. **Game systems** react to intents by inspecting pending operations (smart)
+3. **SpatialSystem.commit()** validates and executes all operations (gatekeeper)
+
+### Why This Works
+
+**Traditional (Bad):**
+```
+PlayerInputSystem checks isWalkable() → stages move if valid
+DoorSystem checks adjacent cells every tick → unlocks if key present
+```
+Problems: Tight coupling, proactive checks, timing issues
+
+**Reactive (Good):**
+```
+PlayerInputSystem always stages move → no validation
+DoorSystem sees pending move → unlocks door if needed
+SpatialSystem.commit() validates → move succeeds or fails
+```
+Benefits: Loose coupling, reactive behavior, natural UX
+
+### Example Flow: Door Unlocking
 
 ```
-Input Handler
-  → stages: spatial.move(x1, y1, x2, y2, layer) [DEFERRED - not visible yet]
+Tick N:
+1. PlayerInputSystem.update()
+   → stages: spatial.move(5, 5, 6, 5, ACTORS)  [blocked by door]
+   
+2. DoorSystem.update()
+   → const ops = spatial.getPendingOps()
+   → sees player trying to move to (6, 5)
+   → checks: door at (6, 5)? locked? player has key?
+   → unlocks door, removes from WALLS layer
+   → BLOCKING mask cleared
+   
+3. spatial.commit()
+   → validates move to (6, 5)
+   → isBlocked(cell) == false (door removed)
+   → move executes successfully
+```
+
+### System Execution Order
+
+**Critical:** Systems must run in specific order:
+
+```typescript
+// Scene loader registration order:
+1. PlayerInputSystem       // Stages intents
+2. DoorSystem             // Reacts to intents
+3. CollectionSystem       // Reacts to overlaps
+4. TeleporterSystem       // Reacts to overlaps
+// Then: spatial.commit() validates and executes
+```
+
+**Why:** Reactive systems need to see intents before validation happens.
+
+### Pending Operations API
+
+Systems can inspect pending operations to react:
+
+```typescript
+// In any GameSystem.update()
+const pendingOps = context.spatial.getPendingOps();
+
+for (const op of pendingOps) {
+  if (op.type === 'move' && op.entityId === targetId) {
+    // React to this entity trying to move
+    const destCell = spatial.grid.cell(op.toX, op.toY);
+    // Modify world state before commit validates
+  }
+}
+```
+
+**Key:** Systems see intents before they're validated, allowing them to modify world state to make intents valid.
+
+## Data Flow Examples
+
+### Player Moves (Single Scene with Reactive Door)
+
+```
 GameRuntime.tick()
   → GameLoop.tick()
     → spatial.detectOverlaps() [reads COMMITTED state from previous tick]
-    → systems.forEach(s => s.update(context)) [systems stage more operations]
-    → spatial.commit() [execute ALL pending operations atomically: removals → moves → spawns]
+    → systems.forEach(s => s.update(context)):
+      
+      1. PlayerInputSystem.update()
+         → reads input direction
+         → stages: spatial.move(5, 5, 6, 5, ACTORS) [DEFERRED - not validated yet]
+      
+      2. DoorSystem.update()
+         → const pendingOps = spatial.getPendingOps()
+         → sees: move from (5,5) to (6,5) by player
+         → checks: door at (6,5)? YES. locked? YES. player has key? YES.
+         → unlocks: spatial.remove(6, 5, WALLS)  [stages door removal]
+         → stages: spatial.spawn('open-door', 6, 5, FLOOR)  [visual]
+      
+      3. [Other systems run...]
+    
+    → spatial.commit() [validate and execute ALL pending operations]:
+      Phase 1: Execute removals (door removed, BLOCKING mask cleared)
+      Phase 2: Validate moves (check isBlocked(6,5) → FALSE, move is valid!)
+      Phase 3: Execute valid moves (player moves to (6,5))
+      Phase 4: Execute spawns (open door visual placed)
+  
   → game.executePendingTransition() [no transition queued, returns false]
 ```
 
-**Flow:** Input → Runtime → Loop → Spatial
+**Flow:** Input → Systems (stage intents) → Reactive Systems (modify world) → Commit (validate & execute)
 
-**Key:** All operations are **deferred** until `commit()`. Systems see the same immutable state during the entire tick.
+**Key:** 
+- **Intents are staged** without validation
+- **Systems react to intents** by modifying world state
+- **Commit validates** after reactive changes applied
 
 ---
 
