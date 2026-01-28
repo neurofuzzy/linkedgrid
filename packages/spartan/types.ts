@@ -35,118 +35,18 @@ export type EntityData = {
 };
 
 /**
- * Capability Interfaces
+ * Entity Traits and Archetypes
  * 
- * These interfaces define composable capabilities that entities can have.
- * Systems use these to implement generic logic that works with any entity
- * possessing the required capabilities.
+ * Game-specific entity patterns (traits, archetypes, guards, spawn helpers)
+ * are organized in the entities/ subdirectory.
  * 
- * Design: Composition over inheritance - entities mix capabilities as needed.
+ * See:
+ * - entities/traits.ts - Trait interfaces (HasHealth, CanDealDamage, etc.)
+ * - entities/entity-types.ts - Entity archetypes (PlayerData, EnemyData, etc.)
+ * - entities/trait-guards.ts - Type guards for traits and entities
+ * - entities/spawn-helpers.ts - Type-safe spawn functions
+ * - entities/README.md - Full documentation on the trait system
  */
-
-/**
- * HasHealth - Entity can take damage and be destroyed.
- * 
- * Used by health systems, damage systems, UI health bars.
- */
-export interface HasHealth {
-    hp: number;
-    maxHp: number;
-}
-
-/**
- * CanDealDamage - Entity can damage other entities.
- * 
- * Used by damage systems, combat systems.
- */
-export interface CanDealDamage {
-    damage: number;
-}
-
-/**
- * HasAI - Entity has AI state for behavior systems.
- * 
- * Used by AI systems for autonomous behavior.
- */
-export interface HasAI {
-    aiState: 'idle' | 'chase' | 'attack';
-}
-
-/**
- * HasSceneLocation - Entity tracks which scene it belongs to.
- * 
- * Used for cross-scene operations, save/load, debugging.
- */
-export interface HasSceneLocation {
-    sceneId: string;
-}
-
-/**
- * HasTeleportTarget - Entity is a teleporter with a connection key.
- * 
- * Used by teleporter systems to look up destination connections.
- */
-export interface HasTeleportTarget {
-    targetKey: string;
-}
-
-/**
- * Entity Type Aliases
- * 
- * These define specific entity types as compositions of capabilities.
- * Provides clear contracts for what properties each entity type requires.
- * 
- * Usage:
- * - Documentation: Shows what properties an entity needs
- * - Type safety: Spawn helpers enforce required properties
- * - Type guards: Runtime checks that narrow to specific types
- */
-
-/**
- * PlayerData - Player-controlled entity.
- * 
- * Capabilities: health, damage, scene tracking
- */
-export type PlayerData = EntityData & {
-    type: 'player';
-} & HasHealth & CanDealDamage & HasSceneLocation;
-
-/**
- * EnemyData - AI-controlled hostile entity.
- * 
- * Capabilities: health, damage, AI state
- */
-export type EnemyData = EntityData & {
-    type: 'enemy';
-} & HasHealth & CanDealDamage & HasAI;
-
-/**
- * TeleporterData - Portal entity for scene transitions.
- * 
- * Capabilities: teleport targeting, scene tracking
- */
-export type TeleporterData = EntityData & {
-    type: 'teleporter';
-} & HasTeleportTarget & HasSceneLocation;
-
-/**
- * ItemData - Collectible or interactive object.
- * 
- * Additional properties: itemType for item-specific logic
- */
-export type ItemData = EntityData & {
-    type: 'item';
-    itemType: string;
-};
-
-/**
- * WallData - Static blocking terrain.
- * 
- * Minimal entity - just ID and type tag
- */
-export type WallData = EntityData & {
-    type: 'wall';
-};
 
 /**
  * Layer index in cell arrays.

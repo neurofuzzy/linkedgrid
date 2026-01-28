@@ -1,14 +1,14 @@
 /**
  * Type-Safe Entity Spawn Helpers
  * 
- * Provides typed helper functions for spawning entities with compile-time
+ * Provides typed helper functions for spawning entity archetypes with compile-time
  * property validation. These functions wrap SpatialSystem.spawn() with
  * strongly-typed interfaces.
  * 
  * Benefits:
- * - Type safety: TypeScript enforces all required properties
- * - IDE autocomplete: Properties are discoverable
- * - Documentation: Clear contracts for each entity type
+ * - Type safety: TypeScript enforces all required trait properties
+ * - IDE autocomplete: Trait properties are discoverable
+ * - Documentation: Clear contracts for each entity archetype
  * - Non-breaking: Raw spawn() still available for flexibility
  * 
  * Usage:
@@ -23,7 +23,7 @@
  *   maxHp: 100,
  *   damage: 10,
  *   sceneId: 'room1'
- * }); // TypeScript enforces all required properties
+ * }); // TypeScript enforces all required trait properties
  * 
  * // Raw spawn still works (for flexibility)
  * const enemyId = spatial.spawn('enemy', 10, 10, GameLayers.ACTORS, {
@@ -35,15 +35,15 @@
  * ```
  */
 
-import type { SpatialSystem } from './spatial-system.js';
+import type { SpatialSystem } from '../spatial-system.js';
+import { GameLayers } from '../types.js';
 import type {
     PlayerData,
     EnemyData,
     TeleporterData,
     ItemData,
     WallData,
-} from './types.js';
-import { GameLayers } from './types.js';
+} from './entity-types.js';
 
 /**
  * Spawn a player entity with type-safe properties.
