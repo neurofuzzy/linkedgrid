@@ -1,5 +1,5 @@
 import { visual } from "./visual-helpers";
-import { GameLayers } from "../types";
+import { GameLayers } from "../layers/types";
 import { blocksVision, isBlocked } from "../layers/layer-helpers";
 
 /**
