@@ -401,6 +401,10 @@ export class GameRuntime {
      * Handle scene transition.
      * 
      * Recreates game loop for new scene and re-registers systems.
+     * 
+     * IMPORTANT: Only systems in this.systems[] are re-registered.
+     * Systems added directly via gameLoop.addSystem() are permanently lost.
+     * See specs/spartan-system-registration.md for correct registration patterns.
      */
     private onSceneTransition(newScene: Scene): void {
         // Recreate game loop for new scene

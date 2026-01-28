@@ -43,10 +43,15 @@ describe('TeleporterSystem round-trip', () => {
     });
     room2.spatial.commit();
     
-    // Add TeleporterSystem
+    // Register TeleporterSystem using double-registration pattern
+    // Note: We use manual registration here because TeleporterSystem requires
+    // runtime.game in its constructor, which doesn't exist until after runtime
+    // is created. For systems that don't need runtime dependencies, use
+    // createRuntimeWithSystems() helper instead.
+    // See specs/spartan-system-registration.md for details.
     const teleporterSystem = new TeleporterSystem(runtime.game);
-    (runtime as any).systems.push(teleporterSystem);
-    (runtime as any).gameLoop.addSystem(teleporterSystem);
+    (runtime as any).systems.push(teleporterSystem);        // Persistent (survives scene transitions)
+    (runtime as any).gameLoop.addSystem(teleporterSystem);  // Active immediately
     
     // STEP 1: Move player onto pad1 in room1
     room1.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
