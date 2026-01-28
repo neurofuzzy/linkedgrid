@@ -670,7 +670,7 @@ export class InputManager {
             };
 
             this.canvas.addEventListener('mousedown', this.boundMouseDown);
-            this.canvas.addEventListener('mouseup', this.boundMouseUp);
+            window.addEventListener('mouseup', this.boundMouseUp); // Attach to window to catch releases outside canvas
             this.canvas.addEventListener('mousemove', this.boundMouseMove);
             this.canvas.addEventListener('contextmenu', this.boundContextMenu);
             this.canvas.addEventListener('wheel', this.boundWheel);

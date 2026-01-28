@@ -221,10 +221,6 @@ export class MouseManager {
       this.canvas.removeEventListener('mousedown', this.boundMouseDown);
       this.boundMouseDown = null;
     }
-    if (this.boundMouseUp) {
-      this.canvas.removeEventListener('mouseup', this.boundMouseUp);
-      this.boundMouseUp = null;
-    }
     if (this.boundMouseMove) {
       this.canvas.removeEventListener('mousemove', this.boundMouseMove);
       this.boundMouseMove = null;
@@ -238,7 +234,7 @@ export class MouseManager {
       this.boundWheel = null;
     }
     
-    // Clean up mouseup from window
+    // Clean up mouseup from window (where it was originally attached)
     if (this.boundMouseUp) {
       window.removeEventListener('mouseup', this.boundMouseUp);
       this.boundMouseUp = null;
