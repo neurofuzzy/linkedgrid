@@ -48,6 +48,47 @@ export {
     ALL_LAYERS 
 } from './types';
 
+// Capability interfaces and entity types
+export type {
+    HasHealth,
+    CanDealDamage,
+    HasAI,
+    HasSceneLocation,
+    HasTeleportTarget,
+    PlayerData,
+    EnemyData,
+    TeleporterData,
+    ItemData,
+    WallData
+} from './types';
+
+// Type guards
+export {
+    hasHealth,
+    canDealDamage,
+    hasAI,
+    hasSceneLocation,
+    hasTeleportTarget,
+    isPlayer,
+    isEnemy,
+    isTeleporter,
+    isItem,
+    isWall,
+    isPlayerWithHealth,
+    isEnemyWithAI,
+    isTeleporterWithTarget
+} from './capability-guards';
+
+// Spawn helpers
+export {
+    spawnPlayer,
+    spawnEnemy,
+    spawnTeleporter,
+    spawnItem,
+    spawnWall,
+    spawnPlayerWithId
+} from './spawn-helpers';
+
 // Blocking utilities
 // Layer utilities
 export { getTopmostEntity, isBlocked, blocksVision, isWalkable } from './layer-helpers';
@@ -56,5 +97,7 @@ export { getTopmostEntity, isBlocked, blocksVision, isWalkable } from './layer-h
 export { GameLoop } from './game-loop.js';
 export { GameRuntime } from './game-runtime.js';
 export type { GameRuntimeConfig } from './game-runtime.js';
-export { TeleporterSystem } from './teleporter-system.js';
+
+// Systems
+export { TeleporterSystem } from './systems/teleporter-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';

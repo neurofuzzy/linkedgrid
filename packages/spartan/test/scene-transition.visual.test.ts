@@ -1,6 +1,8 @@
 import { visual } from './visual-helpers.js';
 import { GameManager } from '../game-manager.js';
 import { GameLayers } from '../types.js';
+import { spawnPlayer, spawnTeleporter, spawnItem } from '../spawn-helpers.js';
+import { isPlayer } from '../capability-guards.js';
 
 visual('player teleports between rooms', {
   arrange: (ctx) => {
@@ -15,21 +17,42 @@ visual('player teleports between rooms', {
     });
     
     game.sceneManager.setActiveScene('room1');
-    const playerId = room1.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    
+    // Spawn player using type-safe spawn helper
+    const playerId = spawnPlayer(room1.spatial, 5, 5, {
+      hp: 100,
+      maxHp: 100,
+      damage: 10,
+      sceneId: 'room1'
+    });
     game.gameState.playerEntityId = playerId;
+    
+    // Verify player using type guard
+    const playerData = room1.spatial.getEntityData(playerId);
+    if (!isPlayer(playerData)) {
+      throw new Error('Player entity failed type check');
+    }
     
     // Add some walls in room1
     room1.grid.cell(4, 5).setValue(GameLayers.WALLS, 1);
     room1.grid.cell(6, 5).setValue(GameLayers.WALLS, 1);
     
-    // Add teleporter pad in room1 (where player will step after walking)
-    room1.spatial.spawn('teleporter', 5, 7, GameLayers.FLOOR);
+    // Add teleporter pad in room1 using spawn helper
+    spawnTeleporter(room1.spatial, 5, 7, {
+      targetKey: 'portal1',
+      sceneId: 'room1'
+    });
     
-    // Add treasure in room2
-    room2.spatial.spawn('item', 6, 6, GameLayers.ITEMS);
+    // Add treasure in room2 using spawn helper
+    spawnItem(room2.spatial, 6, 6, {
+      itemType: 'treasure'
+    });
     
-    // Add teleporter pad in room2 (destination)
-    room2.spatial.spawn('teleporter', 3, 3, GameLayers.FLOOR);
+    // Add teleporter pad in room2 using spawn helper
+    spawnTeleporter(room2.spatial, 3, 3, {
+      targetKey: 'portal1',
+      sceneId: 'room2'
+    });
     
     // Commit all spawned entities
     room1.spatial.commit();
@@ -90,7 +113,14 @@ visual('multi-scene world with connections', {
     
     // Spawn player in entrance
     game.sceneManager.setActiveScene('entrance');
-    const playerId = entrance.spatial.spawn('player', 4, 4, GameLayers.ACTORS);
+    
+    // Spawn player using type-safe spawn helper
+    const playerId = spawnPlayer(entrance.spatial, 4, 4, {
+      hp: 100,
+      maxHp: 100,
+      damage: 10,
+      sceneId: 'entrance'
+    });
     game.gameState.playerEntityId = playerId;
     
     // Add enemy in hallway

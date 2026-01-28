@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { GameRuntime } from '../game-runtime.js';
-import { TeleporterSystem } from '../teleporter-system.js';
+import { TeleporterSystem } from '../systems/teleporter-system.js';
 import { GameLayers } from '../types.js';
+import { spawnPlayer, spawnTeleporter } from '../spawn-helpers.js';
+import { isPlayer, isTeleporter } from '../capability-guards.js';
 
 describe('TeleporterSystem round-trip', () => {
   it('allows player to teleport back after stepping off destination pad', () => {
@@ -15,16 +17,24 @@ describe('TeleporterSystem round-trip', () => {
     // Create room2
     const room2 = runtime.game.sceneManager.createScene('room2', 10, 10);
     
-    // Spawn player in room1
+    // Spawn player in room1 using type-safe spawn helper
     const room1 = runtime.game.sceneManager.getActiveScene()!;
-    const playerId = room1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+    const playerId = spawnPlayer(room1.spatial, 5, 5, {
+      hp: 100,
+      maxHp: 100,
+      damage: 10,
       sceneId: 'room1'
     });
     runtime.game.gameState.playerEntityId = playerId;
     room1.spatial.commit();
     
-    // Create teleporter in room1 at (5, 7) → room2 at (3, 3)
-    const pad1Id = room1.spatial.spawn('teleporter', 5, 7, GameLayers.FLOOR, {
+    // Verify player data using type guard
+    const playerData = room1.spatial.getEntityData(playerId);
+    expect(isPlayer(playerData)).toBe(true);
+    
+    // Create teleporter in room1 at (5, 7) → room2 at (3, 3) using type-safe spawn helper
+    const pad1Id = spawnTeleporter(room1.spatial, 5, 7, {
+      targetKey: 'red',
       sceneId: 'room1',
       destination: {
         sceneId: 'room2',
@@ -35,8 +45,13 @@ describe('TeleporterSystem round-trip', () => {
     });
     room1.spatial.commit();
     
-    // Create return teleporter in room2 at (3, 3) → room1 at (5, 7)
-    const pad2Id = room2.spatial.spawn('teleporter', 3, 3, GameLayers.FLOOR, {
+    // Verify teleporter data using type guard
+    const pad1Data = room1.spatial.getEntityData(pad1Id);
+    expect(isTeleporter(pad1Data)).toBe(true);
+    
+    // Create return teleporter in room2 at (3, 3) → room1 at (5, 7) using type-safe spawn helper
+    const pad2Id = spawnTeleporter(room2.spatial, 3, 3, {
+      targetKey: 'red',
       sceneId: 'room2',
       destination: {
         sceneId: 'room1',

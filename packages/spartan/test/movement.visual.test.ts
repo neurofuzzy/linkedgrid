@@ -1,9 +1,17 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../types';
+import { spawnPlayer, spawnEnemy, spawnItem } from '../spawn-helpers';
+import { isPlayer, isEnemy, isItem, hasHealth } from '../capability-guards';
 
 visual('player moves right 3 times', {
     arrange: ({ spatial }) => {
-        spatial.spawn('player', 5, 5, GameLayers.ACTORS, { hp: 100 });
+        // Use type-safe spawn helper
+        spawnPlayer(spatial, 5, 5, {
+            hp: 100,
+            maxHp: 100,
+            damage: 10,
+            sceneId: 'test-scene'
+        });
         spatial.commit();
     },
     act: ({ spatial }) => {
@@ -25,6 +33,17 @@ visual('player moves right 3 times', {
             const playerId = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS);
             if (playerId === undefined) {
                 throw new Error('Expected player at (8, 5)');
+            }
+            
+            // Verify using type guard
+            const playerData = spatial.getEntityData(playerId);
+            if (!isPlayer(playerData)) {
+                throw new Error('Entity is not a player');
+            }
+            
+            // Verify player has health capability
+            if (!hasHealth(playerData)) {
+                throw new Error('Player missing health capability');
             }
         });
         
@@ -50,14 +69,32 @@ visual('player moves right 3 times', {
 
 visual('spawn multiple entities', {
     arrange: ({ spatial }) => {
-        spatial.spawn('player', 10, 10, GameLayers.ACTORS);
+        // Use type-safe spawn helper
+        spawnPlayer(spatial, 10, 10, {
+            hp: 100,
+            maxHp: 100,
+            damage: 10,
+            sceneId: 'test-scene'
+        });
         spatial.commit();
     },
     act: ({ spatial }) => {
-        // Add entities one at a time to show spawning process
-        spatial.spawn('enemy', 12, 10, GameLayers.ACTORS);
-        spatial.spawn('enemy', 10, 12, GameLayers.ACTORS);
-        spatial.spawn('item', 11, 11, GameLayers.COLLECTIBLES);
+        // Add entities one at a time using spawn helpers
+        spawnEnemy(spatial, 12, 10, {
+            hp: 50,
+            maxHp: 50,
+            damage: 5,
+            aiState: 'idle'
+        });
+        spawnEnemy(spatial, 10, 12, {
+            hp: 50,
+            maxHp: 50,
+            damage: 5,
+            aiState: 'chase'
+        });
+        spawnItem(spatial, 11, 11, {
+            itemType: 'health_potion'
+        });
         spatial.commit();
     },
     assert: ({ spatial, expect }) => {
@@ -65,28 +102,32 @@ visual('spawn multiple entities', {
             const id = spatial.getEntityIdAt(10, 10, GameLayers.ACTORS);
             if (id === undefined) throw new Error('Not found');
             const data = spatial.getEntityData(id);
-            if (data?.type !== 'player') throw new Error(`Wrong type: ${data?.type}`);
+            // Use type guard instead of manual check
+            if (!isPlayer(data)) throw new Error(`Wrong type: ${data?.type}`);
         });
         
         expect('Enemy at (12, 10) ACTORS layer', () => {
             const id = spatial.getEntityIdAt(12, 10, GameLayers.ACTORS);
             if (id === undefined) throw new Error('Not found');
             const data = spatial.getEntityData(id);
-            if (data?.type !== 'enemy') throw new Error(`Wrong type: ${data?.type}`);
+            // Use type guard instead of manual check
+            if (!isEnemy(data)) throw new Error(`Wrong type: ${data?.type}`);
         });
         
         expect('Enemy at (10, 12) ACTORS layer', () => {
             const id = spatial.getEntityIdAt(10, 12, GameLayers.ACTORS);
             if (id === undefined) throw new Error('Not found');
             const data = spatial.getEntityData(id);
-            if (data?.type !== 'enemy') throw new Error(`Wrong type: ${data?.type}`);
+            // Use type guard instead of manual check
+            if (!isEnemy(data)) throw new Error(`Wrong type: ${data?.type}`);
         });
         
         expect('Item at (11, 11) COLLECTIBLES layer', () => {
             const id = spatial.getEntityIdAt(11, 11, GameLayers.COLLECTIBLES);
             if (id === undefined) throw new Error('Not found');
             const data = spatial.getEntityData(id);
-            if (data?.type !== 'item') throw new Error(`Wrong type: ${data?.type}`);
+            // Use type guard instead of manual check
+            if (!isItem(data)) throw new Error(`Wrong type: ${data?.type}`);
         });
     }
 });

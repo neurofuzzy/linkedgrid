@@ -1,5 +1,6 @@
-import type { GameSystem, GameContext } from './types.js';
-import type { GameManager } from './game-manager.js';
+import type { GameSystem, GameContext, PlayerData, TeleporterData } from '../types.js';
+import type { GameManager } from '../game-manager.js';
+import { isPlayer, isTeleporter } from '../capability-guards.js';
 
 type TeleporterState = 'ready' | 'inactive';
 
@@ -46,15 +47,31 @@ export class TeleporterSystem implements GameSystem {
         
         if (playerId === 0) return; // No player spawned
         
-        // Check each overlap for player + teleporter
+        // Check each overlap for player + teleporter using type guards
         for (const overlap of overlaps) {
-            const hasPlayer = overlap.entityIds.includes(playerId);
-            const teleporterId = overlap.entityIds.find(id => 
-                spatial.getEntityData(id)?.type === 'teleporter'
-            );
+            // Find player and teleporter entities using type guards
+            let playerFound = false;
+            let teleporterEntity: TeleporterData | null = null;
+            let teleporterId: number | null = null;
             
-            if (hasPlayer && teleporterId) {
-                this.handlePlayerTeleporterOverlap(teleporterId, spatial);
+            for (const entityId of overlap.entityIds) {
+                const entityData = spatial.getEntityData(entityId);
+                if (!entityData) continue;
+                
+                // Use type guard for player check
+                if (isPlayer(entityData) && entityId === playerId) {
+                    playerFound = true;
+                }
+                
+                // Use type guard for teleporter check
+                if (isTeleporter(entityData)) {
+                    teleporterEntity = entityData;
+                    teleporterId = entityId;
+                }
+            }
+            
+            if (playerFound && teleporterEntity && teleporterId) {
+                this.handlePlayerTeleporterOverlap(teleporterId, teleporterEntity, spatial);
             }
         }
         
@@ -66,11 +83,16 @@ export class TeleporterSystem implements GameSystem {
      * Handle player overlapping with teleporter pad.
      * 
      * If pad is ready, trigger scene transition and mark destination inactive.
+     * 
+     * @param teleporterId - Entity ID of the teleporter
+     * @param teleporter - Typed teleporter entity data
+     * @param spatial - Spatial system reference
      */
-    private handlePlayerTeleporterOverlap(teleporterId: number, spatial: any): void {
-        const teleporter = spatial.getEntityData(teleporterId);
-        if (!teleporter) return;
-
+    private handlePlayerTeleporterOverlap(
+        teleporterId: number, 
+        teleporter: TeleporterData, 
+        spatial: any
+    ): void {
         // Check state from entity props (defaults to 'ready')
         const state = (teleporter.teleporterState as TeleporterState) || 'ready';
         if (state !== 'ready') return;
@@ -79,7 +101,10 @@ export class TeleporterSystem implements GameSystem {
         if (!dest) return; // No destination configured
 
         // Mark source pad inactive to prevent re-triggering in the same tick
-        spatial.getEntityData(teleporterId).teleporterState = 'inactive';
+        const updatedTeleporter = spatial.getEntityData(teleporterId);
+        if (updatedTeleporter) {
+            updatedTeleporter.teleporterState = 'inactive';
+        }
 
         // Trigger cross-scene transition
         this.gameManager.movePlayerToScene(
@@ -95,12 +120,13 @@ export class TeleporterSystem implements GameSystem {
         if (destScene) {
             const destCell = destScene.grid.cell(dest.x, dest.y);
             if (destCell) {
-                // Find teleporter entity at destination coordinates
+                // Find teleporter entity at destination coordinates using type guard
                 for (let layer = 0; layer < 8; layer++) {
                     const entityId = destCell.values[layer];
                     if (entityId) {
                         const entityData = this.gameManager.gameState.entityStore.getData(entityId);
-                        if (entityData?.type === 'teleporter') {
+                        // Use type guard instead of manual check
+                        if (entityData && isTeleporter(entityData)) {
                             entityData.teleporterState = 'inactive';
                             break;
                         }
@@ -120,16 +146,19 @@ export class TeleporterSystem implements GameSystem {
         const playerPos = spatial.getEntityPosition(playerId);
         if (!playerPos) return;
         
-        // Get player's current sceneId
+        // Get player's current sceneId using type guard
         const playerData = this.gameManager.gameState.entityStore.getData(playerId);
-        const playerSceneId = playerData?.sceneId;
-        if (!playerSceneId) return;
+        if (!playerData || !isPlayer(playerData)) return;
         
-        // Check all teleporters in global entity store
+        const playerSceneId = playerData.sceneId;
+        
+        // Check all teleporters in global entity store using type guard
         const allEntityIds = this.gameManager.gameState.entityStore.getAllIds();
         for (const entityId of allEntityIds) {
             const entity = this.gameManager.gameState.entityStore.getData(entityId);
-            if (!entity || entity.type !== 'teleporter') continue;
+            
+            // Use type guard to check if entity is a teleporter
+            if (!entity || !isTeleporter(entity)) continue;
             
             // Only check teleporters with inactive state
             if (entity.teleporterState !== 'inactive') continue;
