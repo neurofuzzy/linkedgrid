@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spartan Playground - Interactive Runtime</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Monaco', 'Courier New', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      overflow: hidden;
+    }
+    
+    #root {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #4ec9b0;
+    }
+    
+    .grid {
+      display: inline-grid;
+      gap: 0;
+      background: #252526;
+      padding: 10px;
+      border: 2px solid #3c3c3c;
+      border-radius: 4px;
+    }
+    
+    .cell {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .entity-player { color: #569cd6; }
+    .entity-enemy { color: #f48771; }
+    .entity-wall { color: #808080; }
+    .entity-teleporter { color: #4ec9b0; }
+    .entity-item { color: #dcdcaa; }
+    .entity-projectile { color: #c586c0; }
+    
+    .empty {
+      color: #3c3c3c;
+    }
+    
+    .debug-panel {
+      margin-top: 20px;
+      padding: 15px;
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      border-radius: 4px;
+    }
+    
+    .debug-panel h3 {
+      color: #4ec9b0;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .debug-panel p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    
+    .debug-panel .label {
+      color: #9cdcfe;
+    }
+    
+    .controls {
+      margin-top: 20px;
+      padding: 15px;
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      border-radius: 4px;
+    }
+    
+    .controls h3 {
+      color: #4ec9b0;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .controls kbd {
+      background: #3c3c3c;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 12px;
+      color: #dcdcaa;
+    }
+    
+    .scene-info {
+      margin-top: 10px;
+      padding: 10px;
+      background: #1e1e1e;
+      border-left: 3px solid #4ec9b0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/dev/playground.tsx"></script>
+</body>
+</html>

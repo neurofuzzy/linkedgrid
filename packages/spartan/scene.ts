@@ -7,16 +7,16 @@ import type { Layer } from './types';
 /**
  * Scene - Container for a spatial game scene.
  * 
- * Wraps grid, spatial system, and entity store into a cohesive unit.
- * Scenes are isolated from each other - entities in one scene don't affect another.
+ * Wraps grid and spatial system. Entities are stored globally in GameState.entityStore
+ * and reference this scene via their `sceneId` property.
  * 
  * @example
  * ```typescript
  * const gameState = new GameState();
  * const scene = new Scene('dungeon-1', 20, 20, gameState);
  * 
- * // Spawn entities in this scene
- * const player = scene.spatial.spawn('player', 10, 10, 5, { hp: 100 });
+ * // Spawn entities in this scene (stored globally, referenced by sceneId)
+ * const player = scene.spatial.spawn('player', 10, 10, 5, { sceneId: scene.id, hp: 100 });
  * 
  * // Check player position
  * const pos = scene.getPlayerPosition();
@@ -35,9 +35,6 @@ export class Scene {
     /** Spatial system for this scene */
     readonly spatial: SpatialSystem;
 
-    /** Entity store for this scene */
-    readonly store: SparseEntityStore;
-
     /** Scene-specific metadata (name, music, etc.) */
     metadata: Record<string, unknown>;
 
@@ -50,7 +47,7 @@ export class Scene {
      * @param id - Unique scene identifier
      * @param width - Grid width
      * @param height - Grid height
-     * @param gameState - Global game state (for entity ID generation)
+     * @param gameState - Global game state (provides global entity store)
      * @param metadata - Optional scene metadata
      * 
      * @example
@@ -72,10 +69,9 @@ export class Scene {
         this.gameState = gameState;
         this.metadata = metadata;
 
-        // Create grid and spatial components with shared entity ID generation
+        // Create grid and spatial system with global entity store
         this.grid = new LinkedGrid(width, height);
-        this.store = new SparseEntityStore(() => gameState.generateEntityId());
-        this.spatial = new SpatialSystem(this.grid, this.store);
+        this.spatial = new SpatialSystem(this.grid, gameState.entityStore);
     }
 
     /**
@@ -106,7 +102,7 @@ export class Scene {
     /**
      * Serialize scene to plain object for saving.
      * 
-     * Includes sparse cell data and entity store data.
+     * Includes sparse cell data. Entity data is stored globally in GameState.
      * 
      * @returns Plain object representation
      */
@@ -136,21 +132,19 @@ export class Scene {
             }
         }
 
-        // Serialize entity store
-        const entities = this.store.getAllIds().map(id => this.store.getData(id));
-
         return {
             id: this.id,
             width: this.grid.width,
             height: this.grid.height,
             metadata: this.metadata,
-            cells,
-            entities
+            cells
         };
     }
 
     /**
      * Deserialize scene from plain object.
+     * 
+     * Entities are restored from GameState.entityStore (not scene data).
      * 
      * @param data - Serialized scene data
      * @param gameState - Global game state reference
@@ -164,20 +158,6 @@ export class Scene {
             gameState,
             data.metadata || {}
         );
-
-        // Restore entities first
-        for (const entityData of data.entities || []) {
-            // Manually create entity in store (bypass ID generation since we're restoring)
-            const id = entityData.id;
-            const type = entityData.type;
-            const props = { ...entityData };
-            delete props.id;
-            delete props.type;
-            
-            // Create entity with original ID by temporarily using a custom generator
-            const tempStore = scene.store as any;
-            tempStore.data.set(id, entityData);
-        }
 
         // Restore cell data
         for (const cellData of data.cells || []) {

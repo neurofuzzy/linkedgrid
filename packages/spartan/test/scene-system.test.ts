@@ -180,8 +180,8 @@ describe('Scene', () => {
             expect(deserialized.grid.width).toBe(10);
             expect(deserialized.grid.height).toBe(10);
 
-            // Verify entities restored
-            const playerData = deserialized.store.getData(playerId);
+            // Verify entities restored (from global entity store)
+            const playerData = gameState.entityStore.getData(playerId);
             expect(playerData?.type).toBe('player');
             expect(playerData?.hp).toBe(100);
 
@@ -378,8 +378,8 @@ describe('GameManager', () => {
             const pos2 = scene2.spatial.getEntityPosition(playerId);
             expect(pos2).toEqual({ x: 7, y: 7, layer: GameLayers.ACTORS });
 
-            // Verify player data preserved
-            const playerData = scene2.store.getData(playerId);
+            // Verify player data preserved (from global entity store)
+            const playerData = game.gameState.entityStore.getData(playerId);
             expect(playerData?.hp).toBe(100);
 
             // Verify active scene updated
@@ -438,7 +438,7 @@ describe('GameManager', () => {
             game.movePlayerToScene('room2', 7, 7, GameLayers.ACTORS);
             game.executePendingTransition();
 
-            const playerData = scene2.store.getData(playerId);
+            const playerData = game.gameState.entityStore.getData(playerId);
             expect(playerData?.hp).toBe(100);
             expect(playerData?.maxHp).toBe(100);
             expect(playerData?.damage).toBe(10);
@@ -481,12 +481,12 @@ describe('GameManager', () => {
             expect(loadedGame.sceneManager.sceneCount).toBe(2);
             expect(loadedGame.sceneManager.activeId).toBe('room2');
 
-            // Verify entities
+            // Verify entities (from global entity store)
             const loadedScene1 = loadedGame.sceneManager.getScene('room1');
             const playerPos = loadedScene1?.spatial.getEntityPosition(playerId);
             expect(playerPos).toEqual({ x: 5, y: 5, layer: GameLayers.ACTORS });
 
-            const playerData = loadedScene1?.store.getData(playerId);
+            const playerData = loadedGame.gameState.entityStore.getData(playerId);
             expect(playerData?.hp).toBe(100);
         });
     });

@@ -9,9 +9,9 @@ import { Layer } from '../types.js';
  * 
  * @example
  * ```typescript
- * const fixture = new TestSpatialFixture(spatial);
+ * const fixture = new TestSpatialFixture(spatial, 'test-scene');
  * 
- * // Place entities with auto-commit
+ * // Place entities with auto-commit and auto-added sceneId
  * const playerId = fixture.placeEntity('player', 5, 5, GameLayers.ACTORS);
  * const enemyId = fixture.placeEntity('enemy', 10, 10, GameLayers.ACTORS);
  * 
@@ -22,12 +22,16 @@ import { Layer } from '../types.js';
  * ```
  */
 export class TestSpatialFixture {
-    constructor(private spatial: SpatialSystem) {}
+    constructor(
+        private spatial: SpatialSystem,
+        private sceneId?: string
+    ) {}
     
     /**
      * Place entity and auto-commit.
      * 
      * Use this for test setup, not for testing spatial behavior.
+     * Automatically adds sceneId to props if one was provided in constructor.
      * 
      * @param type - Entity type
      * @param x - X coordinate
@@ -37,7 +41,10 @@ export class TestSpatialFixture {
      * @returns Entity ID
      */
     placeEntity(type: string, x: number, y: number, layer: Layer, props?: object): number {
-        const id = this.spatial.spawn(type, x, y, layer, props);
+        const entityProps = this.sceneId 
+            ? { ...props, sceneId: this.sceneId }
+            : props;
+        const id = this.spatial.spawn(type, x, y, layer, entityProps);
         this.spatial.commit();
         return id;
     }
