@@ -17,6 +17,7 @@ interface Props {
   interval: number;
   assertions?: Assertion[];
   snapshot: Snapshot | null;
+  previousSnapshot?: Snapshot | null;
 }
 
 export function InfoPanel({ 
@@ -25,11 +26,17 @@ export function InfoPanel({
   isPlaying,
   interval,
   assertions,
-  snapshot
+  snapshot,
+  previousSnapshot
 }: Props) {
   const argsStr = snapshot && snapshot.operation !== 'initial' && snapshot.args.length > 0
     ? snapshot.args.map(a => JSON.stringify(a)).join(', ')
     : '';
+  
+  // Detect scene change
+  const sceneChanged = previousSnapshot && 
+                       snapshot?.sceneId && 
+                       previousSnapshot.sceneId !== snapshot.sceneId;
     
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={2} paddingY={1} marginLeft={1}>
@@ -51,6 +58,17 @@ export function InfoPanel({
           </Text>
         </Box>
       </Box>
+      
+      {/* Scene transition indicator */}
+      {sceneChanged && (
+        <Box marginTop={1} paddingTop={1} borderStyle="single" borderColor="yellow" paddingX={1}>
+          <Text color="yellow" bold>→ Scene Transition</Text>
+          <Text dimColor> from </Text>
+          <Text>{previousSnapshot.sceneName || previousSnapshot.sceneId}</Text>
+          <Text dimColor> to </Text>
+          <Text color="yellow">{snapshot.sceneName || snapshot.sceneId}</Text>
+        </Box>
+      )}
       
       {/* Assertions in the middle if present */}
       {assertions && assertions.length > 0 && (

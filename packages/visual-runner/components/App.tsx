@@ -373,6 +373,7 @@ export function App() {
                   interval={500}
                   assertions={state.type === 'completed' ? state.result.assertions : undefined}
                   snapshot={snapshot}
+                  previousSnapshot={previousSnapshot}
                 />
               </Box>
               {state.type === 'completed' && !state.result.passed && (

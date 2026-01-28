@@ -181,7 +181,8 @@ export class TestExecutor {
           const handleResult = (res: unknown) => {
             // Only capture if enabled (disabled during arrange phase)
             // Don't capture on 'move' (stages only) - wait for 'commit' (executes)
-            if (this.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
+            // Capture 'pause' as a special marker for pause frames
+            if (this.captureEnabled && ['spawn', 'remove', 'commit', 'pause'].includes(prop as string)) {
               this.captureSnapshot(target, prop as string, args, res);
             }
             return res;
@@ -290,7 +291,8 @@ export class TestExecutor {
               const handleResult = (res: unknown) => {
                 // Capture snapshots only for operations that change visible state
                 // Don't capture on 'move' (stages only) - wait for 'commit' (executes)
-                if (this.captureEnabled && ['spawn', 'remove', 'commit'].includes(prop as string)) {
+                // Also capture 'pause' as a special marker for pause frames
+                if (this.captureEnabled && ['spawn', 'remove', 'commit', 'pause'].includes(prop as string)) {
                   this.captureSnapshot(activeSpatial, prop as string, args, res);
                 }
                 return res;
