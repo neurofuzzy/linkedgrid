@@ -23,6 +23,9 @@ visual('Wall blocking - players blocked by terrain and doors', {
       if (cell) cell.values[GameLayers.WALLS] = 1; // Wall terrain
     }
 
+    // Sync masks after manually setting cell values
+    spatial.syncMasks();
+
     // Create door entity at one spot (can be opened later)
     spatial.spawn('door', 5, 4, GameLayers.WALLS);
 

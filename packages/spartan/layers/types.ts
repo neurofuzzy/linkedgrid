@@ -71,3 +71,26 @@ export const ALL_LAYERS = [
   GameLayers.EPHEMERALS,
   GameLayers.TEXT,
 ] as const;
+
+/**
+ * Cell Mask Indices
+ *
+ * LinkedCell has 8 mask slots for boolean flags.
+ * These indices define semantic meanings for each mask.
+ *
+ * Mask meanings:
+ * - BLOCKING (0): Cell blocks movement (walls, closed doors, etc.)
+ * - VISION_BLOCKING (1): Cell blocks line of sight
+ * - [2-7]: Reserved for future use
+ *
+ * @see LinkedCell.getMask(), LinkedCell.setMask()
+ */
+export const CellMasks = {
+  BLOCKING: 0,
+  VISION_BLOCKING: 1,
+} as const;
+
+/**
+ * Type representing a valid cell mask index.
+ */
+export type CellMask = (typeof CellMasks)[keyof typeof CellMasks];

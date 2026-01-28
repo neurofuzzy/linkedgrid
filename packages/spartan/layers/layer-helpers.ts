@@ -1,5 +1,5 @@
 import type { LinkedCell } from '../../grid/linked-cell';
-import { GameLayers, GAMEPLAY_VISIBLE_LAYERS } from './types';
+import { GameLayers, GAMEPLAY_VISIBLE_LAYERS, CellMasks } from './types';
 
 /**
  * Returns the topmost entity in a cell based on layer priority (highest layer index wins).
@@ -19,7 +19,14 @@ export function getTopmostEntity(
 }
 
 /**
- * Checks if a cell blocks movement based on walls, actors, and optional empty floor setting.
+ * Checks if a cell blocks movement using the BLOCKING mask.
+ *
+ * The BLOCKING mask is set/cleared by systems when entities that block
+ * movement are spawned/removed (walls, closed doors, actors, etc.).
+ *
+ * @param cell - Cell to check
+ * @param emptyFloorsBlock - If true, cells without floor entities block movement
+ * @returns true if cell blocks movement
  */
 export function isBlocked(
   cell: LinkedCell | null,
@@ -31,23 +38,22 @@ export function isBlocked(
     return true;
   }
 
-  if (cell.getValue(GameLayers.WALLS) !== undefined) {
-    return true;
-  }
-
-  if (cell.getValue(GameLayers.ACTORS) !== undefined) {
-    return true;
-  }
-
-  return false;
+  // Check the BLOCKING mask bit
+  return cell.getMask(CellMasks.BLOCKING);
 }
 
 /**
- * Checks if a cell blocks vision (only walls block vision).
+ * Checks if a cell blocks vision using the VISION_BLOCKING mask.
+ *
+ * The VISION_BLOCKING mask is set/cleared by systems when entities that block
+ * line of sight are spawned/removed (walls, closed doors, etc.).
+ *
+ * @param cell - Cell to check
+ * @returns true if cell blocks vision
  */
 export function blocksVision(cell: LinkedCell | null): boolean {
   if (!cell) return true;
-  return cell.getValue(GameLayers.WALLS) !== undefined;
+  return cell.getMask(CellMasks.VISION_BLOCKING);
 }
 
 /**

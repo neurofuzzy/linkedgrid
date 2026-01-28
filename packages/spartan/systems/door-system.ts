@@ -2,15 +2,14 @@ import type { GameSystem, GameContext } from '../types.js';
 import type { GameManager } from '../game-manager.js';
 import { GameLayers } from '../layers/types.js';
 import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards.js';
+import { Direction } from '../../grid/direction.js';
 
 /**
  * DoorSystem - Handles door unlocking with keys.
  *
- * Detects when a player overlaps with a locked door and:
- * 1. Checks if player has the required key in inventory
- * 2. Unlocks the door if key is present
- * 3. Removes door from WALLS layer (making it walkable)
- * 4. Spawns an "open door" visual on FLOOR layer
+ * Checks adjacent cells to players for locked doors.
+ * If player has matching key, unlocks door BEFORE movement happens.
+ * This allows instant door unlocking when walking into doors.
  *
  * Used for:
  * - Locked doors requiring keys
@@ -29,52 +28,56 @@ export class DoorSystem implements GameSystem {
   /**
    * Update called by GameLoop each tick.
    *
-   * Processes all overlaps between players and doors.
+   * Checks all adjacent cells to players for locked doors.
+   * Unlocks doors if player has matching key.
+   * Runs BEFORE PlayerInputSystem so doors are unlocked before movement.
    */
-  update({ overlaps, spatial }: GameContext): void {
-    for (const overlap of overlaps) {
-      let playerData = null;
-      let doorData = null;
+  update({ spatial }: GameContext): void {
+    const playerId = this.gameManager.gameState.playerEntityId;
+    if (!playerId || playerId === 0) return;
 
-      // Iterate over entity IDs in this overlap
-      for (const entityId of overlap.entityIds) {
-        const entity = spatial.getEntityData(entityId);
-        if (!entity) continue;
+    // Get player data
+    const playerData = spatial.getEntityData(playerId);
+    if (!playerData || !isPlayer(playerData) || !hasInventory(playerData)) {
+      return;
+    }
 
-        // Check if this is a player with inventory
-        if (isPlayer(entity) && hasInventory(entity)) {
-          playerData = entity;
-        }
+    // Get player position
+    const playerPos = spatial.getEntityPosition(playerId);
+    if (!playerPos) return;
 
-        // Check if this is a door
-        if (isDoor(entity)) {
-          doorData = entity;
-        }
-      }
+    // Get player's cell
+    const playerCell = spatial.grid.cell(playerPos.x, playerPos.y);
+    if (!playerCell) return;
 
-      // If we have both a player and a locked door
-      if (playerData && doorData && doorData.isLocked) {
-        // Check if player has the required key
-        const hasKey = playerData.inventory.includes(doorData.requiredKey);
+    // Check all 4 adjacent cells for locked doors
+    const directions = [Direction.UP, Direction.DN, Direction.LT, Direction.RT];
+    
+    for (const dir of directions) {
+      const adjacentCell = playerCell.neighbor(dir);
+      if (!adjacentCell) continue;
 
-        if (hasKey) {
-          // Unlock door
-          this.gameManager.gameState.entityStore.setData(doorData.id, {
-            isLocked: false,
-          });
+      // Check if there's a door on the WALLS layer
+      const doorEntityId = adjacentCell.getValue(GameLayers.WALLS);
+      if (!doorEntityId) continue;
 
-          // Get door position
-          const pos = spatial.getEntityPosition(doorData.id);
-          if (pos) {
-            // Remove door from WALLS layer (makes it walkable)
-            spatial.remove(pos.x, pos.y, GameLayers.WALLS);
+      const doorData = spatial.getEntityData(doorEntityId);
+      if (!doorData || !isDoor(doorData)) continue;
 
-            // Spawn open door visual on FLOOR layer
-            spatial.spawn('open-door', pos.x, pos.y, GameLayers.FLOOR, {
-              color: doorData.color,
-            });
-          }
-        }
+      // If door is locked and player has key, unlock it
+      if (doorData.isLocked && playerData.inventory.includes(doorData.requiredKey)) {
+        // Unlock door
+        this.gameManager.gameState.entityStore.setData(doorData.id, {
+          isLocked: false,
+        });
+
+        // Remove door from WALLS layer (clears BLOCKING mask)
+        spatial.remove(adjacentCell.x, adjacentCell.y, GameLayers.WALLS);
+
+        // Spawn open door visual on FLOOR layer
+        spatial.spawn('open-door', adjacentCell.x, adjacentCell.y, GameLayers.FLOOR, {
+          color: doorData.color,
+        });
       }
     }
   }

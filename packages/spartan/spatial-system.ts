@@ -1,6 +1,7 @@
 import { LinkedCell, LinkedGrid } from '../grid';
 import { SparseEntityStore } from './entity-store';
 import type { EntityData, Layer } from './types';
+import { GameLayers, CellMasks } from './layers/types';
 
 /**
  * SpatialSystem - Spatial operations for the Spartan framework.
@@ -325,6 +326,8 @@ export class SpatialSystem {
       const cell = this.grid.cell(op.x!, op.y!);
       if (cell) {
         cell.clearValue(op.layer);
+        // Update cell masks after removal
+        this.updateCellMasks(cell);
       }
       this.store.remove(op.entityId!);
       this.positions.delete(op.entityId!);
@@ -397,6 +400,8 @@ export class SpatialSystem {
         const fromCell = this.grid.cell(move.fromX!, move.fromY!);
         if (fromCell) {
           fromCell.clearValue(move.layer);
+          // Update masks after clearing source
+          this.updateCellMasks(fromCell);
         }
       }
     }
@@ -413,6 +418,8 @@ export class SpatialSystem {
             y: move.toY!,
             layer: move.layer,
           });
+          // Update masks after setting destination
+          this.updateCellMasks(toCell);
         }
       }
     }
@@ -427,6 +434,8 @@ export class SpatialSystem {
       // Place entity on grid
       cell.setValue(op.layer, op.entityId!);
       this.positions.set(op.entityId!, { x: op.x!, y: op.y!, layer: op.layer });
+      // Update masks after spawn
+      this.updateCellMasks(cell);
     }
 
     // Phase 4: Clear all pending operations
@@ -1021,5 +1030,48 @@ export class SpatialSystem {
     }
 
     return output;
+  }
+
+  /**
+   * Update cell masks based on entities present on the cell.
+   * 
+   * Sets BLOCKING mask if cell has entities on WALLS or ACTORS layers.
+   * Sets VISION_BLOCKING mask if cell has entities on WALLS layer.
+   * 
+   * @param cell - Cell to update masks for
+   * @private
+   */
+  private updateCellMasks(cell: LinkedCell): void {
+    // Check if WALLS or ACTORS layers have entities
+    const hasWall = cell.getValue(GameLayers.WALLS) !== undefined;
+    const hasActor = cell.getValue(GameLayers.ACTORS) !== undefined;
+    
+    // Set BLOCKING mask if walls or actors present
+    cell.setMask(CellMasks.BLOCKING, hasWall || hasActor);
+    
+    // Set VISION_BLOCKING mask if walls present
+    cell.setMask(CellMasks.VISION_BLOCKING, hasWall);
+  }
+
+  /**
+   * Synchronize all cell masks with current grid state.
+   * 
+   * Scans all cells in the grid and updates their masks based on
+   * entities currently present. Useful after manually setting cell
+   * values or when initializing a scene.
+   * 
+   * @example
+   * ```typescript
+   * // Manually set terrain
+   * grid.cell(5, 5).setValue(GameLayers.WALLS, 1);
+   * 
+   * // Sync masks
+   * spatial.syncMasks();
+   * ```
+   */
+  syncMasks(): void {
+    for (const cell of this.grid.cells) {
+      this.updateCellMasks(cell);
+    }
   }
 }

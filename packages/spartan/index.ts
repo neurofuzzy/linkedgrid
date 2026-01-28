@@ -47,6 +47,8 @@ export {
   VISION_BLOCKING_LAYERS,
   GAMEPLAY_VISIBLE_LAYERS,
   ALL_LAYERS,
+  CellMask,
+  CellMasks,
 } from './layers/types';
 
 // Layers
