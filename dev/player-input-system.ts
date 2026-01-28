@@ -1,5 +1,5 @@
 import type { GameSystem, GameContext } from '../packages/spartan/types';
-import { GameLayers } from '../packages/spartan/types';
+import { GameLayers } from '../packages/spartan/layers/types';
 import { isWalkable } from '../packages/spartan/layers/layer-helpers';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { Direction } from '../packages/grid/direction';
