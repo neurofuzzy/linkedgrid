@@ -33,19 +33,24 @@ export class CollectionSystem implements GameSystem {
       let playerData = null;
       let collectibleData = null;
 
-      // Iterate over entity IDs in this overlap
+      // Find the first player and first collectible in the overlap
       for (const entityId of overlap.entityIds) {
         const entity = spatial.getEntityData(entityId);
         if (!entity) continue;
 
         // Check if this is a player with inventory
-        if (isPlayer(entity) && hasInventory(entity)) {
+        if (!playerData && isPlayer(entity) && hasInventory(entity)) {
           playerData = entity;
         }
 
         // Check if this is a collectible
-        if (isCollectible(entity)) {
+        if (!collectibleData && isCollectible(entity)) {
           collectibleData = entity;
+        }
+
+        // If we have found both, we can stop searching
+        if (playerData && collectibleData) {
+          break;
         }
       }
 

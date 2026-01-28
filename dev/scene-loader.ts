@@ -182,6 +182,10 @@ export class SceneLoader {
       }
     }
 
+    // Initialize cell masks for all pre-spawned entities
+    // This ensures BLOCKING and VISION_BLOCKING masks are set correctly
+    runtime.spatial.syncMasks();
+
     return runtime;
   }
 

@@ -88,6 +88,7 @@ export type {
   WallData,
   DoorData,
   KeyData,
+  OpenDoorData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)

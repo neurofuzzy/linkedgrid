@@ -254,3 +254,24 @@ export type KeyData = EntityData & {
   type: 'key';
 } & IsCollectible &
   HasColor;
+
+/**
+ * OpenDoorData - Visual representation of an unlocked door.
+ *
+ * Spawned when a locked door is unlocked, placed on FLOOR layer for visual feedback.
+ * Does not block movement (unlike locked DoorData on WALLS layer).
+ *
+ * Traits:
+ * - HasColor: Display color matching the original door
+ *
+ * @example
+ * ```typescript
+ * // Spawned by DoorSystem when door unlocked
+ * spatial.spawn('open-door', x, y, GameLayers.FLOOR, {
+ *   color: doorData.color
+ * });
+ * ```
+ */
+export type OpenDoorData = EntityData & {
+  type: 'open-door';
+} & HasColor;
