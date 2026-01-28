@@ -209,11 +209,10 @@ export class SpatialSystem {
    *
    * @example
    * ```typescript
-   * // Use blocking function for collision detection
-   * import { isBlocked } from './layer-utils';
+   * // Use blocking check for collision detection
    * const emptyFloorsBlock = true;
    * spatial.move(5, 5, 6, 5, GameLayers.ACTORS,
-   *   (cell) => isBlocked(cell, emptyFloorsBlock)
+   *   (cell) => spatial.isBlocked(cell, emptyFloorsBlock)
    * );
    * spatial.commit();
    * ```
@@ -1073,5 +1072,74 @@ export class SpatialSystem {
     for (const cell of this.grid.cells) {
       this.updateCellMasks(cell);
     }
+  }
+
+  /**
+   * Checks if a cell blocks movement using the BLOCKING mask.
+   *
+   * The BLOCKING mask is automatically managed by SpatialSystem when entities
+   * that block movement are spawned/removed (walls, closed doors, actors, etc.).
+   *
+   * @param cell - Cell to check
+   * @param emptyFloorsBlock - If true, cells without floor entities block movement
+   * @returns true if cell blocks movement
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (!spatial.isBlocked(targetCell)) {
+   *   spatial.move(4, 5, 5, 5, GameLayers.ACTORS);
+   * }
+   * ```
+   */
+  isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): boolean {
+    if (!cell) return true;
+
+    if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
+      return true;
+    }
+
+    return cell.getMask(CellMasks.BLOCKING);
+  }
+
+  /**
+   * Checks if a cell blocks vision using the VISION_BLOCKING mask.
+   *
+   * The VISION_BLOCKING mask is automatically managed by SpatialSystem when
+   * entities that block line of sight are spawned/removed (walls, closed doors, etc.).
+   *
+   * @param cell - Cell to check
+   * @returns true if cell blocks vision
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (!spatial.blocksVision(targetCell)) {
+   *   // Line of sight is clear
+   * }
+   * ```
+   */
+  blocksVision(cell: LinkedCell | null): boolean {
+    if (!cell) return true;
+    return cell.getMask(CellMasks.VISION_BLOCKING);
+  }
+
+  /**
+   * Checks if a cell is walkable (inverse of isBlocked).
+   * 
+   * @param cell - Cell to check
+   * @param emptyFloorsBlock - If true, cells without floor entities block movement
+   * @returns true if cell is walkable
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (spatial.isWalkable(targetCell)) {
+   *   spatial.move(4, 5, 5, 5, GameLayers.ACTORS);
+   * }
+   * ```
+   */
+  isWalkable(cell: LinkedCell | null, emptyFloorsBlock = false): boolean {
+    return !this.isBlocked(cell, emptyFloorsBlock);
   }
 }

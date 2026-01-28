@@ -1,6 +1,5 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../layers/types';
-import { blocksVision, isBlocked } from '../layers/layer-helpers';
 
 /**
  * Layer System Visual Tests
@@ -37,26 +36,26 @@ visual('Wall blocking - players blocked by terrain and doors', {
   act: ({ spatial }) => {
     // Left player approaches wall
     const leftId = spatial.getEntityIdAt(2, 4, GameLayers.ACTORS)!;
-    spatial.moveEntity(leftId, 3, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(leftId, 3, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
-    spatial.moveEntity(leftId, 4, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(leftId, 4, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Try to move through wall terrain (should fail)
-    spatial.moveEntity(leftId, 5, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(leftId, 5, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Right player approaches wall/door
     const rightId = spatial.getEntityIdAt(8, 4, GameLayers.ACTORS)!;
-    spatial.moveEntity(rightId, 7, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(rightId, 7, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
-    spatial.moveEntity(rightId, 6, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(rightId, 6, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Try to move through door (should fail)
-    spatial.moveEntity(rightId, 5, 4, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(rightId, 5, 4, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Both blocked - pause to show
@@ -96,30 +95,30 @@ visual('Actor blocking - entities collide and stop', {
   act: ({ spatial }) => {
     // Player approaches
     let playerId = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 9, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 9, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(9, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 10, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 10, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Enemy approaches
     let enemyId = spatial.getEntityIdAt(13, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(enemyId, 12, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(enemyId, 12, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     enemyId = spatial.getEntityIdAt(12, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(enemyId, 11, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(enemyId, 11, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Try to move into each other (both blocked)
     playerId = spatial.getEntityIdAt(10, 5, GameLayers.ACTORS)!;
     enemyId = spatial.getEntityIdAt(11, 5, GameLayers.ACTORS)!;
 
-    spatial.moveEntity(playerId, 11, 5, (cell) => isBlocked(cell, false)); // Blocked
+    spatial.moveEntity(playerId, 11, 5, (cell) => spatial.isBlocked(cell, false)); // Blocked
     spatial.commit();
 
-    spatial.moveEntity(enemyId, 10, 5, (cell) => isBlocked(cell, false)); // Blocked
+    spatial.moveEntity(enemyId, 10, 5, (cell) => spatial.isBlocked(cell, false)); // Blocked
     spatial.commit();
 
     // Pause to show standoff
@@ -166,21 +165,21 @@ visual('Collectibles non-blocking - player walks through items', {
   act: ({ spatial }) => {
     // Approach collectible
     const playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 7, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 7, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Walk onto collectible (should succeed)
-    spatial.moveEntity(playerId, 8, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 8, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
     // Pause to show overlap
     spatial.commit();
 
     // Continue walking past collectible
-    spatial.moveEntity(playerId, 9, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 9, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
 
-    spatial.moveEntity(playerId, 10, 5, (cell) => isBlocked(cell, false));
+    spatial.moveEntity(playerId, 10, 5, (cell) => spatial.isBlocked(cell, false));
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {

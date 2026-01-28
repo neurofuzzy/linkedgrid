@@ -123,14 +123,9 @@ export {
   spawnPlayerWithId,
 } from './entities/spawn-helpers';
 
-// Blocking utilities
-// Layer utilities
-export {
-  getTopmostEntity,
-  isBlocked,
-  blocksVision,
-  isWalkable,
-} from './layers/layer-helpers';
+// Layer utilities (for visual/rendering helpers)
+// For spatial queries, use SpatialSystem methods: spatial.isBlocked(), spatial.blocksVision(), spatial.isWalkable()
+export { getTopmostEntity } from './layers/layer-helpers';
 
 // Game loop and runtime
 export { GameLoop } from './game-loop.js';
