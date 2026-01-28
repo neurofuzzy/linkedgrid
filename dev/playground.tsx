@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
-import { PlayerInputSystem } from './player-input-system';
 import { InputManager } from '../packages/spartan/input';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import { GridRenderer, DebugPanel } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/game-runtime';
 
@@ -11,13 +11,43 @@ import type { GameRuntime } from '../packages/spartan/game-runtime';
  * Each game can contain multiple scenes.
  */
 const AVAILABLE_GAMES = [
-  { id: 'basic', name: 'Basic Game', path: '/dev/scenes/basic.json' },
+  { id: 'basic', name: 'Basic Game', path: '/dev/games/basic.json' },
   {
     id: 'teleporter',
     name: 'Teleporter Test',
-    path: '/dev/scenes/teleporter.json',
+    path: '/dev/games/teleporter.json',
+  },
+  {
+    id: 'doors-keys',
+    name: 'Doors & Keys Puzzle',
+    path: '/dev/games/doors-keys.json',
   },
 ];
+
+/**
+ * Get the game ID from a file path (e.g., '/dev/games/doors-keys.json' -> 'doors-keys')
+ */
+function getGameIdFromPath(path: string): string {
+  const filename = path.split('/').pop() || '';
+  return filename.replace('.json', '');
+}
+
+/**
+ * Get initial game from URL search params or default to first game
+ */
+function getInitialGame(): string {
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get('game');
+  
+  if (gameId) {
+    const game = AVAILABLE_GAMES.find(g => g.id === gameId);
+    if (game) {
+      return game.path;
+    }
+  }
+  
+  return AVAILABLE_GAMES[0].path;
+}
 
 /**
  * Playground - Interactive Spartan game runtime.
@@ -27,6 +57,7 @@ const AVAILABLE_GAMES = [
  * - Keyboard input (WASD/arrows)
  * - Hot reload when scene files change
  * - Debug panel with runtime stats
+ * - URL persistence for selected game
  *
  * @example
  * Entry point is dev/index.html which loads this component.
@@ -38,7 +69,7 @@ function Playground() {
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedGame, setSelectedGame] = useState(AVAILABLE_GAMES[0].path);
+  const [selectedGame, setSelectedGame] = useState(getInitialGame());
   const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
   const [, forceUpdate] = useState({}); // For forcing re-renders without corrupting tick
 
@@ -61,11 +92,15 @@ function Playground() {
         // Clean up existing runtime
         if (runtimeRef.current) {
           runtimeRef.current.stop();
+          // Clean up input manager if it exists
+          const cleanup = (runtimeRef.current as any).inputCleanup;
+          if (cleanup) {
+            cleanup();
+          }
           runtimeRef.current = null;
         }
 
         if (inputManagerRef.current) {
-          inputManagerRef.current.destroy();
           inputManagerRef.current = null;
         }
 
@@ -78,38 +113,23 @@ function Playground() {
         const config: SceneConfig = await response.json();
 
         // Validate config
-        const loader = new SceneLoader();
         const errors = SceneLoader.validate(config);
         if (errors.length > 0) {
           throw new Error(`Game validation failed:\n${errors.join('\n')}`);
         }
 
-        // Load game and create runtime first (need gameManager)
+        // Load game with input system automatically configured
+        // Pass document.body to enable DOM event listeners
+        const loader = new SceneLoader(document.body);
         loadedRuntime = loader.load(config);
 
-        // Create input manager with buffering enabled for low tick rate
-        // Pass document.body to enable DOM event listeners (keyboard attaches to document)
-        loadedInputManager = new InputManager(document.body, null, {
-          cellSize: 24,
-          cellGap: 0,
-          bufferInput: false, // Don't use legacy buffering
-          directionMode: 'continuous', // CONTINUOUS mode: hold key = keep moving
-        });
+        // Get input manager from runtime (created by loader)
+        loadedInputManager = (loadedRuntime as any).inputManager;
 
-        // Enable keyboard and buffering for continuous mode
-        // Buffer catches quick taps that happen between ticks
-        loadedInputManager.enableKeyboard().enableBuffering(true);
-
-        // Create player input system
-        const loadedPlayerInputSystem = new PlayerInputSystem(
-          loadedRuntime.game,
-          loadedInputManager
+        // Get player input system from runtime
+        const loadedPlayerInputSystem = (loadedRuntime as any).systems.find(
+          (s: any) => s instanceof PlayerInputSystem
         );
-
-        // Register input system with runtime (not just gameLoop)
-        // This ensures it persists across scene transitions
-        (loadedRuntime as any).systems.push(loadedPlayerInputSystem);
-        (loadedRuntime as any).gameLoop.addSystem(loadedPlayerInputSystem);
 
         // Start runtime
         loadedRuntime.start();
@@ -217,6 +237,15 @@ function Playground() {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [selectedGame]);
+
+  // Update URL when game selection changes
+  useEffect(() => {
+    const gameId = getGameIdFromPath(selectedGame);
+    const params = new URLSearchParams(window.location.search);
+    params.set('game', gameId);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
   }, [selectedGame]);
 
   const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -353,7 +382,7 @@ function Playground() {
                   color: '#dcdcaa',
                 }}
               >
-                dev/scenes/
+                dev/games/
               </code>{' '}
               for hot reload
             </p>

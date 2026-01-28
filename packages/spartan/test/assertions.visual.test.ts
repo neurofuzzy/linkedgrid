@@ -1,6 +1,5 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../layers/types';
-import { isBlocked } from '../layers/layer-helpers';
 
 // Test basic unblocked movement
 visual('player explores the room', {
@@ -67,32 +66,32 @@ visual('player blocked by walls', {
     let playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
 
     // Beginning: Try to move right (blocked)
-    spatial.moveEntity(playerId, 6, 5, isBlocked);
+    spatial.moveEntity(playerId, 6, 5, (cell) => spatial.isBlocked(cell));
     spatial.commit();
 
     // Still at starting position, pause to show blocking
     spatial.commit();
 
     // Middle: Move down instead
-    spatial.moveEntity(playerId, 5, 6, isBlocked);
+    spatial.moveEntity(playerId, 5, 6, (cell) => spatial.isBlocked(cell));
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(5, 6, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 5, 7, isBlocked);
+    spatial.moveEntity(playerId, 5, 7, (cell) => spatial.isBlocked(cell));
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(5, 7, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 5, 8, isBlocked);
+    spatial.moveEntity(playerId, 5, 8, (cell) => spatial.isBlocked(cell));
     spatial.commit();
 
     // End: Move right (now unblocked - past the wall column)
     playerId = spatial.getEntityIdAt(5, 8, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 6, 8, isBlocked);
+    spatial.moveEntity(playerId, 6, 8, (cell) => spatial.isBlocked(cell));
     spatial.commit();
 
     // Move right again
     playerId = spatial.getEntityIdAt(6, 8, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 7, 8, isBlocked);
+    spatial.moveEntity(playerId, 7, 8, (cell) => spatial.isBlocked(cell));
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {

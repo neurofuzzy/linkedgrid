@@ -1,8 +1,7 @@
-import type { GameSystem, GameContext } from '../packages/spartan/types';
-import { GameLayers } from '../packages/spartan/layers/types';
-import { isWalkable } from '../packages/spartan/layers/layer-helpers';
-import { InputManager } from '../packages/spartan/input/input-manager';
-import { Direction } from '../packages/grid/direction';
+import type { GameSystem, GameContext } from '../types.js';
+import { GameLayers } from '../layers/types.js';
+import { InputManager } from '../input/input-manager.js';
+import { Direction } from '../../grid/direction.js';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.
@@ -91,17 +90,8 @@ export class PlayerInputSystem implements GameSystem {
       return;
     }
 
-    // Get destination cell
-    const destCell = grid.cell(newX, newY);
-    if (!destCell) return;
-
-    // Check if walkable (isWalkable checks for walls and actors automatically)
-    if (!isWalkable(destCell)) {
-      this.debugStats.blockedMoves++;
-      return;
-    }
-
-    // Stage move (will be committed by GameLoop)
+    // Always register move intent - SpatialSystem will validate during commit
+    // This allows other systems (like DoorSystem) to see intents and react
     context.spatial.move(pos.x, pos.y, newX, newY, GameLayers.ACTORS);
     this.debugStats.movesThisTick++;
   }

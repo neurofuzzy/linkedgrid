@@ -3,6 +3,9 @@ import {
   GameRuntimeConfig,
 } from '../packages/spartan/game-runtime';
 import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
+import { CollectionSystem } from '../packages/spartan/systems/collection-system';
+import { DoorSystem } from '../packages/spartan/systems/door-system';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -12,6 +15,8 @@ import {
   hasAI,
   hasTeleportTarget,
 } from '../packages/spartan/entities/trait-guards';
+import { InputManager } from '../packages/spartan/input/input-manager';
+import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
 
 /**
  * Entity definition in JSON scene.
@@ -44,6 +49,15 @@ export interface SceneConfig {
   initialScene: string;
   systems?: string[];
   tickRate?: number;
+  input?: {
+    type: 'keyboard' | 'headless' | 'none';
+    options?: {
+      bufferInput?: boolean;
+      directionMode?: 'continuous' | 'tap';
+      cellSize?: number;
+      cellGap?: number;
+    };
+  };
 }
 
 /**
@@ -52,6 +66,8 @@ export interface SceneConfig {
  */
 const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
+  CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
+  DoorSystem: (gameManager) => new DoorSystem(gameManager),
 };
 
 /**
@@ -66,12 +82,14 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
  * @example
  * ```typescript
  * const loader = new SceneLoader();
- * const config = await fetch('/dev/scenes/basic.json').then(r => r.json());
+ * const config = await fetch('/dev/games/basic.json').then(r => r.json());
  * const runtime = loader.load(config);
  * runtime.start();
  * ```
  */
 export class SceneLoader {
+  constructor(private container?: HTMLElement | null) {}
+
   /**
    * Load scene configuration and create initialized GameRuntime.
    *
@@ -128,7 +146,27 @@ export class SceneLoader {
       }
     }
 
-    // Register systems
+    // Create input manager and register PlayerInputSystem FIRST
+    // This ensures PlayerInputSystem runs before other systems can react to move intents
+    if (config.input && config.input.type !== 'none') {
+      const { manager, cleanup } = this.createInputManager(
+        config.input,
+        this.container
+      );
+
+      // Create and register PlayerInputSystem
+      // Runs FIRST to stage movement intents before reactive systems
+      const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
+      (runtime as any).systems.push(playerInputSystem);
+      (runtime as any).gameLoop.addSystem(playerInputSystem);
+
+      // Store references for external access
+      (runtime as any).inputManager = manager;
+      (runtime as any).inputCleanup = cleanup;
+    }
+
+    // Register other systems AFTER PlayerInputSystem
+    // This allows systems like DoorSystem to react to staged move intents
     if (config.systems && config.systems.length > 0) {
       for (const systemName of config.systems) {
         const systemFactory = SYSTEM_REGISTRY[systemName];
@@ -144,7 +182,52 @@ export class SceneLoader {
       }
     }
 
+    // Initialize cell masks for all pre-spawned entities
+    // This ensures BLOCKING and VISION_BLOCKING masks are set correctly
+    runtime.spatial.syncMasks();
+
     return runtime;
+  }
+
+  /**
+   * Create input manager based on configuration.
+   *
+   * @param config - Input configuration from scene config
+   * @param container - DOM container for keyboard/mouse input
+   * @returns Input manager instance and cleanup function
+   */
+  private createInputManager(
+    config: SceneConfig['input'],
+    container?: HTMLElement | null
+  ): { manager: InputManager | HeadlessInputManager; cleanup: () => void } {
+    const inputConfig = config || { type: 'keyboard' as const };
+
+    if (inputConfig.type === 'headless' || inputConfig.type === 'none') {
+      const headless = new HeadlessInputManager();
+      if (inputConfig.type === 'headless') {
+        headless.enable();
+      }
+      return {
+        manager: headless,
+        cleanup: () => headless.cleanup(),
+      };
+    }
+
+    // keyboard/gamepad/mouse
+    const options = {
+      cellSize: inputConfig.options?.cellSize || 24,
+      cellGap: inputConfig.options?.cellGap || 0,
+      bufferInput: inputConfig.options?.bufferInput || false,
+      directionMode: inputConfig.options?.directionMode || ('continuous' as const),
+    };
+
+    const manager = new InputManager(container, null, options);
+    manager.enableKeyboard().enableBuffering(true);
+
+    return {
+      manager,
+      cleanup: () => manager.destroy(),
+    };
   }
 
   /**

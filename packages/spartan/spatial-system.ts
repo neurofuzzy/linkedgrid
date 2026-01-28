@@ -1,6 +1,7 @@
 import { LinkedCell, LinkedGrid } from '../grid';
 import { SparseEntityStore } from './entity-store';
 import type { EntityData, Layer } from './types';
+import { GameLayers, CellMasks } from './layers/types';
 
 /**
  * SpatialSystem - Spatial operations for the Spartan framework.
@@ -208,11 +209,10 @@ export class SpatialSystem {
    *
    * @example
    * ```typescript
-   * // Use blocking function for collision detection
-   * import { isBlocked } from './layer-utils';
+   * // Use blocking check for collision detection
    * const emptyFloorsBlock = true;
    * spatial.move(5, 5, 6, 5, GameLayers.ACTORS,
-   *   (cell) => isBlocked(cell, emptyFloorsBlock)
+   *   (cell) => spatial.isBlocked(cell, emptyFloorsBlock)
    * );
    * spatial.commit();
    * ```
@@ -325,6 +325,8 @@ export class SpatialSystem {
       const cell = this.grid.cell(op.x!, op.y!);
       if (cell) {
         cell.clearValue(op.layer);
+        // Update cell masks after removal
+        this.updateCellMasks(cell);
       }
       this.store.remove(op.entityId!);
       this.positions.delete(op.entityId!);
@@ -377,9 +379,15 @@ export class SpatialSystem {
         continue;
       }
 
+      // Check if destination is walkable (not blocked by walls/actors)
+      // Only check if the cell isn't being vacated by another move
+      const isBeingVacated = sources.has(destKey);
+      if (!isBeingVacated && this.isBlocked(toCell)) {
+        continue;
+      }
+
       // Check if destination is occupied
       const isOccupied = toCell.getValue(move.layer) !== undefined;
-      const isBeingVacated = sources.has(destKey);
 
       // Check for conflicts (multiple entities want same destination)
       const requestsForThisDest = destinations.get(destKey) || [];
@@ -397,6 +405,8 @@ export class SpatialSystem {
         const fromCell = this.grid.cell(move.fromX!, move.fromY!);
         if (fromCell) {
           fromCell.clearValue(move.layer);
+          // Update masks after clearing source
+          this.updateCellMasks(fromCell);
         }
       }
     }
@@ -413,6 +423,8 @@ export class SpatialSystem {
             y: move.toY!,
             layer: move.layer,
           });
+          // Update masks after setting destination
+          this.updateCellMasks(toCell);
         }
       }
     }
@@ -427,6 +439,8 @@ export class SpatialSystem {
       // Place entity on grid
       cell.setValue(op.layer, op.entityId!);
       this.positions.set(op.entityId!, { x: op.x!, y: op.y!, layer: op.layer });
+      // Update masks after spawn
+      this.updateCellMasks(cell);
     }
 
     // Phase 4: Clear all pending operations
@@ -1021,5 +1035,117 @@ export class SpatialSystem {
     }
 
     return output;
+  }
+
+  /**
+   * Update cell masks based on entities present on the cell.
+   * 
+   * Sets BLOCKING mask if cell has entities on WALLS or ACTORS layers.
+   * Sets VISION_BLOCKING mask if cell has entities on WALLS layer.
+   * 
+   * @param cell - Cell to update masks for
+   * @private
+   */
+  private updateCellMasks(cell: LinkedCell): void {
+    // Check if WALLS or ACTORS layers have entities
+    const hasWall = cell.getValue(GameLayers.WALLS) !== undefined;
+    const hasActor = cell.getValue(GameLayers.ACTORS) !== undefined;
+    
+    // Set BLOCKING mask if walls or actors present
+    cell.setMask(CellMasks.BLOCKING, hasWall || hasActor);
+    
+    // Set VISION_BLOCKING mask if walls present
+    cell.setMask(CellMasks.VISION_BLOCKING, hasWall);
+  }
+
+  /**
+   * Synchronize all cell masks with current grid state.
+   * 
+   * Scans all cells in the grid and updates their masks based on
+   * entities currently present. Useful after manually setting cell
+   * values or when initializing a scene.
+   * 
+   * @example
+   * ```typescript
+   * // Manually set terrain
+   * grid.cell(5, 5).setValue(GameLayers.WALLS, 1);
+   * 
+   * // Sync masks
+   * spatial.syncMasks();
+   * ```
+   */
+  syncMasks(): void {
+    for (const cell of this.grid.cells) {
+      this.updateCellMasks(cell);
+    }
+  }
+
+  /**
+   * Checks if a cell blocks movement using the BLOCKING mask.
+   *
+   * The BLOCKING mask is automatically managed by SpatialSystem when entities
+   * that block movement are spawned/removed (walls, closed doors, actors, etc.).
+   *
+   * @param cell - Cell to check
+   * @param emptyFloorsBlock - If true, cells without floor entities block movement
+   * @returns true if cell blocks movement
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (!spatial.isBlocked(targetCell)) {
+   *   spatial.move(4, 5, 5, 5, GameLayers.ACTORS);
+   * }
+   * ```
+   */
+  isBlocked(cell: LinkedCell | null, emptyFloorsBlock = false): boolean {
+    if (!cell) return true;
+
+    if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
+      return true;
+    }
+
+    return cell.getMask(CellMasks.BLOCKING);
+  }
+
+  /**
+   * Checks if a cell blocks vision using the VISION_BLOCKING mask.
+   *
+   * The VISION_BLOCKING mask is automatically managed by SpatialSystem when
+   * entities that block line of sight are spawned/removed (walls, closed doors, etc.).
+   *
+   * @param cell - Cell to check
+   * @returns true if cell blocks vision
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (!spatial.blocksVision(targetCell)) {
+   *   // Line of sight is clear
+   * }
+   * ```
+   */
+  blocksVision(cell: LinkedCell | null): boolean {
+    if (!cell) return true;
+    return cell.getMask(CellMasks.VISION_BLOCKING);
+  }
+
+  /**
+   * Checks if a cell is walkable (inverse of isBlocked).
+   * 
+   * @param cell - Cell to check
+   * @param emptyFloorsBlock - If true, cells without floor entities block movement
+   * @returns true if cell is walkable
+   * 
+   * @example
+   * ```typescript
+   * const targetCell = spatial.grid.cell(5, 5);
+   * if (spatial.isWalkable(targetCell)) {
+   *   spatial.move(4, 5, 5, 5, GameLayers.ACTORS);
+   * }
+   * ```
+   */
+  isWalkable(cell: LinkedCell | null, emptyFloorsBlock = false): boolean {
+    return !this.isBlocked(cell, emptyFloorsBlock);
   }
 }

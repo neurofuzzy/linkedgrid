@@ -135,6 +135,86 @@ export interface HasTeleportTarget {
 }
 
 /**
+ * HasInventory - Entity can hold collected items.
+ *
+ * Used by:
+ * - Collection systems (pick up items)
+ * - Inventory systems (manage items)
+ * - Door systems (check for keys)
+ *
+ * @example
+ * ```typescript
+ * const player = { id: 1, type: 'player', inventory: ['red-key', 'blue-key'] };
+ * if (hasInventory(player)) {
+ *   player.inventory.push('green-key');
+ * }
+ * ```
+ */
+export interface HasInventory {
+  inventory: string[];
+}
+
+/**
+ * IsLockable - Entity can be locked/unlocked with a key.
+ *
+ * Used by:
+ * - Door systems (lock/unlock doors)
+ * - Container systems (locked chests)
+ *
+ * @example
+ * ```typescript
+ * const door = { id: 2, type: 'door', isLocked: true, requiredKey: 'red-key' };
+ * if (isLockable(door) && !door.isLocked) {
+ *   // Door is open
+ * }
+ * ```
+ */
+export interface IsLockable {
+  isLocked: boolean;
+  requiredKey: string;
+}
+
+/**
+ * IsCollectible - Entity can be picked up.
+ *
+ * Used by:
+ * - Collection systems (pick up items)
+ * - Inventory systems (add to inventory)
+ *
+ * @example
+ * ```typescript
+ * const key = { id: 3, type: 'key', collectibleType: 'key', collectibleId: 'red-key' };
+ * if (isCollectible(key)) {
+ *   // Add to player inventory
+ * }
+ * ```
+ */
+export interface IsCollectible {
+  collectibleType: string;
+  collectibleId: string;
+}
+
+/**
+ * HasColor - Entity has a display color.
+ *
+ * Used by:
+ * - Rendering systems (visual display)
+ * - UI systems (color-coding)
+ * - Editor tools (visual identification)
+ *
+ * @example
+ * ```typescript
+ * const door = { id: 4, type: 'door', color: 'red' };
+ * if (hasColor(door)) {
+ *   renderer.setColor(door.color);
+ * }
+ * ```
+ */
+export interface HasColor {
+  color: string;
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

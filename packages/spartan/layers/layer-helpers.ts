@@ -1,8 +1,20 @@
 import type { LinkedCell } from '../../grid/linked-cell';
-import { GameLayers, GAMEPLAY_VISIBLE_LAYERS } from './types';
+import { GAMEPLAY_VISIBLE_LAYERS } from './types';
+
+/**
+ * Layer Helpers - Visual and rendering utilities.
+ * 
+ * For spatial queries and movement checks, use SpatialSystem methods instead:
+ * - spatial.isBlocked(cell)
+ * - spatial.blocksVision(cell)
+ * - spatial.isWalkable(cell)
+ */
 
 /**
  * Returns the topmost entity in a cell based on layer priority (highest layer index wins).
+ * 
+ * Used for rendering - determines which entity to display when multiple entities
+ * occupy the same cell on different layers.
  */
 export function getTopmostEntity(
   cell: LinkedCell,
@@ -16,46 +28,4 @@ export function getTopmostEntity(
     }
   }
   return undefined;
-}
-
-/**
- * Checks if a cell blocks movement based on walls, actors, and optional empty floor setting.
- */
-export function isBlocked(
-  cell: LinkedCell | null,
-  emptyFloorsBlock = false
-): boolean {
-  if (!cell) return true;
-
-  if (emptyFloorsBlock && cell.getValue(GameLayers.FLOOR) === undefined) {
-    return true;
-  }
-
-  if (cell.getValue(GameLayers.WALLS) !== undefined) {
-    return true;
-  }
-
-  if (cell.getValue(GameLayers.ACTORS) !== undefined) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Checks if a cell blocks vision (only walls block vision).
- */
-export function blocksVision(cell: LinkedCell | null): boolean {
-  if (!cell) return true;
-  return cell.getValue(GameLayers.WALLS) !== undefined;
-}
-
-/**
- * Checks if a cell is walkable (inverse of isBlocked).
- */
-export function isWalkable(
-  cell: LinkedCell | null,
-  emptyFloorsBlock = false
-): boolean {
-  return !isBlocked(cell, emptyFloorsBlock);
 }

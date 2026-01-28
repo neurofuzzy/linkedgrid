@@ -31,6 +31,10 @@ import type {
   HasAI,
   HasSceneLocation,
   HasTeleportTarget,
+  HasInventory,
+  IsLockable,
+  IsCollectible,
+  HasColor,
 } from './traits.js';
 import type {
   PlayerData,
@@ -38,6 +42,8 @@ import type {
   TeleporterData,
   ItemData,
   WallData,
+  DoorData,
+  KeyData,
 } from './entity-types.js';
 
 /**
@@ -120,6 +126,68 @@ export function hasTeleportTarget(
 }
 
 /**
+ * Check if entity has inventory trait.
+ *
+ * Entities with inventory can hold collected items.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses inventory trait
+ */
+export function hasInventory(
+  entity: EntityData
+): entity is EntityData & HasInventory {
+  return Array.isArray((entity as any).inventory);
+}
+
+/**
+ * Check if entity is lockable.
+ *
+ * Entities with lockable trait can be locked/unlocked with keys.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses lockable trait
+ */
+export function isLockable(
+  entity: EntityData
+): entity is EntityData & IsLockable {
+  return (
+    typeof (entity as any).isLocked === 'boolean' &&
+    typeof (entity as any).requiredKey === 'string'
+  );
+}
+
+/**
+ * Check if entity is collectible.
+ *
+ * Entities with collectible trait can be picked up.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses collectible trait
+ */
+export function isCollectible(
+  entity: EntityData
+): entity is EntityData & IsCollectible {
+  return (
+    typeof (entity as any).collectibleType === 'string' &&
+    typeof (entity as any).collectibleId === 'string'
+  );
+}
+
+/**
+ * Check if entity has color trait.
+ *
+ * Entities with color trait have a display color for rendering.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses color trait
+ */
+export function hasColor(
+  entity: EntityData
+): entity is EntityData & HasColor {
+  return typeof (entity as any).color === 'string';
+}
+
+/**
  * Entity Type Guards
  *
  * These check for specific entity archetypes and narrow to full type contracts.
@@ -174,6 +242,26 @@ export function isItem(entity: EntityData): entity is ItemData {
  */
 export function isWall(entity: EntityData): entity is WallData {
   return entity.type === 'wall';
+}
+
+/**
+ * Check if entity is a door.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'door'
+ */
+export function isDoor(entity: EntityData): entity is DoorData {
+  return entity.type === 'door';
+}
+
+/**
+ * Check if entity is a key.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'key'
+ */
+export function isKey(entity: EntityData): entity is KeyData {
+  return entity.type === 'key';
 }
 
 /**

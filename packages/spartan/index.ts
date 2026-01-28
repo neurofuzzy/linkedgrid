@@ -47,6 +47,8 @@ export {
   VISION_BLOCKING_LAYERS,
   GAMEPLAY_VISIBLE_LAYERS,
   ALL_LAYERS,
+  CellMask,
+  CellMasks,
 } from './layers/types';
 
 // Layers
@@ -71,6 +73,10 @@ export type {
   HasAI,
   HasSceneLocation,
   HasTeleportTarget,
+  HasInventory,
+  IsLockable,
+  IsCollectible,
+  HasColor,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -80,6 +86,9 @@ export type {
   TeleporterData,
   ItemData,
   WallData,
+  DoorData,
+  KeyData,
+  OpenDoorData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -89,11 +98,17 @@ export {
   hasAI,
   hasSceneLocation,
   hasTeleportTarget,
+  hasInventory,
+  isLockable,
+  isCollectible,
+  hasColor,
   isPlayer,
   isEnemy,
   isTeleporter,
   isItem,
   isWall,
+  isDoor,
+  isKey,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -109,14 +124,9 @@ export {
   spawnPlayerWithId,
 } from './entities/spawn-helpers';
 
-// Blocking utilities
-// Layer utilities
-export {
-  getTopmostEntity,
-  isBlocked,
-  blocksVision,
-  isWalkable,
-} from './layers/layer-helpers';
+// Layer utilities (for visual/rendering helpers)
+// For spatial queries, use SpatialSystem methods: spatial.isBlocked(), spatial.blocksVision(), spatial.isWalkable()
+export { getTopmostEntity } from './layers/layer-helpers';
 
 // Game loop and runtime
 export { GameLoop } from './game-loop.js';
@@ -125,4 +135,7 @@ export type { GameRuntimeConfig } from './game-runtime.js';
 
 // Systems
 export { TeleporterSystem } from './systems/teleporter-system.js';
+export { CollectionSystem } from './systems/collection-system.js';
+export { DoorSystem } from './systems/door-system.js';
+export { PlayerInputSystem } from './systems/player-input-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';
