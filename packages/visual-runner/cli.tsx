@@ -9,6 +9,8 @@ if (process.stdin.isTTY || bypassTTY) {
   render(<App />);
 } else {
   console.error('Error: This tool requires an interactive terminal.');
-  console.error('Please run it directly in your terminal, not via npm run or piped commands.');
+  console.error(
+    'Please run it directly in your terminal, not via npm run or piped commands.'
+  );
   process.exit(1);
 }

@@ -1,40 +1,40 @@
-import { visual } from "./visual-helpers.js";
-import { GameManager } from "../game-manager.js";
-import { GameLayers } from "../layers/types.js";
+import { visual } from './visual-helpers.js';
+import { GameManager } from '../game-manager.js';
+import { GameLayers } from '../layers/types.js';
 import {
   spawnPlayer,
   spawnTeleporter,
   spawnItem,
-} from "../entities/spawn-helpers.js";
-import { isPlayer } from "../entities/trait-guards.js";
+} from '../entities/spawn-helpers.js';
+import { isPlayer } from '../entities/trait-guards.js';
 
-visual("player teleports between rooms", {
+visual('player teleports between rooms', {
   arrange: (ctx) => {
     const game = new GameManager();
     ctx.game = game;
 
-    const room1 = game.sceneManager.createScene("room1", 10, 10, {
-      name: "Starting Room",
+    const room1 = game.sceneManager.createScene('room1', 10, 10, {
+      name: 'Starting Room',
     });
-    const room2 = game.sceneManager.createScene("room2", 12, 12, {
-      name: "Treasure Room",
+    const room2 = game.sceneManager.createScene('room2', 12, 12, {
+      name: 'Treasure Room',
     });
 
-    game.sceneManager.setActiveScene("room1");
+    game.sceneManager.setActiveScene('room1');
 
     // Spawn player using type-safe spawn helper
     const playerId = spawnPlayer(room1.spatial, 5, 5, {
       hp: 100,
       maxHp: 100,
       damage: 10,
-      sceneId: "room1",
+      sceneId: 'room1',
     });
     game.gameState.playerEntityId = playerId;
 
     // Verify player using type guard
     const playerData = room1.spatial.getEntityData(playerId);
     if (!isPlayer(playerData)) {
-      throw new Error("Player entity failed type check");
+      throw new Error('Player entity failed type check');
     }
 
     // Add some walls in room1
@@ -43,19 +43,19 @@ visual("player teleports between rooms", {
 
     // Add teleporter pad in room1 using spawn helper
     spawnTeleporter(room1.spatial, 5, 7, {
-      targetKey: "portal1",
-      sceneId: "room1",
+      targetKey: 'portal1',
+      sceneId: 'room1',
     });
 
     // Add treasure in room2 using spawn helper
     spawnItem(room2.spatial, 6, 6, {
-      itemType: "treasure",
+      itemType: 'treasure',
     });
 
     // Add teleporter pad in room2 using spawn helper
     spawnTeleporter(room2.spatial, 3, 3, {
-      targetKey: "portal1",
-      sceneId: "room2",
+      targetKey: 'portal1',
+      sceneId: 'room2',
     });
 
     // Commit all spawned entities
@@ -66,7 +66,7 @@ visual("player teleports between rooms", {
     const game = ctx.game;
     if (!game) {
       throw new Error(
-        "Game manager not found in context - arrange phase may have failed",
+        'Game manager not found in context - arrange phase may have failed'
       );
     }
 
@@ -79,7 +79,7 @@ visual("player teleports between rooms", {
     ctx.spatial.commit();
 
     // Teleport to room2 (this captures a snapshot automatically)
-    game.movePlayerToScene("room2", 3, 3, GameLayers.ACTORS);
+    game.movePlayerToScene('room2', 3, 3, GameLayers.ACTORS);
 
     // Walk in room2 (ctx.spatial now delegates to room2's spatial)
     ctx.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
@@ -91,61 +91,61 @@ visual("player teleports between rooms", {
   },
 });
 
-visual("multi-scene world with connections", {
+visual('multi-scene world with connections', {
   arrange: (ctx) => {
     const game = new GameManager();
     ctx.game = game;
 
     // Create three connected rooms
-    const entrance = game.sceneManager.createScene("entrance", 8, 8, {
-      name: "Dungeon Entrance",
+    const entrance = game.sceneManager.createScene('entrance', 8, 8, {
+      name: 'Dungeon Entrance',
     });
-    const hallway = game.sceneManager.createScene("hallway", 15, 6, {
-      name: "Long Hallway",
+    const hallway = game.sceneManager.createScene('hallway', 15, 6, {
+      name: 'Long Hallway',
     });
-    const boss = game.sceneManager.createScene("boss", 12, 12, {
-      name: "Boss Chamber",
+    const boss = game.sceneManager.createScene('boss', 12, 12, {
+      name: 'Boss Chamber',
     });
 
     // Setup connections
     game.gameState.addConnection(
-      "entrance-to-hallway",
-      "hallway",
+      'entrance-to-hallway',
+      'hallway',
       0,
       3,
-      GameLayers.ACTORS,
+      GameLayers.ACTORS
     );
     game.gameState.addConnection(
-      "hallway-to-boss",
-      "boss",
+      'hallway-to-boss',
+      'boss',
       6,
       0,
-      GameLayers.ACTORS,
+      GameLayers.ACTORS
     );
 
     // Add teleporter pads at connection points
-    entrance.spatial.spawn("teleporter", 4, 6, GameLayers.FLOOR); // Exit from entrance
-    hallway.spatial.spawn("teleporter", 0, 3, GameLayers.FLOOR); // Entry to hallway
-    hallway.spatial.spawn("teleporter", 14, 3, GameLayers.FLOOR); // Exit from hallway
-    boss.spatial.spawn("teleporter", 6, 0, GameLayers.FLOOR); // Entry to boss room
+    entrance.spatial.spawn('teleporter', 4, 6, GameLayers.FLOOR); // Exit from entrance
+    hallway.spatial.spawn('teleporter', 0, 3, GameLayers.FLOOR); // Entry to hallway
+    hallway.spatial.spawn('teleporter', 14, 3, GameLayers.FLOOR); // Exit from hallway
+    boss.spatial.spawn('teleporter', 6, 0, GameLayers.FLOOR); // Entry to boss room
 
     // Spawn player in entrance
-    game.sceneManager.setActiveScene("entrance");
+    game.sceneManager.setActiveScene('entrance');
 
     // Spawn player using type-safe spawn helper
     const playerId = spawnPlayer(entrance.spatial, 4, 4, {
       hp: 100,
       maxHp: 100,
       damage: 10,
-      sceneId: "entrance",
+      sceneId: 'entrance',
     });
     game.gameState.playerEntityId = playerId;
 
     // Add enemy in hallway
-    hallway.spatial.spawn("enemy", 7, 3, GameLayers.ACTORS);
+    hallway.spatial.spawn('enemy', 7, 3, GameLayers.ACTORS);
 
     // Add boss in boss chamber
-    boss.spatial.spawn("enemy", 6, 6, GameLayers.ACTORS);
+    boss.spatial.spawn('enemy', 6, 6, GameLayers.ACTORS);
 
     // Commit all spawned entities
     entrance.spatial.commit();
@@ -156,7 +156,7 @@ visual("multi-scene world with connections", {
     const game = ctx.game;
     if (!game) {
       throw new Error(
-        "Game manager not found in context - arrange phase may have failed",
+        'Game manager not found in context - arrange phase may have failed'
       );
     }
 
@@ -169,13 +169,13 @@ visual("multi-scene world with connections", {
 
     // Teleport to hallway via connection
     const hallwayEntry = game.gameState.getConnections(
-      "entrance-to-hallway",
+      'entrance-to-hallway'
     )[0];
     game.movePlayerToScene(
       hallwayEntry.sceneId,
       hallwayEntry.x,
       hallwayEntry.y,
-      hallwayEntry.layer,
+      hallwayEntry.layer
     );
 
     // Walk through hallway (ctx.spatial now delegates to hallway scene)
@@ -186,12 +186,12 @@ visual("multi-scene world with connections", {
     ctx.spatial.commit();
 
     // Teleport to boss chamber
-    const bossEntry = game.gameState.getConnections("hallway-to-boss")[0];
+    const bossEntry = game.gameState.getConnections('hallway-to-boss')[0];
     game.movePlayerToScene(
       bossEntry.sceneId,
       bossEntry.x,
       bossEntry.y,
-      bossEntry.layer,
+      bossEntry.layer
     );
 
     // Approach boss (ctx.spatial now delegates to boss chamber)
@@ -200,31 +200,31 @@ visual("multi-scene world with connections", {
   },
 });
 
-visual("scene with metadata and player tracking", {
+visual('scene with metadata and player tracking', {
   arrange: (ctx) => {
     const game = new GameManager();
     ctx.game = game;
 
-    const scene = game.sceneManager.createScene("test-scene", 10, 10, {
-      name: "Test Arena",
-      difficulty: "hard",
-      biome: "volcanic",
+    const scene = game.sceneManager.createScene('test-scene', 10, 10, {
+      name: 'Test Arena',
+      difficulty: 'hard',
+      biome: 'volcanic',
     });
 
-    game.sceneManager.setActiveScene("test-scene");
-    const playerId = scene.spatial.spawn("player", 5, 5, GameLayers.ACTORS);
+    game.sceneManager.setActiveScene('test-scene');
+    const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     game.gameState.playerEntityId = playerId;
 
     // Add some entities
-    scene.spatial.spawn("enemy", 3, 3, GameLayers.ACTORS);
-    scene.spatial.spawn("item", 7, 7, GameLayers.ITEMS);
+    scene.spatial.spawn('enemy', 3, 3, GameLayers.ACTORS);
+    scene.spatial.spawn('item', 7, 7, GameLayers.ITEMS);
     scene.spatial.commit();
   },
   act: (ctx) => {
     const game = ctx.game;
     if (!game) {
       throw new Error(
-        "Game manager not found in context - arrange phase may have failed",
+        'Game manager not found in context - arrange phase may have failed'
       );
     }
 
@@ -239,23 +239,23 @@ visual("scene with metadata and player tracking", {
     const game = ctx.game;
     if (!game) {
       throw new Error(
-        "Game manager not found in context - arrange phase may have failed",
+        'Game manager not found in context - arrange phase may have failed'
       );
     }
     const playerPos = game.getPlayerPosition();
 
-    ctx.expect("player in correct scene", () => {
-      if (playerPos?.sceneId !== "test-scene") {
+    ctx.expect('player in correct scene', () => {
+      if (playerPos?.sceneId !== 'test-scene') {
         throw new Error(
-          `Expected player in test-scene, got ${playerPos?.sceneId}`,
+          `Expected player in test-scene, got ${playerPos?.sceneId}`
         );
       }
     });
 
-    ctx.expect("player at expected position", () => {
+    ctx.expect('player at expected position', () => {
       if (playerPos?.x !== 7 || playerPos?.y !== 5) {
         throw new Error(
-          `Expected player at (7,5), got (${playerPos?.x},${playerPos?.y})`,
+          `Expected player at (7,5), got (${playerPos?.x},${playerPos?.y})`
         );
       }
     });

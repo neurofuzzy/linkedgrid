@@ -1,6 +1,6 @@
-import { visual } from "./visual-helpers";
-import { GameLayers } from "../layers/types";
-import { blocksVision, isBlocked } from "../layers/layer-helpers";
+import { visual } from './visual-helpers';
+import { GameLayers } from '../layers/types';
+import { blocksVision, isBlocked } from '../layers/layer-helpers';
 
 /**
  * Layer System Visual Tests
@@ -15,7 +15,7 @@ import { blocksVision, isBlocked } from "../layers/layer-helpers";
 // Note: Static layer occupancy tests removed - already covered by "multiple layers at same cell" in movement.visual.test.ts
 
 // Test: Wall blocking with movement
-visual("Wall blocking - players blocked by terrain and doors", {
+visual('Wall blocking - players blocked by terrain and doors', {
   arrange: ({ spatial, grid }) => {
     // Create vertical wall barrier in middle (x=5)
     for (let y = 2; y <= 6; y++) {
@@ -24,11 +24,11 @@ visual("Wall blocking - players blocked by terrain and doors", {
     }
 
     // Create door entity at one spot (can be opened later)
-    spatial.spawn("door", 5, 4, GameLayers.WALLS);
+    spatial.spawn('door', 5, 4, GameLayers.WALLS);
 
     // Place two players on opposite sides
-    spatial.spawn("player", 2, 4, GameLayers.ACTORS); // Left side
-    spatial.spawn("enemy", 8, 4, GameLayers.ACTORS); // Right side
+    spatial.spawn('player', 2, 4, GameLayers.ACTORS); // Left side
+    spatial.spawn('enemy', 8, 4, GameLayers.ACTORS); // Right side
     spatial.commit();
   },
   act: ({ spatial }) => {
@@ -60,34 +60,34 @@ visual("Wall blocking - players blocked by terrain and doors", {
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
-    expect("Left player blocked at (4, 4)", () => {
+    expect('Left player blocked at (4, 4)', () => {
       const id = spatial.getEntityIdAt(4, 4, GameLayers.ACTORS);
       if (!id) {
-        throw new Error("Left player not at expected position");
+        throw new Error('Left player not at expected position');
       }
     });
 
-    expect("Right player blocked at (6, 4)", () => {
+    expect('Right player blocked at (6, 4)', () => {
       const id = spatial.getEntityIdAt(6, 4, GameLayers.ACTORS);
       if (!id) {
-        throw new Error("Right player not at expected position");
+        throw new Error('Right player not at expected position');
       }
     });
 
-    expect("Wall barrier still intact", () => {
+    expect('Wall barrier still intact', () => {
       const throughWall = spatial.getEntityIdAt(5, 4, GameLayers.ACTORS);
       if (throughWall) {
-        throw new Error("Entity moved through wall");
+        throw new Error('Entity moved through wall');
       }
     });
   },
 });
 
 // Test: Actor blocking - show approach and collision
-visual("Actor blocking - entities collide and stop", {
+visual('Actor blocking - entities collide and stop', {
   arrange: ({ spatial }) => {
-    spatial.spawn("player", 8, 5, GameLayers.ACTORS);
-    spatial.spawn("enemy", 13, 5, GameLayers.ACTORS);
+    spatial.spawn('player', 8, 5, GameLayers.ACTORS);
+    spatial.spawn('enemy', 13, 5, GameLayers.ACTORS);
     spatial.commit();
   },
   act: ({ spatial }) => {
@@ -123,29 +123,29 @@ visual("Actor blocking - entities collide and stop", {
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
-    expect("Player stopped at (10, 5)", () => {
+    expect('Player stopped at (10, 5)', () => {
       const playerId = spatial.getEntityIdAt(10, 5, GameLayers.ACTORS);
       if (!playerId) {
-        throw new Error("Player not at collision point");
+        throw new Error('Player not at collision point');
       }
     });
 
-    expect("Enemy stopped at (11, 5)", () => {
+    expect('Enemy stopped at (11, 5)', () => {
       const enemyId = spatial.getEntityIdAt(11, 5, GameLayers.ACTORS);
       if (!enemyId) {
-        throw new Error("Enemy not at collision point");
+        throw new Error('Enemy not at collision point');
       }
     });
 
-    expect("No entity passed through", () => {
+    expect('No entity passed through', () => {
       // Verify they're adjacent, not on same cell or swapped
       const at10 = spatial.getEntityIdAt(10, 5, GameLayers.ACTORS);
       const at11 = spatial.getEntityIdAt(11, 5, GameLayers.ACTORS);
       const at10Data = spatial.getEntityData(at10!);
       const at11Data = spatial.getEntityData(at11!);
 
-      if (at10Data?.type !== "player" || at11Data?.type !== "enemy") {
-        throw new Error("Entities passed through each other");
+      if (at10Data?.type !== 'player' || at11Data?.type !== 'enemy') {
+        throw new Error('Entities passed through each other');
       }
     });
   },
@@ -154,10 +154,10 @@ visual("Actor blocking - entities collide and stop", {
 // Note: Empty floor blocking test removed - floors are not visually rendered, making this test impossible to follow
 
 // Test: Collectibles don't block movement
-visual("Collectibles non-blocking - player walks through items", {
+visual('Collectibles non-blocking - player walks through items', {
   arrange: ({ spatial }) => {
-    spatial.spawn("coin", 8, 5, GameLayers.COLLECTIBLES);
-    spatial.spawn("player", 6, 5, GameLayers.ACTORS);
+    spatial.spawn('coin', 8, 5, GameLayers.COLLECTIBLES);
+    spatial.spawn('player', 6, 5, GameLayers.ACTORS);
     spatial.commit();
   },
   act: ({ spatial }) => {
@@ -181,24 +181,24 @@ visual("Collectibles non-blocking - player walks through items", {
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
-    expect("Player walked past collectible to (10, 5)", () => {
+    expect('Player walked past collectible to (10, 5)', () => {
       const playerId = spatial.getEntityIdAt(10, 5, GameLayers.ACTORS);
       if (!playerId) {
-        throw new Error("Player not at expected position");
+        throw new Error('Player not at expected position');
       }
     });
 
-    expect("Collectible still exists at (8, 5)", () => {
+    expect('Collectible still exists at (8, 5)', () => {
       const coinId = spatial.getEntityIdAt(8, 5, GameLayers.COLLECTIBLES);
       if (!coinId) {
-        throw new Error("Coin should still exist");
+        throw new Error('Coin should still exist');
       }
     });
 
-    expect("Player walked through without being blocked", () => {
+    expect('Player walked through without being blocked', () => {
       const atCoinCell = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS);
       if (atCoinCell) {
-        throw new Error("Player should have moved past the coin");
+        throw new Error('Player should have moved past the coin');
       }
     });
   },

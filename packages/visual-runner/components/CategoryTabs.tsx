@@ -7,7 +7,11 @@ interface Props {
   onSelect: (category: string) => void;
 }
 
-export function CategoryTabs({ categories, selectedCategory, onSelect }: Props) {
+export function CategoryTabs({
+  categories,
+  selectedCategory,
+  onSelect,
+}: Props) {
   return (
     <Box borderStyle="single" borderColor="gray" paddingX={1}>
       <Text dimColor>[←→] switch tabs: </Text>
@@ -20,7 +24,8 @@ export function CategoryTabs({ categories, selectedCategory, onSelect }: Props) 
               color={isSelected ? 'cyan' : undefined}
               dimColor={!isSelected}
             >
-              {isSelected ? '▸ ' : '  '}{category}
+              {isSelected ? '▸ ' : '  '}
+              {category}
             </Text>
           </Box>
         );

@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
-import { createRoot } from "react-dom/client";
-import { SceneLoader, type SceneConfig } from "./scene-loader";
-import { PlayerInputSystem } from "./player-input-system";
-import { InputManager } from "../packages/spartan/input";
-import { GridRenderer, DebugPanel } from "./grid-renderer";
-import type { GameRuntime } from "../packages/spartan/game-runtime";
+import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import { SceneLoader, type SceneConfig } from './scene-loader';
+import { PlayerInputSystem } from './player-input-system';
+import { InputManager } from '../packages/spartan/input';
+import { GridRenderer, DebugPanel } from './grid-renderer';
+import type { GameRuntime } from '../packages/spartan/game-runtime';
 
 /**
  * Available game configurations.
  * Each game can contain multiple scenes.
  */
 const AVAILABLE_GAMES = [
-  { id: "basic", name: "Basic Game", path: "/dev/scenes/basic.json" },
+  { id: 'basic', name: 'Basic Game', path: '/dev/scenes/basic.json' },
   {
-    id: "teleporter",
-    name: "Teleporter Test",
-    path: "/dev/scenes/teleporter.json",
+    id: 'teleporter',
+    name: 'Teleporter Test',
+    path: '/dev/scenes/teleporter.json',
   },
 ];
 
@@ -81,7 +81,7 @@ function Playground() {
         const loader = new SceneLoader();
         const errors = SceneLoader.validate(config);
         if (errors.length > 0) {
-          throw new Error(`Game validation failed:\n${errors.join("\n")}`);
+          throw new Error(`Game validation failed:\n${errors.join('\n')}`);
         }
 
         // Load game and create runtime first (need gameManager)
@@ -93,7 +93,7 @@ function Playground() {
           cellSize: 24,
           cellGap: 0,
           bufferInput: false, // Don't use legacy buffering
-          directionMode: "continuous", // CONTINUOUS mode: hold key = keep moving
+          directionMode: 'continuous', // CONTINUOUS mode: hold key = keep moving
         });
 
         // Enable keyboard and buffering for continuous mode
@@ -103,7 +103,7 @@ function Playground() {
         // Create player input system
         const loadedPlayerInputSystem = new PlayerInputSystem(
           loadedRuntime.game,
-          loadedInputManager,
+          loadedInputManager
         );
 
         // Register input system with runtime (not just gameLoop)
@@ -125,7 +125,7 @@ function Playground() {
           setLoading(false);
         }
       } catch (err) {
-        console.error("Failed to load game:", err);
+        console.error('Failed to load game:', err);
         if (mounted) {
           setError((err as Error).message);
           setLoading(false);
@@ -167,8 +167,8 @@ function Playground() {
   useEffect(() => {
     if (import.meta.hot) {
       // When any JSON file changes, reload the game
-      import.meta.hot.on("vite:beforeUpdate", () => {
-        console.log("Hot reload triggered - reloading game...");
+      import.meta.hot.on('vite:beforeUpdate', () => {
+        console.log('Hot reload triggered - reloading game...');
         setGameKey((prev) => prev + 1);
       });
     }
@@ -178,19 +178,19 @@ function Playground() {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // K: Toggle input mode
-      if (e.key === "k" || e.key === "K") {
+      if (e.key === 'k' || e.key === 'K') {
         if (!inputManagerRef.current) return;
 
         const currentMode = (inputManagerRef.current as any).config
           .directionMode;
-        const newMode = currentMode === "continuous" ? "tap" : "continuous";
+        const newMode = currentMode === 'continuous' ? 'tap' : 'continuous';
 
         // Update config
         (inputManagerRef.current as any).config.directionMode = newMode;
 
         // For tap mode, disable buffering (single press should move once)
         // For continuous mode, enable buffering (catch quick presses)
-        if (newMode === "tap") {
+        if (newMode === 'tap') {
           inputManagerRef.current.enableBuffering(false);
         } else {
           inputManagerRef.current.enableBuffering(true);
@@ -201,11 +201,13 @@ function Playground() {
 
         console.log(`Input mode: ${newMode}`);
       }
-      
+
       // TAB: Cycle to next game
-      if (e.key === "Tab") {
+      if (e.key === 'Tab') {
         e.preventDefault();
-        const currentIndex = AVAILABLE_GAMES.findIndex(g => g.path === selectedGame);
+        const currentIndex = AVAILABLE_GAMES.findIndex(
+          (g) => g.path === selectedGame
+        );
         const nextIndex = (currentIndex + 1) % AVAILABLE_GAMES.length;
         const nextGame = AVAILABLE_GAMES[nextIndex];
         setSelectedGame(nextGame.path);
@@ -213,8 +215,8 @@ function Playground() {
       }
     };
 
-    document.addEventListener("keydown", handleKeyPress);
-    return () => document.removeEventListener("keydown", handleKeyPress);
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
   }, [selectedGame]);
 
   const handleGameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -223,43 +225,43 @@ function Playground() {
 
   if (loading) {
     return (
-      <div style={{ padding: "20px" }}>
+      <div style={{ padding: '20px' }}>
         <h1>Spartan Playground</h1>
-        <p style={{ color: "#4ec9b0" }}>Loading game...</p>
+        <p style={{ color: '#4ec9b0' }}>Loading game...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ padding: "20px" }}>
+      <div style={{ padding: '20px' }}>
         <h1>Spartan Playground</h1>
         <div
           style={{
-            marginTop: "20px",
-            padding: "15px",
-            background: "#3c1f1f",
-            border: "1px solid #f48771",
-            borderRadius: "4px",
-            color: "#f48771",
+            marginTop: '20px',
+            padding: '15px',
+            background: '#3c1f1f',
+            border: '1px solid #f48771',
+            borderRadius: '4px',
+            color: '#f48771',
           }}
         >
-          <h3 style={{ marginBottom: "10px" }}>Error Loading Game</h3>
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: "12px" }}>
+          <h3 style={{ marginBottom: '10px' }}>Error Loading Game</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px' }}>
             {error}
           </pre>
         </div>
-        <div style={{ marginTop: "20px" }}>
+        <div style={{ marginTop: '20px' }}>
           <button
             onClick={() => setGameKey((prev) => prev + 1)}
             style={{
-              padding: "8px 16px",
-              background: "#4ec9b0",
-              border: "none",
-              borderRadius: "4px",
-              color: "#1e1e1e",
-              cursor: "pointer",
-              fontFamily: "inherit",
+              padding: '8px 16px',
+              background: '#4ec9b0',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#1e1e1e',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
             }}
           >
             Retry
@@ -270,31 +272,35 @@ function Playground() {
   }
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: '20px' }}>
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "20px",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '20px',
         }}
       >
         <h1 style={{ margin: 0 }}>Spartan Playground</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <label style={{ color: "#9cdcfe", fontSize: "14px" }}>Game:</label>
-          <span style={{ color: "#808080", fontSize: "12px", marginRight: "10px" }}>(TAB to cycle)</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <label style={{ color: '#9cdcfe', fontSize: '14px' }}>Game:</label>
+          <span
+            style={{ color: '#808080', fontSize: '12px', marginRight: '10px' }}
+          >
+            (TAB to cycle)
+          </span>
           <select
             value={selectedGame}
             onChange={handleGameChange}
             style={{
-              padding: "6px 12px",
-              background: "#252526",
-              border: "1px solid #3c3c3c",
-              borderRadius: "4px",
-              color: "#d4d4d4",
-              fontFamily: "inherit",
-              fontSize: "14px",
-              cursor: "pointer",
+              padding: '6px 12px',
+              background: '#252526',
+              border: '1px solid #3c3c3c',
+              borderRadius: '4px',
+              color: '#d4d4d4',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+              cursor: 'pointer',
             }}
           >
             {AVAILABLE_GAMES.map((game) => (
@@ -306,11 +312,11 @@ function Playground() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-        <div style={{ marginTop: "20px" }}>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        <div style={{ marginTop: '20px' }}>
           <GridRenderer scene={runtime?.activeScene || null} />
         </div>
-        <div style={{ flex: "1", minWidth: "300px" }}>
+        <div style={{ flex: '1', minWidth: '300px' }}>
           <DebugPanel
             runtime={runtime}
             inputManager={inputManager}
@@ -322,33 +328,33 @@ function Playground() {
             {runtime?.activeScene && (
               <>
                 <p>
-                  <span className="label">Name:</span>{" "}
+                  <span className="label">Name:</span>{' '}
                   {runtime.activeScene.metadata?.name || runtime.activeScene.id}
                 </p>
                 <p>
                   <span className="label">ID:</span> {runtime.activeScene.id}
                 </p>
                 <p>
-                  <span className="label">Grid:</span>{" "}
-                  {runtime.activeScene.grid.width} ×{" "}
+                  <span className="label">Grid:</span>{' '}
+                  {runtime.activeScene.grid.width} ×{' '}
                   {runtime.activeScene.grid.height}
                 </p>
               </>
             )}
             <p
-              style={{ fontSize: "12px", color: "#808080", marginTop: "10px" }}
+              style={{ fontSize: '12px', color: '#808080', marginTop: '10px' }}
             >
-              Edit JSON in{" "}
+              Edit JSON in{' '}
               <code
                 style={{
-                  background: "#1e1e1e",
-                  padding: "2px 6px",
-                  borderRadius: "3px",
-                  color: "#dcdcaa",
+                  background: '#1e1e1e',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  color: '#dcdcaa',
                 }}
               >
                 dev/scenes/
-              </code>{" "}
+              </code>{' '}
               for hot reload
             </p>
           </div>
@@ -359,7 +365,7 @@ function Playground() {
 }
 
 // Mount to DOM
-const root = document.getElementById("root");
+const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(<Playground />);
 }

@@ -1,18 +1,18 @@
-import { describe, it, expect } from "vitest";
-import { LinkedGrid } from "../../grid/index.js";
-import { SparseEntityStore } from "../entity-store.js";
-import { SpatialSystem } from "../spatial-system.js";
-import { GameLayers } from "../layers/types.js";
+import { describe, it, expect } from 'vitest';
+import { LinkedGrid } from '../../grid/index.js';
+import { SparseEntityStore } from '../entity-store.js';
+import { SpatialSystem } from '../spatial-system.js';
+import { GameLayers } from '../layers/types.js';
 
-describe("Transaction Consistency", () => {
-  it("defers all operations until commit", () => {
+describe('Transaction Consistency', () => {
+  it('defers all operations until commit', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Stage spawn operations
-    const id1 = spatial.spawn("player", 5, 5, GameLayers.ACTORS);
-    const id2 = spatial.spawn("enemy", 6, 5, GameLayers.ACTORS);
+    const id1 = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    const id2 = spatial.spawn('enemy', 6, 5, GameLayers.ACTORS);
 
     // Not visible yet
     expect(spatial.getEntityPosition(id1)).toBeNull();
@@ -38,13 +38,13 @@ describe("Transaction Consistency", () => {
     });
   });
 
-  it("prevents ghost entities from move+remove conflict", () => {
+  it('prevents ghost entities from move+remove conflict', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Setup
-    const id = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
+    const id = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Stage conflicting operations
@@ -61,14 +61,14 @@ describe("Transaction Consistency", () => {
     expect(spatial.getEntityData(id)).toBeUndefined();
   });
 
-  it("excludes pending removals from radius queries", () => {
+  it('excludes pending removals from radius queries', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Setup
-    const enemy1 = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
-    const enemy2 = spatial.spawn("enemy", 6, 5, GameLayers.ACTORS);
+    const enemy1 = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
+    const enemy2 = spatial.spawn('enemy', 6, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Stage removal
@@ -87,13 +87,13 @@ describe("Transaction Consistency", () => {
     expect(all).toContain(enemy2);
   });
 
-  it("allows cancellation of pending removal", () => {
+  it('allows cancellation of pending removal', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Setup
-    const id = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
+    const id = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Stage removal
@@ -114,13 +114,13 @@ describe("Transaction Consistency", () => {
     });
   });
 
-  it("allows cancellation of pending spawn", () => {
+  it('allows cancellation of pending spawn', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Stage spawn
-    const id = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
+    const id = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
     expect(spatial.getEntityPosition(id)).toBeNull(); // Not on grid yet
 
     // Cancel
@@ -133,13 +133,13 @@ describe("Transaction Consistency", () => {
     expect(spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)).toBeUndefined();
   });
 
-  it("isAlive returns false for pending removals", () => {
+  it('isAlive returns false for pending removals', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Setup
-    const id = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
+    const id = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Entity is alive
@@ -158,19 +158,19 @@ describe("Transaction Consistency", () => {
     expect(spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)).toBeUndefined();
   });
 
-  it("processes operations in correct order: remove -> move -> spawn", () => {
+  it('processes operations in correct order: remove -> move -> spawn', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Setup: entity at (5, 5)
-    const id1 = spatial.spawn("enemy", 5, 5, GameLayers.ACTORS);
+    const id1 = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Stage: remove at (5,5), move to (5,5), spawn at (6,6)
     spatial.remove(5, 5, GameLayers.ACTORS);
-    const id2 = spatial.spawn("player", 6, 6, GameLayers.ACTORS);
-    const id3 = spatial.spawn("item", 5, 5, GameLayers.ACTORS); // Should succeed (after removal)
+    const id2 = spatial.spawn('player', 6, 6, GameLayers.ACTORS);
+    const id3 = spatial.spawn('item', 5, 5, GameLayers.ACTORS); // Should succeed (after removal)
 
     spatial.commit();
 
@@ -188,27 +188,27 @@ describe("Transaction Consistency", () => {
     }); // Spawned at cleared location
   });
 
-  it("getPendingOps shows all staged operations", () => {
+  it('getPendingOps shows all staged operations', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Stage operations
-    const id1 = spatial.spawn("player", 5, 5, GameLayers.ACTORS);
-    const id2 = spatial.spawn("enemy", 6, 5, GameLayers.ACTORS);
+    const id1 = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    const id2 = spatial.spawn('enemy', 6, 5, GameLayers.ACTORS);
     spatial.commit();
 
     // Stage more operations
     spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
     spatial.remove(6, 5, GameLayers.ACTORS);
-    const id3 = spatial.spawn("item", 7, 7, GameLayers.COLLECTIBLES);
+    const id3 = spatial.spawn('item', 7, 7, GameLayers.COLLECTIBLES);
 
     // Check pending operations
     const pending = spatial.getPendingOps();
     expect(pending.length).toBe(3);
-    expect(pending[0].type).toBe("move");
-    expect(pending[1].type).toBe("remove");
-    expect(pending[2].type).toBe("spawn");
+    expect(pending[0].type).toBe('move');
+    expect(pending[1].type).toBe('remove');
+    expect(pending[2].type).toBe('spawn');
 
     // Check pending removals
     const pendingRemovals = spatial.getPendingRemovals();
@@ -216,18 +216,18 @@ describe("Transaction Consistency", () => {
     expect(pendingRemovals.has(id2)).toBe(true);
   });
 
-  it("clearIntents cancels all pending operations", () => {
+  it('clearIntents cancels all pending operations', () => {
     const grid = new LinkedGrid(10, 10);
     const store = new SparseEntityStore();
     const spatial = new SpatialSystem(grid, store);
 
     // Stage operations
-    const id1 = spatial.spawn("player", 5, 5, GameLayers.ACTORS);
+    const id1 = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
     spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
     spatial.remove(5, 5, GameLayers.ACTORS);
-    const id2 = spatial.spawn("enemy", 7, 7, GameLayers.ACTORS);
+    const id2 = spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
 
     // Verify operations are staged
     expect(spatial.getPendingOps().length).toBeGreaterThan(0);

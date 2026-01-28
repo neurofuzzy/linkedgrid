@@ -1,8 +1,8 @@
-import type { GameSystem, GameContext } from "../packages/spartan/types";
-import { GameLayers } from "../packages/spartan/types";
-import { isWalkable } from "../packages/spartan/layers/layer-helpers";
-import { InputManager } from "../packages/spartan/input/input-manager";
-import { Direction } from "../packages/grid/direction";
+import type { GameSystem, GameContext } from '../packages/spartan/types';
+import { GameLayers } from '../packages/spartan/types';
+import { isWalkable } from '../packages/spartan/layers/layer-helpers';
+import { InputManager } from '../packages/spartan/input/input-manager';
+import { Direction } from '../packages/grid/direction';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.
@@ -31,7 +31,7 @@ export class PlayerInputSystem implements GameSystem {
 
   constructor(
     private gameManager: any,
-    private inputManager: InputManager,
+    private inputManager: InputManager
   ) {}
 
   /**

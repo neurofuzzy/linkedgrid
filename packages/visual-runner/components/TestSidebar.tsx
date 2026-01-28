@@ -10,24 +10,34 @@ interface Props {
 
 export function TestSidebar({ tests, onSelect }: Props) {
   let counter = 0;
-  const items = tests.flatMap(testFile => 
-    testFile.tests.map(testName => {
+  const items = tests.flatMap((testFile) =>
+    testFile.tests.map((testName) => {
       const idx = counter++;
       return {
         key: `${testFile.file}-${testName}-${idx}`,
         label: testName,
-        value: { file: testFile.file, testName, globalIndex: idx }
+        value: { file: testFile.file, testName, globalIndex: idx },
       };
     })
   );
-  
+
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={2} paddingY={1}>
-      <Text bold color="cyan">Visual Tests</Text>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="gray"
+      paddingX={2}
+      paddingY={1}
+    >
+      <Text bold color="cyan">
+        Visual Tests
+      </Text>
       <Box marginTop={1}>
         <SelectInput
           items={items}
-          onSelect={({ value }) => onSelect(value.file, value.testName, value.globalIndex)}
+          onSelect={({ value }) =>
+            onSelect(value.file, value.testName, value.globalIndex)
+          }
         />
       </Box>
     </Box>

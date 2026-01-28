@@ -35,15 +35,15 @@
  * ```
  */
 
-import type { SpatialSystem } from "../spatial-system.js";
-import { GameLayers } from "../layers/types.js";
+import type { SpatialSystem } from '../spatial-system.js';
+import { GameLayers } from '../layers/types.js';
 import type {
   PlayerData,
   EnemyData,
   TeleporterData,
   ItemData,
   WallData,
-} from "./entity-types.js";
+} from './entity-types.js';
 
 /**
  * Spawn a player entity with type-safe properties.
@@ -70,9 +70,9 @@ export function spawnPlayer(
   spatial: SpatialSystem,
   x: number,
   y: number,
-  props: Omit<PlayerData, "id" | "type">,
+  props: Omit<PlayerData, 'id' | 'type'>
 ): number {
-  return spatial.spawn("player", x, y, GameLayers.ACTORS, props);
+  return spatial.spawn('player', x, y, GameLayers.ACTORS, props);
 }
 
 /**
@@ -100,9 +100,9 @@ export function spawnEnemy(
   spatial: SpatialSystem,
   x: number,
   y: number,
-  props: Omit<EnemyData, "id" | "type">,
+  props: Omit<EnemyData, 'id' | 'type'>
 ): number {
-  return spatial.spawn("enemy", x, y, GameLayers.ACTORS, props);
+  return spatial.spawn('enemy', x, y, GameLayers.ACTORS, props);
 }
 
 /**
@@ -128,9 +128,9 @@ export function spawnTeleporter(
   spatial: SpatialSystem,
   x: number,
   y: number,
-  props: Omit<TeleporterData, "id" | "type">,
+  props: Omit<TeleporterData, 'id' | 'type'>
 ): number {
-  return spatial.spawn("teleporter", x, y, GameLayers.FLOOR, props);
+  return spatial.spawn('teleporter', x, y, GameLayers.FLOOR, props);
 }
 
 /**
@@ -155,9 +155,9 @@ export function spawnItem(
   spatial: SpatialSystem,
   x: number,
   y: number,
-  props: Omit<ItemData, "id" | "type">,
+  props: Omit<ItemData, 'id' | 'type'>
 ): number {
-  return spatial.spawn("item", x, y, GameLayers.COLLECTIBLES, props);
+  return spatial.spawn('item', x, y, GameLayers.COLLECTIBLES, props);
 }
 
 /**
@@ -180,9 +180,9 @@ export function spawnWall(
   spatial: SpatialSystem,
   x: number,
   y: number,
-  props?: Omit<WallData, "id" | "type">,
+  props?: Omit<WallData, 'id' | 'type'>
 ): number {
-  return spatial.spawn("wall", x, y, GameLayers.WALLS, props || {});
+  return spatial.spawn('wall', x, y, GameLayers.WALLS, props || {});
 }
 
 /**
@@ -213,7 +213,7 @@ export function spawnPlayerWithId(
   entityId: number,
   x: number,
   y: number,
-  props: Omit<PlayerData, "id" | "type">,
+  props: Omit<PlayerData, 'id' | 'type'>
 ): void {
-  spatial.spawnWithId(entityId, "player", x, y, GameLayers.ACTORS, props);
+  spatial.spawnWithId(entityId, 'player', x, y, GameLayers.ACTORS, props);
 }

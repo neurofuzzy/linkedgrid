@@ -1,12 +1,12 @@
-import type { LinkedCell } from "../../grid/linked-cell";
-import { GameLayers, GAMEPLAY_VISIBLE_LAYERS } from "./types";
+import type { LinkedCell } from '../../grid/linked-cell';
+import { GameLayers, GAMEPLAY_VISIBLE_LAYERS } from './types';
 
 /**
  * Returns the topmost entity in a cell based on layer priority (highest layer index wins).
  */
 export function getTopmostEntity(
   cell: LinkedCell,
-  visibleLayers: readonly number[] = GAMEPLAY_VISIBLE_LAYERS,
+  visibleLayers: readonly number[] = GAMEPLAY_VISIBLE_LAYERS
 ): number | undefined {
   for (let i = visibleLayers.length - 1; i >= 0; i--) {
     const layer = visibleLayers[i];
@@ -23,7 +23,7 @@ export function getTopmostEntity(
  */
 export function isBlocked(
   cell: LinkedCell | null,
-  emptyFloorsBlock = false,
+  emptyFloorsBlock = false
 ): boolean {
   if (!cell) return true;
 
@@ -55,7 +55,7 @@ export function blocksVision(cell: LinkedCell | null): boolean {
  */
 export function isWalkable(
   cell: LinkedCell | null,
-  emptyFloorsBlock = false,
+  emptyFloorsBlock = false
 ): boolean {
   return !isBlocked(cell, emptyFloorsBlock);
 }

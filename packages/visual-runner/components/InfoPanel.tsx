@@ -20,29 +20,38 @@ interface Props {
   previousSnapshot?: Snapshot | null;
 }
 
-export function InfoPanel({ 
+export function InfoPanel({
   currentIndex,
   totalSnapshots,
   isPlaying,
   interval,
   assertions,
   snapshot,
-  previousSnapshot
+  previousSnapshot,
 }: Props) {
-  const argsStr = snapshot && snapshot.operation !== 'initial' && snapshot.args.length > 0
-    ? snapshot.args.map(a => JSON.stringify(a)).join(', ')
-    : '';
-  
+  const argsStr =
+    snapshot && snapshot.operation !== 'initial' && snapshot.args.length > 0
+      ? snapshot.args.map((a) => JSON.stringify(a)).join(', ')
+      : '';
+
   // Detect scene change
-  const sceneChanged = previousSnapshot && 
-                       snapshot?.sceneId && 
-                       previousSnapshot.sceneId !== snapshot.sceneId;
-    
+  const sceneChanged =
+    previousSnapshot &&
+    snapshot?.sceneId &&
+    previousSnapshot.sceneId !== snapshot.sceneId;
+
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={2} paddingY={1} marginLeft={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="gray"
+      paddingX={2}
+      paddingY={1}
+      marginLeft={1}
+    >
       {/* Playback controls at the top */}
       <Box>
-        <Box marginRight={2}> 
+        <Box marginRight={2}>
           <Text>
             {isPlaying ? chalk.green('▶ Playing') : chalk.gray('⏸ Paused')}
           </Text>
@@ -53,28 +62,36 @@ export function InfoPanel({
           </Text>
         </Box>
         <Box>
-          <Text dimColor>
-            {interval}ms interval | [→] step
-          </Text>
+          <Text dimColor>{interval}ms interval | [→] step</Text>
         </Box>
       </Box>
-      
+
       {/* Scene transition indicator */}
       {sceneChanged && (
-        <Box marginTop={1} paddingTop={1} borderStyle="single" borderColor="yellow" paddingX={1}>
-          <Text color="yellow" bold>→ Scene Transition</Text>
+        <Box
+          marginTop={1}
+          paddingTop={1}
+          borderStyle="single"
+          borderColor="yellow"
+          paddingX={1}
+        >
+          <Text color="yellow" bold>
+            → Scene Transition
+          </Text>
           <Text dimColor> from </Text>
           <Text>{previousSnapshot.sceneName || previousSnapshot.sceneId}</Text>
           <Text dimColor> to </Text>
           <Text color="yellow">{snapshot.sceneName || snapshot.sceneId}</Text>
         </Box>
       )}
-      
+
       {/* Assertions in the middle if present */}
       {assertions && assertions.length > 0 && (
         <>
           <Box marginTop={1}>
-            <Text bold dimColor>Assertions</Text>
+            <Text bold dimColor>
+              Assertions
+            </Text>
           </Box>
           <Box marginTop={1} flexDirection="column">
             {assertions.map((assertion, i) => (
@@ -85,7 +102,9 @@ export function InfoPanel({
                 <Text dimColor> {assertion.description}</Text>
                 {!assertion.passed && assertion.error && (
                   <Box marginTop={0.5} marginLeft={2}>
-                    <Text color="red" dimColor>{assertion.error}</Text>
+                    <Text color="red" dimColor>
+                      {assertion.error}
+                    </Text>
                   </Box>
                 )}
               </Box>
@@ -93,7 +112,7 @@ export function InfoPanel({
           </Box>
         </>
       )}
-      
+
       {/* InfoBar at the bottom */}
       <Box marginTop={1} paddingTop={1} flexDirection="column">
         <Box>
@@ -106,13 +125,15 @@ export function InfoPanel({
             </Text>
           )}
         </Box>
-        
+
         {/* Scene metadata */}
         {snapshot && (
           <Box marginTop={1}>
             <Text dimColor>Grid: </Text>
-            <Text>{snapshot.grid.w}×{snapshot.grid.h}</Text>
-            
+            <Text>
+              {snapshot.grid.w}×{snapshot.grid.h}
+            </Text>
+
             {snapshot.sceneId && (
               <>
                 <Text dimColor> | Scene: </Text>

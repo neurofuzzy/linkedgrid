@@ -31,15 +31,15 @@
  */
 
 // Core framework
-export { SparseEntityStore } from "./entity-store";
-export { SpatialSystem } from "./spatial-system";
-export { GameState } from "./game-state";
-export { Scene } from "./scene";
-export { SceneManager } from "./scene-manager";
-export { GameManager } from "./game-manager";
+export { SparseEntityStore } from './entity-store';
+export { SpatialSystem } from './spatial-system';
+export { GameState } from './game-state';
+export { Scene } from './scene';
+export { SceneManager } from './scene-manager';
+export { GameManager } from './game-manager';
 
 // Core framework types
-export type { EntityData, Layer, Position } from "./types";
+export type { EntityData, Layer, Position } from './types';
 export {
   GameLayer,
   GameLayers,
@@ -47,7 +47,7 @@ export {
   VISION_BLOCKING_LAYERS,
   GAMEPLAY_VISIBLE_LAYERS,
   ALL_LAYERS,
-} from "./layers/types";
+} from './layers/types';
 
 // Layers
 
@@ -71,7 +71,7 @@ export type {
   HasAI,
   HasSceneLocation,
   HasTeleportTarget,
-} from "./entities/traits";
+} from './entities/traits';
 
 // Entity archetypes (example patterns)
 export type {
@@ -80,7 +80,7 @@ export type {
   TeleporterData,
   ItemData,
   WallData,
-} from "./entities/entity-types";
+} from './entities/entity-types';
 
 // Trait guards (runtime checks)
 export {
@@ -97,7 +97,7 @@ export {
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
-} from "./entities/trait-guards";
+} from './entities/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
 export {
@@ -107,7 +107,7 @@ export {
   spawnItem,
   spawnWall,
   spawnPlayerWithId,
-} from "./entities/spawn-helpers";
+} from './entities/spawn-helpers';
 
 // Blocking utilities
 // Layer utilities
@@ -116,13 +116,13 @@ export {
   isBlocked,
   blocksVision,
   isWalkable,
-} from "./layers/layer-helpers";
+} from './layers/layer-helpers';
 
 // Game loop and runtime
-export { GameLoop } from "./game-loop.js";
-export { GameRuntime } from "./game-runtime.js";
-export type { GameRuntimeConfig } from "./game-runtime.js";
+export { GameLoop } from './game-loop.js';
+export { GameRuntime } from './game-runtime.js';
+export type { GameRuntimeConfig } from './game-runtime.js';
 
 // Systems
-export { TeleporterSystem } from "./systems/teleporter-system.js";
-export type { GameSystem, GameContext, Overlap } from "./types.js";
+export { TeleporterSystem } from './systems/teleporter-system.js';
+export type { GameSystem, GameContext, Overlap } from './types.js';

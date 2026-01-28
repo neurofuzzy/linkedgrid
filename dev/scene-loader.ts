@@ -1,10 +1,17 @@
 import {
   GameRuntime,
   GameRuntimeConfig,
-} from "../packages/spartan/game-runtime";
-import { TeleporterSystem } from "../packages/spartan/systems/teleporter-system";
-import type { GameSystem, EntityData } from "../packages/spartan/types";
-import { isPlayer, isEnemy, isTeleporter, hasHealth, hasAI, hasTeleportTarget } from "../packages/spartan/entities/trait-guards";
+} from '../packages/spartan/game-runtime';
+import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
+import type { GameSystem, EntityData } from '../packages/spartan/types';
+import {
+  isPlayer,
+  isEnemy,
+  isTeleporter,
+  hasHealth,
+  hasAI,
+  hasTeleportTarget,
+} from '../packages/spartan/entities/trait-guards';
 
 /**
  * Entity definition in JSON scene.
@@ -73,7 +80,7 @@ export class SceneLoader {
    */
   load(config: SceneConfig): GameRuntime {
     if (!config.scenes || config.scenes.length === 0) {
-      throw new Error("Scene config must contain at least one scene");
+      throw new Error('Scene config must contain at least one scene');
     }
 
     // Find initial scene
@@ -114,7 +121,7 @@ export class SceneLoader {
           {
             ...sceneDef.metadata,
             name: sceneDef.name,
-          },
+          }
         );
 
         this.populateScene(runtime, sceneDef);
@@ -164,31 +171,39 @@ export class SceneLoader {
       };
 
       // Validate entity data using trait guards
-      const tempEntityForValidation: EntityData = { 
-        id: 0, 
-        type: entityDef.type, 
-        ...entityData 
+      const tempEntityForValidation: EntityData = {
+        id: 0,
+        type: entityDef.type,
+        ...entityData,
       };
 
       // Validate required traits for known entity types
       if (isPlayer(tempEntityForValidation)) {
         if (!hasHealth(tempEntityForValidation)) {
-          console.warn(`[SceneLoader] Player entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp). This may cause runtime errors.`);
+          console.warn(
+            `[SceneLoader] Player entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp). This may cause runtime errors.`
+          );
         }
       }
-      
+
       if (isEnemy(tempEntityForValidation)) {
         if (!hasHealth(tempEntityForValidation)) {
-          console.warn(`[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp).`);
+          console.warn(
+            `[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp).`
+          );
         }
         if (!hasAI(tempEntityForValidation)) {
-          console.warn(`[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing AI properties (aiState).`);
+          console.warn(
+            `[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing AI properties (aiState).`
+          );
         }
       }
-      
+
       if (isTeleporter(tempEntityForValidation)) {
         if (!hasTeleportTarget(tempEntityForValidation)) {
-          console.warn(`[SceneLoader] Teleporter entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing teleport target (targetKey).`);
+          console.warn(
+            `[SceneLoader] Teleporter entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing teleport target (targetKey).`
+          );
         }
       }
 
@@ -197,11 +212,11 @@ export class SceneLoader {
         entityDef.x,
         entityDef.y,
         entityDef.layer,
-        entityData,
+        entityData
       );
 
       // Track player entity
-      if (entityDef.type === "player") {
+      if (entityDef.type === 'player') {
         playerId = id;
       }
     }
@@ -228,16 +243,16 @@ export class SceneLoader {
     const errors: string[] = [];
 
     if (!config.scenes || config.scenes.length === 0) {
-      errors.push("Config must contain at least one scene");
+      errors.push('Config must contain at least one scene');
     }
 
     if (config.initialScene && config.scenes) {
       const hasInitial = config.scenes.some(
-        (s) => s.id === config.initialScene,
+        (s) => s.id === config.initialScene
       );
       if (!hasInitial) {
         errors.push(
-          `Initial scene "${config.initialScene}" not found in scenes array`,
+          `Initial scene "${config.initialScene}" not found in scenes array`
         );
       }
     }
@@ -253,7 +268,7 @@ export class SceneLoader {
         }
         if (!scene.height || scene.height <= 0) {
           errors.push(
-            `Scene "${scene.id}" has invalid height: ${scene.height}`,
+            `Scene "${scene.id}" has invalid height: ${scene.height}`
           );
         }
 
@@ -263,17 +278,17 @@ export class SceneLoader {
             const entity = scene.entities[i];
             if (entity.x < 0 || entity.x >= scene.width) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: x=${entity.x} out of bounds (0-${scene.width - 1})`,
+                `Scene "${scene.id}" entity ${i}: x=${entity.x} out of bounds (0-${scene.width - 1})`
               );
             }
             if (entity.y < 0 || entity.y >= scene.height) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: y=${entity.y} out of bounds (0-${scene.height - 1})`,
+                `Scene "${scene.id}" entity ${i}: y=${entity.y} out of bounds (0-${scene.height - 1})`
               );
             }
             if (entity.layer < 0 || entity.layer > 7) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: layer=${entity.layer} invalid (must be 0-7)`,
+                `Scene "${scene.id}" entity ${i}: layer=${entity.layer} invalid (must be 0-7)`
               );
             }
           }

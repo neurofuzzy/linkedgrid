@@ -1,12 +1,12 @@
-import { visual } from "./visual-helpers";
-import { GameLayers } from "../layers/types";
-import { isBlocked } from "../layers/layer-helpers";
+import { visual } from './visual-helpers';
+import { GameLayers } from '../layers/types';
+import { isBlocked } from '../layers/layer-helpers';
 
 // Test basic unblocked movement
-visual("player explores the room", {
+visual('player explores the room', {
   arrange: ({ spatial }) => {
-    spatial.spawn("player", 5, 5, GameLayers.ACTORS);
-    spatial.spawn("item", 8, 5, GameLayers.COLLECTIBLES);
+    spatial.spawn('player', 5, 5, GameLayers.ACTORS);
+    spatial.spawn('item', 8, 5, GameLayers.COLLECTIBLES);
     spatial.commit();
   },
   act: ({ spatial }) => {
@@ -37,30 +37,30 @@ visual("player explores the room", {
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
-    expect("Player moved away to (10, 5)", () => {
+    expect('Player moved away to (10, 5)', () => {
       const playerId = spatial.getEntityIdAt(10, 5, GameLayers.ACTORS);
       if (playerId === undefined) {
-        throw new Error("Player not at destination");
+        throw new Error('Player not at destination');
       }
     });
 
-    expect("Item remains at (8, 5)", () => {
+    expect('Item remains at (8, 5)', () => {
       const itemId = spatial.getEntityIdAt(8, 5, GameLayers.COLLECTIBLES);
       if (itemId === undefined) {
-        throw new Error("Item should still exist");
+        throw new Error('Item should still exist');
       }
     });
   },
 });
 
 // Test collision detection with walls
-visual("player blocked by walls", {
+visual('player blocked by walls', {
   arrange: ({ spatial }) => {
-    spatial.spawn("player", 5, 5, GameLayers.ACTORS);
+    spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     // Create a wall maze
-    spatial.spawn("wall", 6, 5, GameLayers.WALLS);
-    spatial.spawn("wall", 6, 6, GameLayers.WALLS);
-    spatial.spawn("wall", 6, 7, GameLayers.WALLS);
+    spatial.spawn('wall', 6, 5, GameLayers.WALLS);
+    spatial.spawn('wall', 6, 6, GameLayers.WALLS);
+    spatial.spawn('wall', 6, 7, GameLayers.WALLS);
     spatial.commit();
   },
   act: ({ spatial }) => {
@@ -96,24 +96,24 @@ visual("player blocked by walls", {
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
-    expect("Player navigated around wall to (7, 8)", () => {
+    expect('Player navigated around wall to (7, 8)', () => {
       const playerId = spatial.getEntityIdAt(7, 8, GameLayers.ACTORS);
       if (playerId === undefined) {
-        throw new Error("Player should be at (7, 8)");
+        throw new Error('Player should be at (7, 8)');
       }
     });
 
-    expect("Player not at blocked cell (6, 5)", () => {
+    expect('Player not at blocked cell (6, 5)', () => {
       const playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS);
       if (playerId !== undefined) {
-        throw new Error("Player should not have moved through wall");
+        throw new Error('Player should not have moved through wall');
       }
     });
 
-    expect("Starting position cleaned up", () => {
+    expect('Starting position cleaned up', () => {
       const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS);
       if (playerId !== undefined) {
-        throw new Error("Should be empty");
+        throw new Error('Should be empty');
       }
     });
   },
