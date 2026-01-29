@@ -69,4 +69,15 @@ export class CollectionSystem implements GameSystem {
       }
     }
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'CollectionSystem',
+      note: 'Stateless system - processes overlaps each tick',
+    };
+  }
 }

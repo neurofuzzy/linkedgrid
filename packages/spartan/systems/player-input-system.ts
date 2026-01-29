@@ -113,4 +113,20 @@ export class PlayerInputSystem implements GameSystem {
         return { dx: 0, dy: 0 };
     }
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'PlayerInputSystem',
+      inputManager: {
+        hasKeyboard: (this.inputManager as any).keyboardManager !== null,
+        hasMouse: (this.inputManager as any).mouseManager !== null,
+        hasGamepad: (this.inputManager as any).gamepadManager !== null,
+      },
+      ...this.debugStats,
+    };
+  }
 }

@@ -414,4 +414,29 @@ export class PropagationSystem implements GameSystem {
     this.currentTick = 0;
     this.ashSpawnQueue = [];
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      currentTick: this.currentTick,
+      ashQueueSize: this.ashSpawnQueue.length,
+      ashQueue: [...this.ashSpawnQueue],
+      spreadStateSize: this.spreadState.size,
+      spreadSources: Array.from(this.spreadState.entries()).map(([id, state]) => ({
+        entityId: id,
+        lastSpreadTick: state.lastSpreadTick,
+        origin: { x: state.originX, y: state.originY },
+      })),
+      propagatedCount: this.propagatedEntities.size,
+      propagatedEntities: Array.from(this.propagatedEntities.entries()).map(([id, meta]) => ({
+        entityId: id,
+        sourceId: meta.sourceId,
+        distance: meta.distance,
+        spawnTick: meta.spawnTick,
+      })),
+    };
+  }
 }

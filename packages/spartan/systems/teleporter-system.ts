@@ -185,4 +185,15 @@ export class TeleporterSystem implements GameSystem {
       }
     }
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'TeleporterSystem',
+      note: 'State stored on entity props (teleporterState: ready|inactive)',
+    };
+  }
 }

@@ -409,4 +409,30 @@ export class FloorEffectSystem implements GameSystem {
     this.previousPositions.clear();
     this.effectTriggers.clear();
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      timingStateSize: this.timingState.size,
+      trackedEntities: Array.from(this.timingState.entries()).map(([id, state]) => ({
+        entityId: id,
+        lastDamageTime: state.lastDamageTime,
+        lastHealTime: state.lastHealTime,
+      })),
+      previousPositionsSize: this.previousPositions.size,
+      previousPositions: Array.from(this.previousPositions.entries()).map(([id, pos]) => ({
+        entityId: id,
+        position: pos,
+      })),
+      effectTriggersSize: this.effectTriggers.size,
+      effectTriggers: Array.from(this.effectTriggers.entries()).map(([type, keys]) => ({
+        effectType: type,
+        triggeredCount: keys.size,
+        triggers: Array.from(keys),
+      })),
+    };
+  }
 }

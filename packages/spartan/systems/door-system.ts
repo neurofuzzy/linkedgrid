@@ -82,4 +82,15 @@ export class DoorSystem implements GameSystem {
       }
     }
   }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'DoorSystem',
+      note: 'Stateless reactive system - checks pending moves each tick',
+    };
+  }
 }
