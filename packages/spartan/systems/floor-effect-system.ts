@@ -13,6 +13,17 @@ interface EntityTimingState {
 }
 
 /**
+ * Poison status effect for entities.
+ * Applied when entering poison gas, persists after leaving.
+ */
+interface PoisonStatus {
+  damage: number; // Damage per tick
+  ticksRemaining: number; // Ticks until poison expires
+  tickInterval: number; // Ticks between damage applications
+  lastDamageTick: number; // Last tick when damage was applied
+}
+
+/**
  * FloorEffectSystem - Handles floor hazards and effects.
  *
  * Manages floor entities with gameplay effects using data-driven trigger modes:
@@ -41,6 +52,12 @@ export class FloorEffectSystem implements GameSystem {
   // Track which on-entry effects have been triggered
   // Map structure: effectType -> Set of "entityId:x:y" keys
   private effectTriggers = new Map<string, Set<string>>();
+
+  // Track poison status effects on entities
+  private poisonStatuses = new Map<number, PoisonStatus>();
+
+  // Current tick count for poison status tracking
+  private currentTick = 0;
 
   constructor(private gameManager: GameManager) {}
 
@@ -112,12 +129,17 @@ export class FloorEffectSystem implements GameSystem {
    * Update called by GameLoop each tick.
    *
    * Processing phases:
+   * 0. Process poison status effects (lingering poison damage)
    * 1. Process on-entry effects (slide, slow) - triggers once per cell entry
    * 2. Process continuous effects (damage, heal) - triggers based on cadence
    * 3. Update position tracking and clean up effect triggers
    */
   update(context: GameContext): void {
     const now = Date.now();
+    this.currentTick++;
+
+    // Phase 0: Process poison status effects
+    this.processPoisonStatuses(context);
 
     // Phase 1: Process on-entry effects
     this.processOnEntryEffects(context);
@@ -133,33 +155,39 @@ export class FloorEffectSystem implements GameSystem {
    * Phase 2: Process continuous effects (damage, heal).
    *
    * These effects trigger repeatedly based on cadence timing.
+   * Checks both FLOOR and EPHEMERALS layers for effects.
    */
   private processContinuousEffects(context: GameContext, now: number): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasHealth(entityData)) continue;
 
-      // Get floor entity at this position
+      // Get cell at entity position
       const cell = context.spatial.grid.cell(pos.x, pos.y);
       if (!cell) continue;
 
-      const floorEntityId = cell.getValue(GameLayers.FLOOR);
-      if (!floorEntityId) continue;
+      // Check both FLOOR and EPHEMERALS layers for floor effects
+      const layersToCheck = [GameLayers.FLOOR, GameLayers.EPHEMERALS];
 
-      const floorData = context.spatial.getEntityData(floorEntityId);
-      if (!floorData || !hasFloorEffect(floorData)) continue;
+      for (const layer of layersToCheck) {
+        const floorEntityId = cell.getValue(layer);
+        if (!floorEntityId) continue;
 
-      // Only process continuous effects
-      if (this.getTriggerMode(floorData) !== 'continuous') continue;
+        const floorData = context.spatial.getEntityData(floorEntityId);
+        if (!floorData || !hasFloorEffect(floorData)) continue;
 
-      // Apply effect based on type
-      switch (floorData.effectType) {
-        case 'damage':
-          this.applyDamage(entityData, floorData, now, context);
-          break;
-        case 'heal':
-          this.applyHealing(entityData, floorData, now, context);
-          break;
+        // Only process continuous effects
+        if (this.getTriggerMode(floorData) !== 'continuous') continue;
+
+        // Apply effect based on type
+        switch (floorData.effectType) {
+          case 'damage':
+            this.applyDamage(entityData, floorData, now, context);
+            break;
+          case 'heal':
+            this.applyHealing(entityData, floorData, now, context);
+            break;
+        }
       }
     }
   }
@@ -169,39 +197,45 @@ export class FloorEffectSystem implements GameSystem {
    *
    * These effects trigger once per cell entry using the effectTriggers tracking.
    * The trigger state is cleared when the entity moves to a different cell.
+   * Checks both FLOOR and EPHEMERALS layers for effects.
    */
   private processOnEntryEffects(context: GameContext): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
-      // Get floor at current position
+      // Get cell at current position
       const cell = context.spatial.grid.cell(pos.x, pos.y);
       if (!cell) continue;
 
-      const floorEntityId = cell.getValue(GameLayers.FLOOR);
-      if (!floorEntityId) continue;
+      // Check both FLOOR and EPHEMERALS layers for floor effects
+      const layersToCheck = [GameLayers.FLOOR, GameLayers.EPHEMERALS];
 
-      const floorData = context.spatial.getEntityData(floorEntityId);
-      if (!floorData || !hasFloorEffect(floorData)) continue;
+      for (const layer of layersToCheck) {
+        const floorEntityId = cell.getValue(layer);
+        if (!floorEntityId) continue;
 
-      // Only process on-entry effects
-      if (this.getTriggerMode(floorData) !== 'on-entry') continue;
+        const floorData = context.spatial.getEntityData(floorEntityId);
+        if (!floorData || !hasFloorEffect(floorData)) continue;
 
-      // Check if already triggered for this cell
-      if (this.hasTriggered(floorData.effectType, entityId, pos.x, pos.y)) {
-        continue; // Already triggered once for this cell
+        // Only process on-entry effects
+        if (this.getTriggerMode(floorData) !== 'on-entry') continue;
+
+        // Check if already triggered for this cell
+        if (this.hasTriggered(floorData.effectType, entityId, pos.x, pos.y)) {
+          continue; // Already triggered once for this cell
+        }
+
+        // Dispatch to effect handler
+        switch (floorData.effectType) {
+          case 'slide':
+            this.processSlideEffect(entityId, pos, context);
+            break;
+          case 'slow':
+            this.processSlowEffect(entityId, context);
+            break;
+        }
+
+        // Mark as triggered
+        this.markTriggered(floorData.effectType, entityId, pos.x, pos.y);
       }
-
-      // Dispatch to effect handler
-      switch (floorData.effectType) {
-        case 'slide':
-          this.processSlideEffect(entityId, pos, context);
-          break;
-        case 'slow':
-          this.processSlowEffect(entityId, context);
-          break;
-      }
-
-      // Mark as triggered
-      this.markTriggered(floorData.effectType, entityId, pos.x, pos.y);
     }
   }
 
@@ -326,10 +360,87 @@ export class FloorEffectSystem implements GameSystem {
     // Update timing state
     state.lastDamageTime = now;
 
+    // For poison gas, apply lingering poison status
+    if (floorData.type === 'poison-gas') {
+      // Poison lasts 6 ticks after leaving cloud, applies damage every 3 ticks
+      this.applyPoison(entityData.id, floorData.damage, 12, 3);
+    }
+
     // Remove entity if dead
     if (newHp <= 0) {
       context.spatial.remove(entityData.id);
     }
+  }
+
+  /**
+   * Process poison status effects on all entities.
+   *
+   * Poison applies damage over time and expires after a duration.
+   * This runs independently of whether the entity is still in poison gas.
+   */
+  private processPoisonStatuses(context: GameContext): void {
+    const toRemove: number[] = [];
+
+    for (const [entityId, poison] of this.poisonStatuses.entries()) {
+      const entityData = context.spatial.getEntityData(entityId);
+      if (!entityData || !hasHealth(entityData)) {
+        toRemove.push(entityId);
+        continue;
+      }
+
+      // Check if it's time to apply damage
+      const ticksSinceLastDamage = this.currentTick - poison.lastDamageTick;
+      if (ticksSinceLastDamage >= poison.tickInterval) {
+        // Apply poison damage
+        const newHp = Math.max(0, entityData.hp - poison.damage);
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          hp: newHp,
+        });
+
+        poison.lastDamageTick = this.currentTick;
+
+        // Remove entity if dead
+        if (newHp <= 0) {
+          context.spatial.remove(entityId);
+          toRemove.push(entityId);
+          continue;
+        }
+      }
+
+      // Decrement remaining ticks
+      poison.ticksRemaining--;
+      if (poison.ticksRemaining <= 0) {
+        toRemove.push(entityId);
+      }
+    }
+
+    // Clean up expired poisons
+    for (const entityId of toRemove) {
+      this.poisonStatuses.delete(entityId);
+    }
+  }
+
+  /**
+   * Apply or refresh poison status effect on an entity.
+   *
+   * @param entityId - Entity to poison
+   * @param damage - Damage per tick
+   * @param duration - Duration in ticks
+   * @param interval - Ticks between damage applications
+   */
+  private applyPoison(
+    entityId: number,
+    damage: number,
+    duration: number,
+    interval: number
+  ): void {
+    // Refresh poison if already poisoned (resets duration)
+    this.poisonStatuses.set(entityId, {
+      damage,
+      ticksRemaining: duration,
+      tickInterval: interval,
+      lastDamageTick: this.currentTick,
+    });
   }
 
   /**
@@ -417,22 +528,28 @@ export class FloorEffectSystem implements GameSystem {
   public getDebugState() {
     return {
       timingStateSize: this.timingState.size,
-      trackedEntities: Array.from(this.timingState.entries()).map(([id, state]) => ({
-        entityId: id,
-        lastDamageTime: state.lastDamageTime,
-        lastHealTime: state.lastHealTime,
-      })),
+      trackedEntities: Array.from(this.timingState.entries()).map(
+        ([id, state]) => ({
+          entityId: id,
+          lastDamageTime: state.lastDamageTime,
+          lastHealTime: state.lastHealTime,
+        })
+      ),
       previousPositionsSize: this.previousPositions.size,
-      previousPositions: Array.from(this.previousPositions.entries()).map(([id, pos]) => ({
-        entityId: id,
-        position: pos,
-      })),
+      previousPositions: Array.from(this.previousPositions.entries()).map(
+        ([id, pos]) => ({
+          entityId: id,
+          position: pos,
+        })
+      ),
       effectTriggersSize: this.effectTriggers.size,
-      effectTriggers: Array.from(this.effectTriggers.entries()).map(([type, keys]) => ({
-        effectType: type,
-        triggeredCount: keys.size,
-        triggers: Array.from(keys),
-      })),
+      effectTriggers: Array.from(this.effectTriggers.entries()).map(
+        ([type, keys]) => ({
+          effectType: type,
+          triggeredCount: keys.size,
+          triggers: Array.from(keys),
+        })
+      ),
     };
   }
 }
