@@ -454,15 +454,30 @@ export class SpatialSystem {
         continue;
       }
 
-      // Check if destination is walkable (not blocked by walls/actors)
+      // Check if destination is walkable
       // Only check if the cell isn't being vacated by another move
       const isBeingVacated = sources.has(destKey);
-      if (!isBeingVacated && this.isBlocked(toCell)) {
-        if (this.debugCommit) {
-          const entityData = this.store.getData(move.entityId!);
-          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall/actor)`);
+      if (!isBeingVacated) {
+        // Check if blocked by walls
+        if (this.isBlocked(toCell)) {
+          if (this.debugCommit) {
+            const entityData = this.store.getData(move.entityId!);
+            console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall)`);
+          }
+          continue;
         }
-        continue;
+        
+        // If moving on ACTORS layer, also check for other actors
+        if (move.layer === GameLayers.ACTORS) {
+          const hasActor = toCell.getValue(GameLayers.ACTORS) !== undefined;
+          if (hasActor) {
+            if (this.debugCommit) {
+              const entityData = this.store.getData(move.entityId!);
+              console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY ACTOR`);
+            }
+            continue;
+          }
+        }
       }
 
       // Check if destination is occupied
@@ -982,7 +997,7 @@ export class SpatialSystem {
     }> = [];
     const checked = new Set<string>();
 
-    for (const [_, pos] of this.getAllPositions()) {
+    for (const [, pos] of this.getAllPositions()) {
       const key = `${pos.x},${pos.y}`;
       if (checked.has(key)) continue;
       checked.add(key);
@@ -1181,19 +1196,18 @@ export class SpatialSystem {
   /**
    * Update cell masks based on entities present on the cell.
    * 
-   * Sets BLOCKING mask if cell has entities on WALLS or ACTORS layers.
+   * Sets BLOCKING mask if cell has walls (NOT actors - actors only block other actors).
    * Sets VISION_BLOCKING mask if cell has entities on WALLS layer.
    * 
    * @param cell - Cell to update masks for
    * @private
    */
   private updateCellMasks(cell: LinkedCell): void {
-    // Check if WALLS or ACTORS layers have entities
+    // Check if WALLS layer has entities
     const hasWall = cell.getValue(GameLayers.WALLS) !== undefined;
-    const hasActor = cell.getValue(GameLayers.ACTORS) !== undefined;
     
-    // Set BLOCKING mask if walls or actors present
-    cell.setMask(CellMasks.BLOCKING, hasWall || hasActor);
+    // Set BLOCKING mask only for walls (actors don't block everything, only other actors)
+    cell.setMask(CellMasks.BLOCKING, hasWall);
     
     // Set VISION_BLOCKING mask if walls present
     cell.setMask(CellMasks.VISION_BLOCKING, hasWall);
@@ -1225,11 +1239,14 @@ export class SpatialSystem {
    * Checks if a cell blocks movement using the BLOCKING mask.
    *
    * The BLOCKING mask is automatically managed by SpatialSystem when entities
-   * that block movement are spawned/removed (walls, closed doors, actors, etc.).
+   * that block movement are spawned/removed (walls, closed doors, etc.).
+   * 
+   * NOTE: Actors do NOT set the BLOCKING mask - they only block other actors.
+   * Use layer-specific checks (e.g., check ACTORS layer) for actor blocking.
    *
    * @param cell - Cell to check
    * @param emptyFloorsBlock - If true, cells without floor entities block movement
-   * @returns true if cell blocks movement
+   * @returns true if cell blocks movement (walls, etc.)
    * 
    * @example
    * ```typescript

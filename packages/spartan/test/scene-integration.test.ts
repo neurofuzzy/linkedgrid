@@ -38,7 +38,6 @@ describe('Scene Integration Tests', () => {
                   spreadProbability: 0.9,
                   spreadLayer: GameLayers.COLLECTIBLES,
                   spreadType: 'fire',
-                  maxDistance: 10,
                   lifetime: 25,
                   color: '#ff0000',
                 },
@@ -160,7 +159,6 @@ describe('Scene Integration Tests', () => {
                   spreadProbability: 1.0, // 100% to make test deterministic
                   spreadLayer: GameLayers.COLLECTIBLES,
                   spreadType: 'fire',
-                  maxDistance: 10,
                   lifetime: 25,
                   color: '#ff0000',
                 },
@@ -187,10 +185,10 @@ describe('Scene Integration Tests', () => {
       const gameLoop = (runtime as any).gameLoop;
 
       // Initial state: fire at (5,5), grass at (6,5)
-      let fireId = spatial.getEntityIdAt(5, 5, GameLayers.COLLECTIBLES);
+      const fireId = spatial.getEntityIdAt(5, 5, GameLayers.COLLECTIBLES);
       expect(fireId).toBeDefined();
       
-      let grassId = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
+      const grassId = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
       expect(grassId).toBeDefined();
 
       // Tick 1: Fire spreads (after spreadRate=1 tick)

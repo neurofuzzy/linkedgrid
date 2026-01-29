@@ -81,8 +81,8 @@ export function hasHealth(
   entity: EntityData
 ): entity is EntityData & HasHealth {
   return (
-    typeof (entity as any).hp === 'number' &&
-    typeof (entity as any).maxHp === 'number'
+    'hp' in entity && typeof entity.hp === 'number' &&
+    'maxHp' in entity && typeof entity.maxHp === 'number'
   );
 }
 
@@ -97,7 +97,7 @@ export function hasHealth(
 export function canDealDamage(
   entity: EntityData
 ): entity is EntityData & CanDealDamage {
-  return typeof (entity as any).damage === 'number';
+  return 'damage' in entity && typeof entity.damage === 'number';
 }
 
 /**
@@ -109,7 +109,8 @@ export function canDealDamage(
  * @returns true if entity possesses AI trait
  */
 export function hasAI(entity: EntityData): entity is EntityData & HasAI {
-  const state = (entity as any).aiState;
+  if (!('aiState' in entity)) return false;
+  const state = entity.aiState;
   return state === 'idle' || state === 'chase' || state === 'attack';
 }
 
@@ -124,7 +125,7 @@ export function hasAI(entity: EntityData): entity is EntityData & HasAI {
 export function hasSceneLocation(
   entity: EntityData
 ): entity is EntityData & HasSceneLocation {
-  return typeof (entity as any).sceneId === 'string';
+  return 'sceneId' in entity && typeof entity.sceneId === 'string';
 }
 
 /**
@@ -138,7 +139,7 @@ export function hasSceneLocation(
 export function hasTeleportTarget(
   entity: EntityData
 ): entity is EntityData & HasTeleportTarget {
-  return typeof (entity as any).targetKey === 'string';
+  return 'targetKey' in entity && typeof entity.targetKey === 'string';
 }
 
 /**
@@ -152,7 +153,7 @@ export function hasTeleportTarget(
 export function hasInventory(
   entity: EntityData
 ): entity is EntityData & HasInventory {
-  return Array.isArray((entity as any).inventory);
+  return 'inventory' in entity && Array.isArray(entity.inventory);
 }
 
 /**
@@ -167,8 +168,8 @@ export function isLockable(
   entity: EntityData
 ): entity is EntityData & IsLockable {
   return (
-    typeof (entity as any).isLocked === 'boolean' &&
-    typeof (entity as any).requiredKey === 'string'
+    'isLocked' in entity && typeof entity.isLocked === 'boolean' &&
+    'requiredKey' in entity && typeof entity.requiredKey === 'string'
   );
 }
 
@@ -184,8 +185,8 @@ export function isCollectible(
   entity: EntityData
 ): entity is EntityData & IsCollectible {
   return (
-    typeof (entity as any).collectibleType === 'string' &&
-    typeof (entity as any).collectibleId === 'string'
+    'collectibleType' in entity && typeof entity.collectibleType === 'string' &&
+    'collectibleId' in entity && typeof entity.collectibleId === 'string'
   );
 }
 
@@ -200,7 +201,7 @@ export function isCollectible(
 export function hasColor(
   entity: EntityData
 ): entity is EntityData & HasColor {
-  return typeof (entity as any).color === 'string';
+  return 'color' in entity && typeof entity.color === 'string';
 }
 
 /**
@@ -214,7 +215,8 @@ export function hasColor(
 export function hasFloorEffect(
   entity: EntityData
 ): entity is EntityData & HasFloorEffect {
-  const effectType = (entity as any).effectType;
+  if (!('effectType' in entity)) return false;
+  const effectType = entity.effectType;
   return (
     effectType === 'damage' ||
     effectType === 'heal' ||
@@ -234,15 +236,16 @@ export function hasFloorEffect(
 export function hasPropagation(
   entity: EntityData
 ): entity is EntityData & HasPropagation {
-  const propagationType = (entity as any).propagationType;
+  if (!('propagationType' in entity)) return false;
+  const propagationType = entity.propagationType;
   return (
     (propagationType === 'fire' ||
       propagationType === 'liquid' ||
       propagationType === 'gas' ||
       propagationType === 'chain') &&
-    typeof (entity as any).spreadRate === 'number' &&
-    typeof (entity as any).spreadLayer === 'number' &&
-    typeof (entity as any).spreadType === 'string'
+    'spreadRate' in entity && typeof entity.spreadRate === 'number' &&
+    'spreadLayer' in entity && typeof entity.spreadLayer === 'number' &&
+    'spreadType' in entity && typeof entity.spreadType === 'string'
   );
 }
 
@@ -258,7 +261,7 @@ export function hasPropagation(
 export function hasFlammability(
   entity: EntityData
 ): entity is EntityData & HasFlammability {
-  return typeof (entity as any).flammability === 'number';
+  return 'flammability' in entity && typeof entity.flammability === 'number';
 }
 
 /**

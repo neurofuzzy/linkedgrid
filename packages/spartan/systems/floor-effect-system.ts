@@ -1,4 +1,4 @@
-import type { GameSystem, GameContext, Position } from '../types';
+import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import type { GameManager } from '../game-manager';
 import { GameLayers } from '../layers/types';
 import { hasFloorEffect, hasHealth } from '../entities/trait-guards';
@@ -21,6 +21,26 @@ interface PoisonStatus {
   ticksRemaining: number; // Ticks until poison expires
   tickInterval: number; // Ticks between damage applications
   lastDamageTick: number; // Last tick when damage was applied
+}
+
+/**
+ * Entity with health properties for floor effects
+ */
+interface EntityWithHealth extends EntityData {
+  hp: number;
+  maxHp: number;
+}
+
+/**
+ * Floor effect data with trigger configuration
+ */
+interface FloorEffectData extends EntityData {
+  effectType?: 'damage' | 'heal' | 'slide' | 'slow';
+  triggerMode?: 'on-entry' | 'continuous';
+  damage?: number;
+  healRate?: number;
+  cadence?: number;
+  cooldown?: number;
 }
 
 /**
@@ -65,7 +85,7 @@ export class FloorEffectSystem implements GameSystem {
    * Get trigger mode for a floor effect, inferring from effectType if not explicitly set.
    * This provides backward compatibility with entities that don't specify triggerMode.
    */
-  private getTriggerMode(floorData: any): 'on-entry' | 'continuous' {
+  private getTriggerMode(floorData: FloorEffectData): 'on-entry' | 'continuous' {
     if (floorData.triggerMode) {
       return floorData.triggerMode;
     }
@@ -303,14 +323,14 @@ export class FloorEffectSystem implements GameSystem {
 
       // If entity moved to a different cell, clear all effect triggers for old position
       if (prevPos && (prevPos.x !== pos.x || prevPos.y !== pos.y)) {
-        for (const [effectType, triggers] of this.effectTriggers.entries()) {
+        for (const [effectType] of this.effectTriggers.entries()) {
           this.clearTrigger(effectType, entityId, prevPos.x, prevPos.y);
         }
       }
     }
 
     // Clean up triggers for entities that no longer exist
-    for (const [effectType, triggers] of this.effectTriggers.entries()) {
+    for (const [, triggers] of this.effectTriggers.entries()) {
       for (const key of triggers) {
         const entityId = parseInt(key.split(':')[0]);
         if (!currentEntities.has(entityId)) {
@@ -332,8 +352,8 @@ export class FloorEffectSystem implements GameSystem {
    * Checks cadence and applies damage if enough time has passed.
    */
   private applyDamage(
-    entityData: any,
-    floorData: any,
+    entityData: EntityWithHealth,
+    floorData: FloorEffectData,
     currentTick: number,
     context: GameContext
   ): void {
@@ -448,10 +468,10 @@ export class FloorEffectSystem implements GameSystem {
    * Checks cadence and cooldown, applies healing if conditions met.
    */
   private applyHealing(
-    entityData: any,
-    floorData: any,
+    entityData: EntityWithHealth,
+    floorData: FloorEffectData,
     currentTick: number,
-    context: GameContext
+    _context: GameContext
   ): void {
     if (!floorData.healRate || !floorData.cadence) return;
 

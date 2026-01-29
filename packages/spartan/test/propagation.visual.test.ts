@@ -16,7 +16,7 @@ visual('fire spreads to adjacent cells', {
       spreadProbability: 1.0, // 100% for deterministic test
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
-      maxDistance: 3,
+      // No maxDistance - fire spread is limited by flammable materials
       color: '#ff6b35',
     });
 
@@ -88,7 +88,6 @@ visual('fire stopped by walls', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
-      maxDistance: 10,
       blockedByLayers: [GameLayers.WALLS],
       color: '#ff6b35',
     });
@@ -144,7 +143,6 @@ visual('poison gas expands with lifetime', {
       spreadRate: 1,
       spreadLayer: GameLayers.EPHEMERALS,
       spreadType: 'poison-gas',
-      maxDistance: 2,
       lifetime: 10, // 10 ticks lifetime
       color: '#9acd32',
     });
@@ -287,7 +285,6 @@ visual('water flows without lifetime', {
       spreadRate: 1,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'water',
-      maxDistance: 3,
       color: '#4a90e2',
       // No lifetime - water persists
     });
@@ -335,7 +332,6 @@ visual('fire spreads and damages player', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
-      maxDistance: 10, // Increased to rule out distance issues
       color: '#ff6b35',
       // Floor effect properties
       effectType: 'damage',
@@ -433,7 +429,6 @@ visual('multiple fire sources spread independently', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
-      maxDistance: 3,
       color: '#ff6b35',
     });
 

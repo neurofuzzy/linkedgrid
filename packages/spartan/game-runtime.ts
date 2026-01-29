@@ -1,4 +1,4 @@
-import { GameManager } from './game-manager';
+import { GameManager, type SaveData } from './game-manager';
 import { GameLoop } from './game-loop';
 import { Scene } from './scene';
 import { SpatialSystem } from './spatial-system';
@@ -129,7 +129,7 @@ export class GameRuntime {
    * ```
    */
   static load(
-    saveData: any,
+    saveData: SaveData,
     systems: GameSystem[],
     tickRate = 10
   ): GameRuntime {

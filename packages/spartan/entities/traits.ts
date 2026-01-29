@@ -285,7 +285,7 @@ export interface HasFloorEffect {
  *   spreadProbability: 0.6,        // 60% chance to spread to each neighbor
  *   spreadLayer: GameLayers.FLOOR,
  *   spreadType: 'fire',
- *   maxDistance: 5,                // Max 5 cells from origin
+ *   // No maxDistance - fire spread is limited by flammable materials
  *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   // Can also have floor effect properties

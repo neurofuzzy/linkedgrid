@@ -1,5 +1,4 @@
 import type { GameSystem, GameContext } from '../types';
-import { GameLayers } from '../layers/types';
 import { InputManager } from '../input/input-manager';
 import { Direction } from '../../grid/direction';
 

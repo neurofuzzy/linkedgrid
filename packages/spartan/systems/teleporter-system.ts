@@ -1,5 +1,5 @@
 import type { GameSystem, GameContext } from '../types';
-import type { PlayerData, TeleporterData } from '../entities/entity-types';
+import type { TeleporterData } from '../entities/entity-types';
 import type { GameManager } from '../game-manager';
 import { isPlayer, isTeleporter } from '../entities/trait-guards';
 

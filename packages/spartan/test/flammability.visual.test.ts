@@ -75,7 +75,6 @@ visual('gasoline trail burns fast', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.COLLECTIBLES,
       spreadType: 'fire',
-      maxDistance: 20,
       lifetime: 20,
       color: '#ff6b35',
     });
@@ -126,7 +125,6 @@ visual('fuse burns in sequence', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.COLLECTIBLES,
       spreadType: 'fire',
-      maxDistance: 15,
       lifetime: 15,
       color: '#ff6b35',
     });
@@ -187,7 +185,6 @@ visual('fire blocked by non-flammable entities', {
       spreadRate: 1,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'water',
-      maxDistance: 0, // Water doesn't spread in this test
       color: '#4a90e2',
     });
 
@@ -277,7 +274,6 @@ visual('mixed flammability terrain creates realistic spread', {
       spreadProbability: 0.8, // Lower base probability to see flammability effect
       spreadLayer: GameLayers.COLLECTIBLES,
       spreadType: 'fire',
-      maxDistance: 15,
       lifetime: 25,
       color: '#ff6b35',
     });
@@ -318,7 +314,6 @@ visual('fire cannot spread without flammable materials', {
       spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
-      maxDistance: 10,
       lifetime: 15,
       color: '#ff6b35',
     });

@@ -1,5 +1,4 @@
 import { LinkedGrid } from '../grid';
-import { SparseEntityStore } from './entity-store';
 import { SpatialSystem } from './spatial-system';
 import { GameState } from './game-state';
 import type { Layer } from './types';

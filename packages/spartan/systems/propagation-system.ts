@@ -1,5 +1,6 @@
-import type { GameSystem, GameContext, Position } from '../types';
+import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import { Direction } from '../../grid/direction';
+import type { LinkedCell } from '../../grid/linked-cell';
 import { hasPropagation, hasFlammability, isFire, isAsh } from '../entities/trait-guards';
 import { GameLayers } from '../layers/types';
 
@@ -22,6 +23,15 @@ interface PropagatedEntity {
   sourceId: number; // Which entity spawned this
   distance: number; // Distance from origin (Manhattan distance)
   spawnTick: number; // Tick when spawned (for lifetime expiration)
+}
+
+/**
+ * Propagation configuration from entity data.
+ */
+interface PropagationConfig extends EntityData {
+  propagationType?: string;
+  spreadLayer: number;
+  blockedByLayers?: number[];
 }
 
 /**
@@ -56,7 +66,7 @@ interface PropagatedEntity {
  *   spreadProbability: 0.6,     // 60% chance per neighbor
  *   spreadLayer: GameLayers.FLOOR,
  *   spreadType: 'fire',
- *   maxDistance: 5,
+ *   // No maxDistance - fire spread is naturally limited by flammable materials
  *   lifetime: 20,               // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS]
  * });
@@ -386,7 +396,7 @@ export class PropagationSystem implements GameSystem {
    * Future expansion:
    * - Chemical reactions (interaction with other propagation types)
    */
-  private canSpreadTo(cell: any, config: any, context: GameContext): boolean {
+  private canSpreadTo(cell: LinkedCell, config: PropagationConfig, context: GameContext): boolean {
     // Check if floor is already consumed (has ash)
     const floorValue = cell.getValue(GameLayers.FLOOR);
     if (floorValue !== undefined) {
