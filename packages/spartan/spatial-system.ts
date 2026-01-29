@@ -162,6 +162,12 @@ export class SpatialSystem {
     new Map();
 
   /**
+   * Debug mode: Log rejected operations during commit with reasons.
+   * Useful for diagnosing silent failures (collisions, out of bounds, etc.)
+   */
+  public debugCommit = false;
+
+  /**
    * Create a new SpatialSystem.
    *
    * @param grid - The LinkedGrid for spatial operations
@@ -171,6 +177,23 @@ export class SpatialSystem {
     private grid: LinkedGrid,
     private store: SparseEntityStore
   ) {}
+
+  /**
+   * Enable debug logging for commit operations.
+   * Logs rejected spawns, moves, and removals with detailed reasons.
+   * 
+   * @param enabled - Whether to enable debug logging
+   * 
+   * @example
+   * ```typescript
+   * spatial.setDebugCommit(true);
+   * spatial.spawn('player', 5, 5, 1); // Logs if spawn fails
+   * spatial.commit();
+   * ```
+   */
+  setDebugCommit(enabled: boolean): void {
+    this.debugCommit = enabled;
+  }
 
   /**
    * Stage a spawn operation for a new entity.
@@ -415,11 +438,19 @@ export class SpatialSystem {
       const toCell = this.grid.cell(move.toX!, move.toY!);
 
       if (!toCell) {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - OUT OF BOUNDS`);
+        }
         continue;
       }
 
       // Check custom blocking function if provided
       if (move.blockFn && move.blockFn(toCell)) {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY CUSTOM FUNCTION`);
+        }
         continue;
       }
 
@@ -427,6 +458,10 @@ export class SpatialSystem {
       // Only check if the cell isn't being vacated by another move
       const isBeingVacated = sources.has(destKey);
       if (!isBeingVacated && this.isBlocked(toCell)) {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall/actor)`);
+        }
         continue;
       }
 
@@ -439,6 +474,19 @@ export class SpatialSystem {
 
       if (!hasConflict && (!isOccupied || isBeingVacated)) {
         validMoves[i] = true;
+      } else {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          let reason = '';
+          if (hasConflict) {
+            reason = `CONFLICT (${requestsForThisDest.length} entities want same cell)`;
+          } else if (isOccupied && !isBeingVacated) {
+            const occupyingEntity = toCell.getValue(move.layer)!;
+            const occupyingData = this.store.getData(occupyingEntity);
+            reason = `OCCUPIED by entity ${occupyingEntity} (${occupyingData?.type || 'unknown'})`;
+          }
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - ${reason}`);
+        }
       }
     }
 
@@ -477,8 +525,21 @@ export class SpatialSystem {
     const spawns = this.pendingOps.filter((op) => op.type === 'spawn');
     for (const op of spawns) {
       const cell = this.grid.cell(op.x!, op.y!);
-      if (!cell) continue;
-      if (cell.getValue(op.layer) !== undefined) continue; // Occupied
+      if (!cell) {
+        if (this.debugCommit) {
+          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - OUT OF BOUNDS`);
+        }
+        continue;
+      }
+      
+      const existingEntity = cell.getValue(op.layer);
+      if (existingEntity !== undefined) {
+        if (this.debugCommit) {
+          const existingData = this.store.getData(existingEntity);
+          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - COLLISION with entity ${existingEntity} (${existingData?.type || 'unknown'})`);
+        }
+        continue; // Occupied
+      }
 
       // Place entity on grid
       cell.setValue(op.layer, op.entityId!);
