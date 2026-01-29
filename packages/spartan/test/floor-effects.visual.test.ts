@@ -5,13 +5,11 @@ import { hasHealth } from '../entities/trait-guards';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
 import { GameManager } from '../game-manager';
 import { GameLoop } from '../game-loop';
-import { GameState } from '../game-state';
-import { SceneManager } from '../scene-manager';
 
 visual('lava deals damage over time', {
   arrange: ({ spatial }) => {
     // Spawn player
-    const playerId = spawnPlayer(spatial, 5, 5, {
+    spawnPlayer(spatial, 5, 5, {
       hp: 100,
       maxHp: 100,
       damage: 10,
@@ -41,7 +39,7 @@ visual('lava deals damage over time', {
     // Tick - damage should apply immediately (cadence=1ms)
     gameLoop.tick();
   },
-  assert: ({ spatial, expect, store }) => {
+  assert: ({ spatial, expect }) => {
     expect('Player took damage from lava', () => {
       const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS);
       if (!playerId) {
@@ -137,8 +135,7 @@ visual('medbay heals player with cooldown', {
     gameLoop.addSystem(floorSystem);
 
     gameLoop.tick();
-    const wait = Date.now();
-    while (Date.now() - wait < 100) {}
+    spatial.pause(); // Create pause frame for time to pass
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -193,8 +190,7 @@ visual('medbay does not heal player at max HP', {
     gameLoop.addSystem(floorSystem);
 
     gameLoop.tick();
-    const wait = Date.now();
-    while (Date.now() - wait < 100) {}
+    spatial.pause(); // Create pause frame for time to pass
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -403,8 +399,7 @@ visual('player killed by lava is removed from grid', {
     gameLoop.addSystem(floorSystem);
 
     gameLoop.tick();
-    const wait = Date.now();
-    while (Date.now() - wait < 100) {}
+    spatial.pause(); // Create pause frame for time to pass
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
