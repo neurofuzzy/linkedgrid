@@ -181,6 +181,14 @@ tick() {
 }
 ```
 
+**Intent Lifecycle:**
+
+See detailed documentation in `packages/spartan/spatial-system.ts` for the two-phase operation model (Intent Staging → Commit) and critical timing implications for same-tick queries.
+
+**Queue Lifecycle Patterns:**
+
+See `specs/queue-lifecycle-patterns.md` for correct patterns when implementing deferred operations in systems. Key rule: clear queues immediately after consuming them to avoid state leakage across ticks.
+
 ## Multi-Scene Architecture
 
 **Scenes are isolated:** Each has own grid, spatial, entities.
@@ -194,7 +202,7 @@ tick() {
 
 ## Visual Testing
 
-See `specs/visual-test-guide.md` for details.
+See `specs/visual-test-timing-guide.md` for complete timing best practices and patterns.
 
 **AAA Pattern:**
 ```typescript
@@ -305,6 +313,7 @@ detectOverlaps() → Overlap[]
 getPendingOps() → PendingOperation[]
 getPendingRemovals() → Set<number>
 debug() → string
+getDebugState() → object // System-specific debug info
 ```
 
 ### GameSystem Interface
