@@ -293,6 +293,7 @@ export type OpenDoorData = EntityData & {
  * ```typescript
  * const lavaId = spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
  *   effectType: 'damage',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
  *   damage: 10,
  *   cadence: 1000,  // Damage every 1 second
  *   color: '#ff6b35'
@@ -319,6 +320,7 @@ export type LavaData = EntityData & {
  * ```typescript
  * const acidId = spatial.spawn('acid', 8, 3, GameLayers.FLOOR, {
  *   effectType: 'damage',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
  *   damage: 5,
  *   cadence: 500,  // Damage every 0.5 seconds (faster than lava)
  *   color: '#7dce82'
@@ -345,6 +347,7 @@ export type AcidData = EntityData & {
  * ```typescript
  * const medbayId = spatial.spawn('medbay', 2, 2, GameLayers.FLOOR, {
  *   effectType: 'heal',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
  *   healRate: 5,
  *   cadence: 1000,  // Heal every 1 second
  *   cooldown: 3000,  // 3 second cooldown between heal applications
@@ -372,7 +375,7 @@ export type MedbayData = EntityData & {
  * ```typescript
  * const iceId = spatial.spawn('ice', 10, 10, GameLayers.FLOOR, {
  *   effectType: 'slide',
- *   slideDistance: 2,  // Continue moving 2 cells in same direction
+ *   triggerMode: 'on-entry',  // Optional - inferred from effectType if omitted
  *   color: '#9cdcfe'
  * });
  * ```
@@ -397,7 +400,7 @@ export type IceData = EntityData & {
  * ```typescript
  * const mudId = spatial.spawn('mud', 7, 7, GameLayers.FLOOR, {
  *   effectType: 'slow',
- *   slowFactor: 0.5,  // 50% chance to move (or skip every other move)
+ *   triggerMode: 'on-entry',  // Optional - inferred from effectType if omitted
  *   color: '#8b6914'
  * });
  * ```

@@ -221,22 +221,30 @@ export interface HasColor {
  * - FloorEffectSystem (apply damage, healing, movement modifiers)
  * - Rendering systems (visual feedback)
  *
+ * Trigger modes:
+ * - 'on-entry': Effect triggers once per cell entry (ice slide, mud slow)
+ * - 'continuous': Effect triggers repeatedly based on cadence (damage, healing)
+ *
  * Effect types:
  * - 'damage': Deals damage over time (lava, acid, spikes)
  * - 'heal': Restores health over time (medbay, fountain)
- * - 'slide': Entity continues moving (ice) - adds HasSlideEffect trait temporarily
- * - 'slow': Movement is restricted (mud, quicksand) - adds HasStuckEffect trait temporarily
+ * - 'slide': Entity continues moving one cell in same direction (ice)
+ * - 'slow': Cancels one move per cell entry (mud, quicksand)
  *
  * @example
  * ```typescript
- * const lava = { id: 5, type: 'lava', effectType: 'damage', damage: 10, cadence: 1000 };
- * const medbay = { id: 6, type: 'medbay', effectType: 'heal', healRate: 5, cadence: 2000, cooldown: 3000 };
- * const ice = { id: 7, type: 'ice', effectType: 'slide', slideDistance: 2 }; // slide for 2 ticks
- * const mud = { id: 8, type: 'mud', effectType: 'slow', slowFactor: 0.5 }; // stuck for 1 tick (50% speed)
+ * // Explicit triggerMode (recommended for clarity)
+ * const lava = { id: 5, type: 'lava', effectType: 'damage', triggerMode: 'continuous', damage: 10, cadence: 1000 };
+ * const ice = { id: 7, type: 'ice', effectType: 'slide', triggerMode: 'on-entry' };
+ * 
+ * // triggerMode is optional - automatically inferred from effectType for backward compatibility
+ * const medbay = { id: 6, type: 'medbay', effectType: 'heal', healRate: 5, cadence: 2000, cooldown: 3000 }; // Infers 'continuous'
+ * const mud = { id: 8, type: 'mud', effectType: 'slow' }; // Infers 'on-entry'
  * ```
  */
 export interface HasFloorEffect {
   effectType: 'damage' | 'heal' | 'slide' | 'slow';
+  triggerMode?: 'on-entry' | 'continuous'; // Optional - inferred from effectType if omitted
   
   // Damage properties
   damage?: number;           // Damage per application
@@ -245,11 +253,11 @@ export interface HasFloorEffect {
   healRate?: number;         // HP restored per application
   cooldown?: number;         // Milliseconds before healing can apply again (per entity)
   
-  // Movement modifier properties
+  // Movement modifier properties (for on-entry effects)
   slideDistance?: number;    // Number of ticks to slide (ice)
-  slowFactor?: number;       // Movement speed multiplier 0-1 (mud). Stuck duration = ceil(1/slowFactor - 1) ticks
+  slowFactor?: number;       // Movement speed multiplier 0-1 (mud)
   
-  // Timing
+  // Timing (for continuous effects)
   cadence?: number;          // Milliseconds between applications (damage/heal)
 }
 

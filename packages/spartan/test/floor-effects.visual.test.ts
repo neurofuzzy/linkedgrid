@@ -21,6 +21,7 @@ visual('lava deals damage over time', {
     // Spawn lava under player
     spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
       effectType: 'damage',
+      triggerMode: 'continuous',
       damage: 10,
       cadence: 1, // Very fast cadence for testing (1ms)
     });
@@ -72,6 +73,7 @@ visual('acid deals faster damage than lava', {
     // Spawn acid with faster cadence
     spatial.spawn('acid', 5, 5, GameLayers.FLOOR, {
       effectType: 'damage',
+      triggerMode: 'continuous',
       damage: 5,
       cadence: 1, // Very fast
     });
@@ -119,6 +121,7 @@ visual('medbay heals player with cooldown', {
     // Spawn medbay
     spatial.spawn('medbay', 5, 5, GameLayers.FLOOR, {
       effectType: 'heal',
+      triggerMode: 'continuous',
       healRate: 10,
       cadence: 50,
       cooldown: 100,
@@ -174,6 +177,7 @@ visual('medbay does not heal player at max HP', {
     // Spawn medbay
     spatial.spawn('medbay', 5, 5, GameLayers.FLOOR, {
       effectType: 'heal',
+      triggerMode: 'continuous',
       healRate: 10,
       cadence: 50,
       cooldown: 100,
@@ -225,6 +229,7 @@ visual('ice causes player to slide one cell', {
     // Spawn ice to the right
     spatial.spawn('ice', 6, 5, GameLayers.FLOOR, {
       effectType: 'slide',
+      triggerMode: 'on-entry',
     });
 
     spatial.commit();
@@ -275,6 +280,7 @@ visual('ice slide stops at wall', {
     // Spawn ice
     spatial.spawn('ice', 6, 5, GameLayers.FLOOR, {
       effectType: 'slide',
+      triggerMode: 'on-entry',
     });
 
     // Spawn wall to stop slide
@@ -329,6 +335,7 @@ visual('mud cancels player movement', {
     // Spawn mud at destination
     spatial.spawn('mud', 6, 5, GameLayers.FLOOR, {
       effectType: 'slow',
+      triggerMode: 'on-entry',
       slowFactor: 0.5,
     });
 
@@ -381,6 +388,7 @@ visual('player killed by lava is removed from grid', {
     // Spawn lethal lava
     spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
       effectType: 'damage',
+      triggerMode: 'continuous',
       damage: 10,
       cadence: 50,
     });

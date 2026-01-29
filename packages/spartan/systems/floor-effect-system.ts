@@ -16,23 +16,17 @@ interface EntityTimingState {
 }
 
 /**
- * Tracks which mud cells have already slowed an entity.
- * Key format: "entityId:x:y"
- */
-type MudSlowdownKey = string;
-
-/**
  * FloorEffectSystem - Handles floor hazards and effects.
  *
- * Manages floor entities with gameplay effects:
- * - Damage: Deals damage over time (lava, acid, spikes)
- * - Heal: Restores health over time (medbay pads)
- * - Slide: Entity continues moving one cell in same direction (ice)
- * - Slow: Cancels ONE move per entry into mud cell
+ * Manages floor entities with gameplay effects using data-driven trigger modes:
+ * - Damage: Deals damage over time (lava, acid, spikes) - continuous
+ * - Heal: Restores health over time (medbay pads) - continuous
+ * - Slide: Entity continues moving one cell in same direction (ice) - on-entry
+ * - Slow: Cancels ONE move per cell entry (mud) - on-entry
  *
- * Ice and mud are simple per-tick behaviors:
- * - Ice: If entity moved onto ice this tick, stage ONE continuation move
- * - Mud: Cancel ONE move per entry into cell
+ * Trigger modes:
+ * - 'on-entry': Effect triggers once per cell entry, tracked per entity/cell/effect
+ * - 'continuous': Effect triggers repeatedly based on cadence
  *
  * @example
  * ```typescript
@@ -47,38 +41,88 @@ export class FloorEffectSystem implements GameSystem {
   // Position tracking to detect movement onto floor effects
   private previousPositions = new Map<number, Position>();
   
-  // Track which entities have been slowed by which mud cells
-  private mudSlowdowns = new Set<MudSlowdownKey>();
+  // Track which on-entry effects have been triggered
+  // Map structure: effectType -> Set of "entityId:x:y" keys
+  private effectTriggers = new Map<string, Set<string>>();
 
   constructor(private gameManager: GameManager) {}
+
+  /**
+   * Get trigger mode for a floor effect, inferring from effectType if not explicitly set.
+   * This provides backward compatibility with entities that don't specify triggerMode.
+   */
+  private getTriggerMode(floorData: any): 'on-entry' | 'continuous' {
+    if (floorData.triggerMode) {
+      return floorData.triggerMode;
+    }
+    
+    // Infer from effectType for backward compatibility
+    switch (floorData.effectType) {
+      case 'damage':
+      case 'heal':
+        return 'continuous';
+      case 'slide':
+      case 'slow':
+        return 'on-entry';
+      default:
+        return 'continuous'; // Default fallback
+    }
+  }
+
+  /**
+   * Check if an on-entry effect has already triggered for an entity at a specific cell.
+   */
+  private hasTriggered(effectType: string, entityId: number, x: number, y: number): boolean {
+    const key = `${entityId}:${x}:${y}`;
+    return this.effectTriggers.get(effectType)?.has(key) ?? false;
+  }
+
+  /**
+   * Mark an on-entry effect as triggered for an entity at a specific cell.
+   */
+  private markTriggered(effectType: string, entityId: number, x: number, y: number): void {
+    if (!this.effectTriggers.has(effectType)) {
+      this.effectTriggers.set(effectType, new Set());
+    }
+    const key = `${entityId}:${x}:${y}`;
+    this.effectTriggers.get(effectType)!.add(key);
+  }
+
+  /**
+   * Clear the trigger state for an entity at a specific cell.
+   */
+  private clearTrigger(effectType: string, entityId: number, x: number, y: number): void {
+    const key = `${entityId}:${x}:${y}`;
+    this.effectTriggers.get(effectType)?.delete(key);
+  }
 
   /**
    * Update called by GameLoop each tick.
    *
    * Processing phases:
-   * 1. Process ice and mud effects:
-   *    - Ice: If entity moved last tick, stage ONE continuation move
-   *    - Mud: Cancel ONE move per entry into cell
-   * 2. Apply damage/healing to entities on floor hazards
-   * 3. Update position tracking and clean up mud slowdowns
+   * 1. Process on-entry effects (slide, slow) - triggers once per cell entry
+   * 2. Process continuous effects (damage, heal) - triggers based on cadence
+   * 3. Update position tracking and clean up effect triggers
    */
   update(context: GameContext): void {
     const now = Date.now();
 
-    // Phase 1: Process ice and mud effects (before new moves are committed)
-    this.processIceAndMud(context);
+    // Phase 1: Process on-entry effects
+    this.processOnEntryEffects(context);
 
-    // Phase 2: Apply damage/healing to entities on floor hazards
-    this.applyDamageAndHealing(context, now);
+    // Phase 2: Process continuous effects
+    this.processContinuousEffects(context, now);
 
-    // Phase 3: Update position tracking for next tick
+    // Phase 3: Update position tracking
     this.updatePositionTracking(context);
   }
 
   /**
-   * Phase 2: Apply damage/healing effects.
+   * Phase 2: Process continuous effects (damage, heal).
+   * 
+   * These effects trigger repeatedly based on cadence timing.
    */
-  private applyDamageAndHealing(context: GameContext, now: number): void {
+  private processContinuousEffects(context: GameContext, now: number): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasHealth(entityData)) continue;
@@ -93,6 +137,9 @@ export class FloorEffectSystem implements GameSystem {
       const floorData = context.spatial.getEntityData(floorEntityId);
       if (!floorData || !hasFloorEffect(floorData)) continue;
 
+      // Only process continuous effects
+      if (this.getTriggerMode(floorData) !== 'continuous') continue;
+
       // Apply effect based on type
       switch (floorData.effectType) {
         case 'damage':
@@ -106,12 +153,12 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Phase 1: Process ice and mud effects.
+   * Phase 1: Process on-entry effects (slide, slow).
    * 
-   * Ice: If entity moved last tick and is now on ice, stage ONE continuation move
-   * Mud: Cancel ONE move per entry into mud cell (tracks slowdowns per entity per cell)
+   * These effects trigger once per cell entry using the effectTriggers tracking.
+   * The trigger state is cleared when the entity moves to a different cell.
    */
-  private processIceAndMud(context: GameContext): void {
+  private processOnEntryEffects(context: GameContext): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       // Get floor at current position
       const cell = context.spatial.grid.cell(pos.x, pos.y);
@@ -123,21 +170,35 @@ export class FloorEffectSystem implements GameSystem {
       const floorData = context.spatial.getEntityData(floorEntityId);
       if (!floorData || !hasFloorEffect(floorData)) continue;
 
+      // Only process on-entry effects
+      if (this.getTriggerMode(floorData) !== 'on-entry') continue;
+
+      // Check if already triggered for this cell
+      if (this.hasTriggered(floorData.effectType, entityId, pos.x, pos.y)) {
+        continue; // Already triggered once for this cell
+      }
+
+      // Dispatch to effect handler
       switch (floorData.effectType) {
         case 'slide':
-          this.processIce(entityId, pos, context);
+          this.processSlideEffect(entityId, pos, context);
           break;
         case 'slow':
-          this.processMud(entityId, context);
+          this.processSlowEffect(entityId, context);
           break;
       }
+
+      // Mark as triggered
+      this.markTriggered(floorData.effectType, entityId, pos.x, pos.y);
     }
   }
 
   /**
-   * Process ice effect: stage continuation move if entity moved this tick.
+   * Process slide effect: stage continuation move if entity moved this tick.
+   * 
+   * Used by ice tiles - entity continues moving one cell in same direction.
    */
-  private processIce(entityId: number, pos: Position, context: GameContext): void {
+  private processSlideEffect(entityId: number, pos: Position, context: GameContext): void {
     // Did entity move this tick?
     const prevPos = this.previousPositions.get(entityId);
     if (!prevPos || (prevPos.x === pos.x && prevPos.y === pos.y)) {
@@ -168,54 +229,49 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Process mud effect: cancel ONE move per entry into cell.
+   * Process slow effect: cancel pending move.
+   * 
+   * Used by mud tiles - cancels one move per cell entry.
+   * The trigger tracking ensures this only happens once per entry.
    */
-  private processMud(entityId: number, context: GameContext): void {
-    const pos = context.spatial.getEntityPosition(entityId);
-    if (!pos) return;
-    
-    const key: MudSlowdownKey = `${entityId}:${pos.x}:${pos.y}`;
-    
-    // Has this entity already been slowed by this specific mud cell?
-    if (this.mudSlowdowns.has(key)) {
-      // Already slowed once by this cell - don't cancel again
-      return;
-    }
-    
-    // First time on this mud cell - cancel the move and mark as slowed
+  private processSlowEffect(entityId: number, context: GameContext): void {
+    // Cancel any pending move for this entity
     context.spatial.cancelMove(entityId);
-    this.mudSlowdowns.add(key);
   }
 
   /**
-   * Phase 3: Update position tracking for next tick.
+   * Phase 3: Update position tracking and clean up effect triggers.
+   * 
+   * Clears on-entry effect triggers when entities move to different cells,
+   * allowing effects to trigger again when re-entering a cell.
    */
   private updatePositionTracking(context: GameContext): void {
-    // Clean up mud slowdowns for entities that have moved
     const currentEntities = new Set<number>();
+    
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       currentEntities.add(entityId);
       const prevPos = this.previousPositions.get(entityId);
       
-      // If entity moved to a different cell, clear slowdown for old position
+      // If entity moved to a different cell, clear all effect triggers for old position
       if (prevPos && (prevPos.x !== pos.x || prevPos.y !== pos.y)) {
-        const oldKey: MudSlowdownKey = `${entityId}:${prevPos.x}:${prevPos.y}`;
-        this.mudSlowdowns.delete(oldKey);
+        for (const [effectType, triggers] of this.effectTriggers.entries()) {
+          this.clearTrigger(effectType, entityId, prevPos.x, prevPos.y);
+        }
       }
     }
     
-    // Clean up slowdowns for entities that no longer exist
-    for (const key of this.mudSlowdowns) {
-      const entityId = parseInt(key.split(':')[0]);
-      if (!currentEntities.has(entityId)) {
-        this.mudSlowdowns.delete(key);
+    // Clean up triggers for entities that no longer exist
+    for (const [effectType, triggers] of this.effectTriggers.entries()) {
+      for (const key of triggers) {
+        const entityId = parseInt(key.split(':')[0]);
+        if (!currentEntities.has(entityId)) {
+          triggers.delete(key);
+        }
       }
     }
     
-    // Clear old positions
+    // Update position tracking
     this.previousPositions.clear();
-
-    // Store current positions
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       this.previousPositions.set(entityId, { x: pos.x, y: pos.y });
     }
@@ -326,11 +382,12 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Reset all timing state.
+   * Reset all timing state and effect triggers.
    * Useful for testing or scene transitions.
    */
   public resetTimingState(): void {
     this.timingState.clear();
     this.previousPositions.clear();
+    this.effectTriggers.clear();
   }
 }
