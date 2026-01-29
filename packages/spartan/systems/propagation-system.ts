@@ -9,6 +9,7 @@ import { GameLayers } from '../layers/types';
  */
 interface SpreadState {
   lastSpreadTick: number; // Last tick this source propagated
+  spawnTick: number; // Tick when this entity was first seen (for original sources)
   originX: number; // Source position for distance tracking
   originY: number;
 }
@@ -134,6 +135,7 @@ export class PropagationSystem implements GameSystem {
           if (parentState) {
             this.spreadState.set(entityId, {
               lastSpreadTick: this.currentTick, // Start cadence from when spawned
+              spawnTick: propagatedMeta.spawnTick, // Use tracked spawn tick
               originX: parentState.originX, // Use root origin
               originY: parentState.originY,
             });
@@ -141,14 +143,16 @@ export class PropagationSystem implements GameSystem {
             // Fallback if parent state missing
             this.spreadState.set(entityId, {
               lastSpreadTick: this.currentTick,
+              spawnTick: propagatedMeta.spawnTick,
               originX: pos.x,
               originY: pos.y,
             });
           }
         } else {
-          // Original source - use its position as origin
+          // Original source - use its position as origin and current tick as spawn tick
           this.spreadState.set(entityId, {
             lastSpreadTick: this.currentTick,
+            spawnTick: this.currentTick,
             originX: pos.x,
             originY: pos.y,
           });
@@ -332,9 +336,9 @@ export class PropagationSystem implements GameSystem {
         // This is a propagated entity, use tracked spawn tick
         spawnTick = meta.spawnTick;
       } else {
-        // This is an original source entity, assume it was spawned at tick 0
-        // (or we could track original sources separately, but this is simpler)
-        spawnTick = 0;
+        // This is an original source entity. Use its spawn tick from the spread state.
+        const state = this.spreadState.get(entityId);
+        spawnTick = state?.spawnTick ?? 0;
       }
 
       // Check if expired
@@ -363,13 +367,8 @@ export class PropagationSystem implements GameSystem {
     }
 
     // Clean up spread state for entities that no longer exist
-    const existingEntities = new Set<number>();
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      existingEntities.add(entityId);
-    }
-
     for (const entityId of this.spreadState.keys()) {
-      if (!existingEntities.has(entityId)) {
+      if (!context.spatial.isAlive(entityId)) {
         this.spreadState.delete(entityId);
       }
     }

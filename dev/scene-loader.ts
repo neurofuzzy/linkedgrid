@@ -261,6 +261,8 @@ export class SceneLoader {
           `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
           `  → Properties will NOT be loaded until this is fixed!`
         );
+        // Fallback to support legacy JSON
+        entityDef.data = (entityDef as any).props;
       }
 
       // Add sceneId to entity data

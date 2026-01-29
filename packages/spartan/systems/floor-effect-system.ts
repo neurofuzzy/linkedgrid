@@ -135,7 +135,6 @@ export class FloorEffectSystem implements GameSystem {
    * 3. Update position tracking and clean up effect triggers
    */
   update(context: GameContext): void {
-    const now = Date.now();
     this.currentTick++;
 
     // Phase 0: Process poison status effects
@@ -144,8 +143,8 @@ export class FloorEffectSystem implements GameSystem {
     // Phase 1: Process on-entry effects
     this.processOnEntryEffects(context);
 
-    // Phase 2: Process continuous effects
-    this.processContinuousEffects(context, now);
+    // Phase 2: Process continuous effects (damage, heal) using tick count
+    this.processContinuousEffects(context, this.currentTick);
 
     // Phase 3: Update position tracking
     this.updatePositionTracking(context);
@@ -157,7 +156,7 @@ export class FloorEffectSystem implements GameSystem {
    * These effects trigger repeatedly based on cadence timing.
    * Checks both FLOOR and EPHEMERALS layers for effects.
    */
-  private processContinuousEffects(context: GameContext, now: number): void {
+  private processContinuousEffects(context: GameContext, currentTick: number): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasHealth(entityData)) continue;
@@ -182,10 +181,10 @@ export class FloorEffectSystem implements GameSystem {
         // Apply effect based on type
         switch (floorData.effectType) {
           case 'damage':
-            this.applyDamage(entityData, floorData, now, context);
+            this.applyDamage(entityData, floorData, currentTick, context);
             break;
           case 'heal':
-            this.applyHealing(entityData, floorData, now, context);
+            this.applyHealing(entityData, floorData, currentTick, context);
             break;
         }
       }
@@ -335,7 +334,7 @@ export class FloorEffectSystem implements GameSystem {
   private applyDamage(
     entityData: any,
     floorData: any,
-    now: number,
+    currentTick: number,
     context: GameContext
   ): void {
     if (!floorData.damage || !floorData.cadence) return;
@@ -345,7 +344,7 @@ export class FloorEffectSystem implements GameSystem {
 
     // Check if enough time has passed since last damage
     if (state.lastDamageTime) {
-      const elapsed = now - state.lastDamageTime;
+      const elapsed = currentTick - state.lastDamageTime;
       if (elapsed < floorData.cadence) {
         return; // Not time yet
       }
@@ -358,7 +357,7 @@ export class FloorEffectSystem implements GameSystem {
     });
 
     // Update timing state
-    state.lastDamageTime = now;
+    state.lastDamageTime = currentTick;
 
     // For poison gas, apply lingering poison status
     if (floorData.type === 'poison-gas') {
@@ -451,7 +450,7 @@ export class FloorEffectSystem implements GameSystem {
   private applyHealing(
     entityData: any,
     floorData: any,
-    now: number,
+    currentTick: number,
     context: GameContext
   ): void {
     if (!floorData.healRate || !floorData.cadence) return;
@@ -464,7 +463,7 @@ export class FloorEffectSystem implements GameSystem {
 
     // Check cooldown
     if (state.lastHealTime && floorData.cooldown) {
-      const elapsed = now - state.lastHealTime;
+      const elapsed = currentTick - state.lastHealTime;
       if (elapsed < floorData.cooldown) {
         return; // Still on cooldown
       }
@@ -472,7 +471,7 @@ export class FloorEffectSystem implements GameSystem {
 
     // Check cadence
     if (state.lastHealTime) {
-      const elapsed = now - state.lastHealTime;
+      const elapsed = currentTick - state.lastHealTime;
       if (elapsed < floorData.cadence) {
         return; // Not time yet
       }
@@ -488,7 +487,7 @@ export class FloorEffectSystem implements GameSystem {
     });
 
     // Update timing state
-    state.lastHealTime = now;
+    state.lastHealTime = currentTick;
   }
 
   /**
