@@ -269,51 +269,53 @@ export interface HasFloorEffect {
  * - Rendering systems (visual feedback for spreading)
  *
  * Propagation types:
- * - 'fire': Fire spreading through flammable materials
- * - 'liquid': Water, oil, or other liquid flow
- * - 'gas': Poison gas, smoke, or other airborne effects
- * - 'chain': Chain reactions, explosions, or cascading effects
+ * - 'fire': Fire spreading through flammable materials (probabilistic)
+ * - 'liquid': Water, oil, or other liquid flow (deterministic)
+ * - 'gas': Poison gas, smoke, or other airborne effects (deterministic)
+ * - 'chain': Chain reactions, explosions, or cascading effects (deterministic)
  *
  * @example
  * ```typescript
- * // Fire that spreads and damages
+ * // Fire that spreads probabilistically and damages
  * const fire = {
  *   id: 9,
  *   type: 'fire',
  *   propagationType: 'fire',
- *   spreadRate: 1000,              // Spread every 1 second
- *   spreadLayer: GameLayers.FLOOR, // Spawn on floor layer
- *   spreadType: 'fire',            // Spawn more fire entities
+ *   spreadRate: 2,                 // Spread every 2 ticks
+ *   spreadProbability: 0.6,        // 60% chance to spread to each neighbor
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'fire',
  *   maxDistance: 5,                // Max 5 cells from origin
- *   lifetime: 8000,                // Burns for 8 seconds
+ *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   // Can also have floor effect properties
  *   effectType: 'damage',
  *   damage: 10,
- *   cadence: 500
+ *   cadence: 2                     // Damage every 2 ticks
  * };
  *
- * // Poison gas that dissipates
+ * // Poison gas that dissipates (always spreads)
  * const gas = {
  *   id: 10,
  *   type: 'poison-gas',
  *   propagationType: 'gas',
- *   spreadRate: 500,                    // Fast spread
- *   spreadLayer: GameLayers.EPHEMERALS, // Spawn on ephemeral layer
+ *   spreadRate: 1,                     // Spread every tick (fast)
+ *   spreadLayer: GameLayers.EPHEMERALS,
  *   spreadType: 'poison-gas',
  *   maxDistance: 8,
- *   lifetime: 5000                      // Dissipates after 5 seconds
+ *   lifetime: 15                       // Dissipates after 15 ticks
  * };
  * ```
  */
 export interface HasPropagation {
   propagationType: 'fire' | 'liquid' | 'gas' | 'chain';
-  spreadRate: number;        // Milliseconds between spread ticks
-  spreadLayer: number;       // Target layer for spawned entities
-  spreadType: string;        // Entity type to spawn when propagating
-  maxDistance?: number;      // Optional max spread radius from origin (Manhattan distance)
-  lifetime?: number;         // Optional duration in milliseconds before auto-despawn
-  blockedByLayers?: number[];// Optional layers that block spread (e.g., [GameLayers.WALLS])
+  spreadRate: number;         // Ticks between spread attempts
+  spreadLayer: number;        // Target layer for spawned entities
+  spreadType: string;         // Entity type to spawn when propagating
+  spreadProbability?: number; // 0.0-1.0 chance to spread to each neighbor (default 1.0)
+  maxDistance?: number;       // Optional max spread radius from origin (Manhattan distance)
+  lifetime?: number;          // Optional duration in ticks before auto-despawn
+  blockedByLayers?: number[]; // Optional layers that block spread (e.g., [GameLayers.WALLS])
 }
 
 /**

@@ -5,13 +5,15 @@ import { PropagationSystem } from '../systems/propagation-system';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
 import { GameManager } from '../game-manager';
 import { GameLoop } from '../game-loop';
+import { isAsh } from '../entities/trait-guards';
 
 visual('fire spreads to adjacent cells', {
   arrange: ({ spatial }) => {
     // Spawn initial fire source in center
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
-      spreadRate: 1, // Spread every tick (very fast for testing)
+      spreadRate: 1,         // Spread every 1 tick (fast for testing)
+      spreadProbability: 1.0, // 100% for deterministic test
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 3,
@@ -54,6 +56,7 @@ visual('fire stopped by walls', {
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,
+      spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 10,
@@ -106,14 +109,14 @@ visual('fire stopped by walls', {
 
 visual('poison gas expands with lifetime', {
   arrange: ({ spatial }) => {
-    // Spawn poison gas source with lifetime
+    // Spawn poison gas source with lifetime (tick-based)
     spatial.spawn('poison-gas', 5, 5, GameLayers.EPHEMERALS, {
       propagationType: 'gas',
       spreadRate: 1,
       spreadLayer: GameLayers.EPHEMERALS,
       spreadType: 'poison-gas',
       maxDistance: 2,
-      lifetime: 100, // Longer lifetime for stable test
+      lifetime: 10, // 10 ticks lifetime
       color: '#9acd32',
     });
 
@@ -169,6 +172,7 @@ visual('fire respects max distance limit', {
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,
+      spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 2, // Should stop at distance 2
@@ -294,6 +298,7 @@ visual('fire spreads and damages player', {
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,
+      spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 5,
@@ -365,6 +370,7 @@ visual('multiple fire sources spread independently', {
     spatial.spawn('fire', 3, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,
+      spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 2,
@@ -374,6 +380,7 @@ visual('multiple fire sources spread independently', {
     spatial.spawn('fire', 7, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,
+      spreadProbability: 1.0,
       spreadLayer: GameLayers.FLOOR,
       spreadType: 'fire',
       maxDistance: 2,
@@ -406,6 +413,54 @@ visual('multiple fire sources spread independently', {
 
       if (leftData?.type !== 'fire' || rightData?.type !== 'fire') {
         throw new Error('Both fires should spread independently');
+      }
+    });
+  },
+});
+
+visual('fire burns out and leaves ash', {
+  arrange: ({ spatial }) => {
+    // Spawn fire with short lifetime (won't spread due to high spreadRate)
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+      propagationType: 'fire',
+      spreadRate: 100, // Won't spread during test
+      spreadProbability: 1.0,
+      spreadLayer: GameLayers.FLOOR,
+      spreadType: 'fire',
+      lifetime: 3, // Short lifetime
+      color: '#ff6b35',
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial }) => {
+    const gameLoop = new GameLoop(spatial);
+    const propagationSystem = new PropagationSystem();
+    gameLoop.addSystem(propagationSystem);
+
+    // Run enough ticks for fire to expire and ash to spawn
+    // Tick 1-3: Fire alive
+    // Tick 3: Fire expires (age 3 >= lifetime 3)
+    // Tick 4: Ash spawns from queue
+    for (let i = 0; i < 5; i++) {
+      gameLoop.tick();
+      if (i < 3) spatial.pause();
+    }
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Ash exists after fire expires', () => {
+      const entities = Array.from(spatial.getAllPositions());
+      const ashCount = entities.filter(([id]) => {
+        const data = spatial.getEntityData(id);
+        return data?.type === 'ash';
+      }).length;
+      const fireCount = entities.filter(([id]) => {
+        const data = spatial.getEntityData(id);
+        return data?.type === 'fire';
+      }).length;
+
+      if (ashCount === 0) {
+        throw new Error(`Expected ash after fire expires. Fire: ${fireCount}, Ash: ${ashCount}`);
       }
     });
   },

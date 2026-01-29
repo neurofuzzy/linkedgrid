@@ -414,12 +414,12 @@ export type MudData = EntityData & {
  * FireData - Spreading fire that damages entities.
  *
  * Traits:
- * - HasPropagation - Spreads to adjacent cells
+ * - HasPropagation - Spreads probabilistically to adjacent cells
  * - HasFloorEffect - Deals damage over time
  * - HasColor - Visual color for rendering
  *
  * Typical usage:
- * - Fire spreading through areas
+ * - Fire spreading through areas (consuming effect)
  * - Burning terrain
  * - Temporary hazards that expire
  *
@@ -427,16 +427,17 @@ export type MudData = EntityData & {
  * ```typescript
  * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
  *   propagationType: 'fire',
- *   spreadRate: 1000,              // Spread every 1 second
+ *   spreadRate: 2,                 // Spread every 2 ticks
+ *   spreadProbability: 0.6,        // 60% chance per neighbor (realistic consuming)
  *   spreadLayer: GameLayers.FLOOR,
  *   spreadType: 'fire',
  *   maxDistance: 5,                // Max 5 cells from origin
- *   lifetime: 8000,                // Burns for 8 seconds
+ *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   effectType: 'damage',
  *   triggerMode: 'continuous',
  *   damage: 10,
- *   cadence: 500,
+ *   cadence: 2,                    // Damage every 2 ticks
  *   color: '#ff6b35'
  * });
  * ```
@@ -449,7 +450,7 @@ export type FireData = EntityData & {
  * PoisonGasData - Expanding poison gas cloud.
  *
  * Traits:
- * - HasPropagation - Spreads to adjacent cells
+ * - HasPropagation - Spreads to adjacent cells (deterministic)
  * - HasFloorEffect - Deals damage over time
  * - HasColor - Visual color for rendering
  *
@@ -462,16 +463,16 @@ export type FireData = EntityData & {
  * ```typescript
  * const gasId = spatial.spawn('poison-gas', 5, 5, GameLayers.EPHEMERALS, {
  *   propagationType: 'gas',
- *   spreadRate: 500,                    // Fast spread
+ *   spreadRate: 1,                      // Spread every tick (fast)
  *   spreadLayer: GameLayers.EPHEMERALS,
  *   spreadType: 'poison-gas',
  *   maxDistance: 8,
- *   lifetime: 5000,                     // Dissipates after 5 seconds
+ *   lifetime: 15,                       // Dissipates after 15 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   effectType: 'damage',
  *   triggerMode: 'continuous',
  *   damage: 2,
- *   cadence: 1000,
+ *   cadence: 3,                         // Damage every 3 ticks
  *   color: '#9acd32'
  * });
  * ```
@@ -484,7 +485,7 @@ export type PoisonGasData = EntityData & {
  * WaterData - Flowing liquid.
  *
  * Traits:
- * - HasPropagation - Spreads to adjacent cells
+ * - HasPropagation - Spreads to adjacent cells (deterministic)
  * - HasColor - Visual color for rendering
  *
  * Typical usage:
@@ -496,13 +497,14 @@ export type PoisonGasData = EntityData & {
  * ```typescript
  * const waterId = spatial.spawn('water', 7, 3, GameLayers.FLOOR, {
  *   propagationType: 'liquid',
- *   spreadRate: 300,                 // Flows quickly
+ *   spreadRate: 1,                   // Flows every tick
  *   spreadLayer: GameLayers.FLOOR,
  *   spreadType: 'water',
  *   maxDistance: 10,
  *   blockedByLayers: [GameLayers.WALLS],
  *   color: '#4a90e2'
  *   // No lifetime - water persists
+ *   // No spreadProbability - always spreads (deterministic)
  *   // No floor effect - just visual/spreading
  * });
  * ```
@@ -510,3 +512,25 @@ export type PoisonGasData = EntityData & {
 export type WaterData = EntityData & {
   type: 'water';
 } & HasPropagation & HasColor;
+
+/**
+ * AshData - Remains of consumed fire.
+ *
+ * Traits:
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Left behind after fire burns out
+ * - Prevents fire from spreading to consumed cells
+ * - Visual indicator of fire damage
+ *
+ * @example
+ * ```typescript
+ * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR, {
+ *   color: '#4a4a4a'
+ * });
+ * ```
+ */
+export type AshData = EntityData & {
+  type: 'ash';
+} & HasColor;

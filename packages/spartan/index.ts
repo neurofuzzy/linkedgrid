@@ -100,6 +100,7 @@ export type {
   FireData,
   PoisonGasData,
   WaterData,
+  AshData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -130,6 +131,7 @@ export {
   isFire,
   isPoisonGas,
   isWater,
+  isAsh,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,

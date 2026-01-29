@@ -54,6 +54,7 @@ import type {
   FireData,
   PoisonGasData,
   WaterData,
+  AshData,
 } from './entity-types.js';
 
 /**
@@ -395,6 +396,10 @@ export function isPoisonGas(entity: EntityData): entity is PoisonGasData {
  */
 export function isWater(entity: EntityData): entity is WaterData {
   return entity.type === 'water';
+}
+
+export function isAsh(entity: EntityData): entity is AshData {
+  return entity.type === 'ash';
 }
 
 /**
