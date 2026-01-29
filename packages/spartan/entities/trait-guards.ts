@@ -35,6 +35,7 @@ import type {
   IsLockable,
   IsCollectible,
   HasColor,
+  HasFloorEffect,
 } from './traits.js';
 import type {
   PlayerData,
@@ -44,6 +45,11 @@ import type {
   WallData,
   DoorData,
   KeyData,
+  LavaData,
+  AcidData,
+  MedbayData,
+  IceData,
+  MudData,
 } from './entity-types.js';
 
 /**
@@ -188,6 +194,26 @@ export function hasColor(
 }
 
 /**
+ * Check if entity has floor effect trait.
+ *
+ * Entities with floor effect trait provide gameplay effects when entities stand on them.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses floor effect trait
+ */
+export function hasFloorEffect(
+  entity: EntityData
+): entity is EntityData & HasFloorEffect {
+  const effectType = (entity as any).effectType;
+  return (
+    effectType === 'damage' ||
+    effectType === 'heal' ||
+    effectType === 'slide' ||
+    effectType === 'slow'
+  );
+}
+
+/**
  * Entity Type Guards
  *
  * These check for specific entity archetypes and narrow to full type contracts.
@@ -262,6 +288,56 @@ export function isDoor(entity: EntityData): entity is DoorData {
  */
 export function isKey(entity: EntityData): entity is KeyData {
   return entity.type === 'key';
+}
+
+/**
+ * Check if entity is lava.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'lava'
+ */
+export function isLava(entity: EntityData): entity is LavaData {
+  return entity.type === 'lava';
+}
+
+/**
+ * Check if entity is acid.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'acid'
+ */
+export function isAcid(entity: EntityData): entity is AcidData {
+  return entity.type === 'acid';
+}
+
+/**
+ * Check if entity is medbay.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'medbay'
+ */
+export function isMedbay(entity: EntityData): entity is MedbayData {
+  return entity.type === 'medbay';
+}
+
+/**
+ * Check if entity is ice.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'ice'
+ */
+export function isIce(entity: EntityData): entity is IceData {
+  return entity.type === 'ice';
+}
+
+/**
+ * Check if entity is mud.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'mud'
+ */
+export function isMud(entity: EntityData): entity is MudData {
+  return entity.type === 'mud';
 }
 
 /**

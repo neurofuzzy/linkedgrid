@@ -46,7 +46,7 @@ describe('GameLoop', () => {
     const moveSystem: GameSystem = {
       update: (context: GameContext) => {
         // Stage movement
-        context.spatial.move(5, 5, 6, 5, 1);
+        context.spatial.move(playerId, 6, 5);
       },
     };
 

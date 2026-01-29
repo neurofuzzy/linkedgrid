@@ -65,10 +65,7 @@ export class CollectionSystem implements GameSystem {
         });
 
         // Remove collectible from grid
-        const pos = spatial.getEntityPosition(collectibleData.id);
-        if (pos) {
-          spatial.remove(pos.x, pos.y, pos.layer);
-        }
+        spatial.remove(collectibleData.id);
       }
     }
   }

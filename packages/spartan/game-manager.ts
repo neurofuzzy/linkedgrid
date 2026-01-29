@@ -263,7 +263,7 @@ export class GameManager {
     }
 
     // Phase 1: Remove player from current scene using transaction system
-    currentScene.spatial.remove(currentPos.x, currentPos.y, currentPos.layer);
+    currentScene.spatial.removeAt(currentPos.x, currentPos.y, currentPos.layer);
     currentScene.spatial.commit();
 
     // Phase 2: Try to spawn player in target scene using transaction system

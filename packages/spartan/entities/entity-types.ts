@@ -49,6 +49,7 @@ import type {
   IsLockable,
   IsCollectible,
   HasColor,
+  HasFloorEffect,
 } from './traits.js';
 
 /**
@@ -275,3 +276,135 @@ export type KeyData = EntityData & {
 export type OpenDoorData = EntityData & {
   type: 'open-door';
 } & HasColor;
+
+/**
+ * LavaData - Damaging floor hazard.
+ *
+ * Traits:
+ * - HasFloorEffect - Applies damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Lava pools
+ * - Fire pits
+ * - Hazardous terrain
+ *
+ * @example
+ * ```typescript
+ * const lavaId = spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
+ *   damage: 10,
+ *   cadence: 1000,  // Damage every 1 second
+ *   color: '#ff6b35'
+ * });
+ * ```
+ */
+export type LavaData = EntityData & {
+  type: 'lava';
+} & HasFloorEffect & HasColor;
+
+/**
+ * AcidData - Corrosive floor hazard.
+ *
+ * Traits:
+ * - HasFloorEffect - Applies damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Acid pools
+ * - Toxic waste
+ * - Chemical spills
+ *
+ * @example
+ * ```typescript
+ * const acidId = spatial.spawn('acid', 8, 3, GameLayers.FLOOR, {
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
+ *   damage: 5,
+ *   cadence: 500,  // Damage every 0.5 seconds (faster than lava)
+ *   color: '#7dce82'
+ * });
+ * ```
+ */
+export type AcidData = EntityData & {
+  type: 'acid';
+} & HasFloorEffect & HasColor;
+
+/**
+ * MedbayData - Healing floor effect.
+ *
+ * Traits:
+ * - HasFloorEffect - Restores health over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Healing pads
+ * - Medbay stations
+ * - Regeneration zones
+ *
+ * @example
+ * ```typescript
+ * const medbayId = spatial.spawn('medbay', 2, 2, GameLayers.FLOOR, {
+ *   effectType: 'heal',
+ *   triggerMode: 'continuous',  // Optional - inferred from effectType if omitted
+ *   healRate: 5,
+ *   cadence: 1000,  // Heal every 1 second
+ *   cooldown: 3000,  // 3 second cooldown between heal applications
+ *   color: '#4ec9b0'
+ * });
+ * ```
+ */
+export type MedbayData = EntityData & {
+  type: 'medbay';
+} & HasFloorEffect & HasColor;
+
+/**
+ * IceData - Slippery floor that causes sliding.
+ *
+ * Traits:
+ * - HasFloorEffect - Modifies movement (slide)
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Ice patches
+ * - Slippery surfaces
+ * - Momentum puzzles
+ *
+ * @example
+ * ```typescript
+ * const iceId = spatial.spawn('ice', 10, 10, GameLayers.FLOOR, {
+ *   effectType: 'slide',
+ *   triggerMode: 'on-entry',  // Optional - inferred from effectType if omitted
+ *   color: '#9cdcfe'
+ * });
+ * ```
+ */
+export type IceData = EntityData & {
+  type: 'ice';
+} & HasFloorEffect & HasColor;
+
+/**
+ * MudData - Sticky floor that slows movement.
+ *
+ * Traits:
+ * - HasFloorEffect - Modifies movement (slow)
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Mud patches
+ * - Quicksand
+ * - Sticky terrain
+ *
+ * @example
+ * ```typescript
+ * const mudId = spatial.spawn('mud', 7, 7, GameLayers.FLOOR, {
+ *   effectType: 'slow',
+ *   triggerMode: 'on-entry',  // Optional - inferred from effectType if omitted
+ *   color: '#8b6914'
+ * });
+ * ```
+ */
+export type MudData = EntityData & {
+  type: 'mud';
+} & HasFloorEffect & HasColor;

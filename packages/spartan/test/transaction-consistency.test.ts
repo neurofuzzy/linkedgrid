@@ -22,7 +22,7 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Now spawn visible, stage move
-    spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
+    spatial.move(id1, 6, 6);
     spatial.commit();
 
     // Now visible at new position
@@ -48,8 +48,8 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Stage conflicting operations
-    spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.move(id, 6, 5);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
 
     // Commit
     spatial.commit();
@@ -72,7 +72,7 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Stage removal
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
 
     // Query should exclude pending removal
     const targets = spatial.getEntityIdsInRadius(5, 5, 2);
@@ -97,7 +97,7 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Stage removal
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
     expect(spatial.isAlive(id)).toBe(false);
 
     // Cancel (resurrection)
@@ -146,7 +146,7 @@ describe('Transaction Consistency', () => {
     expect(spatial.isAlive(id)).toBe(true);
 
     // Stage removal
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
 
     // Entity is now "zombie" - not alive but still on grid
     expect(spatial.isAlive(id)).toBe(false);
@@ -168,7 +168,7 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Stage: remove at (5,5), move to (5,5), spawn at (6,6)
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
     const id2 = spatial.spawn('player', 6, 6, GameLayers.ACTORS);
     const id3 = spatial.spawn('item', 5, 5, GameLayers.ACTORS); // Should succeed (after removal)
 
@@ -199,8 +199,8 @@ describe('Transaction Consistency', () => {
     spatial.commit();
 
     // Stage more operations
-    spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
-    spatial.remove(6, 5, GameLayers.ACTORS);
+    spatial.move(id1, 6, 6);
+    spatial.removeAt(6, 5, GameLayers.ACTORS);
     const id3 = spatial.spawn('item', 7, 7, GameLayers.COLLECTIBLES);
 
     // Check pending operations
@@ -225,8 +225,8 @@ describe('Transaction Consistency', () => {
     const id1 = spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     spatial.commit();
 
-    spatial.move(5, 5, 6, 6, GameLayers.ACTORS);
-    spatial.remove(5, 5, GameLayers.ACTORS);
+    spatial.move(id1, 6, 6);
+    spatial.removeAt(5, 5, GameLayers.ACTORS);
     const id2 = spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
 
     // Verify operations are staged

@@ -23,7 +23,8 @@
  * const enemy = spatial.spawn('enemy', 15, 10, 2, { hp: 50 });
  *
  * // Move entities
- * spatial.move(10, 10, 11, 10, 1);
+ * const entityId = spatial.getEntityIdAt(10, 10, 1);
+ * if (entityId) spatial.move(entityId, 11, 10);
  *
  * // Spatial queries
  * const nearby = spatial.getEntityIdsInRadius(11, 10, 5);
@@ -77,6 +78,7 @@ export type {
   IsLockable,
   IsCollectible,
   HasColor,
+  HasFloorEffect,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -89,6 +91,11 @@ export type {
   DoorData,
   KeyData,
   OpenDoorData,
+  LavaData,
+  AcidData,
+  MedbayData,
+  IceData,
+  MudData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -102,6 +109,7 @@ export {
   isLockable,
   isCollectible,
   hasColor,
+  hasFloorEffect,
   isPlayer,
   isEnemy,
   isTeleporter,
@@ -109,6 +117,11 @@ export {
   isWall,
   isDoor,
   isKey,
+  isLava,
+  isAcid,
+  isMedbay,
+  isIce,
+  isMud,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -138,4 +151,5 @@ export { TeleporterSystem } from './systems/teleporter-system.js';
 export { CollectionSystem } from './systems/collection-system.js';
 export { DoorSystem } from './systems/door-system.js';
 export { PlayerInputSystem } from './systems/player-input-system.js';
+export { FloorEffectSystem } from './systems/floor-effect-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';
