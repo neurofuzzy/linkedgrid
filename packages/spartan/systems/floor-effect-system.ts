@@ -16,17 +16,23 @@ interface EntityTimingState {
 }
 
 /**
+ * Tracks which mud cells have already slowed an entity.
+ * Key format: "entityId:x:y"
+ */
+type MudSlowdownKey = string;
+
+/**
  * FloorEffectSystem - Handles floor hazards and effects.
  *
  * Manages floor entities with gameplay effects:
  * - Damage: Deals damage over time (lava, acid, spikes)
  * - Heal: Restores health over time (medbay pads)
  * - Slide: Entity continues moving one cell in same direction (ice)
- * - Slow: Cancels entity movement (mud)
+ * - Slow: Cancels ONE move per entry into mud cell
  *
  * Ice and mud are simple per-tick behaviors:
  * - Ice: If entity moved onto ice this tick, stage ONE continuation move
- * - Mud: If entity is on mud, cancel any pending move
+ * - Mud: Cancel ONE move per entry into cell
  *
  * @example
  * ```typescript
@@ -40,6 +46,9 @@ export class FloorEffectSystem implements GameSystem {
   
   // Position tracking to detect movement onto floor effects
   private previousPositions = new Map<number, Position>();
+  
+  // Track which entities have been slowed by which mud cells
+  private mudSlowdowns = new Set<MudSlowdownKey>();
 
   constructor(private gameManager: GameManager) {}
 
@@ -47,10 +56,11 @@ export class FloorEffectSystem implements GameSystem {
    * Update called by GameLoop each tick.
    *
    * Processing phases:
-   * 1. Process ice - stage continuation moves (based on movement from LAST tick)
-   * 2. Process mud - cancel pending moves
-   * 3. Apply damage/healing to entities on floor hazards
-   * 4. Update position tracking for next tick
+   * 1. Process ice and mud effects:
+   *    - Ice: If entity moved last tick, stage ONE continuation move
+   *    - Mud: Cancel ONE move per entry into cell
+   * 2. Apply damage/healing to entities on floor hazards
+   * 3. Update position tracking and clean up mud slowdowns
    */
   update(context: GameContext): void {
     const now = Date.now();
@@ -66,7 +76,7 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Phase 1: Apply damage/healing effects.
+   * Phase 2: Apply damage/healing effects.
    */
   private applyDamageAndHealing(context: GameContext, now: number): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
@@ -96,10 +106,10 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Phase 2: Process ice and mud effects.
+   * Phase 1: Process ice and mud effects.
    * 
-   * Ice: If entity moved this tick and is now on ice, stage ONE continuation move
-   * Mud: If entity is on mud, cancel any pending move
+   * Ice: If entity moved last tick and is now on ice, stage ONE continuation move
+   * Mud: Cancel ONE move per entry into mud cell (tracks slowdowns per entity per cell)
    */
   private processIceAndMud(context: GameContext): void {
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
@@ -158,17 +168,50 @@ export class FloorEffectSystem implements GameSystem {
   }
 
   /**
-   * Process mud effect: cancel any pending move for this entity.
+   * Process mud effect: cancel ONE move per entry into cell.
    */
   private processMud(entityId: number, context: GameContext): void {
-    // Cancel any pending move for this entity
+    const pos = context.spatial.getEntityPosition(entityId);
+    if (!pos) return;
+    
+    const key: MudSlowdownKey = `${entityId}:${pos.x}:${pos.y}`;
+    
+    // Has this entity already been slowed by this specific mud cell?
+    if (this.mudSlowdowns.has(key)) {
+      // Already slowed once by this cell - don't cancel again
+      return;
+    }
+    
+    // First time on this mud cell - cancel the move and mark as slowed
     context.spatial.cancelMove(entityId);
+    this.mudSlowdowns.add(key);
   }
 
   /**
    * Phase 3: Update position tracking for next tick.
    */
   private updatePositionTracking(context: GameContext): void {
+    // Clean up mud slowdowns for entities that have moved
+    const currentEntities = new Set<number>();
+    for (const [entityId, pos] of context.spatial.getAllPositions()) {
+      currentEntities.add(entityId);
+      const prevPos = this.previousPositions.get(entityId);
+      
+      // If entity moved to a different cell, clear slowdown for old position
+      if (prevPos && (prevPos.x !== pos.x || prevPos.y !== pos.y)) {
+        const oldKey: MudSlowdownKey = `${entityId}:${prevPos.x}:${prevPos.y}`;
+        this.mudSlowdowns.delete(oldKey);
+      }
+    }
+    
+    // Clean up slowdowns for entities that no longer exist
+    for (const key of this.mudSlowdowns) {
+      const entityId = parseInt(key.split(':')[0]);
+      if (!currentEntities.has(entityId)) {
+        this.mudSlowdowns.delete(key);
+      }
+    }
+    
     // Clear old positions
     this.previousPositions.clear();
 
