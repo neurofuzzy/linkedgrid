@@ -92,7 +92,7 @@ export class PlayerInputSystem implements GameSystem {
 
     // Always register move intent - SpatialSystem will validate during commit
     // This allows other systems (like DoorSystem) to see intents and react
-    context.spatial.move(pos.x, pos.y, newX, newY, GameLayers.ACTORS);
+    context.spatial.move(playerId, newX, newY);
     this.debugStats.movesThisTick++;
   }
 

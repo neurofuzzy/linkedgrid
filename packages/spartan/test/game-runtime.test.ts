@@ -24,7 +24,7 @@ describe('GameRuntime', () => {
 
     const playerId = runtime.spatial.spawn('player', 5, 5, GameLayers.ACTORS);
     runtime.spatial.commit();
-    runtime.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+    runtime.spatial.move(playerId, 6, 5);
 
     runtime.tick();
 

@@ -17,15 +17,15 @@ visual('player moves right 3 times', {
   act: ({ spatial }) => {
     // Get player ID from known starting position
     let playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 6, 5);
+    spatial.move(playerId, 6, 5);
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 7, 5);
+    spatial.move(playerId, 7, 5);
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(7, 5, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 8, 5);
+    spatial.move(playerId, 8, 5);
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
@@ -143,24 +143,24 @@ visual('entity moves in a square', {
       spatial.getEntityIdAt(x, y, GameLayers.ACTORS)!;
 
     // Right
-    spatial.moveEntity(getPlayerId(5, 5), 6, 5);
+    spatial.move(getPlayerId(5, 5), 6, 5);
     spatial.commit();
-    spatial.moveEntity(getPlayerId(6, 5), 7, 5);
+    spatial.move(getPlayerId(6, 5), 7, 5);
     spatial.commit();
     // Down
-    spatial.moveEntity(getPlayerId(7, 5), 7, 6);
+    spatial.move(getPlayerId(7, 5), 7, 6);
     spatial.commit();
-    spatial.moveEntity(getPlayerId(7, 6), 7, 7);
+    spatial.move(getPlayerId(7, 6), 7, 7);
     spatial.commit();
     // Left
-    spatial.moveEntity(getPlayerId(7, 7), 6, 7);
+    spatial.move(getPlayerId(7, 7), 6, 7);
     spatial.commit();
-    spatial.moveEntity(getPlayerId(6, 7), 5, 7);
+    spatial.move(getPlayerId(6, 7), 5, 7);
     spatial.commit();
     // Up
-    spatial.moveEntity(getPlayerId(5, 7), 5, 6);
+    spatial.move(getPlayerId(5, 7), 5, 6);
     spatial.commit();
-    spatial.moveEntity(getPlayerId(5, 6), 5, 5);
+    spatial.move(getPlayerId(5, 6), 5, 5);
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
@@ -205,21 +205,21 @@ visual('projectile hits enemy', {
       GameLayers.EPHEMERALS
     );
     spatial.commit();
-    spatial.moveEntity(projectileId, 4, 5);
+    spatial.move(projectileId, 4, 5);
     spatial.commit();
-    spatial.moveEntity(projectileId, 5, 5);
+    spatial.move(projectileId, 5, 5);
     spatial.commit();
-    spatial.moveEntity(projectileId, 6, 5);
+    spatial.move(projectileId, 6, 5);
     spatial.commit();
-    spatial.moveEntity(projectileId, 7, 5);
+    spatial.move(projectileId, 7, 5);
     spatial.commit();
-    spatial.moveEntity(projectileId, 8, 5);
+    spatial.move(projectileId, 8, 5);
     spatial.commit();
 
     // Hit! (Rule 7: overlap detection, not collision)
     const enemyId = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS)!;
-    spatial.removeEntity(projectileId); // Remove projectile by ID
-    spatial.removeEntity(enemyId); // Remove enemy by ID
+    spatial.remove(projectileId); // Remove projectile by ID
+    spatial.remove(enemyId); // Remove enemy by ID
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
@@ -261,15 +261,15 @@ visual('multiple layers at same cell', {
   act: ({ spatial }) => {
     // Get player ID and move toward item
     let playerId = spatial.getEntityIdAt(8, 10, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 9, 10);
+    spatial.move(playerId, 9, 10);
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(9, 10, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 10, 10);
+    spatial.move(playerId, 10, 10);
     spatial.commit();
 
     playerId = spatial.getEntityIdAt(10, 10, GameLayers.ACTORS)!;
-    spatial.moveEntity(playerId, 11, 10);
+    spatial.move(playerId, 11, 10);
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {
@@ -316,10 +316,14 @@ visual('convoy movement: adjacent entities move together', {
   },
   act: ({ spatial }) => {
     // All units move right simultaneously
-    spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
-    spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
-    spatial.move(7, 5, 8, 5, GameLayers.ACTORS);
-    spatial.move(8, 5, 9, 5, GameLayers.ACTORS);
+    const id1 = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
+    const id2 = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS)!;
+    const id3 = spatial.getEntityIdAt(7, 5, GameLayers.ACTORS)!;
+    const id4 = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS)!;
+    spatial.move(id1, 6, 5);
+    spatial.move(id2, 7, 5);
+    spatial.move(id3, 8, 5);
+    spatial.move(id4, 9, 5);
     spatial.commit();
   },
   assert: ({ spatial, expect }) => {

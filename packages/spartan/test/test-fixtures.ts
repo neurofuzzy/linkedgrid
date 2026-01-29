@@ -16,7 +16,7 @@ import { Layer } from '../types.js';
  * const enemyId = fixture.placeEntity('enemy', 10, 10, GameLayers.ACTORS);
  *
  * // Now test actual spatial behavior
- * spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+ * spatial.move(playerId, 6, 5);
  * spatial.commit();
  * // ...assertions...
  * ```
@@ -63,7 +63,7 @@ export class TestSpatialFixture {
    * @param layer - Layer
    */
   removeEntity(x: number, y: number, layer: Layer): void {
-    this.spatial.remove(x, y, layer);
+    this.spatial.removeAt(x, y, layer);
     this.spatial.commit();
   }
 
@@ -83,7 +83,10 @@ export class TestSpatialFixture {
     toY: number,
     layer: Layer
   ): void {
-    this.spatial.move(fromX, fromY, toX, toY, layer);
+    const entityId = this.spatial.getEntityIdAt(fromX, fromY, layer);
+    if (entityId) {
+      this.spatial.move(entityId, toX, toY);
+    }
     this.spatial.commit();
   }
 }

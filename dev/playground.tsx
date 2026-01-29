@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan/input';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
-import { GridRenderer, DebugPanel } from './grid-renderer';
+import { GridRenderer, HUD, DebugPanel } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/game-runtime';
 
 /**
@@ -21,6 +21,11 @@ const AVAILABLE_GAMES = [
     id: 'doors-keys',
     name: 'Doors & Keys Puzzle',
     path: '/dev/games/doors-keys.json',
+  },
+  {
+    id: 'floor-hazards',
+    name: 'Floor Hazards Demo',
+    path: '/dev/games/floor-hazards.json',
   },
 ];
 
@@ -344,6 +349,7 @@ function Playground() {
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         <div style={{ marginTop: '20px' }}>
           <GridRenderer scene={runtime?.activeScene || null} />
+          <HUD runtime={runtime} />
         </div>
         <div style={{ flex: '1', minWidth: '300px' }}>
           <DebugPanel

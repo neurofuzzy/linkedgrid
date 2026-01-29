@@ -18,6 +18,11 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   door: 'entity-door',
   'open-door': 'entity-open-door',
   key: 'entity-key',
+  lava: 'entity-lava',
+  acid: 'entity-acid',
+  medbay: 'entity-medbay',
+  ice: 'entity-ice',
+  mud: 'entity-mud',
 };
 
 /**
@@ -33,6 +38,11 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   door: '▓',
   'open-door': '░',
   key: 'K',
+  lava: '≈',
+  acid: '~',
+  medbay: '+',
+  ice: '❄',
+  mud: '▒',
 };
 
 /**
@@ -131,6 +141,141 @@ export function GridRenderer({ scene }: Props) {
           </div>
         ))
       )}
+    </div>
+  );
+}
+
+/**
+ * HUD - Display player stats (HP, Score, Lives).
+ *
+ * Shows:
+ * - HP bar with current/max values
+ * - Score (placeholder)
+ * - Lives (placeholder)
+ *
+ * @example
+ * ```tsx
+ * <HUD runtime={runtime} />
+ * ```
+ */
+interface HUDProps {
+  runtime: any; // GameRuntime
+}
+
+export function HUD({ runtime }: HUDProps) {
+  if (!runtime || !runtime.activeScene) {
+    return null;
+  }
+
+  const scene = runtime.activeScene;
+  const playerId = runtime.game.gameState.playerEntityId;
+  const playerData = playerId ? scene.spatial.getEntityData(playerId) : null;
+
+  // Get HP (default to 0/0 if no player or no health)
+  const hp = (playerData as any)?.hp ?? 0;
+  const maxHp = (playerData as any)?.maxHp ?? 0;
+  const hpPercent = maxHp > 0 ? (hp / maxHp) * 100 : 0;
+
+  // Get Score and Lives from game state (placeholder for now)
+  const score = runtime.game.gameState.score ?? 0;
+  const lives = runtime.game.gameState.lives ?? 3;
+
+  // HP bar color based on percentage
+  let hpColor = '#4ec9b0'; // Green
+  if (hpPercent < 25) {
+    hpColor = '#f48771'; // Red
+  } else if (hpPercent < 50) {
+    hpColor = '#ce9178'; // Orange
+  }
+
+  return (
+    <div className="hud" style={{
+      marginTop: '12px',
+      padding: '16px',
+      backgroundColor: '#1e1e1e',
+      border: '1px solid #3c3c3c',
+      borderRadius: '4px',
+      fontFamily: 'Consolas, Monaco, monospace',
+      fontSize: '14px',
+    }}>
+      <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+        {/* HP Display */}
+        <div style={{ flex: '1', minWidth: '200px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            marginBottom: '6px',
+            fontSize: '12px',
+            color: '#808080'
+          }}>
+            <span>HP</span>
+            <span>{hp} / {maxHp}</span>
+          </div>
+          <div style={{
+            width: '100%',
+            height: '20px',
+            backgroundColor: '#2d2d2d',
+            border: '1px solid #3c3c3c',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            position: 'relative',
+          }}>
+            <div style={{
+              width: `${hpPercent}%`,
+              height: '100%',
+              backgroundColor: hpColor,
+              transition: 'width 0.3s ease, background-color 0.3s ease',
+            }} />
+          </div>
+        </div>
+
+        {/* Score Display */}
+        <div style={{ 
+          minWidth: '120px',
+          textAlign: 'center',
+        }}>
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#808080',
+            marginBottom: '4px'
+          }}>
+            SCORE
+          </div>
+          <div style={{ 
+            fontSize: '20px', 
+            fontWeight: 'bold',
+            color: '#dcdcaa',
+          }}>
+            {score.toLocaleString()}
+          </div>
+        </div>
+
+        {/* Lives Display */}
+        <div style={{ 
+          minWidth: '100px',
+          textAlign: 'center',
+        }}>
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#808080',
+            marginBottom: '4px'
+          }}>
+            LIVES
+          </div>
+          <div style={{ 
+            fontSize: '20px', 
+            fontWeight: 'bold',
+            color: '#f48771',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '4px',
+          }}>
+            {Array.from({ length: lives }).map((_, i) => (
+              <span key={i}>♥</span>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

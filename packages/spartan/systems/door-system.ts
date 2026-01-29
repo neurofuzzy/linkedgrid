@@ -71,7 +71,7 @@ export class DoorSystem implements GameSystem {
         });
 
         // Remove door from WALLS layer (clears BLOCKING mask)
-        spatial.remove(destCell.x, destCell.y, GameLayers.WALLS);
+        spatial.removeAt(destCell.x, destCell.y, GameLayers.WALLS);
 
         // Spawn open door visual on FLOOR layer
         spatial.spawn('open-door', destCell.x, destCell.y, GameLayers.FLOOR, {

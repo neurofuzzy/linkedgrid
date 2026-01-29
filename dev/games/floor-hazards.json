@@ -1,0 +1,225 @@
+{
+  "id": "floor-hazards",
+  "name": "Floor Hazards Demo",
+  "scenes": [
+    {
+      "id": "hazard-course",
+      "width": 25,
+      "height": 15,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 7,
+          "layer": 5,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "hazard-course",
+            "inventory": []
+          }
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 0,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "wall",
+          "x": 24,
+          "y": 0,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 14,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "wall",
+          "x": 24,
+          "y": 14,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "lava",
+          "x": 5,
+          "y": 5,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 5,
+            "cadence": 1000,
+            "color": "#ff6b35"
+          }
+        },
+        {
+          "type": "lava",
+          "x": 6,
+          "y": 5,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 5,
+            "cadence": 1000,
+            "color": "#ff6b35"
+          }
+        },
+        {
+          "type": "lava",
+          "x": 7,
+          "y": 5,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 5,
+            "cadence": 1000,
+            "color": "#ff6b35"
+          }
+        },
+        {
+          "type": "acid",
+          "x": 5,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 3,
+            "cadence": 500,
+            "color": "#7dce82"
+          }
+        },
+        {
+          "type": "acid",
+          "x": 6,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 3,
+            "cadence": 500,
+            "color": "#7dce82"
+          }
+        },
+        {
+          "type": "acid",
+          "x": 7,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "effectType": "damage",
+            "damage": 3,
+            "cadence": 500,
+            "color": "#7dce82"
+          }
+        },
+        {
+          "type": "medbay",
+          "x": 12,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "effectType": "heal",
+            "healRate": 10,
+            "cadence": 1000,
+            "cooldown": 2000,
+            "color": "#4ec9b0"
+          }
+        },
+        {
+          "type": "medbay",
+          "x": 13,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "effectType": "heal",
+            "healRate": 10,
+            "cadence": 1000,
+            "cooldown": 2000,
+            "color": "#4ec9b0"
+          }
+        },
+        {
+          "type": "ice",
+          "x": 18,
+          "y": 4,
+          "layer": 1,
+          "data": {
+            "effectType": "slide",
+            "slideDistance": 3,
+            "color": "#9cdcfe"
+          }
+        },
+        {
+          "type": "ice",
+          "x": 19,
+          "y": 4,
+          "layer": 1,
+          "data": {
+            "effectType": "slide",
+            "slideDistance": 3,
+            "color": "#9cdcfe"
+          }
+        },
+        {
+          "type": "ice",
+          "x": 20,
+          "y": 4,
+          "layer": 1,
+          "data": {
+            "effectType": "slide",
+            "slideDistance": 3,
+            "color": "#9cdcfe"
+          }
+        },
+        {
+          "type": "mud",
+          "x": 18,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "effectType": "slow",
+            "slowFactor": 0.5,
+            "color": "#8b6914"
+          }
+        },
+        {
+          "type": "mud",
+          "x": 19,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "effectType": "slow",
+            "slowFactor": 0.5,
+            "color": "#8b6914"
+          }
+        },
+        {
+          "type": "mud",
+          "x": 20,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "effectType": "slow",
+            "slowFactor": 0.5,
+            "color": "#8b6914"
+          }
+        }
+      ]
+    }
+  ],
+  "systems": ["FloorEffectSystem"],
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

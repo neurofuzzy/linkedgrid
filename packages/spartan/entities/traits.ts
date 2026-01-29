@@ -215,6 +215,45 @@ export interface HasColor {
 }
 
 /**
+ * HasFloorEffect - Entity is a floor tile with gameplay effects.
+ *
+ * Used by:
+ * - FloorEffectSystem (apply damage, healing, movement modifiers)
+ * - Rendering systems (visual feedback)
+ *
+ * Effect types:
+ * - 'damage': Deals damage over time (lava, acid, spikes)
+ * - 'heal': Restores health over time (medbay, fountain)
+ * - 'slide': Entity continues moving (ice) - adds HasSlideEffect trait temporarily
+ * - 'slow': Movement is restricted (mud, quicksand) - adds HasStuckEffect trait temporarily
+ *
+ * @example
+ * ```typescript
+ * const lava = { id: 5, type: 'lava', effectType: 'damage', damage: 10, cadence: 1000 };
+ * const medbay = { id: 6, type: 'medbay', effectType: 'heal', healRate: 5, cadence: 2000, cooldown: 3000 };
+ * const ice = { id: 7, type: 'ice', effectType: 'slide', slideDistance: 2 }; // slide for 2 ticks
+ * const mud = { id: 8, type: 'mud', effectType: 'slow', slowFactor: 0.5 }; // stuck for 1 tick (50% speed)
+ * ```
+ */
+export interface HasFloorEffect {
+  effectType: 'damage' | 'heal' | 'slide' | 'slow';
+  
+  // Damage properties
+  damage?: number;           // Damage per application
+  
+  // Healing properties
+  healRate?: number;         // HP restored per application
+  cooldown?: number;         // Milliseconds before healing can apply again (per entity)
+  
+  // Movement modifier properties
+  slideDistance?: number;    // Number of ticks to slide (ice)
+  slowFactor?: number;       // Movement speed multiplier 0-1 (mud). Stuck duration = ceil(1/slowFactor - 1) ticks
+  
+  // Timing
+  cadence?: number;          // Milliseconds between applications (damage/heal)
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

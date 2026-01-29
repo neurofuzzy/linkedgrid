@@ -70,23 +70,25 @@ visual('player teleports between rooms', {
       );
     }
 
+    const playerId = game.gameState.playerEntityId!;
+
     // Walk in room1 (ctx.spatial delegates to active scene)
-    ctx.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 5, 6);
     ctx.spatial.commit();
 
     // Walk again
-    ctx.spatial.move(5, 6, 5, 7, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 5, 7);
     ctx.spatial.commit();
 
     // Teleport to room2 (this captures a snapshot automatically)
     game.movePlayerToScene('room2', 3, 3, GameLayers.ACTORS);
 
     // Walk in room2 (ctx.spatial now delegates to room2's spatial)
-    ctx.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 4, 3);
     ctx.spatial.commit();
 
     // Walk toward treasure
-    ctx.spatial.move(4, 3, 5, 3, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 5, 3);
     ctx.spatial.commit();
   },
 });
@@ -160,11 +162,13 @@ visual('multi-scene world with connections', {
       );
     }
 
+    const playerId = game.gameState.playerEntityId!;
+
     // Move through entrance (ctx.spatial delegates to active scene)
-    ctx.spatial.move(4, 4, 4, 5, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 4, 5);
     ctx.spatial.commit();
 
-    ctx.spatial.move(4, 5, 4, 6, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 4, 6);
     ctx.spatial.commit();
 
     // Teleport to hallway via connection
@@ -179,10 +183,10 @@ visual('multi-scene world with connections', {
     );
 
     // Walk through hallway (ctx.spatial now delegates to hallway scene)
-    ctx.spatial.move(0, 3, 1, 3, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 1, 3);
     ctx.spatial.commit();
 
-    ctx.spatial.move(1, 3, 2, 3, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 2, 3);
     ctx.spatial.commit();
 
     // Teleport to boss chamber
@@ -195,7 +199,7 @@ visual('multi-scene world with connections', {
     );
 
     // Approach boss (ctx.spatial now delegates to boss chamber)
-    ctx.spatial.move(6, 0, 6, 1, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 6, 1);
     ctx.spatial.commit();
   },
 });
@@ -228,11 +232,13 @@ visual('scene with metadata and player tracking', {
       );
     }
 
+    const playerId = game.gameState.playerEntityId!;
+
     // Player moves (ctx.spatial delegates to active scene)
-    ctx.spatial.move(5, 5, 6, 5, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 6, 5);
     ctx.spatial.commit();
 
-    ctx.spatial.move(6, 5, 7, 5, GameLayers.ACTORS);
+    ctx.spatial.move(playerId, 7, 5);
     ctx.spatial.commit();
   },
   assert: (ctx) => {

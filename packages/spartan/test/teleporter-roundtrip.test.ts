@@ -73,11 +73,11 @@ describe('TeleporterSystem round-trip', () => {
     (runtime as any).gameLoop.addSystem(teleporterSystem); // Active immediately
 
     // STEP 1: Move player onto pad1 in room1
-    room1.spatial.move(5, 5, 5, 6, GameLayers.ACTORS);
+    room1.spatial.move(playerId, 5, 6);
     room1.spatial.commit();
     runtime.tick(); // Tick 1: player at (5,6)
 
-    room1.spatial.move(5, 6, 5, 7, GameLayers.ACTORS);
+    room1.spatial.move(playerId, 5, 7);
     room1.spatial.commit();
     runtime.tick(); // Tick 2: player at (5,7) - overlaps with pad1
 
@@ -90,7 +90,7 @@ describe('TeleporterSystem round-trip', () => {
 
     // STEP 2: Step off the pad in room2
     runtime.tick(); // Tick 3: just landed, on pad
-    room2.spatial.move(3, 3, 4, 3, GameLayers.ACTORS);
+    room2.spatial.move(playerId, 4, 3);
     room2.spatial.commit();
     runtime.tick(); // Tick 4: stepped off to (4,3)
 
@@ -101,7 +101,7 @@ describe('TeleporterSystem round-trip', () => {
     console.log('✓ Stepped off pad to (4,3)');
 
     // STEP 3: Step back onto the pad in room2
-    room2.spatial.move(4, 3, 3, 3, GameLayers.ACTORS);
+    room2.spatial.move(playerId, 3, 3);
     room2.spatial.commit();
     runtime.tick(); // Tick 5: back on pad at (3,3)
 

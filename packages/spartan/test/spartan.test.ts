@@ -206,7 +206,7 @@ describe('SpatialSystem', () => {
     it('moves entity to new cell', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit();
-      spatial.moveEntity(id, 6, 5);
+      spatial.move(id, 6, 5);
       spatial.commit();
 
       const oldCell = grid.cell(5, 5);
@@ -218,7 +218,7 @@ describe('SpatialSystem', () => {
     it('cleans up old cell (Rule 6)', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit();
-      spatial.moveEntity(id, 6, 5);
+      spatial.move(id, 6, 5);
       spatial.commit();
 
       const oldCell = grid.cell(5, 5);
@@ -230,7 +230,7 @@ describe('SpatialSystem', () => {
       spatial.spawn('enemy', 6, 5, 1);
       spatial.commit();
 
-      spatial.moveEntity(playerId, 6, 5);
+      spatial.move(playerId, 6, 5);
       spatial.commit();
 
       // Player should still be at original position
@@ -241,7 +241,7 @@ describe('SpatialSystem', () => {
     it('does not move for invalid coordinates', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit();
-      spatial.moveEntity(id, 100, 100);
+      spatial.move(id, 100, 100);
       spatial.commit();
 
       // Player should still be at original position
@@ -250,7 +250,8 @@ describe('SpatialSystem', () => {
     });
 
     it('does not move when no entity at source', () => {
-      spatial.move(5, 5, 6, 5, 1);
+      // Try to move a non-existent entity
+      spatial.move(0, 6, 5);
       spatial.commit();
 
       // Nothing should have happened
@@ -262,11 +263,11 @@ describe('SpatialSystem', () => {
       const id = spatial.spawn('player', 0, 0, 1);
       spatial.commit();
 
-      spatial.moveEntity(id, 1, 0);
+      spatial.move(id, 1, 0);
       spatial.commit();
-      spatial.moveEntity(id, 2, 0);
+      spatial.move(id, 2, 0);
       spatial.commit();
-      spatial.moveEntity(id, 3, 0);
+      spatial.move(id, 3, 0);
       spatial.commit();
 
       const cell = grid.cell(3, 0);
@@ -280,9 +281,9 @@ describe('SpatialSystem', () => {
       spatial.commit();
 
       // All three units move right (entity-based API)
-      spatial.moveEntity(id1, 6, 5);
-      spatial.moveEntity(id2, 7, 5);
-      spatial.moveEntity(id3, 8, 5);
+      spatial.move(id1, 6, 5);
+      spatial.move(id2, 7, 5);
+      spatial.move(id3, 8, 5);
       spatial.commit();
 
       // All should have moved successfully
@@ -300,8 +301,8 @@ describe('SpatialSystem', () => {
       spatial.commit();
 
       // Both try to move to (5, 6)
-      spatial.moveEntity(id1, 5, 6);
-      spatial.moveEntity(id2, 5, 6);
+      spatial.move(id1, 5, 6);
+      spatial.move(id2, 5, 6);
       spatial.commit();
 
       // Neither should have moved
@@ -316,7 +317,7 @@ describe('SpatialSystem', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit();
 
-      const removed = spatial.removeEntity(id);
+      const removed = spatial.remove(id);
       expect(removed).toBe(true);
       spatial.commit();
 
@@ -326,21 +327,25 @@ describe('SpatialSystem', () => {
     });
 
     it('returns false when no entity at position', () => {
-      const removed = spatial.remove(5, 5, 1);
+      const removed = spatial.removeAt(5, 5, 1);
       expect(removed).toBe(false);
     });
 
     it('returns false for invalid coordinates', () => {
-      const removed = spatial.remove(100, 100, 1);
+      const removed = spatial.removeAt(100, 100, 1);
       expect(removed).toBe(false);
     });
   });
 
   describe('Entity-based API edge cases', () => {
-    describe('moveEntity', () => {
-      it('returns false when entity not on grid', () => {
-        const moved = spatial.moveEntity(999, 6, 5);
-        expect(moved).toBe(false);
+    describe('move', () => {
+      it('silently ignores move for non-existent entity', () => {
+        spatial.move(999, 6, 5);
+        spatial.commit();
+        
+        // Nothing should have moved (entity doesn't exist)
+        const cell = grid.cell(6, 5);
+        expect(cell?.getValue(1)).toBeUndefined();
       });
 
       it('works with overlap detection results', () => {
@@ -353,7 +358,7 @@ describe('SpatialSystem', () => {
 
         // Move all entities in overlap (demonstrates entity-based API with overlaps)
         for (const entityId of overlaps[0].entityIds) {
-          spatial.moveEntity(entityId, 6, 5);
+          spatial.move(entityId, 6, 5);
         }
         spatial.commit();
 
@@ -366,7 +371,7 @@ describe('SpatialSystem', () => {
 
     describe('removeEntity', () => {
       it('returns false when entity not on grid', () => {
-        const removed = spatial.removeEntity(999);
+        const removed = spatial.remove(999);
         expect(removed).toBe(false);
       });
 
@@ -380,7 +385,7 @@ describe('SpatialSystem', () => {
 
         // Remove all enemies by ID (demonstrates entity-based cleanup)
         for (const id of ids) {
-          spatial.removeEntity(id);
+          spatial.remove(id);
         }
         spatial.commit();
 
@@ -517,7 +522,7 @@ describe('SpatialSystem', () => {
     it('updates position after move', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit(); // Commit initial spawn
-      spatial.move(5, 5, 7, 8, 1);
+      spatial.move(id, 7, 8);
       spatial.commit();
 
       const pos = spatial.getEntityPosition(id);
@@ -530,19 +535,19 @@ describe('SpatialSystem', () => {
       const id = spatial.spawn('player', 0, 0, 1);
       spatial.commit(); // Commit initial spawn
 
-      spatial.move(0, 0, 1, 0, 1);
+      spatial.move(id, 1, 0);
       spatial.commit();
       let pos = spatial.getEntityPosition(id);
       expect(pos?.x).toBe(1);
       expect(pos?.y).toBe(0);
 
-      spatial.move(1, 0, 1, 1, 1);
+      spatial.move(id, 1, 1);
       spatial.commit();
       pos = spatial.getEntityPosition(id);
       expect(pos?.x).toBe(1);
       expect(pos?.y).toBe(1);
 
-      spatial.move(1, 1, 2, 2, 1);
+      spatial.move(id, 2, 2);
       spatial.commit();
       pos = spatial.getEntityPosition(id);
       expect(pos?.x).toBe(2);
@@ -554,7 +559,7 @@ describe('SpatialSystem', () => {
       spatial.spawn('wall', 6, 5, 1);
       spatial.commit(); // Commit spawns
 
-      spatial.move(5, 5, 6, 5, 1);
+      spatial.move(id, 6, 5);
       spatial.commit();
 
       const pos = spatial.getEntityPosition(id);
@@ -564,7 +569,7 @@ describe('SpatialSystem', () => {
 
     it('returns null after entity is removed', () => {
       const id = spatial.spawn('player', 5, 5, 1);
-      spatial.remove(5, 5, 1);
+      spatial.removeAt(5, 5, 1);
 
       const pos = spatial.getEntityPosition(id);
       expect(pos).toBeNull();
@@ -596,9 +601,9 @@ describe('SpatialSystem', () => {
       const id3 = spatial.spawn('unit', 7, 5, 1);
       spatial.commit(); // Commit spawns
 
-      spatial.move(5, 5, 6, 5, 1);
-      spatial.move(6, 5, 7, 5, 1);
-      spatial.move(7, 5, 8, 5, 1);
+      spatial.move(id1, 6, 5);
+      spatial.move(id2, 7, 5);
+      spatial.move(id3, 8, 5);
       spatial.commit();
 
       expect(spatial.getEntityPosition(id1)).toEqual({ x: 6, y: 5, layer: 1 });
@@ -611,8 +616,8 @@ describe('SpatialSystem', () => {
       const id2 = spatial.spawn('unit', 5, 7, 1);
 
       // Both try to move to same destination
-      spatial.move(5, 5, 5, 6, 1);
-      spatial.move(5, 7, 5, 6, 1);
+      spatial.move(id1, 5, 6);
+      spatial.move(id2, 5, 6);
       spatial.commit();
 
       // Neither should have moved
@@ -635,7 +640,7 @@ describe('SpatialSystem', () => {
     it('Rule 1: Entities can only occupy one cell at a time', () => {
       const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit(); // Commit spawn
-      spatial.move(5, 5, 6, 5, 1);
+      spatial.move(id, 6, 5);
       spatial.commit();
 
       // Entity should only be in new cell
@@ -658,7 +663,7 @@ describe('SpatialSystem', () => {
       spatial.spawn('wall', 6, 5, 1);
       spatial.commit(); // Commit spawns
 
-      spatial.move(5, 5, 6, 5, 1);
+      spatial.move(playerId, 6, 5);
       spatial.commit();
 
       // Move should not have happened
@@ -678,9 +683,9 @@ describe('SpatialSystem', () => {
     });
 
     it('Rule 6: Clean up old cell on move', () => {
-      spatial.spawn('player', 5, 5, 1);
+      const id = spatial.spawn('player', 5, 5, 1);
       spatial.commit(); // Commit spawn
-      spatial.move(5, 5, 6, 5, 1);
+      spatial.move(id, 6, 5);
       spatial.commit();
 
       const oldCell = grid.cell(5, 5);
