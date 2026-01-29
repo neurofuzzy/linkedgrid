@@ -79,6 +79,7 @@ export type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
+  HasPropagation,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -96,6 +97,9 @@ export type {
   MedbayData,
   IceData,
   MudData,
+  FireData,
+  PoisonGasData,
+  WaterData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -110,6 +114,7 @@ export {
   isCollectible,
   hasColor,
   hasFloorEffect,
+  hasPropagation,
   isPlayer,
   isEnemy,
   isTeleporter,
@@ -122,6 +127,9 @@ export {
   isMedbay,
   isIce,
   isMud,
+  isFire,
+  isPoisonGas,
+  isWater,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -152,4 +160,5 @@ export { CollectionSystem } from './systems/collection-system.js';
 export { DoorSystem } from './systems/door-system.js';
 export { PlayerInputSystem } from './systems/player-input-system.js';
 export { FloorEffectSystem } from './systems/floor-effect-system.js';
+export { PropagationSystem } from './systems/propagation-system.js';
 export type { GameSystem, GameContext, Overlap } from './types.js';

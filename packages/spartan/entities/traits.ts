@@ -262,6 +262,61 @@ export interface HasFloorEffect {
 }
 
 /**
+ * HasPropagation - Entity can spread to adjacent cells.
+ *
+ * Used by:
+ * - PropagationSystem (spread effects across grid)
+ * - Rendering systems (visual feedback for spreading)
+ *
+ * Propagation types:
+ * - 'fire': Fire spreading through flammable materials
+ * - 'liquid': Water, oil, or other liquid flow
+ * - 'gas': Poison gas, smoke, or other airborne effects
+ * - 'chain': Chain reactions, explosions, or cascading effects
+ *
+ * @example
+ * ```typescript
+ * // Fire that spreads and damages
+ * const fire = {
+ *   id: 9,
+ *   type: 'fire',
+ *   propagationType: 'fire',
+ *   spreadRate: 1000,              // Spread every 1 second
+ *   spreadLayer: GameLayers.FLOOR, // Spawn on floor layer
+ *   spreadType: 'fire',            // Spawn more fire entities
+ *   maxDistance: 5,                // Max 5 cells from origin
+ *   lifetime: 8000,                // Burns for 8 seconds
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   // Can also have floor effect properties
+ *   effectType: 'damage',
+ *   damage: 10,
+ *   cadence: 500
+ * };
+ *
+ * // Poison gas that dissipates
+ * const gas = {
+ *   id: 10,
+ *   type: 'poison-gas',
+ *   propagationType: 'gas',
+ *   spreadRate: 500,                    // Fast spread
+ *   spreadLayer: GameLayers.EPHEMERALS, // Spawn on ephemeral layer
+ *   spreadType: 'poison-gas',
+ *   maxDistance: 8,
+ *   lifetime: 5000                      // Dissipates after 5 seconds
+ * };
+ * ```
+ */
+export interface HasPropagation {
+  propagationType: 'fire' | 'liquid' | 'gas' | 'chain';
+  spreadRate: number;        // Milliseconds between spread ticks
+  spreadLayer: number;       // Target layer for spawned entities
+  spreadType: string;        // Entity type to spawn when propagating
+  maxDistance?: number;      // Optional max spread radius from origin (Manhattan distance)
+  lifetime?: number;         // Optional duration in milliseconds before auto-despawn
+  blockedByLayers?: number[];// Optional layers that block spread (e.g., [GameLayers.WALLS])
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

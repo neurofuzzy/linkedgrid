@@ -7,6 +7,7 @@ import { CollectionSystem } from '../packages/spartan/systems/collection-system'
 import { DoorSystem } from '../packages/spartan/systems/door-system';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-system';
+import { PropagationSystem } from '../packages/spartan/systems/propagation-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -69,6 +70,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
+  PropagationSystem: () => new PropagationSystem(),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
 };
 

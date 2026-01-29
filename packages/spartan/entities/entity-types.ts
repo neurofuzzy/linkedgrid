@@ -50,6 +50,7 @@ import type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
+  HasPropagation,
 } from './traits.js';
 
 /**
@@ -408,3 +409,104 @@ export type IceData = EntityData & {
 export type MudData = EntityData & {
   type: 'mud';
 } & HasFloorEffect & HasColor;
+
+/**
+ * FireData - Spreading fire that damages entities.
+ *
+ * Traits:
+ * - HasPropagation - Spreads to adjacent cells
+ * - HasFloorEffect - Deals damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Fire spreading through areas
+ * - Burning terrain
+ * - Temporary hazards that expire
+ *
+ * @example
+ * ```typescript
+ * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+ *   propagationType: 'fire',
+ *   spreadRate: 1000,              // Spread every 1 second
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'fire',
+ *   maxDistance: 5,                // Max 5 cells from origin
+ *   lifetime: 8000,                // Burns for 8 seconds
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',
+ *   damage: 10,
+ *   cadence: 500,
+ *   color: '#ff6b35'
+ * });
+ * ```
+ */
+export type FireData = EntityData & {
+  type: 'fire';
+} & HasPropagation & HasFloorEffect & HasColor;
+
+/**
+ * PoisonGasData - Expanding poison gas cloud.
+ *
+ * Traits:
+ * - HasPropagation - Spreads to adjacent cells
+ * - HasFloorEffect - Deals damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Poison gas attacks
+ * - Environmental hazards
+ * - Area denial effects
+ *
+ * @example
+ * ```typescript
+ * const gasId = spatial.spawn('poison-gas', 5, 5, GameLayers.EPHEMERALS, {
+ *   propagationType: 'gas',
+ *   spreadRate: 500,                    // Fast spread
+ *   spreadLayer: GameLayers.EPHEMERALS,
+ *   spreadType: 'poison-gas',
+ *   maxDistance: 8,
+ *   lifetime: 5000,                     // Dissipates after 5 seconds
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',
+ *   damage: 2,
+ *   cadence: 1000,
+ *   color: '#9acd32'
+ * });
+ * ```
+ */
+export type PoisonGasData = EntityData & {
+  type: 'poison-gas';
+} & HasPropagation & HasFloorEffect & HasColor;
+
+/**
+ * WaterData - Flowing liquid.
+ *
+ * Traits:
+ * - HasPropagation - Spreads to adjacent cells
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Water flow simulation
+ * - Liquid hazards
+ * - Environmental effects
+ *
+ * @example
+ * ```typescript
+ * const waterId = spatial.spawn('water', 7, 3, GameLayers.FLOOR, {
+ *   propagationType: 'liquid',
+ *   spreadRate: 300,                 // Flows quickly
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'water',
+ *   maxDistance: 10,
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   color: '#4a90e2'
+ *   // No lifetime - water persists
+ *   // No floor effect - just visual/spreading
+ * });
+ * ```
+ */
+export type WaterData = EntityData & {
+  type: 'water';
+} & HasPropagation & HasColor;

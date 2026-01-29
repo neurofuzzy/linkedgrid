@@ -211,11 +211,70 @@
             "slowFactor": 0.5,
             "color": "#8b6914"
           }
+        },
+        {
+          "type": "fire",
+          "x": 10,
+          "y": 3,
+          "layer": 1,
+          "data": {
+            "propagationType": "fire",
+            "spreadRate": 2000,
+            "spreadLayer": 1,
+            "spreadType": "fire",
+            "maxDistance": 4,
+            "lifetime": 12000,
+            "blockedByLayers": [4],
+            "effectType": "damage",
+            "damage": 8,
+            "cadence": 800,
+            "color": "#ff6b35"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 3,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 2,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 4,
+          "layer": 4,
+          "data": {}
+        },
+        {
+          "type": "poison-gas",
+          "x": 10,
+          "y": 11,
+          "layer": 6,
+          "data": {
+            "propagationType": "gas",
+            "spreadRate": 1500,
+            "spreadLayer": 6,
+            "spreadType": "poison-gas",
+            "maxDistance": 3,
+            "lifetime": 8000,
+            "blockedByLayers": [4],
+            "effectType": "damage",
+            "damage": 2,
+            "cadence": 1000,
+            "color": "#9acd32"
+          }
         }
       ]
     }
   ],
-  "systems": ["FloorEffectSystem"],
+  "systems": ["PropagationSystem", "FloorEffectSystem"],
   "input": {
     "type": "keyboard",
     "options": {

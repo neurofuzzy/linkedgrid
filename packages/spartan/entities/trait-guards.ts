@@ -36,6 +36,7 @@ import type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
+  HasPropagation,
 } from './traits.js';
 import type {
   PlayerData,
@@ -50,6 +51,9 @@ import type {
   MedbayData,
   IceData,
   MudData,
+  FireData,
+  PoisonGasData,
+  WaterData,
 } from './entity-types.js';
 
 /**
@@ -214,6 +218,29 @@ export function hasFloorEffect(
 }
 
 /**
+ * Check if entity has propagation trait.
+ *
+ * Entities with propagation trait can spread to adjacent cells over time.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses propagation trait
+ */
+export function hasPropagation(
+  entity: EntityData
+): entity is EntityData & HasPropagation {
+  const propagationType = (entity as any).propagationType;
+  return (
+    (propagationType === 'fire' ||
+      propagationType === 'liquid' ||
+      propagationType === 'gas' ||
+      propagationType === 'chain') &&
+    typeof (entity as any).spreadRate === 'number' &&
+    typeof (entity as any).spreadLayer === 'number' &&
+    typeof (entity as any).spreadType === 'string'
+  );
+}
+
+/**
  * Entity Type Guards
  *
  * These check for specific entity archetypes and narrow to full type contracts.
@@ -338,6 +365,36 @@ export function isIce(entity: EntityData): entity is IceData {
  */
 export function isMud(entity: EntityData): entity is MudData {
   return entity.type === 'mud';
+}
+
+/**
+ * Check if entity is fire.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fire'
+ */
+export function isFire(entity: EntityData): entity is FireData {
+  return entity.type === 'fire';
+}
+
+/**
+ * Check if entity is poison gas.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'poison-gas'
+ */
+export function isPoisonGas(entity: EntityData): entity is PoisonGasData {
+  return entity.type === 'poison-gas';
+}
+
+/**
+ * Check if entity is water.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'water'
+ */
+export function isWater(entity: EntityData): entity is WaterData {
+  return entity.type === 'water';
 }
 
 /**
