@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext, Position } from '../types.js';
-import { Direction } from '../../grid/direction.js';
-import { hasPropagation, hasFlammability, isFire, isAsh } from '../entities/trait-guards.js';
-import { GameLayers } from '../layers/types.js';
+import type { GameSystem, GameContext, Position } from '../types';
+import { Direction } from '../../grid/direction';
+import { hasPropagation, hasFlammability, isFire, isAsh } from '../entities/trait-guards';
+import { GameLayers } from '../layers/types';
 
 /**
  * Spread state tracked per source entity.

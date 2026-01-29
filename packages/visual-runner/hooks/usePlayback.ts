@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Snapshot } from '../lib/test-executor.js';
+import type { Snapshot } from '../lib/test-executor';
 
 // Discriminated union - makes invalid states impossible
 type PlaybackState =

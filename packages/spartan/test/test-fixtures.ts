@@ -1,5 +1,5 @@
-import { SpatialSystem } from '../spatial-system.js';
-import { Layer } from '../types.js';
+import { SpatialSystem } from '../spatial-system';
+import { Layer } from '../types';
 
 /**
  * Test fixture helper for setting up initial spatial state.

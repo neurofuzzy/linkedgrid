@@ -1,12 +1,12 @@
-import { visual } from './visual-helpers.js';
-import { GameManager } from '../game-manager.js';
-import { GameLayers } from '../layers/types.js';
+import { visual } from './visual-helpers';
+import { GameManager } from '../game-manager';
+import { GameLayers } from '../layers/types';
 import {
   spawnPlayer,
   spawnTeleporter,
   spawnItem,
-} from '../entities/spawn-helpers.js';
-import { isPlayer } from '../entities/trait-guards.js';
+} from '../entities/spawn-helpers';
+import { isPlayer } from '../entities/trait-guards';
 
 visual('player teleports between rooms', {
   arrange: (ctx) => {

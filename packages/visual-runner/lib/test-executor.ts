@@ -1,6 +1,6 @@
-import { LinkedGrid } from '../../grid/linked-grid.js';
-import { SparseEntityStore } from '../../spartan/entity-store.js';
-import { SpatialSystem } from '../../spartan/spatial-system.js';
+import { LinkedGrid } from '../../grid/linked-grid';
+import { SparseEntityStore } from '../../spartan/entity-store';
+import { SpatialSystem } from '../../spartan/spatial-system';
 
 export interface Snapshot {
   operation: string;

@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { EntityData } from '../types.js';
+import type { EntityData } from '../types';
 import type {
   HasHealth,
   CanDealDamage,
@@ -38,7 +38,7 @@ import type {
   HasFloorEffect,
   HasPropagation,
   HasFlammability,
-} from './traits.js';
+} from './traits';
 import type {
   PlayerData,
   EnemyData,
@@ -60,7 +60,7 @@ import type {
   GasolineData,
   FuseData,
   TorchData,
-} from './entity-types.js';
+} from './entity-types';
 
 /**
  * Trait Guards

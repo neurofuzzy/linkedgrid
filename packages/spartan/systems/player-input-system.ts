@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../types.js';
-import { GameLayers } from '../layers/types.js';
-import { InputManager } from '../input/input-manager.js';
-import { Direction } from '../../grid/direction.js';
+import type { GameSystem, GameContext } from '../types';
+import { GameLayers } from '../layers/types';
+import { InputManager } from '../input/input-manager';
+import { Direction } from '../../grid/direction';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.

@@ -1,8 +1,8 @@
-import { GameManager } from './game-manager.js';
-import { GameLoop } from './game-loop.js';
-import { Scene } from './scene.js';
-import { SpatialSystem } from './spatial-system.js';
-import type { GameSystem } from './types.js';
+import { GameManager } from './game-manager';
+import { GameLoop } from './game-loop';
+import { Scene } from './scene';
+import { SpatialSystem } from './spatial-system';
+import type { GameSystem } from './types';
 
 /**
  * Configuration for creating a new game.

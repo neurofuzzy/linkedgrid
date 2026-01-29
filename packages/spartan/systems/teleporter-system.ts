@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../types.js';
-import type { PlayerData, TeleporterData } from '../entities/entity-types.js';
-import type { GameManager } from '../game-manager.js';
-import { isPlayer, isTeleporter } from '../entities/trait-guards.js';
+import type { GameSystem, GameContext } from '../types';
+import type { PlayerData, TeleporterData } from '../entities/entity-types';
+import type { GameManager } from '../game-manager';
+import { isPlayer, isTeleporter } from '../entities/trait-guards';
 
 type TeleporterState = 'ready' | 'inactive';
 

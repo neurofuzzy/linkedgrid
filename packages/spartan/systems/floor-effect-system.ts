@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext, Position } from '../types.js';
-import type { GameManager } from '../game-manager.js';
-import { GameLayers } from '../layers/types.js';
-import { hasFloorEffect, hasHealth } from '../entities/trait-guards.js';
+import type { GameSystem, GameContext, Position } from '../types';
+import type { GameManager } from '../game-manager';
+import { GameLayers } from '../layers/types';
+import { hasFloorEffect, hasHealth } from '../entities/trait-guards';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.

@@ -1,5 +1,5 @@
-import { GameRuntime } from '../game-runtime.js';
-import type { GameSystem } from '../types.js';
+import { GameRuntime } from '../game-runtime';
+import type { GameSystem } from '../types';
 
 /**
  * Create GameRuntime with systems properly registered.

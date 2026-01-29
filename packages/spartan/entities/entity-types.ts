@@ -38,7 +38,7 @@
  * ```
  */
 
-import type { EntityData } from '../types.js';
+import type { EntityData } from '../types';
 import type {
   HasHealth,
   CanDealDamage,
@@ -52,7 +52,7 @@ import type {
   HasFloorEffect,
   HasPropagation,
   HasFlammability,
-} from './traits.js';
+} from './traits';
 
 /**
  * PlayerData - Player-controlled entity.
