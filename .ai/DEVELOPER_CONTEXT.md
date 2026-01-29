@@ -336,6 +336,8 @@ interface GameContext {
 
 ```typescript
 class MySystem implements GameSystem {
+    private myQueue: Array<{x: number, y: number}> = [];
+    
     constructor(private gameManager: GameManager) {}
     
     update({ overlaps, spatial }: GameContext) {
@@ -348,6 +350,14 @@ class MySystem implements GameSystem {
         
         // Update entity data via global store
         this.gameManager.gameState.entityStore.setData(id, { health: 50 });
+    }
+    
+    // Optional: Expose internal state for debugging
+    getDebugState() {
+        return {
+            queueSize: this.myQueue.length,
+            queueContents: [...this.myQueue],
+        };
     }
 }
 ```
@@ -445,6 +455,8 @@ When modifying code:
 - `packages/spartan/systems/door-system.ts` - Reactive door unlocking
 - `packages/spartan/systems/collection-system.ts` - Item collection
 - `packages/spartan/systems/teleporter-system.ts` - Scene transitions
+- `packages/spartan/systems/propagation-system.ts` - Spatial spreading effects (fire, water, gas)
+- `packages/spartan/systems/floor-effect-system.ts` - Damage/healing over time
 
 **Testing:**
 - `packages/spartan/test/visual-helpers.ts` - visual() helper
@@ -455,6 +467,8 @@ When modifying code:
 - `specs/spartan-game-rules.md` - 10 spatial rules
 - `specs/spartan-layer-rules.md` - 8-layer specification
 - `specs/spartan-responsibilities.md` - Component responsibility matrix
+- `specs/visual-test-timing-guide.md` - Visual test best practices and timing patterns
+- `specs/queue-lifecycle-patterns.md` - Correct patterns for deferred operations
 
 ## Troubleshooting
 
