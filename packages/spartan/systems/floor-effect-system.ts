@@ -1,18 +1,15 @@
 import type { GameSystem, GameContext, Position } from '../types.js';
 import type { GameManager } from '../game-manager.js';
 import { GameLayers } from '../layers/types.js';
-import { 
-  hasFloorEffect, 
-  hasHealth
-} from '../entities/trait-guards.js';
+import { hasFloorEffect, hasHealth } from '../entities/trait-guards.js';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.
  * This is system-owned state (not serialized in entity data).
  */
 interface EntityTimingState {
-  lastDamageTime?: number;  // Last time damage was applied
-  lastHealTime?: number;    // Last time healing was applied
+  lastDamageTime?: number; // Last time damage was applied
+  lastHealTime?: number; // Last time healing was applied
 }
 
 /**
@@ -37,10 +34,10 @@ interface EntityTimingState {
 export class FloorEffectSystem implements GameSystem {
   // System-owned timing state per entity (damage/heal cadence)
   private timingState = new Map<number, EntityTimingState>();
-  
+
   // Position tracking to detect movement onto floor effects
   private previousPositions = new Map<number, Position>();
-  
+
   // Track which on-entry effects have been triggered
   // Map structure: effectType -> Set of "entityId:x:y" keys
   private effectTriggers = new Map<string, Set<string>>();
@@ -55,7 +52,7 @@ export class FloorEffectSystem implements GameSystem {
     if (floorData.triggerMode) {
       return floorData.triggerMode;
     }
-    
+
     // Infer from effectType for backward compatibility
     switch (floorData.effectType) {
       case 'damage':
@@ -72,7 +69,12 @@ export class FloorEffectSystem implements GameSystem {
   /**
    * Check if an on-entry effect has already triggered for an entity at a specific cell.
    */
-  private hasTriggered(effectType: string, entityId: number, x: number, y: number): boolean {
+  private hasTriggered(
+    effectType: string,
+    entityId: number,
+    x: number,
+    y: number
+  ): boolean {
     const key = `${entityId}:${x}:${y}`;
     return this.effectTriggers.get(effectType)?.has(key) ?? false;
   }
@@ -80,7 +82,12 @@ export class FloorEffectSystem implements GameSystem {
   /**
    * Mark an on-entry effect as triggered for an entity at a specific cell.
    */
-  private markTriggered(effectType: string, entityId: number, x: number, y: number): void {
+  private markTriggered(
+    effectType: string,
+    entityId: number,
+    x: number,
+    y: number
+  ): void {
     if (!this.effectTriggers.has(effectType)) {
       this.effectTriggers.set(effectType, new Set());
     }
@@ -91,7 +98,12 @@ export class FloorEffectSystem implements GameSystem {
   /**
    * Clear the trigger state for an entity at a specific cell.
    */
-  private clearTrigger(effectType: string, entityId: number, x: number, y: number): void {
+  private clearTrigger(
+    effectType: string,
+    entityId: number,
+    x: number,
+    y: number
+  ): void {
     const key = `${entityId}:${x}:${y}`;
     this.effectTriggers.get(effectType)?.delete(key);
   }
@@ -119,7 +131,7 @@ export class FloorEffectSystem implements GameSystem {
 
   /**
    * Phase 2: Process continuous effects (damage, heal).
-   * 
+   *
    * These effects trigger repeatedly based on cadence timing.
    */
   private processContinuousEffects(context: GameContext, now: number): void {
@@ -154,7 +166,7 @@ export class FloorEffectSystem implements GameSystem {
 
   /**
    * Phase 1: Process on-entry effects (slide, slow).
-   * 
+   *
    * These effects trigger once per cell entry using the effectTriggers tracking.
    * The trigger state is cleared when the entity moves to a different cell.
    */
@@ -195,10 +207,14 @@ export class FloorEffectSystem implements GameSystem {
 
   /**
    * Process slide effect: stage continuation move if entity moved this tick.
-   * 
+   *
    * Used by ice tiles - entity continues moving one cell in same direction.
    */
-  private processSlideEffect(entityId: number, pos: Position, context: GameContext): void {
+  private processSlideEffect(
+    entityId: number,
+    pos: Position,
+    context: GameContext
+  ): void {
     // Did entity move this tick?
     const prevPos = this.previousPositions.get(entityId);
     if (!prevPos || (prevPos.x === pos.x && prevPos.y === pos.y)) {
@@ -230,7 +246,7 @@ export class FloorEffectSystem implements GameSystem {
 
   /**
    * Process slow effect: cancel pending move.
-   * 
+   *
    * Used by mud tiles - cancels one move per cell entry.
    * The trigger tracking ensures this only happens once per entry.
    */
@@ -241,17 +257,17 @@ export class FloorEffectSystem implements GameSystem {
 
   /**
    * Phase 3: Update position tracking and clean up effect triggers.
-   * 
+   *
    * Clears on-entry effect triggers when entities move to different cells,
    * allowing effects to trigger again when re-entering a cell.
    */
   private updatePositionTracking(context: GameContext): void {
     const currentEntities = new Set<number>();
-    
+
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       currentEntities.add(entityId);
       const prevPos = this.previousPositions.get(entityId);
-      
+
       // If entity moved to a different cell, clear all effect triggers for old position
       if (prevPos && (prevPos.x !== pos.x || prevPos.y !== pos.y)) {
         for (const [effectType, triggers] of this.effectTriggers.entries()) {
@@ -259,7 +275,7 @@ export class FloorEffectSystem implements GameSystem {
         }
       }
     }
-    
+
     // Clean up triggers for entities that no longer exist
     for (const [effectType, triggers] of this.effectTriggers.entries()) {
       for (const key of triggers) {
@@ -269,7 +285,7 @@ export class FloorEffectSystem implements GameSystem {
         }
       }
     }
-    
+
     // Update position tracking
     this.previousPositions.clear();
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
@@ -352,7 +368,10 @@ export class FloorEffectSystem implements GameSystem {
     }
 
     // Apply healing
-    const newHp = Math.min(entityData.maxHp, entityData.hp + floorData.healRate);
+    const newHp = Math.min(
+      entityData.maxHp,
+      entityData.hp + floorData.healRate
+    );
     this.gameManager.gameState.entityStore.setData(entityData.id, {
       hp: newHp,
     });
