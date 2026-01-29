@@ -75,7 +75,7 @@ class DamageSystem implements GameSystem {
 - `trait-guards.ts` - Runtime type predicates
 - `spawn-helpers.ts` - Type-safe factories
 
-**Built-in Traits:** HasHealth, CanDealDamage, HasAI, HasInventory, IsLockable, IsCollectible, HasColor, HasSceneLocation, HasTeleportTarget
+**Built-in Traits:** HasHealth, CanDealDamage, HasAI, HasInventory, IsLockable, IsCollectible, HasColor, HasSceneLocation, HasTeleportTarget, HasFloorEffect, HasPropagation, HasFlammability
 
 ## Input System Integration
 
@@ -411,6 +411,79 @@ See `specs/spartan-responsibilities.md` for complete matrix.
 - **PlayerInputSystem** - Input → movement intents
 - **GameSystem** - Game logic responding to overlaps/intents
 
+## Flammability System
+
+The flammability system enables realistic fire propagation based on material properties.
+
+### Core Concept
+
+Fire only spreads TO entities with the `HasFlammability` trait. The effective spread chance is:
+
+```
+Effective Probability = fire.spreadProbability × target.flammability
+```
+
+### HasFlammability Trait
+
+```typescript
+interface HasFlammability {
+  flammability: number; // 0.0-1.0, chance modifier for fire spread
+}
+```
+
+### Fire Propagation Rules
+
+1. **Fire only spreads to flammable entities** - Non-flammable entities block fire spread
+2. **Probability is modified by target** - Higher flammability = faster/more reliable spread
+3. **Multiple layers supported** - Fire can spread on FLOOR, COLLECTIBLES, or other layers
+4. **Ash consumption model** - Fire consumes flammable entities, leaving ash
+
+### Common Flammability Values
+
+| Material | Flammability | Layer | Usage |
+|----------|-------------|-------|-------|
+| Grass | 0.8 | FLOOR | Terrain that catches fire easily |
+| Gasoline | 0.95 | COLLECTIBLES | Extremely flammable liquid trails |
+| Fuse | 0.99 | COLLECTIBLES | Designed to burn predictably |
+| Wood | 0.6 | FLOOR/COLLECTIBLES | Moderately flammable |
+
+### Example Usage
+
+```typescript
+// Create flammable grass terrain
+spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
+  flammability: 0.8,
+  color: '#7cba00'
+});
+
+// Start fire with base spread probability
+spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+  propagationType: 'fire',
+  spreadRate: 2,
+  spreadProbability: 0.6,  // Base 60% chance
+  spreadLayer: GameLayers.FLOOR,
+  spreadType: 'fire',
+  maxDistance: 10,
+  lifetime: 20
+});
+
+// Effective spread to grass: 0.6 × 0.8 = 0.48 (48% chance)
+```
+
+### Layer Organization
+
+- **FLOOR layer** - Flammable terrain (grass, wood floors)
+- **COLLECTIBLES layer** - Flammable items (gasoline, fuses)
+- **WALLS layer** - Ignition sources (torches, static)
+- **EPHEMERALS layer** - Temporary ignition (explosions)
+
+### Implementation Notes
+
+- Fire spread checks flammability in `PropagationSystem.canSpreadTo()`
+- Probability multiplication happens in `PropagationSystem.propagateFromSources()`
+- Non-flammable entities (water, stone) naturally block fire spread
+- Ash still spawns after fire consumes flammable entities
+
 ## Key Takeaways
 
 1. **Entities are dumb** - Just data with traits
@@ -425,6 +498,7 @@ See `specs/spartan-responsibilities.md` for complete matrix.
 10. **Traits enable type safety** - Use guards in systems
 11. **Test with visual runner** - AAA pattern, dual execution
 12. **Configure via JSON** - Input, systems, scenes
+13. **Flammability is probability-based** - Fire spreads only to flammable entities
 
 ## Questions to Ask
 

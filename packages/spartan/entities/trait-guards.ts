@@ -37,6 +37,7 @@ import type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
+  HasFlammability,
 } from './traits.js';
 import type {
   PlayerData,
@@ -55,6 +56,10 @@ import type {
   PoisonGasData,
   WaterData,
   AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
 } from './entity-types.js';
 
 /**
@@ -242,6 +247,21 @@ export function hasPropagation(
 }
 
 /**
+ * Check if entity has flammability trait.
+ *
+ * Entities with flammability trait can catch fire and burn when fire spreads to them.
+ * Used by PropagationSystem to determine if fire can spread to this entity.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses flammability trait
+ */
+export function hasFlammability(
+  entity: EntityData
+): entity is EntityData & HasFlammability {
+  return typeof (entity as any).flammability === 'number';
+}
+
+/**
  * Entity Type Guards
  *
  * These check for specific entity archetypes and narrow to full type contracts.
@@ -400,6 +420,46 @@ export function isWater(entity: EntityData): entity is WaterData {
 
 export function isAsh(entity: EntityData): entity is AshData {
   return entity.type === 'ash';
+}
+
+/**
+ * Check if entity is grass.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'grass'
+ */
+export function isGrass(entity: EntityData): entity is GrassData {
+  return entity.type === 'grass';
+}
+
+/**
+ * Check if entity is gasoline.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'gasoline'
+ */
+export function isGasoline(entity: EntityData): entity is GasolineData {
+  return entity.type === 'gasoline';
+}
+
+/**
+ * Check if entity is fuse.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fuse'
+ */
+export function isFuse(entity: EntityData): entity is FuseData {
+  return entity.type === 'fuse';
+}
+
+/**
+ * Check if entity is torch.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'torch'
+ */
+export function isTorch(entity: EntityData): entity is TorchData {
+  return entity.type === 'torch';
 }
 
 /**

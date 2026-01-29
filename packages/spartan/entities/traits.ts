@@ -319,6 +319,48 @@ export interface HasPropagation {
 }
 
 /**
+ * HasFlammability - Entity can catch fire and burn.
+ *
+ * Used by:
+ * - PropagationSystem (determine if fire can spread to this entity)
+ * - Rendering systems (visual feedback for flammable materials)
+ *
+ * Used by PropagationSystem to determine if fire can spread to this entity
+ * and modify spread probability based on material properties.
+ *
+ * When fire attempts to spread, the effective spread chance is:
+ * fire.spreadProbability × target.flammability
+ *
+ * Common flammability values:
+ * - Grass: 0.8 (highly flammable)
+ * - Gasoline: 0.95 (extremely flammable)
+ * - Fuse: 0.99 (designed to burn)
+ * - Wood: 0.6 (moderately flammable)
+ *
+ * @example
+ * ```typescript
+ * // Grass that catches fire easily
+ * const grass = {
+ *   id: 15,
+ *   type: 'grass',
+ *   flammability: 0.8,
+ *   color: '#7cba00'
+ * };
+ *
+ * // Gasoline spill - extremely flammable
+ * const gasoline = {
+ *   id: 16,
+ *   type: 'gasoline',
+ *   flammability: 0.95,
+ *   color: '#d4af37'
+ * };
+ * ```
+ */
+export interface HasFlammability {
+  flammability: number; // 0.0-1.0, chance modifier for fire spread
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

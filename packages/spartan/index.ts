@@ -80,6 +80,7 @@ export type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
+  HasFlammability,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -101,6 +102,10 @@ export type {
   PoisonGasData,
   WaterData,
   AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -116,6 +121,7 @@ export {
   hasColor,
   hasFloorEffect,
   hasPropagation,
+  hasFlammability,
   isPlayer,
   isEnemy,
   isTeleporter,
@@ -132,6 +138,10 @@ export {
   isPoisonGas,
   isWater,
   isAsh,
+  isGrass,
+  isGasoline,
+  isFuse,
+  isTorch,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,

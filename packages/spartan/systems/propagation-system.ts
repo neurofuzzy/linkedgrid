@@ -1,6 +1,6 @@
 import type { GameSystem, GameContext, Position } from '../types.js';
 import { Direction } from '../../grid/direction.js';
-import { hasPropagation, isFire, isAsh } from '../entities/trait-guards.js';
+import { hasPropagation, hasFlammability, isFire, isAsh } from '../entities/trait-guards.js';
 import { GameLayers } from '../layers/types.js';
 
 /**
@@ -203,13 +203,27 @@ export class PropagationSystem implements GameSystem {
       ];
 
       for (const dir of directions) {
-        // Probability check: roll for each neighbor independently
-        if (Math.random() > probability) {
-          continue; // Failed probability roll for this neighbor
-        }
-
         const neighbor = cell.neighbor(dir);
         if (!neighbor) continue; // Out of bounds
+
+        // Calculate effective probability (modified by target flammability for fire)
+        let effectiveProbability = probability;
+        
+        // For fire, multiply by target's flammability
+        if (sourceData.propagationType === 'fire') {
+          const targetValue = neighbor.getValue(sourceData.spreadLayer);
+          if (targetValue !== undefined) {
+            const targetEntity = context.spatial.getEntityData(targetValue);
+            if (targetEntity && hasFlammability(targetEntity)) {
+              effectiveProbability *= targetEntity.flammability;
+            }
+          }
+        }
+        
+        // Probability check: roll for each neighbor independently
+        if (Math.random() > effectiveProbability) {
+          continue; // Failed probability roll for this neighbor
+        }
 
         // Check if we can spread to this neighbor
         if (!this.canSpreadTo(neighbor, sourceData, context)) continue;
@@ -235,6 +249,14 @@ export class PropagationSystem implements GameSystem {
           const existingMeta = this.propagatedEntities.get(existingEntityId);
           if (existingMeta && existingMeta.sourceId === sourceId) {
             continue; // Already has propagated entity from this source
+          }
+
+          // For fire propagation, consume (remove) the flammable target entity
+          if (sourceData.propagationType === 'fire') {
+            const existingEntity = context.spatial.getEntityData(existingEntityId);
+            if (existingEntity && hasFlammability(existingEntity)) {
+              context.spatial.remove(existingEntityId);
+            }
           }
         }
 
@@ -360,9 +382,9 @@ export class PropagationSystem implements GameSystem {
    * - Not already consumed (ash on floor layer)
    * - Blocked layers (entities on layers that block spread)
    * - Wall blocking (via spatial.isBlocked)
+   * - Flammability (fire only spreads to flammable entities)
    *
    * Future expansion:
-   * - Consumption model (can consume certain entity types)
    * - Chemical reactions (interaction with other propagation types)
    */
   private canSpreadTo(cell: any, config: any, context: GameContext): boolean {
@@ -387,6 +409,26 @@ export class PropagationSystem implements GameSystem {
     // Check if blocked by walls/obstacles
     if (context.spatial.isBlocked(cell)) {
       return false;
+    }
+
+    // Fire-specific flammability check
+    if (config.propagationType === 'fire') {
+      // Fire only spreads to cells with flammable entities
+      let hasFlammableTarget = false;
+      
+      // Check target layer for flammable entity
+      const targetValue = cell.getValue(config.spreadLayer);
+      if (targetValue !== undefined) {
+        const targetEntity = context.spatial.getEntityData(targetValue);
+        if (targetEntity && hasFlammability(targetEntity)) {
+          hasFlammableTarget = true;
+        }
+      }
+      
+      // If no flammable entity on target layer, fire cannot spread
+      if (!hasFlammableTarget) {
+        return false;
+      }
     }
 
     return true;

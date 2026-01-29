@@ -9,7 +9,19 @@ import { isAsh } from '../entities/trait-guards';
 
 visual('fire spreads to adjacent cells', {
   arrange: ({ spatial }) => {
-    // Spawn initial fire source in center
+    // Create flammable grass field for fire to spread through
+    for (let x = 3; x <= 7; x++) {
+      for (let y = 3; y <= 7; y++) {
+        spatial.spawn('grass', x, y, GameLayers.FLOOR, {
+          flammability: 1.0, // 100% flammable for deterministic test
+          color: '#7cba00',
+        });
+      }
+    }
+
+    spatial.commit();
+
+    // Spawn initial fire source in center (replaces grass at 5,5)
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
       spreadRate: 1,         // Spread every 1 tick (fast for testing)
@@ -52,6 +64,22 @@ visual('fire spreads to adjacent cells', {
 
 visual('fire stopped by walls', {
   arrange: ({ spatial }) => {
+    // Create flammable grass on both sides
+    spatial.spawn('grass', 4, 5, GameLayers.FLOOR, {
+      flammability: 1.0,
+      color: '#7cba00',
+    });
+    spatial.spawn('grass', 3, 5, GameLayers.FLOOR, {
+      flammability: 1.0,
+      color: '#7cba00',
+    });
+    spatial.spawn('grass', 7, 5, GameLayers.FLOOR, {
+      flammability: 1.0,
+      color: '#7cba00',
+    });
+
+    spatial.commit();
+
     // Spawn fire source
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
@@ -168,6 +196,18 @@ visual('poison gas expands with lifetime', {
 
 visual('fire respects max distance limit', {
   arrange: ({ spatial }) => {
+    // Create large grass field for fire to spread through
+    for (let x = 2; x <= 8; x++) {
+      for (let y = 2; y <= 8; y++) {
+        spatial.spawn('grass', x, y, GameLayers.FLOOR, {
+          flammability: 1.0,
+          color: '#7cba00',
+        });
+      }
+    }
+
+    spatial.commit();
+
     // Spawn fire with maxDistance of 2
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
       propagationType: 'fire',
@@ -286,6 +326,16 @@ visual('water flows without lifetime', {
 
 visual('fire spreads and damages player', {
   arrange: ({ spatial }) => {
+    // Create grass path from fire to player
+    for (let x = 5; x <= 8; x++) {
+      spatial.spawn('grass', x, 5, GameLayers.FLOOR, {
+        flammability: 1.0,
+        color: '#7cba00',
+      });
+    }
+
+    spatial.commit();
+
     // Spawn player away from fire, with clear path
     spawnPlayer(spatial, 8, 5, {
       hp: 100,
@@ -366,6 +416,29 @@ visual('fire spreads and damages player', {
 
 visual('multiple fire sources spread independently', {
   arrange: ({ spatial }) => {
+    // Create grass fields around both fire sources
+    // Left fire area
+    for (let x = 1; x <= 4; x++) {
+      for (let y = 4; y <= 6; y++) {
+        spatial.spawn('grass', x, y, GameLayers.FLOOR, {
+          flammability: 1.0,
+          color: '#7cba00',
+        });
+      }
+    }
+
+    // Right fire area
+    for (let x = 6; x <= 9; x++) {
+      for (let y = 4; y <= 6; y++) {
+        spatial.spawn('grass', x, y, GameLayers.FLOOR, {
+          flammability: 1.0,
+          color: '#7cba00',
+        });
+      }
+    }
+
+    spatial.commit();
+
     // Spawn two separate fire sources
     spatial.spawn('fire', 3, 5, GameLayers.FLOOR, {
       propagationType: 'fire',

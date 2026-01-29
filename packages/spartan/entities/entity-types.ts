@@ -51,6 +51,7 @@ import type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
+  HasFlammability,
 } from './traits.js';
 
 /**
@@ -533,4 +534,98 @@ export type WaterData = EntityData & {
  */
 export type AshData = EntityData & {
   type: 'ash';
+} & HasColor;
+
+/**
+ * GrassData - Flammable terrain.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Flammable ground cover
+ * - Fire spreading through fields
+ * - Environmental hazards
+ *
+ * @example
+ * ```typescript
+ * const grassId = spatial.spawn('grass', 7, 3, GameLayers.FLOOR, {
+ *   flammability: 0.8,  // Highly flammable
+ *   color: '#7cba00'
+ * });
+ * ```
+ */
+export type GrassData = EntityData & {
+  type: 'grass';
+} & HasFlammability & HasColor;
+
+/**
+ * GasolineData - Highly flammable liquid spill.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Explosive hazards
+ * - Fast-burning trails
+ * - Tactical fire spreading
+ *
+ * @example
+ * ```typescript
+ * const gasolineId = spatial.spawn('gasoline', 5, 5, GameLayers.COLLECTIBLES, {
+ *   flammability: 0.95,  // Extremely flammable
+ *   color: '#d4af37'
+ * });
+ * ```
+ */
+export type GasolineData = EntityData & {
+  type: 'gasoline';
+} & HasFlammability & HasColor;
+
+/**
+ * FuseData - Designed to burn in sequence.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Timed explosions
+ * - Puzzle mechanics
+ * - Sequential fire spreading
+ *
+ * @example
+ * ```typescript
+ * const fuseId = spatial.spawn('fuse', 10, 10, GameLayers.COLLECTIBLES, {
+ *   flammability: 0.99,  // Nearly guaranteed to ignite
+ *   color: '#ff4500'
+ * });
+ * ```
+ */
+export type FuseData = EntityData & {
+  type: 'fuse';
+} & HasFlammability & HasColor;
+
+/**
+ * TorchData - Static ignition source.
+ *
+ * Traits:
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Fire starting points
+ * - Environmental lighting
+ * - Ignition sources for flammable materials
+ *
+ * @example
+ * ```typescript
+ * const torchId = spatial.spawn('torch', 3, 3, GameLayers.WALLS, {
+ *   color: '#ff6b35'
+ * });
+ * ```
+ */
+export type TorchData = EntityData & {
+  type: 'torch';
 } & HasColor;
