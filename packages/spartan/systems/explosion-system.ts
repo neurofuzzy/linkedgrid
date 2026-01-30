@@ -138,6 +138,16 @@ export class ExplosionSystem implements GameSystem {
       return;
     }
 
+    // Validate explosion parameters
+    if (!Number.isFinite(damage) || damage < 0) {
+      console.warn(`ExplosionSystem: Invalid damage value ${damage} for entity ${sourceEntityId}, skipping`);
+      return;
+    }
+    if (!Number.isFinite(radius) || radius < 0) {
+      console.warn(`ExplosionSystem: Invalid radius value ${radius} for entity ${sourceEntityId}, skipping`);
+      return;
+    }
+
     this.explodedThisTick.add(sourceEntityId);
     this.explosionQueue.push({ x, y, damage, radius, sourceEntityId });
   }
@@ -163,6 +173,11 @@ export class ExplosionSystem implements GameSystem {
    */
   private processExplosion(context: GameContext, explosion: ExplosionEvent): void {
     const { x, y, damage, radius } = explosion;
+
+    // Validate parameters (defense in depth)
+    if (!Number.isFinite(damage) || damage < 0 || !Number.isFinite(radius) || radius < 0) {
+      return;
+    }
 
     // Get epicenter cell
     const epicenter = context.spatial.grid.cell(x, y);
@@ -197,6 +212,11 @@ export class ExplosionSystem implements GameSystem {
    * Apply explosion effects to all entities at a position.
    */
   private applyExplosionEffects(context: GameContext, x: number, y: number, damage: number): void {
+    // Validate damage (defense in depth)
+    if (!Number.isFinite(damage) || damage < 0) {
+      return;
+    }
+
     // Check all layers for entities
     const layers = [
       GameLayers.FLOOR,

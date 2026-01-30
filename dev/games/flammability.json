@@ -267,7 +267,7 @@
             "spreadRate": 1,
             "spreadLayer": 1,
             "spreadType": "water",
-            
+            "maxDistance": 10,
             "color": "#4a90e2"
           }
         },
@@ -281,7 +281,7 @@
             "spreadRate": 1,
             "spreadLayer": 1,
             "spreadType": "water",
-            
+            "maxDistance": 10,
             "color": "#4a90e2"
           }
         },
@@ -295,7 +295,7 @@
             "spreadRate": 1,
             "spreadLayer": 1,
             "spreadType": "water",
-            
+            "maxDistance": 10,
             "color": "#4a90e2"
           }
         },

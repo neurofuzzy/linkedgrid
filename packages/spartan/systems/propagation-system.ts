@@ -322,8 +322,13 @@ export class PropagationSystem implements GameSystem {
           neighbor.x,
           neighbor.y
         );
+        
+        // Determine root source: if current entity is propagated, use its root source
+        // Otherwise, current entity IS the root source
+        const rootSourceId = this.propagatedEntities.get(sourceId)?.sourceId ?? sourceId;
+        
         this.propagatedEntities.set(newEntityId, {
-          sourceId,
+          sourceId: rootSourceId,
           distance,
           spawnTick: this.currentTick,
         });
