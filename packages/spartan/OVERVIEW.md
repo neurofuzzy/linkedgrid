@@ -27,8 +27,8 @@ The `spartan` package is a high-performance, cell-centric 2D game framework buil
 | Directory | Purpose |
 | :--- | :--- |
 | `entities/` | **Traits & Archetypes**. Contains `traits.ts` (interfaces), `entity-types.ts` (compositions), and `GUIDELINES.md`. |
-| `systems/` | **Game Logic**. Contains standard systems (`PlayerInput`, `DoorSystem`, `PropagationSystem`) and `SYSTEM_DEVELOPMENT.md`. |
-| `layers/` | **Layer Definitions**. Constants for the 8-layer rendering/collision stack (`GameLayers`). |
+| `systems/` | **Game Logic**. Contains standard systems (`PlayerInput`, `DoorSystem`, `PropagationSystem`) and `GUIDELINES.md`. |
+| `layers/` | **Layer Definitions**. Constants for the 9-layer rendering/collision stack (`GameLayers`). |
 | `input/` | **Input Handling**. Abstracts Keyboard/Mouse/Gamepad into a unified `InputManager`. |
 
 ## Key Concepts
