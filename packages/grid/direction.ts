@@ -27,11 +27,11 @@ export enum Direction {
   /** Up / North (decreasing Y) */
   UP = 1,
   /** Down / South (increasing Y) */
-  DN = 2,
+  DOWN = 2,
   /** Left / West (decreasing X) */
-  LT = 3,
+  LEFT = 3,
   /** Right / East (increasing X) */
-  RT = 4,
+  RIGHT = 4,
 }
 
 /**
