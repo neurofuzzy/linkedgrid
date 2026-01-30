@@ -278,25 +278,6 @@
           }
         },
         {
-          "type": "fire",
-          "x": 10,
-          "y": 15,
-          "layer": 2,
-          "data": {
-            "propagationType": "fire",
-            "spreadRate": 2,
-            "spreadProbability": 0.9,
-            "spreadLayer": 1,
-            "spreadType": "fire",
-            "lifetime": 30,
-            "color": "#ff4500",
-            "effectType": "damage",
-            "triggerMode": "continuous",
-            "damage": 5,
-            "cadence": 3
-          }
-        },
-        {
           "type": "gasoline",
           "x": 14,
           "y": 5,

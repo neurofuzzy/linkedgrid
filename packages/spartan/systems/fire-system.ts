@@ -120,7 +120,7 @@ export class FireSystem implements GameSystem {
       if (!cell) continue;
       
       // Check 4 neighbors
-      for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+      for (const dir of [Direction.UP, Direction.DN, Direction.LT, Direction.RT]) {
         const neighbor = cell.neighbor(dir);
         if (!neighbor) continue;
         

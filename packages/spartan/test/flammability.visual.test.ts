@@ -306,6 +306,82 @@ visual('mixed flammability terrain creates realistic spread', {
   },
 });
 
+visual('fire spreads through connected grass via temperature', {
+  arrange: ({ spatial }) => {
+    // Create a line of grass
+    spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
+      temperature: 200, // Already ignited
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00',
+    });
+    spatial.spawn('grass', 6, 5, GameLayers.FLOOR, {
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00',
+    });
+    spatial.spawn('grass', 7, 5, GameLayers.FLOOR, {
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00',
+    });
+    spatial.spawn('grass', 8, 5, GameLayers.FLOOR, {
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00',
+    });
+    spatial.commit();
+  },
+  act: ({ spatial }) => {
+    const fireSystem = new FireSystem();
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(fireSystem);
+
+    // Tick to allow fire to spread
+    for (let i = 0; i < 10; i++) {
+      gameLoop.tick();
+      if (i % 2 === 0) spatial.pause();
+    }
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Fire spread to adjacent grass', () => {
+      // Check that at least 2 grass tiles are burning
+      const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
+        const data = spatial.getEntityData(id);
+        return data && data.type === 'grass' && 
+               'temperature' in data && 'flamePoint' in data && 
+               data.temperature >= data.flamePoint;
+      }).length;
+
+      if (burningCount < 2) {
+        throw new Error(`Expected fire to spread to adjacent grass, got ${burningCount} burning grass entities`);
+      }
+    });
+
+    expect('Fire visuals spawned on EPHEMERALS layer', () => {
+      const visualCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
+        const data = spatial.getEntityData(id);
+        return data && data.type === 'fire-visual';
+      }).length;
+
+      if (visualCount < 1) {
+        throw new Error(`Expected fire visuals to be spawned, got ${visualCount}`);
+      }
+    });
+  },
+});
+
 visual('fire cannot spread without flammable materials', {
   arrange: ({ spatial }) => {
     // Spawn single flammable grass surrounded by empty floor
