@@ -21,16 +21,16 @@ describe('LinkedGrid', () => {
       // Center cell should have all 4 neighbors
       const center = grid.cell(1, 1)!;
       expect(center.neighbor(Direction.UP)).toBe(grid.cell(1, 0));
-      expect(center.neighbor(Direction.DN)).toBe(grid.cell(1, 2));
-      expect(center.neighbor(Direction.LT)).toBe(grid.cell(0, 1));
-      expect(center.neighbor(Direction.RT)).toBe(grid.cell(2, 1));
+      expect(center.neighbor(Direction.DOWN)).toBe(grid.cell(1, 2));
+      expect(center.neighbor(Direction.LEFT)).toBe(grid.cell(0, 1));
+      expect(center.neighbor(Direction.RIGHT)).toBe(grid.cell(2, 1));
 
       // Corner cell should have null neighbors at edges
       const topLeft = grid.cell(0, 0)!;
       expect(topLeft.neighbor(Direction.UP)).toBeNull();
-      expect(topLeft.neighbor(Direction.LT)).toBeNull();
-      expect(topLeft.neighbor(Direction.DN)).toBe(grid.cell(0, 1));
-      expect(topLeft.neighbor(Direction.RT)).toBe(grid.cell(1, 0));
+      expect(topLeft.neighbor(Direction.LEFT)).toBeNull();
+      expect(topLeft.neighbor(Direction.DOWN)).toBe(grid.cell(0, 1));
+      expect(topLeft.neighbor(Direction.RIGHT)).toBe(grid.cell(1, 0));
     });
   });
 
@@ -41,17 +41,17 @@ describe('LinkedGrid', () => {
       // Start at center, move around
       const start = grid.cell(2, 2)!;
       expect(start.move(Direction.UP)).toBe(grid.cell(2, 1));
-      expect(start.move(Direction.DN)).toBe(grid.cell(2, 3));
-      expect(start.move(Direction.LT)).toBe(grid.cell(1, 2));
-      expect(start.move(Direction.RT)).toBe(grid.cell(3, 2));
+      expect(start.move(Direction.DOWN)).toBe(grid.cell(2, 3));
+      expect(start.move(Direction.LEFT)).toBe(grid.cell(1, 2));
+      expect(start.move(Direction.RIGHT)).toBe(grid.cell(3, 2));
     });
 
     it('moves multiple steps', () => {
       const grid = new LinkedGrid(5, 5);
 
       const start = grid.cell(0, 0)!;
-      expect(start.move(Direction.RT, 3)).toBe(grid.cell(3, 0));
-      expect(start.move(Direction.DN, 4)).toBe(grid.cell(0, 4));
+      expect(start.move(Direction.RIGHT, 3)).toBe(grid.cell(3, 0));
+      expect(start.move(Direction.DOWN, 4)).toBe(grid.cell(0, 4));
     });
 
     it('returns null when moving off grid', () => {
@@ -59,7 +59,7 @@ describe('LinkedGrid', () => {
 
       const corner = grid.cell(0, 0)!;
       expect(corner.move(Direction.UP)).toBeNull();
-      expect(corner.move(Direction.LT)).toBeNull();
+      expect(corner.move(Direction.LEFT)).toBeNull();
     });
 
     it('draws a snake pattern via chained moves', () => {
@@ -70,21 +70,21 @@ describe('LinkedGrid', () => {
       grid
         .cell(0, 0)!
         .setValue(0, 1)
-        .move(Direction.RT)!
+        .move(Direction.RIGHT)!
         .setValue(0, 1)
-        .move(Direction.RT)!
+        .move(Direction.RIGHT)!
         .setValue(0, 1)
-        .move(Direction.DN)!
+        .move(Direction.DOWN)!
         .setValue(0, 1)
-        .move(Direction.LT)!
+        .move(Direction.LEFT)!
         .setValue(0, 1)
-        .move(Direction.LT)!
+        .move(Direction.LEFT)!
         .setValue(0, 1)
-        .move(Direction.DN)!
+        .move(Direction.DOWN)!
         .setValue(0, 1)
-        .move(Direction.RT)!
+        .move(Direction.RIGHT)!
         .setValue(0, 1)
-        .move(Direction.RT)!
+        .move(Direction.RIGHT)!
         .setValue(0, 1);
 
       const ascii = LinkedGridUtils.print(grid, 0);
@@ -241,7 +241,7 @@ describe('LinkedGrid', () => {
       grid.cells.forEach((c) => c.setValue(0, 0));
 
       const start = grid.cell(0, 2)!;
-      const result = start.raycast(Direction.RT, 10);
+      const result = start.raycast(Direction.RIGHT, 10);
 
       // Mark the ray
       result.cells.forEach((c) => c.setValue(0, 1));
@@ -265,7 +265,7 @@ describe('LinkedGrid', () => {
 
       const start = grid.cell(0, 2)!;
       const result = start.raycast(
-        Direction.RT,
+        Direction.RIGHT,
         10,
         (c) => c.values[0] === 9 // wall blocks
       );
@@ -467,11 +467,11 @@ describe('LinkedGrid', () => {
 
       // Moving off right edge wraps to left
       const rightEdge = grid.cell(4, 2)!;
-      expect(rightEdge.neighbor(Direction.RT)).toBe(grid.cell(0, 2));
+      expect(rightEdge.neighbor(Direction.RIGHT)).toBe(grid.cell(0, 2));
 
       // Moving off left edge wraps to right
       const leftEdge = grid.cell(0, 2)!;
-      expect(leftEdge.neighbor(Direction.LT)).toBe(grid.cell(4, 2));
+      expect(leftEdge.neighbor(Direction.LEFT)).toBe(grid.cell(4, 2));
 
       // Moving off top wraps to bottom
       const topEdge = grid.cell(2, 0)!;
@@ -479,7 +479,7 @@ describe('LinkedGrid', () => {
 
       // Moving off bottom wraps to top
       const bottomEdge = grid.cell(2, 4)!;
-      expect(bottomEdge.neighbor(Direction.DN)).toBe(grid.cell(2, 0));
+      expect(bottomEdge.neighbor(Direction.DOWN)).toBe(grid.cell(2, 0));
     });
 
     it('move traverses wrapped grid infinitely', () => {
@@ -489,7 +489,7 @@ describe('LinkedGrid', () => {
       // Start at center, move right 6 times (should wrap twice and end at center)
       let cell = grid.cell(1, 1)!;
       for (let i = 0; i < 6; i++) {
-        cell = cell.move(Direction.RT)!;
+        cell = cell.move(Direction.RIGHT)!;
       }
 
       expect(cell).toBe(grid.cell(1, 1)); // Back at start!

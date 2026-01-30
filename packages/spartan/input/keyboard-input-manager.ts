@@ -189,19 +189,19 @@ export class KeyboardInputManager {
   private getDirection(): Direction {
     // Arrow keys take priority
     if (this.keysThisFrame.has('ArrowUp')) return Direction.UP;
-    if (this.keysThisFrame.has('ArrowDown')) return Direction.DN;
-    if (this.keysThisFrame.has('ArrowLeft')) return Direction.LT;
-    if (this.keysThisFrame.has('ArrowRight')) return Direction.RT;
+    if (this.keysThisFrame.has('ArrowDown')) return Direction.DOWN;
+    if (this.keysThisFrame.has('ArrowLeft')) return Direction.LEFT;
+    if (this.keysThisFrame.has('ArrowRight')) return Direction.RIGHT;
 
     // WASD fallback
     if (this.keysThisFrame.has('w') || this.keysThisFrame.has('W'))
       return Direction.UP;
     if (this.keysThisFrame.has('s') || this.keysThisFrame.has('S'))
-      return Direction.DN;
+      return Direction.DOWN;
     if (this.keysThisFrame.has('a') || this.keysThisFrame.has('A'))
-      return Direction.LT;
+      return Direction.LEFT;
     if (this.keysThisFrame.has('d') || this.keysThisFrame.has('D'))
-      return Direction.RT;
+      return Direction.RIGHT;
 
     return Direction.NONE;
   }
@@ -257,15 +257,15 @@ export class KeyboardInputManager {
       case 'ArrowDown':
       case 's':
       case 'S':
-        return Direction.DN;
+        return Direction.DOWN;
       case 'ArrowLeft':
       case 'a':
       case 'A':
-        return Direction.LT;
+        return Direction.LEFT;
       case 'ArrowRight':
       case 'd':
       case 'D':
-        return Direction.RT;
+        return Direction.RIGHT;
       default:
         return Direction.NONE;
     }

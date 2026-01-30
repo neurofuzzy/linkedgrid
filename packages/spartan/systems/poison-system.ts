@@ -421,7 +421,7 @@ export class PoisonSystem implements GameSystem {
 
       // Find available neighbors
       const availableNeighbors: LinkedCell[] = [];
-      const directions = [Direction.UP, Direction.DN, Direction.LT, Direction.RT];
+      const directions = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT];
 
       for (const dir of directions) {
         const neighbor = cell.neighbor(dir);

@@ -22,7 +22,7 @@ import { LinkedGridUtils } from './linked-grid-utils';
  * cell.setValue(0, WALL);
  *
  * // Navigate via neighbor links
- * const rightCell = cell.move(Direction.RT);
+ * const rightCell = cell.move(Direction.RIGHT);
  * ```
  *
  * @example
@@ -133,22 +133,22 @@ export class LinkedGrid {
             Direction.UP,
             this._grid[(j - 1 + height) % height][i]
           );
-          cell.setNeighbor(Direction.DN, this._grid[(j + 1) % height][i]);
+          cell.setNeighbor(Direction.DOWN, this._grid[(j + 1) % height][i]);
           cell.setNeighbor(
-            Direction.LT,
+            Direction.LEFT,
             this._grid[j][(i - 1 + width) % width]
           );
-          cell.setNeighbor(Direction.RT, this._grid[j][(i + 1) % width]);
+          cell.setNeighbor(Direction.RIGHT, this._grid[j][(i + 1) % width]);
         } else {
           // Normal edges (null at boundaries)
           cell.setNeighbor(Direction.UP, j > 0 ? this._grid[j - 1][i] : null);
           cell.setNeighbor(
-            Direction.DN,
+            Direction.DOWN,
             j < height - 1 ? this._grid[j + 1][i] : null
           );
-          cell.setNeighbor(Direction.LT, i > 0 ? this._grid[j][i - 1] : null);
+          cell.setNeighbor(Direction.LEFT, i > 0 ? this._grid[j][i - 1] : null);
           cell.setNeighbor(
-            Direction.RT,
+            Direction.RIGHT,
             i < width - 1 ? this._grid[j][i + 1] : null
           );
         }

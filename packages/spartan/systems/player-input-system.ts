@@ -102,11 +102,11 @@ export class PlayerInputSystem implements GameSystem {
     switch (dir) {
       case Direction.UP:
         return { dx: 0, dy: -1 };
-      case Direction.DN:
+      case Direction.DOWN:
         return { dx: 0, dy: 1 };
-      case Direction.LT:
+      case Direction.LEFT:
         return { dx: -1, dy: 0 };
-      case Direction.RT:
+      case Direction.RIGHT:
         return { dx: 1, dy: 0 };
       default:
         return { dx: 0, dy: 0 };

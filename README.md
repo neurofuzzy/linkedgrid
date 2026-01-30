@@ -41,7 +41,7 @@ const grid = new LinkedGrid(20, 20);
 const cell = grid.cell(10, 10);
 
 // Navigate via neighbor links (O(1))
-const rightCell = cell.move(Direction.RT);
+const rightCell = cell.move(Direction.RIGHT);
 const upTwoCell = cell.move(Direction.UP, 2);
 
 // Pathfinding
@@ -54,7 +54,7 @@ const path = cell.findPath(
 const visible = cell.fieldOfView(10, c => c.values[0] === WALL);
 
 // Raycasting
-const ray = cell.raycast(Direction.RT, 10, c => c.values[0] === WALL);
+const ray = cell.raycast(Direction.RIGHT, 10, c => c.values[0] === WALL);
 ```
 
 ### Spartan Framework Usage

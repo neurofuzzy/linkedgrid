@@ -391,7 +391,7 @@ const config = {
 const runtime = loader.load(config);
 const input = runtime.inputManager as HeadlessInputManager;
 
-input.setDirection(Direction.RT);
+input.setDirection(Direction.RIGHT);
 runtime.gameLoop.tick();
 input.clearInput();
 ```

@@ -11,6 +11,7 @@ import { PropagationSystem } from '../packages/spartan/systems/propagation-syste
 import { ExplosionSystem } from '../packages/spartan/systems/explosion-system';
 import { PoisonSystem } from '../packages/spartan/systems/poison-system';
 import { FireSystem } from '../packages/spartan/systems/fire-system';
+import { LiquidSystem } from '../packages/spartan/systems/liquid-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -81,6 +82,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   ExplosionSystem: () => new ExplosionSystem(),
   PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
   FireSystem: () => new FireSystem(),
+  LiquidSystem: () => new LiquidSystem(),
 };
 
 /**

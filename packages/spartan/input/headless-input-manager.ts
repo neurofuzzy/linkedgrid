@@ -16,7 +16,7 @@
  * headlessInput.enable();
  *
  * // Simulate pressing right arrow
- * headlessInput.setDirection(Direction.RT);
+ * headlessInput.setDirection(Direction.RIGHT);
  *
  * // In game loop
  * function tick() {

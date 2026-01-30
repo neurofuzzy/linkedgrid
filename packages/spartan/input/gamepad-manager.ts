@@ -178,11 +178,11 @@ export class GamepadManager {
     if (gp.buttons[12]?.pressed) {
       this.state.dpadDirection = Direction.UP;
     } else if (gp.buttons[13]?.pressed) {
-      this.state.dpadDirection = Direction.DN;
+      this.state.dpadDirection = Direction.DOWN;
     } else if (gp.buttons[14]?.pressed) {
-      this.state.dpadDirection = Direction.LT;
+      this.state.dpadDirection = Direction.LEFT;
     } else if (gp.buttons[15]?.pressed) {
-      this.state.dpadDirection = Direction.RT;
+      this.state.dpadDirection = Direction.RIGHT;
     } else {
       this.state.dpadDirection = Direction.NONE;
     }
@@ -237,9 +237,9 @@ export class GamepadManager {
 
     // Use dominant axis
     if (Math.abs(x) > Math.abs(y)) {
-      return x > 0 ? Direction.RT : Direction.LT;
+      return x > 0 ? Direction.RIGHT : Direction.LEFT;
     } else {
-      return y > 0 ? Direction.DN : Direction.UP;
+      return y > 0 ? Direction.DOWN : Direction.UP;
     }
   }
 

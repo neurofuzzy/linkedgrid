@@ -9,7 +9,7 @@
  * // Basic movement
  * const cell = grid.cell(5, 5);
  * const above = cell.move(Direction.UP);
- * const right3 = cell.move(Direction.RT, 3);
+ * const right3 = cell.move(Direction.RIGHT, 3);
  *
  * // Input handling
  * if (inputState.direction !== Direction.NONE) {
@@ -46,8 +46,8 @@ export namespace Direction {
    * @returns The reflected direction
    *
    * @example
-   * Direction.reflect(Direction.UP, 'horizontal') // Returns Direction.DN
-   * Direction.reflect(Direction.LT, 'vertical') // Returns Direction.RT
+   * Direction.reflect(Direction.UP, 'horizontal') // Returns Direction.DOWN
+   * Direction.reflect(Direction.LEFT, 'vertical') // Returns Direction.RIGHT
    */
   export function reflect(
     direction: Direction,
@@ -55,13 +55,13 @@ export namespace Direction {
   ): Direction {
     if (axis === 'horizontal') {
       // Reflect across horizontal axis (flip vertical direction)
-      if (direction === Direction.UP) return Direction.DN;
-      if (direction === Direction.DN) return Direction.UP;
+      if (direction === Direction.UP) return Direction.DOWN;
+      if (direction === Direction.DOWN) return Direction.UP;
       return direction; // LT, RT, NONE unchanged
     } else {
       // Reflect across vertical axis (flip horizontal direction)
-      if (direction === Direction.LT) return Direction.RT;
-      if (direction === Direction.RT) return Direction.LT;
+      if (direction === Direction.LEFT) return Direction.RIGHT;
+      if (direction === Direction.RIGHT) return Direction.LEFT;
       return direction; // UP, DN, NONE unchanged
     }
   }

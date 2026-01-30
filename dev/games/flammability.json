@@ -359,7 +359,8 @@
   "systems": [
     "PropagationSystem",
     "FireSystem",
-    "FloorEffectSystem"
+    "FloorEffectSystem",
+    "LiquidSystem"
   ],
   "input": {
     "type": "keyboard",

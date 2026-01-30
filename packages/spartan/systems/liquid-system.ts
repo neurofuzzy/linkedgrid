@@ -1,7 +1,7 @@
 import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import { Direction } from '../../grid/direction';
 import type { LinkedCell } from '../../grid/linked-cell';
-import { hasPropagation, isAsh } from '../entities/trait-guards';
+import { hasPropagation } from '../entities/trait-guards';
 import { GameLayers } from '../layers/types';
 
 /**
@@ -26,24 +26,20 @@ interface PropagatedEntity {
 }
 
 /**
- * Propagation configuration from entity data.
+ * Liquid propagation configuration from entity data.
  */
-interface PropagationConfig extends EntityData {
+interface LiquidConfig extends EntityData {
   propagationType?: string;
   spreadLayer: number;
   blockedByLayers?: number[];
 }
 
 /**
- * PropagationSystem - Handles spreading effects across the grid.
+ * LiquidSystem - Handles spreading of liquid effects across the grid.
  *
- * Manages entities with propagation trait that spread to adjacent cells:
- * - Fire: Legacy probabilistic fire spreading (use FireSystem for temperature-based)
- * - Chain: Explosions, cascading reactions (deterministic)
- *
- * Note:
- * - Liquids are handled by LiquidSystem
- * - Gases are handled by PoisonSystem
+ * Manages entities with propagation trait where propagationType is 'liquid':
+ * - Water: Flows across floor (deterministic)
+ * - Oil/Gasoline: Spills and spreads (deterministic)
  *
  * Propagation uses LinkedGrid's 4-neighbor topology (UP, DOWN, LEFT, RIGHT).
  * Supports boundary checking, distance limits, lifetime expiration, and probability.
@@ -51,29 +47,12 @@ interface PropagationConfig extends EntityData {
  * Timing is tick-based (not ms-based) for deterministic behavior.
  *
  * Processing phases:
- * 1. Identify spread sources (entities with HasPropagation trait)
+ * 1. Identify spread sources (entities with HasPropagation trait AND type='liquid')
  * 2. Propagate from sources (check cadence, spawn to neighbors with probability)
  * 3. Update spread state (track timing and distances)
  * 4. Clean up expired effects (remove entities past lifetime)
- *
- * @example
- * ```typescript
- * const propagationSystem = new PropagationSystem();
- * gameLoop.addSystem(propagationSystem);
- *
- * // Spawn water that spreads deterministically
- * spatial.spawn('water', 10, 10, GameLayers.FLOOR, {
- *   propagationType: 'liquid',
- *   spreadRate: 1,              // Spread every tick
- *   spreadProbability: 1.0,     // 100% chance
- *   spreadLayer: GameLayers.FLOOR,
- *   spreadType: 'water',
- *   maxDistance: 10,
- *   color: '#4a90e2'
- * });
- * ```
  */
-export class PropagationSystem implements GameSystem {
+export class LiquidSystem implements GameSystem {
   // System-owned state per source entity (timing and origin position)
   private spreadState = new Map<number, SpreadState>();
 
@@ -85,12 +64,6 @@ export class PropagationSystem implements GameSystem {
 
   /**
    * Update called by GameLoop each tick.
-   *
-   * Processing phases:
-   * 1. Identify spread sources
-   * 2. Propagate from sources
-   * 3. Update spread state
-   * 4. Clean up expired effects
    */
   update(context: GameContext): void {
     this.currentTick++;
@@ -101,17 +74,14 @@ export class PropagationSystem implements GameSystem {
     // Phase 2: Propagate from sources
     this.propagateFromSources(context, sources);
 
-    // Phase 3: Update spread state (already updated in phase 2)
-    // (State is updated as we propagate for efficiency)
-
-    // Phase 4: Clean up expired effects
+    // Phase 3: Clean up expired effects
     this.cleanupExpiredEffects(context);
   }
 
   /**
    * Phase 1: Identify spread sources.
    *
-   * Finds all entities with HasPropagation trait that are still alive.
+   * Finds all entities with HasPropagation trait and propagationType='liquid' that are still alive.
    * Initializes spread state for new sources, inheriting origin from parent if propagated.
    */
   private identifySpreadSources(context: GameContext): Map<number, Position> {
@@ -119,13 +89,8 @@ export class PropagationSystem implements GameSystem {
 
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !hasPropagation(entityData)) continue;
-      
-      // SKIP 'gas' type - handled by PoisonSystem
-      if (entityData.propagationType === 'gas') continue;
-      
-      // SKIP 'liquid' type - handled by LiquidSystem
-      if (entityData.propagationType === 'liquid') continue;
+      // Only process 'liquid' propagation
+      if (!entityData || !hasPropagation(entityData) || entityData.propagationType !== 'liquid') continue;
 
       // Check if entity is pending removal
       if (context.spatial.isAlive(entityId) === false) continue;
@@ -221,7 +186,7 @@ export class PropagationSystem implements GameSystem {
         }
 
         // Check if we can spread to this neighbor
-        if (!this.canSpreadTo(neighbor, sourceData, context)) continue;
+        if (!this.canSpreadTo(neighbor, sourceData as unknown as LiquidConfig, context)) continue;
 
         // Check distance limit
         if (sourceData.maxDistance !== undefined) {
@@ -274,6 +239,12 @@ export class PropagationSystem implements GameSystem {
             }),
             // Copy color if present
             ...(sourceData.color && { color: sourceData.color }),
+            // Copy flammability if present (important for oil/gasoline)
+            ...(sourceData.flammability !== undefined && { 
+              flammability: sourceData.flammability,
+              flamePoint: sourceData.flamePoint,
+              temperature: sourceData.temperature 
+            }),
           }
         );
 
@@ -313,13 +284,8 @@ export class PropagationSystem implements GameSystem {
     // Check ALL entities with propagation trait for expiration (not just propagated ones)
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !hasPropagation(entityData)) continue;
-      
-      // SKIP 'gas' type - handled by PoisonSystem
-      if (entityData.propagationType === 'gas') continue;
-      
-      // SKIP 'liquid' type - handled by LiquidSystem
-      if (entityData.propagationType === 'liquid') continue;
+      // Only process 'liquid' propagation
+      if (!entityData || !hasPropagation(entityData) || entityData.propagationType !== 'liquid') continue;
       
       if (!entityData.lifetime) continue; // Skip entities without lifetime
 
@@ -362,27 +328,13 @@ export class PropagationSystem implements GameSystem {
   }
 
   /**
-   * Check if propagation can spread to a target cell.
+   * Check if liquid can spread to a target cell.
    *
    * Checks:
-   * - Not already consumed (ash on FLOOR_EFFECTS layer)
    * - Blocked layers (entities on layers that block spread)
    * - Wall blocking (via spatial.isBlocked)
-   * - Flammability (fire only spreads to flammable entities)
-   *
-   * Future expansion:
-   * - Chemical reactions (interaction with other propagation types)
    */
-  private canSpreadTo(cell: LinkedCell, config: PropagationConfig, context: GameContext): boolean {
-    // Check if floor effects layer is already consumed (has ash)
-    const floorEffectsValue = cell.getValue(GameLayers.FLOOR_EFFECTS);
-    if (floorEffectsValue !== undefined) {
-      const floorEffectsEntity = context.spatial.getEntityData(floorEffectsValue);
-      if (floorEffectsEntity && isAsh(floorEffectsEntity)) {
-        return false; // Cannot spread to consumed cells (ash)
-      }
-    }
-
+  private canSpreadTo(cell: LinkedCell, config: LiquidConfig, context: GameContext): boolean {
     // Check blocked layers
     if (config.blockedByLayers) {
       for (const layer of config.blockedByLayers) {
@@ -414,7 +366,6 @@ export class PropagationSystem implements GameSystem {
 
   /**
    * Reset all propagation state.
-   * Useful for testing or scene transitions.
    */
   public resetState(): void {
     this.spreadState.clear();
@@ -423,25 +374,13 @@ export class PropagationSystem implements GameSystem {
   }
 
   /**
-   * Get debug state for troubleshooting.
-   * Useful for understanding system state during development.
+   * Get debug state.
    */
   public getDebugState() {
     return {
       currentTick: this.currentTick,
       spreadStateSize: this.spreadState.size,
-      spreadSources: Array.from(this.spreadState.entries()).map(([id, state]) => ({
-        entityId: id,
-        lastSpreadTick: state.lastSpreadTick,
-        origin: { x: state.originX, y: state.originY },
-      })),
       propagatedCount: this.propagatedEntities.size,
-      propagatedEntities: Array.from(this.propagatedEntities.entries()).map(([id, meta]) => ({
-        entityId: id,
-        sourceId: meta.sourceId,
-        distance: meta.distance,
-        spawnTick: meta.spawnTick,
-      })),
     };
   }
 }

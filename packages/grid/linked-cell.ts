@@ -23,11 +23,11 @@ import { LinkedCellUtils } from './linked-cell-utils';
  * ```typescript
  * // Navigation
  * const cell = grid.cell(5, 5);
- * const right = cell.move(Direction.RT);
+ * const right = cell.move(Direction.RIGHT);
  * const twoUp = cell.move(Direction.UP, 2);
  *
  * // Raycasting
- * const ray = cell.raycast(Direction.RT, 10, c => c.values[0] === WALL);
+ * const ray = cell.raycast(Direction.RIGHT, 10, c => c.values[0] === WALL);
  *
  * // Pathfinding
  * const path = cell.findPath(
@@ -252,7 +252,7 @@ export class LinkedCell {
    * @example
    * ```typescript
    * const cell = grid.cell(5, 5);
-   * const right3 = cell.move(Direction.RT, 3);  // Cell at (8, 5)
+   * const right3 = cell.move(Direction.RIGHT, 3);  // Cell at (8, 5)
    * const up = cell.move(Direction.UP);          // Cell at (5, 4)
    * ```
    */
@@ -276,7 +276,7 @@ export class LinkedCell {
    * @example
    * ```typescript
    * // Find first wall to the right
-   * const wall = cell.look(c => c.values[0] === WALL, Direction.RT);
+   * const wall = cell.look(c => c.values[0] === WALL, Direction.RIGHT);
    *
    * // Find first empty cell upward
    * const empty = cell.look(c => c.values[0] === EMPTY, Direction.UP);
