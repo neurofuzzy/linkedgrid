@@ -42,6 +42,11 @@ const AVAILABLE_GAMES = [
     name: 'Propagation & Chain Reaction',
     path: '/dev/games/propagation.json',
   },
+  {
+    id: 'liquids',
+    name: 'Liquid Simulation',
+    path: '/dev/games/liquids.json',
+  },
 ];
 
 /**

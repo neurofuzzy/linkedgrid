@@ -123,6 +123,20 @@ export function GridRenderer({ scene }: Props) {
              color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
            }
         }
+        
+        // Apply liquid depth opacity
+        if (color && (entityData as any).depth !== undefined && (entityData as any).type !== 'poison-gas') {
+           const depth = (entityData as any).depth;
+           // Map depth 1 -> 0.4, depth 10 -> 1.0
+           const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
+           
+           if (color.startsWith('#')) {
+             const r = parseInt(color.slice(1, 3), 16);
+             const g = parseInt(color.slice(3, 5), 16);
+             const b = parseInt(color.slice(5, 7), 16);
+             color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+           }
+        }
 
         row.push({ char, className, color });
       }

@@ -41,6 +41,7 @@ import type {
   HasExplosion,
   HasDamageable,
   HasDensity,
+  HasLiquid,
 } from './traits';
 import type {
   PlayerData,
@@ -321,6 +322,20 @@ export function hasDensity(
     'density' in entity && typeof entity.density === 'number' &&
     'minDensity' in entity && typeof entity.minDensity === 'number'
   );
+}
+
+/**
+ * Check if entity has liquid trait.
+ *
+ * Entities with liquid trait have volumetric depth.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses liquid trait
+ */
+export function hasLiquid(
+  entity: EntityData
+): entity is EntityData & HasLiquid {
+  return 'depth' in entity && typeof entity.depth === 'number';
 }
 
 /**

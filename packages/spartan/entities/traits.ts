@@ -512,6 +512,31 @@ export interface HasDensity {
 }
 
 /**
+ * HasLiquid - Entity behaves as a volumetric liquid.
+ *
+ * Used by:
+ * - LiquidSystem (spreads based on depth equalization)
+ * - GridRenderer (opacity based on depth)
+ *
+ * Mechanics:
+ * - depth: Integer representing volume of liquid in cell.
+ * - Spread: Liquid flows from high depth to low depth/empty cells
+ *   to equalize height (local diffusion).
+ * - Conservation: Total depth is conserved during spread (mostly).
+ *
+ * @example
+ * ```typescript
+ * const water = {
+ *   type: 'water',
+ *   depth: 10, // Deep puddle
+ * };
+ * ```
+ */
+export interface HasLiquid {
+  depth: number;
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

@@ -55,6 +55,7 @@ import type {
   HasExplosion,
   HasDamageable,
   HasDensity,
+  HasLiquid,
 } from './traits';
 
 /**
@@ -530,7 +531,7 @@ export type PoisonGasData = EntityData & {
  */
 export type WaterData = EntityData & {
   type: 'water';
-} & HasPropagation & HasColor;
+} & HasPropagation & HasColor & HasLiquid;
 
 /**
  * AshData - Remains of consumed fire.
