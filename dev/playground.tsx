@@ -32,6 +32,16 @@ const AVAILABLE_GAMES = [
     name: 'Flammability',
     path: '/dev/games/flammability.json',
   },
+  {
+    id: 'explosions',
+    name: 'Explosions Playground',
+    path: '/dev/games/explosions.json',
+  },
+  {
+    id: 'propagation',
+    name: 'Propagation & Chain Reaction',
+    path: '/dev/games/propagation.json',
+  },
 ];
 
 /**
