@@ -38,7 +38,7 @@
  * ```
  */
 
-import type { EntityData } from '../types.js';
+import type { EntityData } from '../types';
 import type {
   HasHealth,
   CanDealDamage,
@@ -50,7 +50,9 @@ import type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
-} from './traits.js';
+  HasPropagation,
+  HasFlammability,
+} from './traits';
 
 /**
  * PlayerData - Player-controlled entity.
@@ -408,3 +410,222 @@ export type IceData = EntityData & {
 export type MudData = EntityData & {
   type: 'mud';
 } & HasFloorEffect & HasColor;
+
+/**
+ * FireData - Spreading fire that damages entities.
+ *
+ * Traits:
+ * - HasPropagation - Spreads probabilistically to adjacent cells
+ * - HasFloorEffect - Deals damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Fire spreading through areas (consuming effect)
+ * - Burning terrain
+ * - Temporary hazards that expire
+ *
+ * @example
+ * ```typescript
+ * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+ *   propagationType: 'fire',
+ *   spreadRate: 2,                 // Spread every 2 ticks
+ *   spreadProbability: 0.6,        // 60% chance per neighbor (realistic consuming)
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'fire',
+ *   // No maxDistance - fire spread is limited by flammable materials
+ *   lifetime: 20,                  // Burns for 20 ticks
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',
+ *   damage: 10,
+ *   cadence: 2,                    // Damage every 2 ticks
+ *   color: '#ff6b35'
+ * });
+ * ```
+ */
+export type FireData = EntityData & {
+  type: 'fire';
+} & HasPropagation & HasFloorEffect & HasColor;
+
+/**
+ * PoisonGasData - Expanding poison gas cloud.
+ *
+ * Traits:
+ * - HasPropagation - Spreads to adjacent cells (deterministic)
+ * - HasFloorEffect - Deals damage over time
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Poison gas attacks
+ * - Environmental hazards
+ * - Area denial effects
+ *
+ * @example
+ * ```typescript
+ * const gasId = spatial.spawn('poison-gas', 5, 5, GameLayers.EPHEMERALS, {
+ *   propagationType: 'gas',
+ *   spreadRate: 1,                      // Spread every tick (fast)
+ *   spreadLayer: GameLayers.EPHEMERALS,
+ *   spreadType: 'poison-gas',
+ *   maxDistance: 8,
+ *   lifetime: 15,                       // Dissipates after 15 ticks
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   effectType: 'damage',
+ *   triggerMode: 'continuous',
+ *   damage: 2,
+ *   cadence: 3,                         // Damage every 3 ticks
+ *   color: '#9acd32'
+ * });
+ * ```
+ */
+export type PoisonGasData = EntityData & {
+  type: 'poison-gas';
+} & HasPropagation & HasFloorEffect & HasColor;
+
+/**
+ * WaterData - Flowing liquid.
+ *
+ * Traits:
+ * - HasPropagation - Spreads to adjacent cells (deterministic)
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Water flow simulation
+ * - Liquid hazards
+ * - Environmental effects
+ *
+ * @example
+ * ```typescript
+ * const waterId = spatial.spawn('water', 7, 3, GameLayers.FLOOR, {
+ *   propagationType: 'liquid',
+ *   spreadRate: 1,                   // Flows every tick
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'water',
+ *   maxDistance: 10,
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   color: '#4a90e2'
+ *   // No lifetime - water persists
+ *   // No spreadProbability - always spreads (deterministic)
+ *   // No floor effect - just visual/spreading
+ * });
+ * ```
+ */
+export type WaterData = EntityData & {
+  type: 'water';
+} & HasPropagation & HasColor;
+
+/**
+ * AshData - Remains of consumed fire.
+ *
+ * Traits:
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Left behind after fire burns out
+ * - Prevents fire from spreading to consumed cells
+ * - Visual indicator of fire damage
+ *
+ * @example
+ * ```typescript
+ * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR, {
+ *   color: '#4a4a4a'
+ * });
+ * ```
+ */
+export type AshData = EntityData & {
+  type: 'ash';
+} & HasColor;
+
+/**
+ * GrassData - Flammable terrain.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Flammable ground cover
+ * - Fire spreading through fields
+ * - Environmental hazards
+ *
+ * @example
+ * ```typescript
+ * const grassId = spatial.spawn('grass', 7, 3, GameLayers.FLOOR, {
+ *   flammability: 0.8,  // Highly flammable
+ *   color: '#7cba00'
+ * });
+ * ```
+ */
+export type GrassData = EntityData & {
+  type: 'grass';
+} & HasFlammability & HasColor;
+
+/**
+ * GasolineData - Highly flammable liquid spill.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Explosive hazards
+ * - Fast-burning trails
+ * - Tactical fire spreading
+ *
+ * @example
+ * ```typescript
+ * const gasolineId = spatial.spawn('gasoline', 5, 5, GameLayers.COLLECTIBLES, {
+ *   flammability: 0.95,  // Extremely flammable
+ *   color: '#d4af37'
+ * });
+ * ```
+ */
+export type GasolineData = EntityData & {
+  type: 'gasoline';
+} & HasFlammability & HasColor;
+
+/**
+ * FuseData - Designed to burn in sequence.
+ *
+ * Traits:
+ * - HasFlammability - Can catch fire and burn
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Timed explosions
+ * - Puzzle mechanics
+ * - Sequential fire spreading
+ *
+ * @example
+ * ```typescript
+ * const fuseId = spatial.spawn('fuse', 10, 10, GameLayers.COLLECTIBLES, {
+ *   flammability: 0.99,  // Nearly guaranteed to ignite
+ *   color: '#ff4500'
+ * });
+ * ```
+ */
+export type FuseData = EntityData & {
+  type: 'fuse';
+} & HasFlammability & HasColor;
+
+/**
+ * TorchData - Static ignition source.
+ *
+ * Traits:
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Fire starting points
+ * - Environmental lighting
+ * - Ignition sources for flammable materials
+ *
+ * @example
+ * ```typescript
+ * const torchId = spatial.spawn('torch', 3, 3, GameLayers.WALLS, {
+ *   color: '#ff6b35'
+ * });
+ * ```
+ */
+export type TorchData = EntityData & {
+  type: 'torch';
+} & HasColor;

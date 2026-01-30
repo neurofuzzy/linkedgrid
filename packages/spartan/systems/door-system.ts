@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../types.js';
-import type { GameManager } from '../game-manager.js';
-import { GameLayers } from '../layers/types.js';
-import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards.js';
+import type { GameSystem, GameContext } from '../types';
+import type { GameManager } from '../game-manager';
+import { GameLayers } from '../layers/types';
+import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards';
 
 /**
  * DoorSystem - Handles door unlocking with keys.
@@ -81,5 +81,16 @@ export class DoorSystem implements GameSystem {
         // Door is now unlocked - the move will succeed when commit validates
       }
     }
+  }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'DoorSystem',
+      note: 'Stateless reactive system - checks pending moves each tick',
+    };
   }
 }

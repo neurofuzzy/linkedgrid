@@ -262,6 +262,105 @@ export interface HasFloorEffect {
 }
 
 /**
+ * HasPropagation - Entity can spread to adjacent cells.
+ *
+ * Used by:
+ * - PropagationSystem (spread effects across grid)
+ * - Rendering systems (visual feedback for spreading)
+ *
+ * Propagation types:
+ * - 'fire': Fire spreading through flammable materials (probabilistic)
+ * - 'liquid': Water, oil, or other liquid flow (deterministic)
+ * - 'gas': Poison gas, smoke, or other airborne effects (deterministic)
+ * - 'chain': Chain reactions, explosions, or cascading effects (deterministic)
+ *
+ * @example
+ * ```typescript
+ * // Fire that spreads probabilistically and damages
+ * const fire = {
+ *   id: 9,
+ *   type: 'fire',
+ *   propagationType: 'fire',
+ *   spreadRate: 2,                 // Spread every 2 ticks
+ *   spreadProbability: 0.6,        // 60% chance to spread to each neighbor
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'fire',
+ *   // No maxDistance - fire spread is limited by flammable materials
+ *   lifetime: 20,                  // Burns for 20 ticks
+ *   blockedByLayers: [GameLayers.WALLS],
+ *   // Can also have floor effect properties
+ *   effectType: 'damage',
+ *   damage: 10,
+ *   cadence: 2                     // Damage every 2 ticks
+ * };
+ *
+ * // Poison gas that dissipates (always spreads)
+ * const gas = {
+ *   id: 10,
+ *   type: 'poison-gas',
+ *   propagationType: 'gas',
+ *   spreadRate: 1,                     // Spread every tick (fast)
+ *   spreadLayer: GameLayers.EPHEMERALS,
+ *   spreadType: 'poison-gas',
+ *   maxDistance: 8,
+ *   lifetime: 15                       // Dissipates after 15 ticks
+ * };
+ * ```
+ */
+export interface HasPropagation {
+  propagationType: 'fire' | 'liquid' | 'gas' | 'chain';
+  spreadRate: number;         // Ticks between spread attempts
+  spreadLayer: number;        // Target layer for spawned entities
+  spreadType: string;         // Entity type to spawn when propagating
+  spreadProbability?: number; // 0.0-1.0 chance to spread to each neighbor (default 1.0)
+  maxDistance?: number;       // Optional max spread radius from origin (Manhattan distance)
+  lifetime?: number;          // Optional duration in ticks before auto-despawn
+  blockedByLayers?: number[]; // Optional layers that block spread (e.g., [GameLayers.WALLS])
+}
+
+/**
+ * HasFlammability - Entity can catch fire and burn.
+ *
+ * Used by:
+ * - PropagationSystem (determine if fire can spread to this entity)
+ * - Rendering systems (visual feedback for flammable materials)
+ *
+ * Used by PropagationSystem to determine if fire can spread to this entity
+ * and modify spread probability based on material properties.
+ *
+ * When fire attempts to spread, the effective spread chance is:
+ * fire.spreadProbability × target.flammability
+ *
+ * Common flammability values:
+ * - Grass: 0.8 (highly flammable)
+ * - Gasoline: 0.95 (extremely flammable)
+ * - Fuse: 0.99 (designed to burn)
+ * - Wood: 0.6 (moderately flammable)
+ *
+ * @example
+ * ```typescript
+ * // Grass that catches fire easily
+ * const grass = {
+ *   id: 15,
+ *   type: 'grass',
+ *   flammability: 0.8,
+ *   color: '#7cba00'
+ * };
+ *
+ * // Gasoline spill - extremely flammable
+ * const gasoline = {
+ *   id: 16,
+ *   type: 'gasoline',
+ *   flammability: 0.95,
+ *   color: '#d4af37'
+ * };
+ * ```
+ */
+export interface HasFlammability {
+  flammability: number; // 0.0-1.0, chance modifier for fire spread
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

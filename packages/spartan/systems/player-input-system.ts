@@ -1,7 +1,6 @@
-import type { GameSystem, GameContext } from '../types.js';
-import { GameLayers } from '../layers/types.js';
-import { InputManager } from '../input/input-manager.js';
-import { Direction } from '../../grid/direction.js';
+import type { GameSystem, GameContext } from '../types';
+import { InputManager } from '../input/input-manager';
+import { Direction } from '../../grid/direction';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.
@@ -112,5 +111,21 @@ export class PlayerInputSystem implements GameSystem {
       default:
         return { dx: 0, dy: 0 };
     }
+  }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'PlayerInputSystem',
+      inputManager: {
+        hasKeyboard: (this.inputManager as any).keyboardManager !== null,
+        hasMouse: (this.inputManager as any).mouseManager !== null,
+        hasGamepad: (this.inputManager as any).gamepadManager !== null,
+      },
+      ...this.debugStats,
+    };
   }
 }

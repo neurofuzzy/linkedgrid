@@ -7,6 +7,7 @@ import { CollectionSystem } from '../packages/spartan/systems/collection-system'
 import { DoorSystem } from '../packages/spartan/systems/door-system';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-system';
+import { PropagationSystem } from '../packages/spartan/systems/propagation-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -15,6 +16,8 @@ import {
   hasHealth,
   hasAI,
   hasTeleportTarget,
+  hasPropagation,
+  hasFlammability,
 } from '../packages/spartan/entities/trait-guards';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
@@ -28,6 +31,7 @@ export interface EntityDefinition {
   y: number;
   layer: number;
   data?: Record<string, unknown>;
+  props?: Record<string, unknown>; // DEPRECATED: Use 'data' instead
 }
 
 /**
@@ -69,6 +73,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
+  PropagationSystem: () => new PropagationSystem(),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
 };
 
@@ -249,6 +254,17 @@ export class SceneLoader {
 
     // Spawn all entities
     for (const entityDef of entities) {
+      // Validate schema: Check for common mistake of using 'props' instead of 'data'
+      if ((entityDef as any).props && !entityDef.data) {
+        console.error(
+          `[SceneLoader] ❌ SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
+          `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
+          `  → Properties will NOT be loaded until this is fixed!`
+        );
+        // Fallback to support legacy JSON
+        entityDef.data = (entityDef as any).props;
+      }
+
       // Add sceneId to entity data
       const entityData = {
         ...(entityDef.data || {}),
@@ -288,6 +304,39 @@ export class SceneLoader {
         if (!hasTeleportTarget(tempEntityForValidation)) {
           console.warn(
             `[SceneLoader] Teleporter entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing teleport target (targetKey).`
+          );
+        }
+      }
+
+      // Validate propagation properties for fire, water, etc.
+      if (tempEntityForValidation.type === 'fire' || 
+          tempEntityForValidation.type === 'water' ||
+          tempEntityForValidation.type === 'poison-gas') {
+        if (!hasPropagation(tempEntityForValidation)) {
+          console.warn(
+            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
+            `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
+            `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
+          );
+        } else {
+          // Validate that spreadType is set
+          const propData = tempEntityForValidation as any;
+          if (!propData.spreadType) {
+            console.warn(
+              `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
+              `  → This will cause spawned entities to have type 'undefined'!`
+            );
+          }
+        }
+      }
+
+      // Validate flammability for grass, gasoline, fuses
+      if (tempEntityForValidation.type === 'grass' || 
+          tempEntityForValidation.type === 'gasoline' ||
+          tempEntityForValidation.type === 'fuse') {
+        if (!hasFlammability(tempEntityForValidation)) {
+          console.warn(
+            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing flammability property (0.0-1.0).`
           );
         }
       }

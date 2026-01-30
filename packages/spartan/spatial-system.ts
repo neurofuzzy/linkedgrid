@@ -56,6 +56,80 @@ import { GameLayers, CellMasks } from './layers/types';
  * ```
  */
 /**
+ * =============================================================================
+ * INTENT LIFECYCLE - CRITICAL DEVELOPER GUIDE
+ * =============================================================================
+ *
+ * SpatialSystem uses a TWO-PHASE operation model. Understanding this is
+ * critical for avoiding bugs related to state visibility and timing.
+ *
+ * PHASE 1 - INTENT STAGING (during system updates):
+ *   spawn(type, x, y, layer, props)  → Intent queued, entity NOT on grid yet
+ *   move(id, x, y)                   → Intent queued, entity still at old position
+ *   remove(id)                       → Intent queued, entity still on grid
+ *   removeAt(x, y, layer)            → Intent queued, entity still on grid
+ *
+ * PHASE 2 - COMMIT (at end of game loop tick):
+ *   - All intents validated (bounds, collision, etc.)
+ *   - All intents applied atomically to grid
+ *   - State queries NOW see new state
+ *
+ * IMPORTANT: Same-tick queries see PRE-COMMIT state!
+ *
+ * Example - Ash spawning after fire removal:
+ * ```typescript
+ * // Tick 3: Fire expires
+ * spatial.remove(fireId);           // Intent staged, fire still on grid
+ * const check = spatial.getEntityIdAt(5, 5, FLOOR); // Returns fireId!
+ * spatial.commit();                 // Fire removed from grid
+ *
+ * // Tick 4: Spawn ash
+ * spatial.spawn('ash', 5, 5, FLOOR, {}); // Intent staged
+ * const check2 = spatial.getEntityIdAt(5, 5, FLOOR); // undefined! (pre-commit)
+ * spatial.commit();                 // Ash added to grid
+ *
+ * // Tick 5: Ash visible
+ * const check3 = spatial.getEntityIdAt(5, 5, FLOOR); // Returns ashId
+ * ```
+ *
+ * PATTERN: Deferred operations for replacements
+ * ```typescript
+ * // Use queues for next-tick operations
+ * class MySystem {
+ *   private spawnQueue: Array<{type: string, x: number, y: number}> = [];
+ *
+ *   update(context) {
+ *     // Phase 0: Spawn queued items from PREVIOUS tick
+ *     for (const item of this.spawnQueue) {
+ *       context.spatial.spawn(item.type, item.x, item.y, ...);
+ *     }
+ *     this.spawnQueue = []; // Clear immediately after use
+ *
+ *     // ... system logic ...
+ *
+ *     // Phase N: Queue items for NEXT tick
+ *     if (shouldSpawn) {
+ *       this.spawnQueue.push({type: 'ash', x, y});
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * REACTIVE SYSTEMS: Use getPendingOps() to see staged intents
+ * ```typescript
+ * // Example: Door system reacts to player movement intents
+ * const pendingOps = spatial.getPendingOps();
+ * for (const op of pendingOps) {
+ *   if (op.type === 'move' && op.entityId === playerId) {
+ *     // Check destination and unlock door BEFORE commit
+ *   }
+ * }
+ * ```
+ *
+ * =============================================================================
+ */
+
+/**
  * Pending operation types for unified transaction model.
  */
 interface PendingOperation {
@@ -88,6 +162,12 @@ export class SpatialSystem {
     new Map();
 
   /**
+   * Debug mode: Log rejected operations during commit with reasons.
+   * Useful for diagnosing silent failures (collisions, out of bounds, etc.)
+   */
+  public debugCommit = false;
+
+  /**
    * Create a new SpatialSystem.
    *
    * @param grid - The LinkedGrid for spatial operations
@@ -97,6 +177,23 @@ export class SpatialSystem {
     private grid: LinkedGrid,
     private store: SparseEntityStore
   ) {}
+
+  /**
+   * Enable debug logging for commit operations.
+   * Logs rejected spawns, moves, and removals with detailed reasons.
+   * 
+   * @param enabled - Whether to enable debug logging
+   * 
+   * @example
+   * ```typescript
+   * spatial.setDebugCommit(true);
+   * spatial.spawn('player', 5, 5, 1); // Logs if spawn fails
+   * spatial.commit();
+   * ```
+   */
+  setDebugCommit(enabled: boolean): void {
+    this.debugCommit = enabled;
+  }
 
   /**
    * Stage a spawn operation for a new entity.
@@ -341,19 +438,46 @@ export class SpatialSystem {
       const toCell = this.grid.cell(move.toX!, move.toY!);
 
       if (!toCell) {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - OUT OF BOUNDS`);
+        }
         continue;
       }
 
       // Check custom blocking function if provided
       if (move.blockFn && move.blockFn(toCell)) {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY CUSTOM FUNCTION`);
+        }
         continue;
       }
 
-      // Check if destination is walkable (not blocked by walls/actors)
+      // Check if destination is walkable
       // Only check if the cell isn't being vacated by another move
       const isBeingVacated = sources.has(destKey);
-      if (!isBeingVacated && this.isBlocked(toCell)) {
-        continue;
+      if (!isBeingVacated) {
+        // Check if blocked by walls
+        if (this.isBlocked(toCell)) {
+          if (this.debugCommit) {
+            const entityData = this.store.getData(move.entityId!);
+            console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall)`);
+          }
+          continue;
+        }
+        
+        // If moving on ACTORS layer, also check for other actors
+        if (move.layer === GameLayers.ACTORS) {
+          const hasActor = toCell.getValue(GameLayers.ACTORS) !== undefined;
+          if (hasActor) {
+            if (this.debugCommit) {
+              const entityData = this.store.getData(move.entityId!);
+              console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY ACTOR`);
+            }
+            continue;
+          }
+        }
       }
 
       // Check if destination is occupied
@@ -365,6 +489,19 @@ export class SpatialSystem {
 
       if (!hasConflict && (!isOccupied || isBeingVacated)) {
         validMoves[i] = true;
+      } else {
+        if (this.debugCommit) {
+          const entityData = this.store.getData(move.entityId!);
+          let reason = '';
+          if (hasConflict) {
+            reason = `CONFLICT (${requestsForThisDest.length} entities want same cell)`;
+          } else if (isOccupied && !isBeingVacated) {
+            const occupyingEntity = toCell.getValue(move.layer)!;
+            const occupyingData = this.store.getData(occupyingEntity);
+            reason = `OCCUPIED by entity ${occupyingEntity} (${occupyingData?.type || 'unknown'})`;
+          }
+          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - ${reason}`);
+        }
       }
     }
 
@@ -403,8 +540,21 @@ export class SpatialSystem {
     const spawns = this.pendingOps.filter((op) => op.type === 'spawn');
     for (const op of spawns) {
       const cell = this.grid.cell(op.x!, op.y!);
-      if (!cell) continue;
-      if (cell.getValue(op.layer) !== undefined) continue; // Occupied
+      if (!cell) {
+        if (this.debugCommit) {
+          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - OUT OF BOUNDS`);
+        }
+        continue;
+      }
+      
+      const existingEntity = cell.getValue(op.layer);
+      if (existingEntity !== undefined) {
+        if (this.debugCommit) {
+          const existingData = this.store.getData(existingEntity);
+          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - COLLISION with entity ${existingEntity} (${existingData?.type || 'unknown'})`);
+        }
+        continue; // Occupied
+      }
 
       // Place entity on grid
       cell.setValue(op.layer, op.entityId!);
@@ -847,7 +997,7 @@ export class SpatialSystem {
     }> = [];
     const checked = new Set<string>();
 
-    for (const [_, pos] of this.getAllPositions()) {
+    for (const [, pos] of this.getAllPositions()) {
       const key = `${pos.x},${pos.y}`;
       if (checked.has(key)) continue;
       checked.add(key);
@@ -1046,19 +1196,18 @@ export class SpatialSystem {
   /**
    * Update cell masks based on entities present on the cell.
    * 
-   * Sets BLOCKING mask if cell has entities on WALLS or ACTORS layers.
+   * Sets BLOCKING mask if cell has walls (NOT actors - actors only block other actors).
    * Sets VISION_BLOCKING mask if cell has entities on WALLS layer.
    * 
    * @param cell - Cell to update masks for
    * @private
    */
   private updateCellMasks(cell: LinkedCell): void {
-    // Check if WALLS or ACTORS layers have entities
+    // Check if WALLS layer has entities
     const hasWall = cell.getValue(GameLayers.WALLS) !== undefined;
-    const hasActor = cell.getValue(GameLayers.ACTORS) !== undefined;
     
-    // Set BLOCKING mask if walls or actors present
-    cell.setMask(CellMasks.BLOCKING, hasWall || hasActor);
+    // Set BLOCKING mask only for walls (actors don't block everything, only other actors)
+    cell.setMask(CellMasks.BLOCKING, hasWall);
     
     // Set VISION_BLOCKING mask if walls present
     cell.setMask(CellMasks.VISION_BLOCKING, hasWall);
@@ -1090,11 +1239,14 @@ export class SpatialSystem {
    * Checks if a cell blocks movement using the BLOCKING mask.
    *
    * The BLOCKING mask is automatically managed by SpatialSystem when entities
-   * that block movement are spawned/removed (walls, closed doors, actors, etc.).
+   * that block movement are spawned/removed (walls, closed doors, etc.).
+   * 
+   * NOTE: Actors do NOT set the BLOCKING mask - they only block other actors.
+   * Use layer-specific checks (e.g., check ACTORS layer) for actor blocking.
    *
    * @param cell - Cell to check
    * @param emptyFloorsBlock - If true, cells without floor entities block movement
-   * @returns true if cell blocks movement
+   * @returns true if cell blocks movement (walls, etc.)
    * 
    * @example
    * ```typescript

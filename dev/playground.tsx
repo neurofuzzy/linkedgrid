@@ -27,6 +27,11 @@ const AVAILABLE_GAMES = [
     name: 'Floor Hazards Demo',
     path: '/dev/games/floor-hazards.json',
   },
+  {
+    id: 'flammability',
+    name: 'Flammability',
+    path: '/dev/games/flammability.json',
+  },
 ];
 
 /**
@@ -43,14 +48,14 @@ function getGameIdFromPath(path: string): string {
 function getInitialGame(): string {
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get('game');
-  
+
   if (gameId) {
-    const game = AVAILABLE_GAMES.find(g => g.id === gameId);
+    const game = AVAILABLE_GAMES.find((g) => g.id === gameId);
     if (game) {
       return game.path;
     }
   }
-  
+
   return AVAILABLE_GAMES[0].path;
 }
 

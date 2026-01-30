@@ -1,0 +1,332 @@
+{
+  "scenes": [
+    {
+      "id": "fire-test",
+      "width": 20,
+      "height": 15,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 7,
+          "layer": 5,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "fire-test"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 4,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 5,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 6,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 9,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 5,
+          "y": 6,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 6,
+          "y": 6,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 6,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 6,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 9,
+          "y": 6,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 5,
+          "y": 8,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 6,
+          "y": 8,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 8,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 8,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 9,
+          "y": 8,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 6,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 8,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 9,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "fuse",
+          "x": 15,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "flammability": 0.99,
+            "color": "#ff4500"
+          }
+        },
+        {
+          "type": "fuse",
+          "x": 16,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "flammability": 0.99,
+            "color": "#ff4500"
+          }
+        },
+        {
+          "type": "fuse",
+          "x": 17,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "flammability": 0.99,
+            "color": "#ff4500"
+          }
+        },
+        {
+          "type": "water",
+          "x": 5,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            
+            "color": "#4a90e2"
+          }
+        },
+        {
+          "type": "water",
+          "x": 6,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            
+            "color": "#4a90e2"
+          }
+        },
+        {
+          "type": "water",
+          "x": 7,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            
+            "color": "#4a90e2"
+          }
+        },
+        {
+          "type": "fire",
+          "x": 3,
+          "y": 7,
+          "layer": 1,
+          "data": {
+            "propagationType": "fire",
+            "spreadRate": 2,
+            "spreadProbability": 0.9,
+            "spreadLayer": 1,
+            "spreadType": "fire",
+            
+            "lifetime": 25,
+            "color": "#ff0000",
+            "effectType": "damage",
+            "triggerMode": "continuous",
+            "damage": 5,
+            "cadence": 3
+          }
+        }
+      ]
+    }
+  ],
+  "systems": ["PropagationSystem", "FloorEffectSystem"],
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

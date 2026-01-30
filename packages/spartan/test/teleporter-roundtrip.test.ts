@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { GameRuntime } from '../game-runtime.js';
-import { TeleporterSystem } from '../systems/teleporter-system.js';
-import { GameLayers } from '../layers/types.js';
-import { spawnPlayer, spawnTeleporter } from '../entities/spawn-helpers.js';
-import { isPlayer, isTeleporter } from '../entities/trait-guards.js';
+import { GameRuntime } from '../game-runtime';
+import { TeleporterSystem } from '../systems/teleporter-system';
+import { GameLayers } from '../layers/types';
+import { spawnPlayer, spawnTeleporter } from '../entities/spawn-helpers';
+import { isPlayer, isTeleporter } from '../entities/trait-guards';
 
 describe('TeleporterSystem round-trip', () => {
   it('allows player to teleport back after stepping off destination pad', () => {

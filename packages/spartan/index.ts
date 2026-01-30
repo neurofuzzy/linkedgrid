@@ -79,6 +79,8 @@ export type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
+  HasPropagation,
+  HasFlammability,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -96,6 +98,14 @@ export type {
   MedbayData,
   IceData,
   MudData,
+  FireData,
+  PoisonGasData,
+  WaterData,
+  AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -110,6 +120,8 @@ export {
   isCollectible,
   hasColor,
   hasFloorEffect,
+  hasPropagation,
+  hasFlammability,
   isPlayer,
   isEnemy,
   isTeleporter,
@@ -122,6 +134,14 @@ export {
   isMedbay,
   isIce,
   isMud,
+  isFire,
+  isPoisonGas,
+  isWater,
+  isAsh,
+  isGrass,
+  isGasoline,
+  isFuse,
+  isTorch,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -142,14 +162,15 @@ export {
 export { getTopmostEntity } from './layers/layer-helpers';
 
 // Game loop and runtime
-export { GameLoop } from './game-loop.js';
-export { GameRuntime } from './game-runtime.js';
-export type { GameRuntimeConfig } from './game-runtime.js';
+export { GameLoop } from './game-loop';
+export { GameRuntime } from './game-runtime';
+export type { GameRuntimeConfig } from './game-runtime';
 
 // Systems
-export { TeleporterSystem } from './systems/teleporter-system.js';
-export { CollectionSystem } from './systems/collection-system.js';
-export { DoorSystem } from './systems/door-system.js';
-export { PlayerInputSystem } from './systems/player-input-system.js';
-export { FloorEffectSystem } from './systems/floor-effect-system.js';
-export type { GameSystem, GameContext, Overlap } from './types.js';
+export { TeleporterSystem } from './systems/teleporter-system';
+export { CollectionSystem } from './systems/collection-system';
+export { DoorSystem } from './systems/door-system';
+export { PlayerInputSystem } from './systems/player-input-system';
+export { FloorEffectSystem } from './systems/floor-effect-system';
+export { PropagationSystem } from './systems/propagation-system';
+export type { GameSystem, GameContext, Overlap } from './types';

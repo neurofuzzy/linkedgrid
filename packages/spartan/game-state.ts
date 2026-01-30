@@ -1,4 +1,4 @@
-import { SparseEntityStore } from './entity-store.js';
+import { SparseEntityStore } from './entity-store';
 
 /**
  * GameState - Global game state that persists across scenes.

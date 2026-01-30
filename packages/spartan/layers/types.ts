@@ -34,7 +34,8 @@ export type GameLayer = (typeof GameLayers)[keyof typeof GameLayers];
 
 /**
  * Layers that typically block movement.
- * Used for standard blocking logic in games.
+ * Note: ACTORS only block other ACTORS, not everything.
+ * WALLS block all movement.
  */
 export const BLOCKING_LAYERS = [GameLayers.WALLS, GameLayers.ACTORS] as const;
 
@@ -79,9 +80,11 @@ export const ALL_LAYERS = [
  * These indices define semantic meanings for each mask.
  *
  * Mask meanings:
- * - BLOCKING (0): Cell blocks movement (walls, closed doors, etc.)
+ * - BLOCKING (0): Cell blocks movement (walls, closed doors, etc. - NOT actors)
  * - VISION_BLOCKING (1): Cell blocks line of sight
  * - [2-7]: Reserved for future use
+ * 
+ * Note: Actors do NOT set the BLOCKING mask - they only block other actors.
  *
  * @see LinkedCell.getMask(), LinkedCell.setMask()
  */

@@ -1,6 +1,6 @@
-import type { GameSystem, GameContext } from '../types.js';
-import type { GameManager } from '../game-manager.js';
-import { isPlayer, isCollectible, hasInventory } from '../entities/trait-guards.js';
+import type { GameSystem, GameContext } from '../types';
+import type { GameManager } from '../game-manager';
+import { isPlayer, isCollectible, hasInventory } from '../entities/trait-guards';
 
 /**
  * CollectionSystem - Handles picking up collectible items.
@@ -68,5 +68,16 @@ export class CollectionSystem implements GameSystem {
         spatial.remove(collectibleData.id);
       }
     }
+  }
+
+  /**
+   * Get debug state for troubleshooting.
+   * Useful for understanding system state during development.
+   */
+  public getDebugState() {
+    return {
+      systemType: 'CollectionSystem',
+      note: 'Stateless system - processes overlaps each tick',
+    };
   }
 }

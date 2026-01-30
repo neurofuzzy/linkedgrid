@@ -4,6 +4,17 @@ import { Scene } from './scene';
 import type { Layer } from './types';
 
 /**
+ * Save data format for serialization
+ */
+export interface SaveData {
+  version: number;
+  timestamp: number;
+  gameState: unknown; // Serialized GameState
+  scenes: unknown[]; // Serialized Scene data
+  activeSceneId: string | null;
+}
+
+/**
  * GameManager - Top-level container for game state and scenes.
  *
  * Provides a unified interface for managing both global game state
@@ -357,20 +368,21 @@ export class GameManager {
    * const game = GameManager.load(savedData);
    * ```
    */
-  static load(data: any): GameManager {
+  static load(data: SaveData): GameManager {
     const game = new GameManager();
 
     // Restore game state (including global entity store)
     const restoredGameState = GameState.deserialize(data.gameState);
 
     // Replace the new GameState with the restored one
-    (game as any).gameState = restoredGameState;
-    (game.sceneManager as any).gameState = restoredGameState;
+    // These are intentionally private but need to be set during deserialization
+    (game as GameManager & { gameState: GameState }).gameState = restoredGameState;
+    (game.sceneManager as SceneManager & { gameState: GameState }).gameState = restoredGameState;
 
     // Restore scenes
     for (const sceneData of data.scenes || []) {
       const scene = Scene.deserialize(sceneData, game.gameState);
-      (game.sceneManager as any).scenes.set(scene.id, scene);
+      (game.sceneManager as SceneManager & { scenes: Map<string, Scene> }).scenes.set(scene.id, scene);
     }
 
     // Restore active scene

@@ -1,5 +1,5 @@
-import { SpatialSystem } from './spatial-system.js';
-import type { GameSystem, GameContext } from './types.js';
+import { SpatialSystem } from './spatial-system';
+import type { GameSystem, GameContext } from './types';
 
 /**
  * GameLoop - Orchestrates one game tick for a SpatialSystem.

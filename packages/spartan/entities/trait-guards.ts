@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { EntityData } from '../types.js';
+import type { EntityData } from '../types';
 import type {
   HasHealth,
   CanDealDamage,
@@ -36,7 +36,9 @@ import type {
   IsCollectible,
   HasColor,
   HasFloorEffect,
-} from './traits.js';
+  HasPropagation,
+  HasFlammability,
+} from './traits';
 import type {
   PlayerData,
   EnemyData,
@@ -50,7 +52,15 @@ import type {
   MedbayData,
   IceData,
   MudData,
-} from './entity-types.js';
+  FireData,
+  PoisonGasData,
+  WaterData,
+  AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
+} from './entity-types';
 
 /**
  * Trait Guards
@@ -71,8 +81,8 @@ export function hasHealth(
   entity: EntityData
 ): entity is EntityData & HasHealth {
   return (
-    typeof (entity as any).hp === 'number' &&
-    typeof (entity as any).maxHp === 'number'
+    'hp' in entity && typeof entity.hp === 'number' &&
+    'maxHp' in entity && typeof entity.maxHp === 'number'
   );
 }
 
@@ -87,7 +97,7 @@ export function hasHealth(
 export function canDealDamage(
   entity: EntityData
 ): entity is EntityData & CanDealDamage {
-  return typeof (entity as any).damage === 'number';
+  return 'damage' in entity && typeof entity.damage === 'number';
 }
 
 /**
@@ -99,7 +109,8 @@ export function canDealDamage(
  * @returns true if entity possesses AI trait
  */
 export function hasAI(entity: EntityData): entity is EntityData & HasAI {
-  const state = (entity as any).aiState;
+  if (!('aiState' in entity)) return false;
+  const state = entity.aiState;
   return state === 'idle' || state === 'chase' || state === 'attack';
 }
 
@@ -114,7 +125,7 @@ export function hasAI(entity: EntityData): entity is EntityData & HasAI {
 export function hasSceneLocation(
   entity: EntityData
 ): entity is EntityData & HasSceneLocation {
-  return typeof (entity as any).sceneId === 'string';
+  return 'sceneId' in entity && typeof entity.sceneId === 'string';
 }
 
 /**
@@ -128,7 +139,7 @@ export function hasSceneLocation(
 export function hasTeleportTarget(
   entity: EntityData
 ): entity is EntityData & HasTeleportTarget {
-  return typeof (entity as any).targetKey === 'string';
+  return 'targetKey' in entity && typeof entity.targetKey === 'string';
 }
 
 /**
@@ -142,7 +153,7 @@ export function hasTeleportTarget(
 export function hasInventory(
   entity: EntityData
 ): entity is EntityData & HasInventory {
-  return Array.isArray((entity as any).inventory);
+  return 'inventory' in entity && Array.isArray(entity.inventory);
 }
 
 /**
@@ -157,8 +168,8 @@ export function isLockable(
   entity: EntityData
 ): entity is EntityData & IsLockable {
   return (
-    typeof (entity as any).isLocked === 'boolean' &&
-    typeof (entity as any).requiredKey === 'string'
+    'isLocked' in entity && typeof entity.isLocked === 'boolean' &&
+    'requiredKey' in entity && typeof entity.requiredKey === 'string'
   );
 }
 
@@ -174,8 +185,8 @@ export function isCollectible(
   entity: EntityData
 ): entity is EntityData & IsCollectible {
   return (
-    typeof (entity as any).collectibleType === 'string' &&
-    typeof (entity as any).collectibleId === 'string'
+    'collectibleType' in entity && typeof entity.collectibleType === 'string' &&
+    'collectibleId' in entity && typeof entity.collectibleId === 'string'
   );
 }
 
@@ -190,7 +201,7 @@ export function isCollectible(
 export function hasColor(
   entity: EntityData
 ): entity is EntityData & HasColor {
-  return typeof (entity as any).color === 'string';
+  return 'color' in entity && typeof entity.color === 'string';
 }
 
 /**
@@ -204,13 +215,53 @@ export function hasColor(
 export function hasFloorEffect(
   entity: EntityData
 ): entity is EntityData & HasFloorEffect {
-  const effectType = (entity as any).effectType;
+  if (!('effectType' in entity)) return false;
+  const effectType = entity.effectType;
   return (
     effectType === 'damage' ||
     effectType === 'heal' ||
     effectType === 'slide' ||
     effectType === 'slow'
   );
+}
+
+/**
+ * Check if entity has propagation trait.
+ *
+ * Entities with propagation trait can spread to adjacent cells over time.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses propagation trait
+ */
+export function hasPropagation(
+  entity: EntityData
+): entity is EntityData & HasPropagation {
+  if (!('propagationType' in entity)) return false;
+  const propagationType = entity.propagationType;
+  return (
+    (propagationType === 'fire' ||
+      propagationType === 'liquid' ||
+      propagationType === 'gas' ||
+      propagationType === 'chain') &&
+    'spreadRate' in entity && typeof entity.spreadRate === 'number' &&
+    'spreadLayer' in entity && typeof entity.spreadLayer === 'number' &&
+    'spreadType' in entity && typeof entity.spreadType === 'string'
+  );
+}
+
+/**
+ * Check if entity has flammability trait.
+ *
+ * Entities with flammability trait can catch fire and burn when fire spreads to them.
+ * Used by PropagationSystem to determine if fire can spread to this entity.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses flammability trait
+ */
+export function hasFlammability(
+  entity: EntityData
+): entity is EntityData & HasFlammability {
+  return 'flammability' in entity && typeof entity.flammability === 'number';
 }
 
 /**
@@ -338,6 +389,80 @@ export function isIce(entity: EntityData): entity is IceData {
  */
 export function isMud(entity: EntityData): entity is MudData {
   return entity.type === 'mud';
+}
+
+/**
+ * Check if entity is fire.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fire'
+ */
+export function isFire(entity: EntityData): entity is FireData {
+  return entity.type === 'fire';
+}
+
+/**
+ * Check if entity is poison gas.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'poison-gas'
+ */
+export function isPoisonGas(entity: EntityData): entity is PoisonGasData {
+  return entity.type === 'poison-gas';
+}
+
+/**
+ * Check if entity is water.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'water'
+ */
+export function isWater(entity: EntityData): entity is WaterData {
+  return entity.type === 'water';
+}
+
+export function isAsh(entity: EntityData): entity is AshData {
+  return entity.type === 'ash';
+}
+
+/**
+ * Check if entity is grass.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'grass'
+ */
+export function isGrass(entity: EntityData): entity is GrassData {
+  return entity.type === 'grass';
+}
+
+/**
+ * Check if entity is gasoline.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'gasoline'
+ */
+export function isGasoline(entity: EntityData): entity is GasolineData {
+  return entity.type === 'gasoline';
+}
+
+/**
+ * Check if entity is fuse.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fuse'
+ */
+export function isFuse(entity: EntityData): entity is FuseData {
+  return entity.type === 'fuse';
+}
+
+/**
+ * Check if entity is torch.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'torch'
+ */
+export function isTorch(entity: EntityData): entity is TorchData {
+  return entity.type === 'torch';
 }
 
 /**
