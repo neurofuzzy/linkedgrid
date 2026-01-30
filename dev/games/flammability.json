@@ -357,7 +357,7 @@
     }
   ],
   "systems": [
-    "PropagationSystem", "FireSystem",
+    "PropagationSystem",
     "FloorEffectSystem"
   ],
   "input": {

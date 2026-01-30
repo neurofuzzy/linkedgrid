@@ -75,7 +75,7 @@ class DamageSystem implements GameSystem {
 - `trait-guards.ts` - Runtime type predicates
 - `spawn-helpers.ts` - Type-safe factories
 
-**Built-in Traits:** HasHealth, CanDealDamage, HasAI, HasInventory, IsLockable, IsCollectible, HasColor, HasSceneLocation, HasTeleportTarget, HasFloorEffect, HasPropagation, HasFlammability
+**Built-in Traits:** HasHealth, CanDealDamage, HasAI, HasInventory, IsLockable, IsCollectible, HasColor, HasSceneLocation, HasTeleportTarget, HasFloorEffect, HasPropagation, HasTemperature, HasExplosion
 
 ## Input System Integration
 
@@ -248,19 +248,20 @@ See `specs/spartan-game-rules.md` for details:
 
 See `specs/spartan-layer-rules.md` for full specification.
 
-**8 Semantic Layers:**
+**9 Semantic Layers:**
 ```typescript
 const GameLayers = {
-    FLOOR: 0,        // Terrain, floor tiles
-    TRAPS: 1,        // Hazards
-    ITEMS: 2,        // Dropped items
-    COLLECTIBLES: 3, // Pickups
-    WALLS: 4,        // Static obstacles, closed doors
-    ACTORS: 5,       // Players, enemies
-    EFFECTS: 6,      // Particles, animations
-    DEBUG: 7         // Debug overlays
+    FLOOR: 1,          // Terrain, floor tiles
+    FLOOR_EFFECTS: 2,  // Effects on floor (ash, burn marks)
+    COLLECTIBLES: 4,   // Pickups, items
+    WALLS: 5,          // Static obstacles, closed doors
+    ACTORS: 6,         // Players, enemies
+    EPHEMERALS: 7,     // Temporary effects (fire visuals, particles)
+    DEBUG: 8           // Debug overlays
 };
 ```
+
+**Layer 0** is reserved for empty cells.
 
 **Cell Masks:** `CellMasks.BLOCKING` and `CellMasks.VISION_BLOCKING` are automatically managed by SpatialSystem.
 
@@ -411,78 +412,146 @@ See `specs/spartan-responsibilities.md` for complete matrix.
 - **PlayerInputSystem** - Input → movement intents
 - **GameSystem** - Game logic responding to overlaps/intents
 
-## Flammability System
+## Fire System
 
-The flammability system enables realistic fire propagation based on material properties.
+The fire system enables realistic fire spread based on temperature mechanics. **Fire is a state, not an entity.**
 
 ### Core Concept
 
-Fire only spreads TO entities with the `HasFlammability` trait. The effective spread chance is:
+Fire is implemented as a temperature-based state system. Entities with temperature ≥ their flame point are "on fire" and spread heat to adjacent entities.
 
-```
-Effective Probability = fire.spreadProbability × target.flammability
-```
-
-### HasFlammability Trait
+### HasTemperature Trait
 
 ```typescript
-interface HasFlammability {
-  flammability: number; // 0.0-1.0, chance modifier for fire spread
+interface HasTemperature {
+  temperature: number;   // Current temperature
+  flammable: boolean;    // Can this entity catch fire?
+  flamePoint: number;    // Temperature at which entity ignites
 }
 ```
 
-### Fire Propagation Rules
+### Fire Mechanics
 
-1. **Fire only spreads to flammable entities** - Non-flammable entities block fire spread
-2. **Probability is modified by target** - Higher flammability = faster/more reliable spread
-3. **Multiple layers supported** - Fire can spread on FLOOR, COLLECTIBLES, or other layers
-4. **Ash consumption model** - Fire consumes flammable entities, leaving ash
+1. **Fire is a state** - Entities with `temperature >= flamePoint` are burning
+2. **Fire spreads via temperature** - Burning entities raise adjacent entity temperatures
+3. **Fire deals damage** - Burning entities lose HP over time
+4. **Ash spawning** - Non-explosive entities spawn ash when burned out
+5. **Visual effects** - Fire visuals spawned on `EPHEMERALS` layer
 
-### Common Flammability Values
+### FireSystem Processing Phases
 
-| Material | Flammability | Layer | Usage |
-|----------|-------------|-------|-------|
-| Grass | 0.8 | FLOOR | Terrain that catches fire easily |
-| Gasoline | 0.95 | COLLECTIBLES | Extremely flammable liquid trails |
-| Fuse | 0.99 | COLLECTIBLES | Designed to burn predictably |
-| Wood | 0.6 | FLOOR/COLLECTIBLES | Moderately flammable |
+```typescript
+update(context: GameContext) {
+  1. detectIgnitions()      // Find entities at/above flame point
+  2. spreadFire()           // Raise adjacent entity temperatures
+  3. applyFireDamage()      // Reduce HP of burning entities
+  4. cleanupBurnedEntities() // Spawn ash, remove entities at 0 HP
+  5. applyTemperatureDecay() // Cool down non-burning entities
+}
+```
+
+### Constants
+
+```typescript
+FIRE_DAMAGE_RATE = 5;           // HP lost per damage tick
+FIRE_DAMAGE_CADENCE = 2;        // Ticks between damage applications
+TEMPERATURE_INCREASE = 50;      // Temperature added to neighbors per tick
+TEMPERATURE_DECAY = 10;         // Temperature lost per tick when not near fire
+```
+
+### Common Temperature Values
+
+| Material | Flame Point | HP | Layer | Usage |
+|----------|------------|-----|-------|-------|
+| Grass | 150 | 100 | FLOOR | Burns slowly, spreads steadily |
+| Gasoline | 100 | 10 | COLLECTIBLES | Ignites easily, burns fast |
+| Fuse | 120 | 15 | COLLECTIBLES | Predictable burning |
+| Barrel | 200 | 20 | COLLECTIBLES | Hard to ignite, explosive |
 
 ### Example Usage
 
 ```typescript
-// Create flammable grass terrain
+// Create flammable grass
 spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
-  flammability: 0.8,
+  temperature: 0,        // Starts cool
+  flammable: true,
+  flamePoint: 150,
+  hp: 100,
+  maxHp: 100,
   color: '#7cba00'
 });
 
-// Start fire with base spread probability
-spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
-  propagationType: 'fire',
-  spreadRate: 2,
-  spreadProbability: 0.6,  // Base 60% chance
-  spreadLayer: GameLayers.FLOOR,
-  spreadType: 'fire',
-  maxDistance: 10,
-  lifetime: 20
-});
+// Ignite via explosion or direct temperature manipulation
+const grassData = spatial.getEntityData(grassId);
+grassData.temperature = 200;  // Above flame point → ignites
 
-// Effective spread to grass: 0.6 × 0.8 = 0.48 (48% chance)
+// FireSystem will:
+// 1. Detect ignition (temp >= 150)
+// 2. Spawn fire-visual on EPHEMERALS layer
+// 3. Spread +50 temp to adjacent entities per tick
+// 4. Apply 5 HP damage every 2 ticks
+// 5. When HP = 0, spawn ash and remove grass
+```
+
+### Integration with Explosion System
+
+The `ExplosionSystem` ignites flammable entities by raising their temperature:
+
+```typescript
+// In ExplosionSystem.applyExplosionEffects()
+if (hasTemperature(entityData) && entityData.flammable) {
+  entityData.temperature = entityData.flamePoint + 50; // Ensure ignition
+}
 ```
 
 ### Layer Organization
 
 - **FLOOR layer** - Flammable terrain (grass, wood floors)
-- **COLLECTIBLES layer** - Flammable items (gasoline, fuses)
-- **WALLS layer** - Ignition sources (torches, static)
-- **EPHEMERALS layer** - Temporary ignition (explosions)
+- **FLOOR_EFFECTS layer** - Ash from burned entities
+- **COLLECTIBLES layer** - Flammable items (gasoline, fuses, barrels)
+- **EPHEMERALS layer** - Fire visual effects (managed by FireSystem)
+
+### Fire Spread Algorithm
+
+Fire spreads to 4-directional neighbors (UP, DOWN, LEFT, RIGHT):
+
+```typescript
+// For each burning entity
+for (const burningEntity of burningEntities) {
+  // Check all 4 neighbors
+  for (const neighbor of [UP, DOWN, LEFT, RIGHT]) {
+    // Check multiple layers (FLOOR, COLLECTIBLES, WALLS, ACTORS)
+    for (const layer of layers) {
+      const entity = getEntityAt(neighbor.x, neighbor.y, layer);
+      if (hasTemperature(entity)) {
+        entity.temperature += 50; // Raise temperature
+      }
+    }
+  }
+}
+```
+
+### Key Differences from Old System
+
+**Old (Propagation-based):**
+- Fire was an entity with `HasPropagation` trait
+- Spread by spawning new fire entities
+- Probability-based spreading
+- Fire entities had lifetime and burned out
+
+**New (Temperature-based):**
+- Fire is a state (`temperature >= flamePoint`)
+- Spreads by raising adjacent temperatures
+- Deterministic spreading (always +50 per tick per neighbor)
+- Burning entities lose HP and spawn ash when consumed
 
 ### Implementation Notes
 
-- Fire spread checks flammability in `PropagationSystem.canSpreadTo()`
-- Probability multiplication happens in `PropagationSystem.propagateFromSources()`
-- Non-flammable entities (water, stone) naturally block fire spread
-- Ash still spawns after fire consumes flammable entities
+- `FireSystem` tracks burning entities in private map
+- Visual effects (`fire-visual`) are ephemeral and managed automatically
+- Temperature decay prevents entities from staying hot forever
+- Explosive entities (with `HasExplosion`) are left at HP=0 for `ExplosionSystem` to handle
+- Fire only spreads to entities with `HasTemperature` trait
 
 ## Key Takeaways
 
@@ -498,7 +567,7 @@ spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
 10. **Traits enable type safety** - Use guards in systems
 11. **Test with visual runner** - AAA pattern, dual execution
 12. **Configure via JSON** - Input, systems, scenes
-13. **Flammability is probability-based** - Fire spreads only to flammable entities
+13. **Fire is temperature-based** - Fire is a state, not an entity
 
 ## Questions to Ask
 
@@ -529,7 +598,9 @@ When modifying code:
 - `packages/spartan/systems/door-system.ts` - Reactive door unlocking
 - `packages/spartan/systems/collection-system.ts` - Item collection
 - `packages/spartan/systems/teleporter-system.ts` - Scene transitions
-- `packages/spartan/systems/propagation-system.ts` - Spatial spreading effects (fire, water, gas)
+- `packages/spartan/systems/propagation-system.ts` - Spatial spreading effects (water, gas, chain reactions)
+- `packages/spartan/systems/fire-system.ts` - Temperature-based fire spread and burning
+- `packages/spartan/systems/explosion-system.ts` - Explosion triggers, damage, and ignition
 - `packages/spartan/systems/floor-effect-system.ts` - Damage/healing over time
 
 **Testing:**
@@ -564,4 +635,4 @@ When modifying code:
 ---
 
 **Last Updated:** 2026-01-28  
-**Version:** Reactive intent-based architecture (dumb inputs, smart systems, input integration)
+**Version:** Temperature-based fire system with explosion integration

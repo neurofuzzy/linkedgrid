@@ -256,7 +256,7 @@
       ]
     }
   ],
-  "systems": ["PropagationSystem", "FloorEffectSystem"],
+  "systems": ["PropagationSystem", "FloorEffectSystem", "PoisonSystem"],
   "input": {
     "type": "keyboard",
     "options": {
