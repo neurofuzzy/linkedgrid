@@ -534,6 +534,16 @@ export function isDestructibleWall(entity: EntityData): entity is DestructibleWa
  */
 
 /**
+ * Check if entity is fire (legacy or visual).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fire' or 'fire-visual'
+ */
+export function isFire(entity: EntityData): boolean {
+  return entity.type === 'fire' || entity.type === 'fire-visual';
+}
+
+/**
  * Check if entity is a player with health trait.
  *
  * More strict than isPlayer() - also verifies health trait exists.

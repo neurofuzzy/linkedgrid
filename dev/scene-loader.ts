@@ -10,6 +10,7 @@ import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-syst
 import { PropagationSystem } from '../packages/spartan/systems/propagation-system';
 import { ExplosionSystem } from '../packages/spartan/systems/explosion-system';
 import { PoisonSystem } from '../packages/spartan/systems/poison-system';
+import { FireSystem } from '../packages/spartan/systems/fire-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
   isPlayer,
@@ -79,6 +80,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
   ExplosionSystem: () => new ExplosionSystem(),
   PoisonSystem: () => new PoisonSystem(),
+  FireSystem: () => new FireSystem(),
 };
 
 /**
