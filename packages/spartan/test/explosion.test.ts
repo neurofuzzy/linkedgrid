@@ -3,6 +3,9 @@ import { LinkedGrid } from '../../grid/linked-grid';
 import { SparseEntityStore } from '../entity-store';
 import { SpatialSystem } from '../spatial-system';
 import { ExplosionSystem } from '../systems/explosion-system';
+import { FloorEffectSystem } from '../systems/floor-effect-system';
+import { GameManager } from '../game-manager';
+import { GameState } from '../game-state';
 import { GameLayers } from '../layers/types';
 import type { GameContext } from '../types';
 
@@ -358,8 +361,8 @@ describe('ExplosionSystem', () => {
       explosionSystem.update(context);
       spatial.commit();
 
-      // Check that fire was spawned
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR);
+      // Check that fire was spawned on FLOOR_EFFECTS
+      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
       expect(fireId).toBeDefined();
 
       const fireData = spatial.getEntityData(fireId!);
@@ -378,10 +381,10 @@ describe('ExplosionSystem', () => {
       });
 
       // Spawn existing fire
-      spatial.spawn('fire', 11, 10, GameLayers.FLOOR, {
+      spatial.spawn('fire', 11, 10, GameLayers.FLOOR_EFFECTS, {
         propagationType: 'fire',
         spreadRate: 2,
-        spreadLayer: GameLayers.FLOOR,
+        spreadLayer: GameLayers.FLOOR_EFFECTS,
         spreadType: 'fire',
         color: '#ff4500',
       });
@@ -482,10 +485,10 @@ describe('ExplosionSystem', () => {
       spatial.commit();
 
       // Spawn fire at barrel position
-      spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+      spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
         propagationType: 'fire',
         spreadRate: 2,
-        spreadLayer: GameLayers.FLOOR,
+        spreadLayer: GameLayers.FLOOR_EFFECTS,
         spreadType: 'fire',
         color: '#ff4500',
       });
@@ -572,6 +575,114 @@ describe('ExplosionSystem', () => {
       // Visual should be removed after 4 updates (ticks 2,3,4,5 after spawn at tick 1)
       visualId = spatial.getEntityIdAt(10, 10, GameLayers.EPHEMERALS);
       expect(visualId).toBeUndefined();
+    });
+  });
+
+  describe('fire damaging barrels', () => {
+    it('fire continuously damages barrel', () => {
+      // We need FloorEffectSystem to process fire damage
+      const gameManager = new GameManager();
+      gameManager.gameState.entityStore = store;
+      const floorSystem = new FloorEffectSystem(gameManager);
+
+      // Spawn barrel
+      const barrelId = spatial.spawn('barrel', 10, 10, GameLayers.COLLECTIBLES, {
+        hp: 30,
+        maxHp: 30,
+        explosionDamage: 30,
+        explosionRadius: 4,
+        triggerCondition: 'on-death',
+        flammability: 0.7,
+        color: '#8B4513',
+      });
+
+      // Spawn fire below barrel
+      spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
+        propagationType: 'fire',
+        spreadRate: 2,
+        spreadLayer: GameLayers.FLOOR_EFFECTS,
+        spreadType: 'fire',
+        effectType: 'damage',
+        triggerMode: 'continuous',
+        damage: 5,
+        cadence: 2,
+        color: '#ff4500',
+      });
+
+      spatial.commit();
+
+      // Run floor effect system multiple times
+      floorSystem.update(context);
+      floorSystem.update(context);
+      floorSystem.update(context);
+
+      // Barrel should have taken damage
+      const barrelData = spatial.getEntityData(barrelId)!;
+      expect(barrelData.hp).toBeLessThan(30);
+    });
+
+    it('barrel explodes after fire burns it down', () => {
+      const gameManager = new GameManager();
+      gameManager.gameState.entityStore = store;
+      const floorSystem = new FloorEffectSystem(gameManager);
+
+      // Spawn barrel with low HP
+      const barrelId = spatial.spawn('barrel', 10, 10, GameLayers.COLLECTIBLES, {
+        hp: 10,
+        maxHp: 30,
+        explosionDamage: 30,
+        explosionRadius: 4,
+        triggerCondition: 'on-death',
+        flammability: 0.7,
+        color: '#8B4513',
+      });
+
+      // Spawn target to verify explosion
+      const targetId = spatial.spawn('player', 12, 10, GameLayers.ACTORS, {
+        hp: 100,
+        maxHp: 100,
+      });
+
+      // Spawn fire below barrel
+      spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
+        propagationType: 'fire',
+        spreadRate: 2,
+        spreadLayer: GameLayers.FLOOR_EFFECTS,
+        spreadType: 'fire',
+        effectType: 'damage',
+        triggerMode: 'continuous',
+        damage: 5,
+        cadence: 2,
+        color: '#ff4500',
+      });
+
+      spatial.commit();
+
+      // Run floor effect system to damage barrel
+      // Also run explosion system in the loop to catch when HP hits 0
+      floorSystem.update(context);
+      explosionSystem.update(context);
+      spatial.commit();
+      
+      floorSystem.update(context);
+      explosionSystem.update(context);
+      spatial.commit();
+      
+      floorSystem.update(context);
+      explosionSystem.update(context);
+      spatial.commit();
+      
+      floorSystem.update(context);
+      explosionSystem.update(context);
+      spatial.commit();
+
+      // Barrel should be gone (exploded and removed)
+      const barrelData = spatial.getEntityData(barrelId);
+      expect(barrelData).toBeUndefined(); // Barrel removed after explosion
+
+      // Target should be damaged by explosion
+      const targetData = spatial.getEntityData(targetId)!;
+      expect(targetData.hp).toBeLessThan(100);
     });
   });
 

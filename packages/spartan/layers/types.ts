@@ -1,30 +1,32 @@
 /**
  * Spartan Framework Layer Constants
  *
- * All games use these 8 semantic layers.
+ * All games use these 9 semantic layers.
  * Each layer has a specific purpose in game design.
  *
  * Layer meanings:
  * - BACKGROUND (0): Static background visuals, decorative elements
- * - FLOOR (1): Walkable terrain with optional gameplay effects
- * - LOGIC (2): Invisible AI helpers, spawn points, triggers (editor-only visibility)
- * - COLLECTIBLES (3): Items that can be picked up (non-blocking)
- * - WALLS (4): Static blocking elements, doors
- * - ACTORS (5): Dynamic moving entities (players, enemies, NPCs)
- * - EPHEMERALS (6): Temporary effects, projectiles, permanent decals
- * - TEXT (7): UI overlays, HUD elements (always on top)
+ * - FLOOR (1): Walkable terrain (grass, stone, dirt)
+ * - FLOOR_EFFECTS (2): Fire, acid pools, damage zones on floor surface
+ * - LOGIC (3): Invisible AI helpers, spawn points, triggers (editor-only visibility)
+ * - COLLECTIBLES (4): Items that can be picked up (non-blocking)
+ * - WALLS (5): Static blocking elements, doors
+ * - ACTORS (6): Dynamic moving entities (players, enemies, NPCs)
+ * - EPHEMERALS (7): Temporary effects, projectiles, permanent decals
+ * - TEXT (8): UI overlays, HUD elements (always on top)
  *
  * @see specs/spartan-layer-rules.md for full specification
  */
 export const GameLayers = {
   BACKGROUND: 0,
   FLOOR: 1,
-  LOGIC: 2,
-  COLLECTIBLES: 3,
-  WALLS: 4,
-  ACTORS: 5,
-  EPHEMERALS: 6,
-  TEXT: 7,
+  FLOOR_EFFECTS: 2,
+  LOGIC: 3,
+  COLLECTIBLES: 4,
+  WALLS: 5,
+  ACTORS: 6,
+  EPHEMERALS: 7,
+  TEXT: 8,
 } as const;
 
 /**
@@ -52,6 +54,7 @@ export const VISION_BLOCKING_LAYERS = [GameLayers.WALLS] as const;
 export const GAMEPLAY_VISIBLE_LAYERS = [
   GameLayers.BACKGROUND,
   GameLayers.FLOOR,
+  GameLayers.FLOOR_EFFECTS,
   GameLayers.COLLECTIBLES,
   GameLayers.WALLS,
   GameLayers.ACTORS,
@@ -65,6 +68,7 @@ export const GAMEPLAY_VISIBLE_LAYERS = [
 export const ALL_LAYERS = [
   GameLayers.BACKGROUND,
   GameLayers.FLOOR,
+  GameLayers.FLOOR_EFFECTS,
   GameLayers.LOGIC,
   GameLayers.COLLECTIBLES,
   GameLayers.WALLS,

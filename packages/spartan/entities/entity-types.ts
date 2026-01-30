@@ -428,18 +428,18 @@ export type MudData = EntityData & {
  *
  * @example
  * ```typescript
- * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+ * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
  *   propagationType: 'fire',
  *   spreadRate: 2,                 // Spread every 2 ticks
  *   spreadProbability: 0.6,        // 60% chance per neighbor (realistic consuming)
- *   spreadLayer: GameLayers.FLOOR,
+ *   spreadLayer: GameLayers.FLOOR_EFFECTS,
  *   spreadType: 'fire',
  *   // No maxDistance - fire spread is limited by flammable materials
  *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   effectType: 'damage',
  *   triggerMode: 'continuous',
- *   damage: 10,
+ *   damage: 5,
  *   cadence: 2,                    // Damage every 2 ticks
  *   color: '#ff6b35'
  * });
@@ -529,7 +529,7 @@ export type WaterData = EntityData & {
  *
  * @example
  * ```typescript
- * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR, {
+ * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR_EFFECTS, {
  *   color: '#4a4a4a'
  * });
  * ```

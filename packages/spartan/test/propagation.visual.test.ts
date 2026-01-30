@@ -10,11 +10,11 @@ import { isAsh } from '../entities/trait-guards';
 visual('fire spreads to adjacent cells', {
   arrange: ({ spatial }) => {
     // Spawn initial fire source first
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,         // Spread every 1 tick (fast for testing)
       spreadProbability: 1.0, // 100% for deterministic test
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       // No maxDistance - fire spread is limited by flammable materials
       color: '#ff6b35',
@@ -82,11 +82,11 @@ visual('fire stopped by walls', {
     spatial.commit();
 
     // Spawn fire source
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       blockedByLayers: [GameLayers.WALLS],
       color: '#ff6b35',
@@ -116,7 +116,7 @@ visual('fire stopped by walls', {
   },
   assert: ({ spatial, expect }) => {
     expect('Fire did not spread past wall to the right', () => {
-      const fireAtWall = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR);
+      const fireAtWall = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireAtWall ? spatial.getEntityData(fireAtWall) : null;
       
       if (fireData?.type === 'fire') {
@@ -125,7 +125,7 @@ visual('fire stopped by walls', {
     });
 
     expect('Fire spread to the left (unblocked)', () => {
-      const fireLeft = spatial.getEntityIdAt(4, 5, GameLayers.FLOOR);
+      const fireLeft = spatial.getEntityIdAt(4, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireLeft ? spatial.getEntityData(fireLeft) : null;
       
       if (fireData?.type !== 'fire') {
@@ -196,11 +196,11 @@ visual('poison gas expands with lifetime', {
 visual('fire respects max distance limit', {
   arrange: ({ spatial }) => {
     // Spawn fire with maxDistance of 2
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       maxDistance: 2, // Should stop at distance 2
       color: '#ff6b35',
@@ -243,7 +243,7 @@ visual('fire respects max distance limit', {
       ];
 
       for (const [x, y] of farCells) {
-        const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR);
+        const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
         const data = entityId ? spatial.getEntityData(entityId) : null;
         
         if (data?.type === 'fire') {
@@ -261,7 +261,7 @@ visual('fire respects max distance limit', {
 
       let fireFound = false;
       for (const [x, y] of nearCells) {
-        const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR);
+        const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
         const data = entityId ? spatial.getEntityData(entityId) : null;
         
         if (data?.type === 'fire') {
@@ -283,7 +283,7 @@ visual('water flows without lifetime', {
     spatial.spawn('water', 5, 5, GameLayers.FLOOR, {
       propagationType: 'liquid',
       spreadRate: 1,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'water',
       color: '#4a90e2',
       // No lifetime - water persists
@@ -326,11 +326,11 @@ visual('water flows without lifetime', {
 visual('fire spreads and damages player', {
   arrange: ({ spatial }) => {
     // Spawn fire first
-    spatial.spawn('fire', 4, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 4, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       color: '#ff6b35',
       // Floor effect properties
@@ -405,7 +405,7 @@ visual('fire spreads and damages player', {
       }
 
       // Check if fire reached the player's cell
-      const fireAtPlayerPos = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR);
+      const fireAtPlayerPos = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireAtPlayerPos ? spatial.getEntityData(fireAtPlayerPos) : null;
       
       if (fireData?.type === 'fire') {
@@ -423,20 +423,20 @@ visual('fire spreads and damages player', {
 visual('multiple fire sources spread independently', {
   arrange: ({ spatial }) => {
     // Spawn two separate fire sources first
-    spatial.spawn('fire', 0, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 0, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       color: '#ff6b35',
     });
 
-    spatial.spawn('fire', 10, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 10, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       maxDistance: 3,
       color: '#ff6b35',
@@ -481,11 +481,11 @@ visual('multiple fire sources spread independently', {
   assert: ({ spatial, expect }) => {
     expect('Both fires spread independently', () => {
       // Check for fire on left side (from first source)
-      const leftFire = spatial.getEntityIdAt(1, 5, GameLayers.FLOOR);
+      const leftFire = spatial.getEntityIdAt(1, 5, GameLayers.FLOOR_EFFECTS);
       const leftData = leftFire ? spatial.getEntityData(leftFire) : null;
 
       // Check for fire on right side (from second source)
-      const rightFire = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
+      const rightFire = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR_EFFECTS);
       const rightData = rightFire ? spatial.getEntityData(rightFire) : null;
 
       if (leftData?.type !== 'fire' && rightData?.type !== 'fire') {
@@ -498,11 +498,11 @@ visual('multiple fire sources spread independently', {
 visual('fire burns out and leaves ash', {
   arrange: ({ spatial }) => {
     // Spawn fire with short lifetime (won't spread due to high spreadRate)
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 100, // Won't spread during test
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       lifetime: 3, // Short lifetime
       color: '#ff6b35',

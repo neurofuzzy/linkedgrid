@@ -371,12 +371,10 @@ describe('Scene Integration Tests', () => {
         warnings.push(args.join(' '));
       };
 
-      // Try to spawn fire on top of grass (collision!)
-      spatial.spawn('fire', 5, 5, GameLayers.COLLECTIBLES, {
-        propagationType: 'fire',
-        spreadType: 'fire',
-        spreadRate: 1,
-        spreadLayer: GameLayers.COLLECTIBLES,
+      // Try to spawn another grass on top of existing grass (collision!)
+      spatial.spawn('grass', 5, 5, GameLayers.COLLECTIBLES, {
+        flammability: 0.8,
+        color: '#00ff00',
       });
       spatial.commit();
 

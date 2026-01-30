@@ -349,7 +349,7 @@ visual('explosion ignites flammable entities', {
   },
   assert: ({ spatial, expect }) => {
     expect('Fire spawned at grass position (11, 10)', () => {
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR);
+      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
       if (!fireId) throw new Error('No fire found');
 
       const fireData = spatial.getEntityData(fireId);
@@ -359,7 +359,7 @@ visual('explosion ignites flammable entities', {
     });
 
     expect('Fire spawned at grass position (12, 10)', () => {
-      const fireId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR);
+      const fireId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR_EFFECTS);
       if (!fireId) throw new Error('No fire found');
 
       const fireData = spatial.getEntityData(fireId);
@@ -369,8 +369,8 @@ visual('explosion ignites flammable entities', {
     });
 
     expect('Fire spawned at gasoline position (10, 11)', () => {
-      // Note: Fire on FLOOR layer, gasoline gets consumed/replaced
-      const fireId = spatial.getEntityIdAt(10, 11, GameLayers.FLOOR);
+      // Note: Fire on FLOOR_EFFECTS layer, gasoline gets consumed/replaced
+      const fireId = spatial.getEntityIdAt(10, 11, GameLayers.FLOOR_EFFECTS);
       if (!fireId) throw new Error('No fire found');
 
       const fireData = spatial.getEntityData(fireId);
@@ -495,10 +495,10 @@ visual('on-fire trigger - barrel explodes when ignited', {
     gameLoop.addSystem(explosionSystem);
 
     // Spawn fire at barrel position
-    spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+    spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 2,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       lifetime: 20,
       color: '#ff4500',

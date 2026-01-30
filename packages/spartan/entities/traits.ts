@@ -283,14 +283,15 @@ export interface HasFloorEffect {
  *   propagationType: 'fire',
  *   spreadRate: 2,                 // Spread every 2 ticks
  *   spreadProbability: 0.6,        // 60% chance to spread to each neighbor
- *   spreadLayer: GameLayers.FLOOR,
+ *   spreadLayer: GameLayers.FLOOR_EFFECTS,
  *   spreadType: 'fire',
  *   // No maxDistance - fire spread is limited by flammable materials
  *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   // Can also have floor effect properties
  *   effectType: 'damage',
- *   damage: 10,
+ *   triggerMode: 'continuous',
+ *   damage: 5,
  *   cadence: 2                     // Damage every 2 ticks
  * };
  *

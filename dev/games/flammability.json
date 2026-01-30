@@ -9,7 +9,7 @@
           "type": "player",
           "x": 2,
           "y": 7,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 100,
             "maxHp": 100,
@@ -181,7 +181,7 @@
           "type": "gasoline",
           "x": 12,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -191,7 +191,7 @@
           "type": "gasoline",
           "x": 12,
           "y": 6,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -201,7 +201,7 @@
           "type": "gasoline",
           "x": 12,
           "y": 7,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -211,7 +211,7 @@
           "type": "gasoline",
           "x": 12,
           "y": 8,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -221,7 +221,7 @@
           "type": "gasoline",
           "x": 12,
           "y": 9,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -231,7 +231,7 @@
           "type": "fuse",
           "x": 15,
           "y": 7,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.99,
             "color": "#ff4500"
@@ -241,7 +241,7 @@
           "type": "fuse",
           "x": 16,
           "y": 7,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.99,
             "color": "#ff4500"
@@ -251,7 +251,7 @@
           "type": "fuse",
           "x": 17,
           "y": 7,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.99,
             "color": "#ff4500"
@@ -303,7 +303,7 @@
           "type": "fire",
           "x": 3,
           "y": 7,
-          "layer": 1,
+          "layer": 2,
           "data": {
             "propagationType": "fire",
             "spreadRate": 2,

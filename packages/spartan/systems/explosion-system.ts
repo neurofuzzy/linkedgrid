@@ -115,8 +115,8 @@ export class ExplosionSystem implements GameSystem {
 
       // Check for on-fire trigger
       if (trigger === 'on-fire') {
-        // Check if there's fire at this position
-        const fireId = context.spatial.getEntityIdAt(pos.x, pos.y, GameLayers.FLOOR);
+        // Check if there's fire at this position on FLOOR_EFFECTS layer
+        const fireId = context.spatial.getEntityIdAt(pos.x, pos.y, GameLayers.FLOOR_EFFECTS);
         if (fireId !== undefined) {
           const fireEntity = context.spatial.getEntityData(fireId);
           if (fireEntity && isFire(fireEntity)) {
@@ -200,6 +200,7 @@ export class ExplosionSystem implements GameSystem {
     // Check all layers for entities
     const layers = [
       GameLayers.FLOOR,
+      GameLayers.FLOOR_EFFECTS,
       GameLayers.COLLECTIBLES,
       GameLayers.WALLS,
       GameLayers.EPHEMERALS,
@@ -232,9 +233,9 @@ export class ExplosionSystem implements GameSystem {
 
       // Ignite flammable entities
       if (hasFlammability(entityData)) {
-        // Check if fire already exists at this position on FLOOR layer
+        // Check if fire already exists at this position on FLOOR_EFFECTS layer
         let hasExistingFire = false;
-        const existingFireId = context.spatial.getEntityIdAt(x, y, GameLayers.FLOOR);
+        const existingFireId = context.spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
 
         if (existingFireId !== undefined) {
           const existingFireEntity = context.spatial.getEntityData(existingFireId);
@@ -251,17 +252,18 @@ export class ExplosionSystem implements GameSystem {
             context.spatial.remove(entityId);
           }
 
-          // Spawn fire entity
-          context.spatial.spawn('fire', x, y, GameLayers.FLOOR, {
+          // Spawn fire entity on FLOOR_EFFECTS layer with damage properties
+          context.spatial.spawn('fire', x, y, GameLayers.FLOOR_EFFECTS, {
             propagationType: 'fire',
             spreadRate: 2,
             spreadProbability: 0.9,
-            spreadLayer: GameLayers.FLOOR,
+            spreadLayer: GameLayers.FLOOR_EFFECTS,
             spreadType: 'fire',
             lifetime: 20,
             blockedByLayers: [GameLayers.WALLS],
             effectType: 'damage',
-            damage: 10,
+            triggerMode: 'continuous',
+            damage: 5,
             cadence: 2,
             color: '#ff4500',
           });

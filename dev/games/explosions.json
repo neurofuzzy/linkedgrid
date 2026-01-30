@@ -9,7 +9,7 @@
           "type": "player",
           "x": 2,
           "y": 10,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 100,
             "maxHp": 100,
@@ -21,7 +21,7 @@
           "type": "barrel",
           "x": 6,
           "y": 10,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -36,7 +36,7 @@
           "type": "barrel",
           "x": 10,
           "y": 10,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -51,7 +51,7 @@
           "type": "barrel",
           "x": 14,
           "y": 10,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -66,7 +66,7 @@
           "type": "wall",
           "x": 20,
           "y": 8,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -75,7 +75,7 @@
           "type": "wall",
           "x": 20,
           "y": 9,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -84,7 +84,7 @@
           "type": "wall",
           "x": 20,
           "y": 10,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -93,7 +93,7 @@
           "type": "wall",
           "x": 20,
           "y": 11,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -102,7 +102,7 @@
           "type": "wall",
           "x": 20,
           "y": 12,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -111,7 +111,7 @@
           "type": "barrel",
           "x": 18,
           "y": 10,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -126,7 +126,7 @@
           "type": "enemy",
           "x": 22,
           "y": 10,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -138,7 +138,7 @@
           "type": "destructible-wall",
           "x": 6,
           "y": 5,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -150,7 +150,7 @@
           "type": "destructible-wall",
           "x": 7,
           "y": 5,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -162,7 +162,7 @@
           "type": "destructible-wall",
           "x": 8,
           "y": 5,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -174,7 +174,7 @@
           "type": "barrel",
           "x": 7,
           "y": 7,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -189,7 +189,7 @@
           "type": "barrel",
           "x": 6,
           "y": 15,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 30,
             "maxHp": 30,
@@ -244,7 +244,7 @@
           "type": "torch",
           "x": 10,
           "y": 15,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#ff6b35"
           }
@@ -253,7 +253,7 @@
           "type": "fire",
           "x": 10,
           "y": 15,
-          "layer": 1,
+          "layer": 2,
           "data": {
             "propagationType": "fire",
             "spreadRate": 2,
@@ -272,7 +272,7 @@
           "type": "gasoline",
           "x": 14,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -282,7 +282,7 @@
           "type": "gasoline",
           "x": 15,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -292,7 +292,7 @@
           "type": "gasoline",
           "x": 16,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -302,7 +302,7 @@
           "type": "gasoline",
           "x": 17,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "flammability": 0.95,
             "color": "#d4af37"
@@ -312,7 +312,7 @@
           "type": "barrel",
           "x": 18,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -327,7 +327,7 @@
           "type": "enemy",
           "x": 20,
           "y": 5,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -339,7 +339,7 @@
           "type": "wall",
           "x": 25,
           "y": 3,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -348,7 +348,7 @@
           "type": "wall",
           "x": 25,
           "y": 4,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -357,7 +357,7 @@
           "type": "wall",
           "x": 25,
           "y": 5,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -366,7 +366,7 @@
           "type": "wall",
           "x": 25,
           "y": 6,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -375,7 +375,7 @@
           "type": "wall",
           "x": 25,
           "y": 7,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "color": "#808080"
           }
@@ -384,7 +384,7 @@
           "type": "barrel",
           "x": 23,
           "y": 5,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 20,
             "maxHp": 20,
@@ -399,7 +399,7 @@
           "type": "enemy",
           "x": 27,
           "y": 5,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 50,
             "maxHp": 50,
@@ -411,7 +411,7 @@
           "type": "destructible-wall",
           "x": 14,
           "y": 15,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "hp": 30,
             "maxHp": 30,
@@ -423,7 +423,7 @@
           "type": "destructible-wall",
           "x": 15,
           "y": 15,
-          "layer": 2,
+          "layer": 3,
           "data": {
             "hp": 30,
             "maxHp": 30,
@@ -435,7 +435,7 @@
           "type": "barrel",
           "x": 14,
           "y": 17,
-          "layer": 3,
+          "layer": 4,
           "data": {
             "hp": 15,
             "maxHp": 15,
