@@ -11,7 +11,7 @@
           "type": "player",
           "x": 2,
           "y": 7,
-          "layer": 5,
+          "layer": 6,
           "data": {
             "hp": 100,
             "maxHp": 100,
@@ -24,28 +24,28 @@
           "type": "wall",
           "x": 0,
           "y": 0,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "wall",
           "x": 24,
           "y": 0,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "wall",
           "x": 0,
           "y": 14,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "wall",
           "x": 24,
           "y": 14,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
@@ -216,7 +216,7 @@
           "type": "fire",
           "x": 10,
           "y": 3,
-          "layer": 1,
+          "layer": 2,
           "data": {
             "propagationType": "fire",
             "spreadRate": 5,
@@ -236,37 +236,38 @@
           "type": "wall",
           "x": 12,
           "y": 3,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "wall",
           "x": 12,
           "y": 2,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "wall",
           "x": 12,
           "y": 4,
-          "layer": 4,
+          "layer": 5,
           "data": {}
         },
         {
           "type": "poison-gas",
           "x": 10,
           "y": 11,
-          "layer": 6,
+          "layer": 2,
           "data": {
             "propagationType": "gas",
             "spreadRate": 1,
-            "spreadLayer": 6,
+            "spreadLayer": 2,
             "spreadType": "poison-gas",
-            
+            "maxDistance": 8,
             "lifetime": 80,
-            "blockedByLayers": [4],
+            "blockedByLayers": [5],
             "effectType": "damage",
+            "triggerMode": "continuous",
             "damage": 2,
             "cadence": 3,
             "color": "#9acd32"

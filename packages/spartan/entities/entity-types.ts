@@ -52,6 +52,8 @@ import type {
   HasFloorEffect,
   HasPropagation,
   HasFlammability,
+  HasExplosion,
+  HasDamageable,
 } from './traits';
 
 /**
@@ -426,18 +428,18 @@ export type MudData = EntityData & {
  *
  * @example
  * ```typescript
- * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR, {
+ * const fireId = spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
  *   propagationType: 'fire',
  *   spreadRate: 2,                 // Spread every 2 ticks
  *   spreadProbability: 0.6,        // 60% chance per neighbor (realistic consuming)
- *   spreadLayer: GameLayers.FLOOR,
+ *   spreadLayer: GameLayers.FLOOR_EFFECTS,
  *   spreadType: 'fire',
  *   // No maxDistance - fire spread is limited by flammable materials
  *   lifetime: 20,                  // Burns for 20 ticks
  *   blockedByLayers: [GameLayers.WALLS],
  *   effectType: 'damage',
  *   triggerMode: 'continuous',
- *   damage: 10,
+ *   damage: 5,
  *   cadence: 2,                    // Damage every 2 ticks
  *   color: '#ff6b35'
  * });
@@ -527,7 +529,7 @@ export type WaterData = EntityData & {
  *
  * @example
  * ```typescript
- * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR, {
+ * const ashId = spatial.spawn('ash', 10, 5, GameLayers.FLOOR_EFFECTS, {
  *   color: '#4a4a4a'
  * });
  * ```
@@ -629,3 +631,84 @@ export type FuseData = EntityData & {
 export type TorchData = EntityData & {
   type: 'torch';
 } & HasColor;
+
+/**
+ * BarrelData - Explosive container.
+ *
+ * Traits:
+ * - HasHealth - Can take damage and be destroyed
+ * - HasExplosion - Explodes when triggered
+ * - HasFlammability - Can catch fire
+ *
+ * Typical usage:
+ * - Destructible explosive hazards
+ * - Chain reaction triggers
+ * - Environmental traps
+ *
+ * @example
+ * ```typescript
+ * const barrelId = spatial.spawn('barrel', 10, 10, GameLayers.COLLECTIBLES, {
+ *   hp: 20,
+ *   maxHp: 20,
+ *   explosionDamage: 30,
+ *   explosionRadius: 4,
+ *   triggerCondition: 'on-death',  // Explodes when destroyed
+ *   flammability: 0.7,  // Can also catch fire and explode
+ *   color: '#8B4513'
+ * });
+ * ```
+ */
+export type BarrelData = EntityData & {
+  type: 'barrel';
+} & HasHealth & HasExplosion & HasFlammability & HasColor;
+
+/**
+ * ExplosionVisualData - Temporary explosion visual effect.
+ *
+ * Traits:
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Visual feedback for explosions
+ * - Brief flash at explosion epicenter
+ * - Auto-despawns after lifetime
+ *
+ * @example
+ * ```typescript
+ * const visualId = spatial.spawn('explosion-visual', 8, 8, GameLayers.EPHEMERALS, {
+ *   lifetime: 2,  // Lasts 2 ticks
+ *   color: '#ff6600'
+ * });
+ * ```
+ */
+export type ExplosionVisualData = EntityData & {
+  type: 'explosion-visual';
+  lifetime: number;  // Ticks before auto-despawn
+} & HasColor;
+
+/**
+ * DestructibleWallData - Wall that can be damaged and destroyed.
+ *
+ * Traits:
+ * - HasHealth - Can take damage and be destroyed
+ * - HasDamageable - Requires minimum damage threshold
+ * - HasColor - Visual color for rendering
+ *
+ * Typical usage:
+ * - Walls that break from explosions
+ * - Secret passages revealed by damage
+ * - Environmental destruction
+ *
+ * @example
+ * ```typescript
+ * const wallId = spatial.spawn('destructible-wall', 5, 5, GameLayers.WALLS, {
+ *   hp: 50,
+ *   maxHp: 50,
+ *   hardness: 20,  // Immune to weak attacks, vulnerable to explosions
+ *   color: '#8b7355'
+ * });
+ * ```
+ */
+export type DestructibleWallData = EntityData & {
+  type: 'destructible-wall';
+} & HasHealth & HasDamageable & HasColor;

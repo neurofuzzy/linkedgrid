@@ -81,6 +81,8 @@ export type {
   HasFloorEffect,
   HasPropagation,
   HasFlammability,
+  HasExplosion,
+  HasDamageable,
 } from './entities/traits';
 
 // Entity archetypes (example patterns)
@@ -106,6 +108,9 @@ export type {
   GasolineData,
   FuseData,
   TorchData,
+  BarrelData,
+  ExplosionVisualData,
+  DestructibleWallData,
 } from './entities/entity-types';
 
 // Trait guards (runtime checks)
@@ -122,6 +127,8 @@ export {
   hasFloorEffect,
   hasPropagation,
   hasFlammability,
+  hasExplosion,
+  hasDamageable,
   isPlayer,
   isEnemy,
   isTeleporter,
@@ -142,6 +149,9 @@ export {
   isGasoline,
   isFuse,
   isTorch,
+  isBarrel,
+  isExplosionVisual,
+  isDestructibleWall,
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
@@ -173,4 +183,5 @@ export { DoorSystem } from './systems/door-system';
 export { PlayerInputSystem } from './systems/player-input-system';
 export { FloorEffectSystem } from './systems/floor-effect-system';
 export { PropagationSystem } from './systems/propagation-system';
+export { ExplosionSystem } from './systems/explosion-system';
 export type { GameSystem, GameContext, Overlap } from './types';

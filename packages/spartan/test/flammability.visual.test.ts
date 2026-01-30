@@ -18,11 +18,11 @@ visual('fire spreads through grass field', {
     spatial.commit();
 
     // Spawn fire at edge of grass field (not on grass, so it can spread TO grass)
-    spatial.spawn('fire', 2, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 2, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0, // Base probability (will be modified by grass flammability)
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       maxDistance: 10,
       lifetime: 30,
@@ -69,7 +69,7 @@ visual('gasoline trail burns fast', {
     spatial.commit();
 
     // Spawn fire adjacent to start of trail (not on gasoline)
-    spatial.spawn('fire', 2, 5, GameLayers.COLLECTIBLES, {
+    spatial.spawn('fire', 2, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
@@ -119,7 +119,7 @@ visual('fuse burns in sequence', {
     spatial.commit();
 
     // Spawn fire adjacent to start of fuse (not on fuse)
-    spatial.spawn('fire', 2, 5, GameLayers.COLLECTIBLES, {
+    spatial.spawn('fire', 2, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
@@ -183,7 +183,7 @@ visual('fire blocked by non-flammable entities', {
     spatial.spawn('water', 5, 5, GameLayers.FLOOR, {
       propagationType: 'liquid',
       spreadRate: 1,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'water',
       color: '#4a90e2',
     });
@@ -191,11 +191,11 @@ visual('fire blocked by non-flammable entities', {
     spatial.commit();
 
     // Spawn fire adjacent to left grass (not on grass)
-    spatial.spawn('fire', 2, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 2, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       maxDistance: 10,
       lifetime: 20,
@@ -218,7 +218,7 @@ visual('fire blocked by non-flammable entities', {
   assert: ({ spatial, expect }) => {
     expect('Fire did not cross water barrier', () => {
       // Check that fire never reached the right grass (x=7)
-      const fireAtRight = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR);
+      const fireAtRight = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireAtRight ? spatial.getEntityData(fireAtRight) : null;
       
       if (fireData && fireData.type === 'fire') {
@@ -227,7 +227,7 @@ visual('fire blocked by non-flammable entities', {
     });
 
     expect('Water still present (not consumed)', () => {
-      const waterEntity = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
+      const waterEntity = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR_EFFECTS);
       const waterData = waterEntity ? spatial.getEntityData(waterEntity) : null;
       
       if (!waterData || waterData.type !== 'water') {
@@ -268,7 +268,7 @@ visual('mixed flammability terrain creates realistic spread', {
     spatial.commit();
 
     // Start fire adjacent to gasoline (not on it)
-    spatial.spawn('fire', 6, 4, GameLayers.COLLECTIBLES, {
+    spatial.spawn('fire', 6, 4, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 0.8, // Lower base probability to see flammability effect
@@ -308,11 +308,11 @@ visual('mixed flammability terrain creates realistic spread', {
 visual('fire cannot spread without flammable materials', {
   arrange: ({ spatial }) => {
     // Place fire on empty floor (no flammable material)
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
       spreadRate: 1,
       spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR,
+      spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
       lifetime: 15,
       color: '#ff6b35',

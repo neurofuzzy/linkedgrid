@@ -185,8 +185,8 @@ export class FloorEffectSystem implements GameSystem {
       const cell = context.spatial.grid.cell(pos.x, pos.y);
       if (!cell) continue;
 
-      // Check both FLOOR and EPHEMERALS layers for floor effects
-      const layersToCheck = [GameLayers.FLOOR, GameLayers.EPHEMERALS];
+      // Check FLOOR, FLOOR_EFFECTS, and EPHEMERALS layers for floor effects
+      const layersToCheck = [GameLayers.FLOOR, GameLayers.FLOOR_EFFECTS, GameLayers.EPHEMERALS];
 
       for (const layer of layersToCheck) {
         const floorEntityId = cell.getValue(layer);
@@ -224,8 +224,8 @@ export class FloorEffectSystem implements GameSystem {
       const cell = context.spatial.grid.cell(pos.x, pos.y);
       if (!cell) continue;
 
-      // Check both FLOOR and EPHEMERALS layers for floor effects
-      const layersToCheck = [GameLayers.FLOOR, GameLayers.EPHEMERALS];
+      // Check FLOOR, FLOOR_EFFECTS, and EPHEMERALS layers for floor effects
+      const layersToCheck = [GameLayers.FLOOR, GameLayers.FLOOR_EFFECTS, GameLayers.EPHEMERALS];
 
       for (const layer of layersToCheck) {
         const floorEntityId = cell.getValue(layer);
