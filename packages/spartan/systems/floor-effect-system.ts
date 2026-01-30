@@ -1,7 +1,7 @@
 import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import type { GameManager } from '../game-manager';
 import { GameLayers } from '../layers/types';
-import { hasFloorEffect, hasHealth } from '../entities/trait-guards';
+import { hasFloorEffect, hasHealth, hasDensity } from '../entities/trait-guards';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.
@@ -10,17 +10,6 @@ import { hasFloorEffect, hasHealth } from '../entities/trait-guards';
 interface EntityTimingState {
   lastDamageTime?: number; // Last time damage was applied
   lastHealTime?: number; // Last time healing was applied
-}
-
-/**
- * Poison status effect for entities.
- * Applied when entering poison gas, persists after leaving.
- */
-interface PoisonStatus {
-  damage: number; // Damage per tick
-  ticksRemaining: number; // Ticks until poison expires
-  tickInterval: number; // Ticks between damage applications
-  lastDamageTick: number; // Last tick when damage was applied
 }
 
 /**
@@ -72,9 +61,6 @@ export class FloorEffectSystem implements GameSystem {
   // Track which on-entry effects have been triggered
   // Map structure: effectType -> Set of "entityId:x:y" keys
   private effectTriggers = new Map<string, Set<string>>();
-
-  // Track poison status effects on entities
-  private poisonStatuses = new Map<number, PoisonStatus>();
 
   // Current tick count for poison status tracking
   private currentTick = 0;
@@ -156,9 +142,6 @@ export class FloorEffectSystem implements GameSystem {
    */
   update(context: GameContext): void {
     this.currentTick++;
-
-    // Phase 0: Process poison status effects
-    this.processPoisonStatuses(context);
 
     // Phase 1: Process on-entry effects
     this.processOnEntryEffects(context);
@@ -370,8 +353,15 @@ export class FloorEffectSystem implements GameSystem {
       }
     }
 
+    // Calculate effective damage (scale by density if present)
+    let effectiveDamage = floorData.damage;
+    if (hasDensity(floorData)) {
+      const densityMultiplier = Math.max(0.1, floorData.density / 100);
+      effectiveDamage *= densityMultiplier;
+    }
+
     // Apply damage
-    const newHp = Math.max(0, entityData.hp - floorData.damage);
+    const newHp = Math.max(0, entityData.hp - effectiveDamage);
     this.gameManager.gameState.entityStore.setData(entityData.id, {
       hp: newHp,
     });
@@ -379,87 +369,10 @@ export class FloorEffectSystem implements GameSystem {
     // Update timing state
     state.lastDamageTime = currentTick;
 
-    // For poison gas, apply lingering poison status
-    if (floorData.type === 'poison-gas') {
-      // Poison lasts 6 ticks after leaving cloud, applies damage every 3 ticks
-      this.applyPoison(entityData.id, floorData.damage, 12, 3);
-    }
-
     // Remove entity if dead
     if (newHp <= 0) {
       context.spatial.remove(entityData.id);
     }
-  }
-
-  /**
-   * Process poison status effects on all entities.
-   *
-   * Poison applies damage over time and expires after a duration.
-   * This runs independently of whether the entity is still in poison gas.
-   */
-  private processPoisonStatuses(context: GameContext): void {
-    const toRemove: number[] = [];
-
-    for (const [entityId, poison] of this.poisonStatuses.entries()) {
-      const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !hasHealth(entityData)) {
-        toRemove.push(entityId);
-        continue;
-      }
-
-      // Check if it's time to apply damage
-      const ticksSinceLastDamage = this.currentTick - poison.lastDamageTick;
-      if (ticksSinceLastDamage >= poison.tickInterval) {
-        // Apply poison damage
-        const newHp = Math.max(0, entityData.hp - poison.damage);
-        this.gameManager.gameState.entityStore.setData(entityId, {
-          hp: newHp,
-        });
-
-        poison.lastDamageTick = this.currentTick;
-
-        // Remove entity if dead
-        if (newHp <= 0) {
-          context.spatial.remove(entityId);
-          toRemove.push(entityId);
-          continue;
-        }
-      }
-
-      // Decrement remaining ticks
-      poison.ticksRemaining--;
-      if (poison.ticksRemaining <= 0) {
-        toRemove.push(entityId);
-      }
-    }
-
-    // Clean up expired poisons
-    for (const entityId of toRemove) {
-      this.poisonStatuses.delete(entityId);
-    }
-  }
-
-  /**
-   * Apply or refresh poison status effect on an entity.
-   *
-   * @param entityId - Entity to poison
-   * @param damage - Damage per tick
-   * @param duration - Duration in ticks
-   * @param interval - Ticks between damage applications
-   */
-  private applyPoison(
-    entityId: number,
-    damage: number,
-    duration: number,
-    interval: number
-  ): void {
-    // Refresh poison if already poisoned (resets duration)
-    this.poisonStatuses.set(entityId, {
-      damage,
-      ticksRemaining: duration,
-      tickInterval: interval,
-      lastDamageTick: this.currentTick,
-    });
   }
 
   /**

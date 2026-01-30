@@ -40,6 +40,7 @@ import type {
   HasTemperature,
   HasExplosion,
   HasDamageable,
+  HasDensity,
 } from './traits';
 import type {
   PlayerData,
@@ -303,6 +304,23 @@ export function hasDamageable(
   entity: EntityData
 ): entity is EntityData & HasDamageable {
   return 'hardness' in entity && typeof entity.hardness === 'number';
+}
+
+/**
+ * Check if entity has density trait.
+ *
+ * Entities with density trait have concentration for fluid simulation.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses density trait
+ */
+export function hasDensity(
+  entity: EntityData
+): entity is EntityData & HasDensity {
+  return (
+    'density' in entity && typeof entity.density === 'number' &&
+    'minDensity' in entity && typeof entity.minDensity === 'number'
+  );
 }
 
 /**

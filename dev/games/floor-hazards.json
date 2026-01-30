@@ -237,11 +237,11 @@
           "type": "poison-gas",
           "x": 10,
           "y": 11,
-          "layer": 2,
+          "layer": 7,
           "data": {
             "propagationType": "gas",
             "spreadRate": 1,
-            "spreadLayer": 2,
+            "spreadLayer": 7,
             "spreadType": "poison-gas",
             "maxDistance": 8,
             "lifetime": 80,
@@ -250,7 +250,9 @@
             "triggerMode": "continuous",
             "damage": 2,
             "cadence": 3,
-            "color": "#9acd32"
+            "color": "#9acd32",
+            "density": 1000,
+            "minDensity": 5
           }
         }
       ]

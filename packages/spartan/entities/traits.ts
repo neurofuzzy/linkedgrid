@@ -480,6 +480,38 @@ export interface HasDamageable {
 }
 
 /**
+ * HasDensity - Entity has a density value for gas/fluid simulation.
+ *
+ * Used by:
+ * - PoisonSystem (distribute poison gas based on density)
+ * - Rendering systems (visualize density as opacity)
+ *
+ * Density mechanics:
+ * - density: Current concentration (standard scale 0-100, but can be higher for compressed gases)
+ * - minDensity: Minimum density required to persist/spread
+ *
+ * Behavior:
+ * - Gas spreads by splitting density among available neighbors
+ * - Opacity scales with density
+ * - Entity dissipates when density < minDensity
+ *
+ * @example
+ * ```typescript
+ * const poisonGas = {
+ *   id: 21,
+ *   type: 'poison-gas',
+ *   density: 500, // Compressed gas
+ *   minDensity: 5,
+ *   color: '#9acd32'
+ * };
+ * ```
+ */
+export interface HasDensity {
+  density: number;    // Current density
+  minDensity: number; // Minimum density threshold
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:

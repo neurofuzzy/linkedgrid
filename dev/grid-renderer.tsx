@@ -108,7 +108,21 @@ export function GridRenderer({ scene }: Props) {
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
-        const color = (entityData as any)?.color;
+        let color = (entityData as any)?.color;
+
+        // Apply density opacity if present (e.g., poison gas)
+        if (color && (entityData as any).density !== undefined) {
+           const density = (entityData as any).density;
+           // Map 0-100 density to 0.1-1.0 opacity
+           const opacity = Math.max(0.1, Math.min(1.0, density / 100));
+           // Convert hex to rgba to apply opacity
+           if (color.startsWith('#')) {
+             const r = parseInt(color.slice(1, 3), 16);
+             const g = parseInt(color.slice(3, 5), 16);
+             const b = parseInt(color.slice(5, 7), 16);
+             color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+           }
+        }
 
         row.push({ char, className, color });
       }
