@@ -12,7 +12,7 @@ visual('fire spreads to adjacent cells', {
     // Spawn initial fire source first
     spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
       propagationType: 'fire',
-      spreadRate: 1,         // Spread every 1 tick (fast for testing)
+      spreadRate: 1, // Spread every 1 tick (fast for testing)
       spreadProbability: 1.0, // 100% for deterministic test
       spreadLayer: GameLayers.FLOOR_EFFECTS,
       spreadType: 'fire',
@@ -51,13 +51,17 @@ visual('fire spreads to adjacent cells', {
   },
   assert: ({ spatial, expect }) => {
     expect('Fire spread to adjacent cells', () => {
-      const fireCount = Array.from(spatial.getAllPositions()).filter(([id, pos]) => {
-        const data = spatial.getEntityData(id);
-        return data?.type === 'fire';
-      }).length;
+      const fireCount = Array.from(spatial.getAllPositions()).filter(
+        ([id, pos]) => {
+          const data = spatial.getEntityData(id);
+          return data?.type === 'fire';
+        }
+      ).length;
 
       if (fireCount <= 1) {
-        throw new Error(`Expected fire to spread, got ${fireCount} fire entities`);
+        throw new Error(
+          `Expected fire to spread, got ${fireCount} fire entities`
+        );
       }
     });
   },
@@ -118,7 +122,7 @@ visual('fire stopped by walls', {
     expect('Fire did not spread past wall to the right', () => {
       const fireAtWall = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireAtWall ? spatial.getEntityData(fireAtWall) : null;
-      
+
       if (fireData?.type === 'fire') {
         throw new Error('Fire should not have spread past wall');
       }
@@ -127,7 +131,7 @@ visual('fire stopped by walls', {
     expect('Fire spread to the left (unblocked)', () => {
       const fireLeft = spatial.getEntityIdAt(4, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireLeft ? spatial.getEntityData(fireLeft) : null;
-      
+
       if (fireData?.type !== 'fire') {
         throw new Error('Fire should have spread left');
       }
@@ -174,10 +178,12 @@ visual('poison gas expands with lifetime', {
     });
 
     expect('Gas has lifetime property', () => {
-      const gasEntities = Array.from(spatial.getAllPositions()).filter(([id]) => {
-        const data = spatial.getEntityData(id);
-        return data?.type === 'poison-gas';
-      });
+      const gasEntities = Array.from(spatial.getAllPositions()).filter(
+        ([id]) => {
+          const data = spatial.getEntityData(id);
+          return data?.type === 'poison-gas';
+        }
+      );
 
       if (gasEntities.length === 0) {
         throw new Error('No gas entities found');
@@ -185,7 +191,7 @@ visual('poison gas expands with lifetime', {
 
       const [gasId] = gasEntities[0];
       const gasData = spatial.getEntityData(gasId);
-      
+
       if (typeof gasData?.lifetime !== 'number') {
         throw new Error('Gas should have lifetime property');
       }
@@ -245,7 +251,7 @@ visual('fire respects max distance limit', {
       for (const [x, y] of farCells) {
         const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
         const data = entityId ? spatial.getEntityData(entityId) : null;
-        
+
         if (data?.type === 'fire') {
           throw new Error(`Fire spread too far to (${x}, ${y})`);
         }
@@ -263,7 +269,7 @@ visual('fire respects max distance limit', {
       for (const [x, y] of nearCells) {
         const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
         const data = entityId ? spatial.getEntityData(entityId) : null;
-        
+
         if (data?.type === 'fire') {
           fireFound = true;
           break;
@@ -311,10 +317,12 @@ visual('water flows without lifetime', {
   },
   assert: ({ spatial, expect }) => {
     expect('Water persists without lifetime', () => {
-      const waterCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
-        const data = spatial.getEntityData(id);
-        return data?.type === 'water';
-      }).length;
+      const waterCount = Array.from(spatial.getAllPositions()).filter(
+        ([id]) => {
+          const data = spatial.getEntityData(id);
+          return data?.type === 'water';
+        }
+      ).length;
 
       if (waterCount === 0) {
         throw new Error('Water should persist');
@@ -365,7 +373,7 @@ visual('fire spreads and damages player', {
   act: ({ spatial, store }) => {
     const gameManager = new GameManager();
     gameManager.gameState.entityStore = store;
-    
+
     const propagationSystem = new PropagationSystem();
     const floorEffectSystem = new FloorEffectSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
@@ -388,7 +396,9 @@ visual('fire spreads and damages player', {
       }).length;
 
       if (fireCount <= 1) {
-        throw new Error(`Fire should have spread, got ${fireCount} fire entities`);
+        throw new Error(
+          `Fire should have spread, got ${fireCount} fire entities`
+        );
       }
     });
 
@@ -400,18 +410,30 @@ visual('fire spreads and damages player', {
       }
 
       const playerData = spatial.getEntityData(playerId);
-      if (!playerData || typeof playerData.hp !== 'number' || typeof playerData.maxHp !== 'number') {
+      if (
+        !playerData ||
+        typeof playerData.hp !== 'number' ||
+        typeof playerData.maxHp !== 'number'
+      ) {
         throw new Error('Player data or HP properties are missing.');
       }
 
       // Check if fire reached the player's cell
-      const fireAtPlayerPos = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR_EFFECTS);
-      const fireData = fireAtPlayerPos ? spatial.getEntityData(fireAtPlayerPos) : null;
-      
+      const fireAtPlayerPos = spatial.getEntityIdAt(
+        8,
+        5,
+        GameLayers.FLOOR_EFFECTS
+      );
+      const fireData = fireAtPlayerPos
+        ? spatial.getEntityData(fireAtPlayerPos)
+        : null;
+
       if (fireData?.type === 'fire') {
         // Fire reached player - verify damage was applied
         if (playerData.hp >= playerData.maxHp) {
-          throw new Error(`Player should have taken damage from fire but HP is still full (${playerData.hp}/${playerData.maxHp}).`);
+          throw new Error(
+            `Player should have taken damage from fire but HP is still full (${playerData.hp}/${playerData.maxHp}).`
+          );
         }
       }
       // Note: Fire cannot spread to cells blocked by actors, so this test
@@ -489,7 +511,13 @@ visual('multiple fire sources spread independently', {
       const rightData = rightFire ? spatial.getEntityData(rightFire) : null;
 
       if (leftData?.type !== 'fire' && rightData?.type !== 'fire') {
-        throw new Error('Neither fire spread (left: ' + (leftData?.type || 'none') + ', right: ' + (rightData?.type || 'none') + ')');
+        throw new Error(
+          'Neither fire spread (left: ' +
+            (leftData?.type || 'none') +
+            ', right: ' +
+            (rightData?.type || 'none') +
+            ')'
+        );
       }
     });
   },
@@ -537,7 +565,9 @@ visual('fire burns out and leaves ash', {
       }).length;
 
       if (ashCount === 0) {
-        throw new Error(`Expected ash after fire expires. Fire: ${fireCount}, Ash: ${ashCount}`);
+        throw new Error(
+          `Expected ash after fire expires. Fire: ${fireCount}, Ash: ${ashCount}`
+        );
       }
     });
   },
@@ -571,33 +601,38 @@ visual('water respects maxDistance when parents expire', {
     }
   },
   assert: ({ spatial, expect }) => {
-    expect('Water did not spread beyond maxDistance despite parent expiration', () => {
-      // Check cells at distance 4+ from origin (5,5) - should be empty
-      const tooFarCells = [
-        [9, 5],  // 4 cells right
-        [1, 5],  // 4 cells left
-        [5, 9],  // 4 cells down
-        [5, 1],  // 4 cells up
-        [8, 8],  // 6 cells diagonal
-      ];
+    expect(
+      'Water did not spread beyond maxDistance despite parent expiration',
+      () => {
+        // Check cells at distance 4+ from origin (5,5) - should be empty
+        const tooFarCells = [
+          [9, 5], // 4 cells right
+          [1, 5], // 4 cells left
+          [5, 9], // 4 cells down
+          [5, 1], // 4 cells up
+          [8, 8], // 6 cells diagonal
+        ];
 
-      for (const [x, y] of tooFarCells) {
-        const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR);
-        if (entityId !== undefined) {
-          const data = spatial.getEntityData(entityId);
-          if (data?.type === 'water') {
-            throw new Error(`Water spread too far to (${x},${y}), distance ${Math.abs(x-5) + Math.abs(y-5)} from origin`);
+        for (const [x, y] of tooFarCells) {
+          const entityId = spatial.getEntityIdAt(x, y, GameLayers.FLOOR);
+          if (entityId !== undefined) {
+            const data = spatial.getEntityData(entityId);
+            if (data?.type === 'water') {
+              throw new Error(
+                `Water spread too far to (${x},${y}), distance ${Math.abs(x - 5) + Math.abs(y - 5)} from origin`
+              );
+            }
           }
         }
       }
-    });
+    );
 
     expect('Water spread to valid cells within maxDistance', () => {
       // Check that water DID spread to valid cells
       const validCells = [
-        [6, 5],  // 1 cell right
-        [7, 5],  // 2 cells right
-        [8, 5],  // 3 cells right (at limit)
+        [6, 5], // 1 cell right
+        [7, 5], // 2 cells right
+        [8, 5], // 3 cells right (at limit)
       ];
 
       let foundWater = false;
@@ -648,7 +683,7 @@ visual('poison gas: comprehensive behavior', {
   act: ({ spatial, store }) => {
     const gameManager = new GameManager();
     gameManager.gameState.entityStore = store;
-    
+
     const propagationSystem = new PropagationSystem();
     const floorEffectSystem = new FloorEffectSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
@@ -662,22 +697,22 @@ visual('poison gas: comprehensive behavior', {
     }
 
     // Move player into and through gas (9,5 -> 8,5 -> 7,5)
-    let playerId = spatial.getEntityIdAt(9, 5, GameLayers.ACTORS);
+    const playerId = spatial.getEntityIdAt(9, 5, GameLayers.ACTORS);
     if (playerId) {
       // Enter gas
       spatial.move(playerId, 8, 5);
       gameLoop.tick(); // Tick 4
       spatial.pause();
-      
+
       // Stay in gas
       gameLoop.tick(); // Tick 5: Taking damage
       spatial.pause();
-      
+
       // Move through gas
       spatial.move(playerId, 7, 5);
       gameLoop.tick(); // Tick 6: Player exits gas
       spatial.pause();
-      
+
       // Ticks after leaving - poison effect persists
       gameLoop.tick(); // Tick 7
       spatial.pause();
@@ -689,7 +724,7 @@ visual('poison gas: comprehensive behavior', {
     let playerId = spatial.getEntityIdAt(7, 5, GameLayers.ACTORS);
     if (!playerId) playerId = spatial.getEntityIdAt(8, 5, GameLayers.ACTORS);
     if (!playerId) playerId = spatial.getEntityIdAt(9, 5, GameLayers.ACTORS);
-    
+
     const playerData = playerId ? spatial.getEntityData(playerId) : undefined;
 
     expect('1. Poison gas expanded', () => {
@@ -719,7 +754,9 @@ visual('poison gas: comprehensive behavior', {
         throw new Error('Player not found or has no HP');
       }
       if (playerData.hp >= 100) {
-        throw new Error(`Player should have taken damage, HP: ${playerData.hp}`);
+        throw new Error(
+          `Player should have taken damage, HP: ${playerData.hp}`
+        );
       }
     });
 
@@ -728,21 +765,30 @@ visual('poison gas: comprehensive behavior', {
         throw new Error('Player not found - may have been blocked or removed');
       }
       // Player should have moved from (9,5) through gas to (7,5) or (8,5)
-      const pos = Array.from(spatial.getAllPositions()).find(([id]) => id === playerId)?.[1];
+      const pos = Array.from(spatial.getAllPositions()).find(
+        ([id]) => id === playerId
+      )?.[1];
       if (!pos || pos.x >= 9) {
-        throw new Error(`Player didn't move through gas, still at (${pos?.x},${pos?.y})`);
+        throw new Error(
+          `Player didn't move through gas, still at (${pos?.x},${pos?.y})`
+        );
       }
     });
 
-    expect('5. Player continues losing HP after leaving cloud (poison effect)', () => {
-      if (!playerData || !('hp' in playerData)) {
-        throw new Error('Player not found or has no HP');
+    expect(
+      '5. Player continues losing HP after leaving cloud (poison effect)',
+      () => {
+        if (!playerData || !('hp' in playerData)) {
+          throw new Error('Player not found or has no HP');
+        }
+        // Player should have taken damage multiple times due to continuous effect + cooldown
+        // With damage=5, cadence=2, player should take at least 2 hits (10 damage minimum)
+        if (playerData.hp >= 95) {
+          throw new Error(
+            `Player should have taken poison damage, HP: ${playerData.hp}`
+          );
+        }
       }
-      // Player should have taken damage multiple times due to continuous effect + cooldown
-      // With damage=5, cadence=2, player should take at least 2 hits (10 damage minimum)
-      if (playerData.hp >= 95) {
-        throw new Error(`Player should have taken poison damage, HP: ${playerData.hp}`);
-      }
-    });
+    );
   },
 });
