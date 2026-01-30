@@ -2,6 +2,7 @@ import { visual } from './visual-helpers';
 import { GameLayers } from '../layers/types';
 import { spawnPlayer } from '../entities/spawn-helpers';
 import { PropagationSystem } from '../systems/propagation-system';
+import { FireSystem } from '../systems/fire-system';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
 import { GameManager } from '../game-manager';
 import { GameLoop } from '../game-loop';
@@ -523,50 +524,57 @@ visual('multiple fire sources spread independently', {
   },
 });
 
-visual('fire burns out and leaves ash', {
+visual('fire burns entity down to ash', {
   arrange: ({ spatial }) => {
-    // Spawn fire with short lifetime (won't spread due to high spreadRate)
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
-      propagationType: 'fire',
-      spreadRate: 100, // Won't spread during test
-      spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR_EFFECTS,
-      spreadType: 'fire',
-      lifetime: 3, // Short lifetime
-      color: '#ff6b35',
+    // Spawn grass with low HP so it burns down quickly
+    spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 5, // Low HP to burn down quickly
+      maxHp: 20,
+      color: '#7cba00',
     });
 
     spatial.commit();
   },
   act: ({ spatial }) => {
     const gameLoop = new GameLoop(spatial);
-    const propagationSystem = new PropagationSystem();
-    gameLoop.addSystem(propagationSystem);
+    const fireSystem = new FireSystem();
+    gameLoop.addSystem(fireSystem);
 
-    // Run enough ticks for fire to expire and ash to spawn
-    // Tick 1-3: Fire alive
-    // Tick 3: Fire expires (age 3 >= lifetime 3)
-    // Tick 4: Ash spawns from queue
+    // Ignite the grass
+    const grassId = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
+    if (grassId) {
+      const grassData = spatial.getEntityData(grassId);
+      if (grassData) {
+        grassData.temperature = grassData.flamePoint + 50;
+      }
+    }
+    spatial.commit();
+
+    // Run enough ticks for grass to burn down to ash
+    // Fire damage rate is 5 per 2 ticks (cadence), so 5 HP burns in ~2 ticks
     for (let i = 0; i < 5; i++) {
       gameLoop.tick();
       if (i < 3) spatial.pause();
     }
   },
   assert: ({ spatial, expect }) => {
-    expect('Ash exists after fire expires', () => {
+    expect('Ash exists after entity burns down', () => {
       const entities = Array.from(spatial.getAllPositions());
       const ashCount = entities.filter(([id]) => {
         const data = spatial.getEntityData(id);
         return data?.type === 'ash';
       }).length;
-      const fireCount = entities.filter(([id]) => {
+      const grassCount = entities.filter(([id]) => {
         const data = spatial.getEntityData(id);
-        return data?.type === 'fire';
+        return data?.type === 'grass';
       }).length;
 
       if (ashCount === 0) {
         throw new Error(
-          `Expected ash after fire expires. Fire: ${fireCount}, Ash: ${ashCount}`
+          `Expected ash after entity burns down. Grass: ${grassCount}, Ash: ${ashCount}`
         );
       }
     });

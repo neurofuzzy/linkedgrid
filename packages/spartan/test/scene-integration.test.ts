@@ -140,7 +140,7 @@ describe('Scene Integration Tests', () => {
       expect((grassData as any).flammability).toBe(0.9);
     });
 
-    it('should propagate fire to adjacent grass over multiple ticks', () => {
+    it('should load grass entities with temperature properties', () => {
       const config: SceneConfig = {
         scenes: [
           {
@@ -149,61 +149,59 @@ describe('Scene Integration Tests', () => {
             height: 15,
             entities: [
               {
-                type: 'fire',
+                type: 'grass',
                 x: 5,
                 y: 5,
-                layer: GameLayers.COLLECTIBLES,
+                layer: GameLayers.FLOOR,
                 data: {
-                  propagationType: 'fire',
-                  spreadRate: 1,
-                  spreadProbability: 1.0, // 100% to make test deterministic
-                  spreadLayer: GameLayers.COLLECTIBLES,
-                  spreadType: 'fire',
-                  lifetime: 25,
-                  color: '#ff0000',
+                  temperature: 25,
+                  flammable: true,
+                  flamePoint: 150,
+                  hp: 20,
+                  maxHp: 20,
+                  color: '#7cba00',
                 },
               },
               {
                 type: 'grass',
                 x: 6,
                 y: 5,
-                layer: GameLayers.COLLECTIBLES,
+                layer: GameLayers.FLOOR,
                 data: {
-                  flammability: 1.0, // 100% to make test deterministic
-                  color: '#00ff00',
+                  temperature: 0,
+                  flammable: true,
+                  flamePoint: 150,
+                  hp: 20,
+                  maxHp: 20,
+                  color: '#7cba00',
                 },
               },
             ],
           },
         ],
         initialScene: 'test-scene',
-        systems: ['PropagationSystem'],
+        systems: ['FireSystem'],
       };
 
       const runtime = loader.load(config);
       const spatial = (runtime as any).spatial;
-      const gameLoop = (runtime as any).gameLoop;
 
-      // Initial state: fire at (5,5), grass at (6,5)
-      const fireId = spatial.getEntityIdAt(5, 5, GameLayers.COLLECTIBLES);
-      expect(fireId).toBeDefined();
+      // Verify grass entities have temperature properties
+      const grass1Id = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
+      expect(grass1Id).toBeDefined();
+      const grass1Data = spatial.getEntityData(grass1Id);
+      expect(grass1Data).toBeDefined();
+      expect(grass1Data!.temperature).toBe(25);
+      expect(grass1Data!.flammable).toBe(true);
+      expect(grass1Data!.flamePoint).toBe(150);
       
-      const grassId = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
-      expect(grassId).toBeDefined();
-
-      // Tick 1: Fire spreads (after spreadRate=1 tick)
-      gameLoop.tick();
-      
-      // Tick 2: Fire should have spread to (6,5), consuming grass
-      gameLoop.tick();
-
-      // Verify grass is gone and fire has replaced it
-      const cellValue = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
-      expect(cellValue).toBeDefined();
-      
-      const entityData = spatial.getEntityData(cellValue!);
-      expect(entityData).toBeDefined();
-      expect(entityData!.type).toBe('fire');
+      const grass2Id = spatial.getEntityIdAt(6, 5, GameLayers.FLOOR);
+      expect(grass2Id).toBeDefined();
+      const grass2Data = spatial.getEntityData(grass2Id);
+      expect(grass2Data).toBeDefined();
+      expect(grass2Data!.temperature).toBe(0);
+      expect(grass2Data!.flammable).toBe(true);
+      expect(grass2Data!.flamePoint).toBe(150);
     });
 
     it('should catch schema error: props vs data', () => {
@@ -291,7 +289,7 @@ describe('Scene Integration Tests', () => {
       console.warn = originalWarn;
     });
 
-    it('should detect missing flammability property', () => {
+    it('should detect missing temperature property', () => {
       // Spy on console.warn
       const warnings: string[] = [];
       const originalWarn = console.warn;
@@ -310,9 +308,9 @@ describe('Scene Integration Tests', () => {
                 type: 'grass',
                 x: 5,
                 y: 5,
-                layer: GameLayers.COLLECTIBLES,
+                layer: GameLayers.FLOOR,
                 data: {
-                  // Missing flammability!
+                  // Missing temperature properties!
                   color: '#00ff00',
                 },
               },
@@ -325,7 +323,7 @@ describe('Scene Integration Tests', () => {
       loader.load(config);
 
       // Verify warning was logged
-      expect(warnings.some(w => w.includes('flammability'))).toBe(true);
+      expect(warnings.some(w => w.includes('temperature'))).toBe(true);
 
       // Restore console.warn
       console.warn = originalWarn;

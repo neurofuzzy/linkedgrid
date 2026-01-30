@@ -347,8 +347,12 @@ describe('ExplosionSystem', () => {
       });
 
       // Spawn flammable entity
-      spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
-        flammability: 0.8,
+      const grassId = spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
+        temperature: 0,
+        flammable: true,
+        flamePoint: 150,
+        hp: 20,
+        maxHp: 20,
         color: '#7cba00',
       });
 
@@ -361,12 +365,10 @@ describe('ExplosionSystem', () => {
       explosionSystem.update(context);
       spatial.commit();
 
-      // Check that fire was spawned on FLOOR_EFFECTS
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
-      expect(fireId).toBeDefined();
-
-      const fireData = spatial.getEntityData(fireId!);
-      expect(fireData?.type).toBe('fire');
+      // Check that grass temperature was raised to ignition
+      const grassData = spatial.getEntityData(grassId);
+      expect(grassData).toBeDefined();
+      expect(grassData!.temperature).toBeGreaterThanOrEqual(grassData!.flamePoint);
     });
 
     it('does not spawn duplicate fire', () => {
@@ -472,7 +474,9 @@ describe('ExplosionSystem', () => {
         explosionDamage: 30,
         explosionRadius: 3,
         triggerCondition: 'on-fire',
-        flammability: 0.7,
+        temperature: 0,
+        flammable: true,
+        flamePoint: 200,
         color: '#8B4513',
       });
 
@@ -484,14 +488,9 @@ describe('ExplosionSystem', () => {
 
       spatial.commit();
 
-      // Spawn fire at barrel position
-      spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
-        propagationType: 'fire',
-        spreadRate: 2,
-        spreadLayer: GameLayers.FLOOR_EFFECTS,
-        spreadType: 'fire',
-        color: '#ff4500',
-      });
+      // Raise barrel temperature to trigger on-fire explosion
+      const barrelData = spatial.getEntityData(barrelId)!;
+      barrelData.temperature = barrelData.flamePoint + 50; // Ignite the barrel
 
       spatial.commit();
 

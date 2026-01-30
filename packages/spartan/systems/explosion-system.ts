@@ -1,6 +1,6 @@
 import type { GameSystem, GameContext, EntityData } from '../types';
 import { LinkedCellUtils } from '../../grid/linked-cell-utils';
-import { hasExplosion, hasDamageable, hasHealth, hasFlammability, isFire } from '../entities/trait-guards';
+import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../entities/trait-guards';
 import { GameLayers } from '../layers/types';
 
 /**
@@ -115,15 +115,11 @@ export class ExplosionSystem implements GameSystem {
 
       // Check for on-fire trigger
       if (trigger === 'on-fire') {
-        // Check if there's fire at this position on FLOOR_EFFECTS layer
-        const fireId = context.spatial.getEntityIdAt(pos.x, pos.y, GameLayers.FLOOR_EFFECTS);
-        if (fireId !== undefined) {
-          const fireEntity = context.spatial.getEntityData(fireId);
-          if (fireEntity && isFire(fireEntity)) {
-            this.queueExplosion(pos.x, pos.y, entityData.explosionDamage, entityData.explosionRadius, entityId);
-            // Remove the exploded entity to prevent repeated explosions
-            context.spatial.remove(entityId);
-          }
+        // Check if entity is on fire (temperature >= flamePoint)
+        if (hasTemperature(entityData) && entityData.temperature >= entityData.flamePoint && entityData.flammable) {
+          this.queueExplosion(pos.x, pos.y, entityData.explosionDamage, entityData.explosionRadius, entityId);
+          // Remove the exploded entity to prevent repeated explosions
+          context.spatial.remove(entityId);
         }
       }
     }
@@ -251,43 +247,10 @@ export class ExplosionSystem implements GameSystem {
         // We just modify the HP here
       }
 
-      // Ignite flammable entities
-      if (hasFlammability(entityData)) {
-        // Check if fire already exists at this position on FLOOR_EFFECTS layer
-        let hasExistingFire = false;
-        const existingFireId = context.spatial.getEntityIdAt(x, y, GameLayers.FLOOR_EFFECTS);
-
-        if (existingFireId !== undefined) {
-          const existingFireEntity = context.spatial.getEntityData(existingFireId);
-          if (existingFireEntity && isFire(existingFireEntity)) {
-            hasExistingFire = true;
-          }
-        }
-
-        // Only spawn fire if none exists
-        if (!hasExistingFire) {
-          // Remove the flammable entity (it's being consumed)
-          // Only if it's on the FLOOR layer (grass, etc.)
-          if (layer === GameLayers.FLOOR) {
-            context.spatial.remove(entityId);
-          }
-
-          // Spawn fire entity on FLOOR_EFFECTS layer with damage properties
-          context.spatial.spawn('fire', x, y, GameLayers.FLOOR_EFFECTS, {
-            propagationType: 'fire',
-            spreadRate: 2,
-            spreadProbability: 0.9,
-            spreadLayer: GameLayers.FLOOR_EFFECTS,
-            spreadType: 'fire',
-            lifetime: 20,
-            blockedByLayers: [GameLayers.WALLS],
-            effectType: 'damage',
-            triggerMode: 'continuous',
-            damage: 5,
-            cadence: 2,
-            color: '#ff4500',
-          });
-        }
+      // Ignite flammable entities by raising temperature
+      if (hasTemperature(entityData) && entityData.flammable) {
+        // Raise temperature to ignition point
+        entityData.temperature = entityData.flamePoint + 50;
       }
     }
   }

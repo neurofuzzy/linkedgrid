@@ -320,45 +320,58 @@ export interface HasPropagation {
 }
 
 /**
- * HasFlammability - Entity can catch fire and burn.
+ * HasTemperature - Entity has temperature and can catch fire.
  *
  * Used by:
- * - PropagationSystem (determine if fire can spread to this entity)
- * - Rendering systems (visual feedback for flammable materials)
+ * - FireSystem (track burning entities, spread fire via temperature)
+ * - ExplosionSystem (raise temperature to ignite)
  *
- * Used by PropagationSystem to determine if fire can spread to this entity
- * and modify spread probability based on material properties.
+ * Temperature mechanics:
+ * - temperature: Current heat level (0 = ambient, increases when exposed to fire)
+ * - flammable: Whether this entity can catch fire
+ * - flamePoint: Temperature threshold for ignition (typical range: 100-500)
  *
- * When fire attempts to spread, the effective spread chance is:
- * fire.spreadProbability × target.flammability
+ * Fire behavior:
+ * - When temperature >= flamePoint and flammable = true, entity is "on fire"
+ * - Fire spreads by raising temperature of adjacent entities
+ * - Fire reduces HP over time until entity is destroyed
  *
- * Common flammability values:
- * - Grass: 0.8 (highly flammable)
- * - Gasoline: 0.95 (extremely flammable)
- * - Fuse: 0.99 (designed to burn)
- * - Wood: 0.6 (moderately flammable)
+ * Common flame points:
+ * - Grass: 150 (ignites easily)
+ * - Wood: 300 (moderate ignition)
+ * - Gasoline: 100 (extremely flammable)
+ * - Stone/Metal: 9999 (effectively fireproof, flammable = false)
  *
  * @example
  * ```typescript
- * // Grass that catches fire easily
  * const grass = {
- *   id: 15,
+ *   id: 10,
  *   type: 'grass',
- *   flammability: 0.8,
- *   color: '#7cba00'
+ *   temperature: 0,
+ *   flammable: true,
+ *   flamePoint: 150,
+ *   hp: 20,
+ *   maxHp: 20
  * };
  *
- * // Gasoline spill - extremely flammable
- * const gasoline = {
- *   id: 16,
- *   type: 'gasoline',
- *   flammability: 0.95,
- *   color: '#d4af37'
+ * const barrel = {
+ *   id: 11,
+ *   type: 'barrel',
+ *   temperature: 0,
+ *   flammable: true,
+ *   flamePoint: 200,
+ *   hp: 50,
+ *   maxHp: 50,
+ *   explosionDamage: 30,
+ *   explosionRadius: 4,
+ *   triggerCondition: 'on-death'
  * };
  * ```
  */
-export interface HasFlammability {
-  flammability: number; // 0.0-1.0, chance modifier for fire spread
+export interface HasTemperature {
+  temperature: number;    // Current heat level
+  flammable: boolean;     // Can this entity catch fire?
+  flamePoint: number;     // Temperature threshold for ignition
 }
 
 /**

@@ -51,7 +51,7 @@ import type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
-  HasFlammability,
+  HasTemperature,
   HasExplosion,
   HasDamageable,
 } from './traits';
@@ -445,9 +445,24 @@ export type MudData = EntityData & {
  * });
  * ```
  */
-export type FireData = EntityData & {
-  type: 'fire';
-} & HasPropagation & HasFloorEffect & HasColor;
+/**
+ * FireVisualData - Fire visual effect (ephemeral).
+ *
+ * Rendered on EPHEMERALS layer to show burning entities.
+ * Managed by FireSystem.
+ *
+ * @example
+ * ```typescript
+ * const fireVisual = {
+ *   id: 100,
+ *   type: 'fire-visual',
+ *   color: '#ff4500'
+ * };
+ * ```
+ */
+export type FireVisualData = EntityData & {
+  type: 'fire-visual';
+} & HasColor;
 
 /**
  * PoisonGasData - Expanding poison gas cloud.
@@ -560,7 +575,7 @@ export type AshData = EntityData & {
  */
 export type GrassData = EntityData & {
   type: 'grass';
-} & HasFlammability & HasColor;
+} & HasHealth & HasTemperature & HasColor;
 
 /**
  * GasolineData - Highly flammable liquid spill.
@@ -584,7 +599,7 @@ export type GrassData = EntityData & {
  */
 export type GasolineData = EntityData & {
   type: 'gasoline';
-} & HasFlammability & HasColor;
+} & HasHealth & HasTemperature & HasColor;
 
 /**
  * FuseData - Designed to burn in sequence.
@@ -608,7 +623,7 @@ export type GasolineData = EntityData & {
  */
 export type FuseData = EntityData & {
   type: 'fuse';
-} & HasFlammability & HasColor;
+} & HasHealth & HasTemperature & HasColor;
 
 /**
  * TorchData - Static ignition source.
@@ -660,7 +675,7 @@ export type TorchData = EntityData & {
  */
 export type BarrelData = EntityData & {
   type: 'barrel';
-} & HasHealth & HasExplosion & HasFlammability & HasColor;
+} & HasHealth & HasExplosion & HasTemperature & HasColor;
 
 /**
  * ExplosionVisualData - Temporary explosion visual effect.

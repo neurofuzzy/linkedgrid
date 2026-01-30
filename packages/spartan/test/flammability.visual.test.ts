@@ -1,6 +1,7 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../layers/types';
 import { PropagationSystem } from '../systems/propagation-system';
+import { FireSystem } from '../systems/fire-system';
 import { GameLoop } from '../game-loop';
 
 visual('fire spreads through grass field', {
@@ -307,23 +308,32 @@ visual('mixed flammability terrain creates realistic spread', {
 
 visual('fire cannot spread without flammable materials', {
   arrange: ({ spatial }) => {
-    // Place fire on empty floor (no flammable material)
-    spatial.spawn('fire', 5, 5, GameLayers.FLOOR_EFFECTS, {
-      propagationType: 'fire',
-      spreadRate: 1,
-      spreadProbability: 1.0,
-      spreadLayer: GameLayers.FLOOR_EFFECTS,
-      spreadType: 'fire',
-      lifetime: 15,
-      color: '#ff6b35',
+    // Spawn single flammable grass surrounded by empty floor
+    spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 20,
+      maxHp: 20,
+      color: '#7cba00',
     });
 
     spatial.commit();
   },
   act: ({ spatial }) => {
-    const propagationSystem = new PropagationSystem();
+    const fireSystem = new FireSystem();
     const gameLoop = new GameLoop(spatial);
-    gameLoop.addSystem(propagationSystem);
+    gameLoop.addSystem(fireSystem);
+
+    // Ignite the grass
+    const grassId = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
+    if (grassId) {
+      const grassData = spatial.getEntityData(grassId);
+      if (grassData) {
+        grassData.temperature = grassData.flamePoint + 50;
+      }
+    }
+    spatial.commit();
 
     // Tick multiple times
     for (let i = 0; i < 8; i++) {
@@ -333,14 +343,16 @@ visual('fire cannot spread without flammable materials', {
   },
   assert: ({ spatial, expect }) => {
     expect('Fire did not spread (no flammable materials)', () => {
-      const fireCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
+      // Count entities that are burning (temperature >= flamePoint)
+      const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
         const data = spatial.getEntityData(id);
-        return data?.type === 'fire';
+        return data && 'temperature' in data && 'flamePoint' in data && 
+               data.temperature >= data.flamePoint;
       }).length;
 
-      // Fire should remain at 1 (the original) or 0 (if it expired due to lifetime)
-      if (fireCount > 1) {
-        throw new Error(`Fire should not spread without flammable materials, got ${fireCount} fires`);
+      // Only the original grass should be burning (or 0 if it burned to ash)
+      if (burningCount > 1) {
+        throw new Error(`Fire should not spread without adjacent flammable materials, got ${burningCount} burning entities`);
       }
     });
   },

@@ -37,7 +37,7 @@ import type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
-  HasFlammability,
+  HasTemperature,
   HasExplosion,
   HasDamageable,
 } from './traits';
@@ -54,7 +54,6 @@ import type {
   MedbayData,
   IceData,
   MudData,
-  FireData,
   PoisonGasData,
   WaterData,
   AshData,
@@ -255,18 +254,22 @@ export function hasPropagation(
 }
 
 /**
- * Check if entity has flammability trait.
+ * Check if entity has temperature trait.
  *
- * Entities with flammability trait can catch fire and burn when fire spreads to them.
- * Used by PropagationSystem to determine if fire can spread to this entity.
+ * Entities with temperature trait can catch fire and burn when heated.
+ * Used by FireSystem to track burning entities and spread fire.
  *
  * @param entity - Entity to check
- * @returns true if entity possesses flammability trait
+ * @returns true if entity possesses temperature trait
  */
-export function hasFlammability(
+export function hasTemperature(
   entity: EntityData
-): entity is EntityData & HasFlammability {
-  return 'flammability' in entity && typeof entity.flammability === 'number';
+): entity is EntityData & HasTemperature {
+  return (
+    typeof (entity as any).temperature === 'number' &&
+    typeof (entity as any).flammable === 'boolean' &&
+    typeof (entity as any).flamePoint === 'number'
+  );
 }
 
 /**
@@ -427,16 +430,6 @@ export function isIce(entity: EntityData): entity is IceData {
  */
 export function isMud(entity: EntityData): entity is MudData {
   return entity.type === 'mud';
-}
-
-/**
- * Check if entity is fire.
- *
- * @param entity - Entity to check
- * @returns true if entity type is 'fire'
- */
-export function isFire(entity: EntityData): entity is FireData {
-  return entity.type === 'fire';
 }
 
 /**

@@ -80,7 +80,7 @@ export type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
-  HasFlammability,
+  HasTemperature,
   HasExplosion,
   HasDamageable,
 } from './entities/traits';
@@ -100,7 +100,7 @@ export type {
   MedbayData,
   IceData,
   MudData,
-  FireData,
+  FireVisualData,
   PoisonGasData,
   WaterData,
   AshData,
@@ -126,7 +126,7 @@ export {
   hasColor,
   hasFloorEffect,
   hasPropagation,
-  hasFlammability,
+  hasTemperature,
   hasExplosion,
   hasDamageable,
   isPlayer,
@@ -141,7 +141,6 @@ export {
   isMedbay,
   isIce,
   isMud,
-  isFire,
   isPoisonGas,
   isWater,
   isAsh,
@@ -184,4 +183,5 @@ export { PlayerInputSystem } from './systems/player-input-system';
 export { FloorEffectSystem } from './systems/floor-effect-system';
 export { PropagationSystem } from './systems/propagation-system';
 export { ExplosionSystem } from './systems/explosion-system';
+export { FireSystem } from './systems/fire-system';
 export type { GameSystem, GameContext, Overlap } from './types';

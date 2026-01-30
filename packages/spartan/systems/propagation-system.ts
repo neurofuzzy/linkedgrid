@@ -1,7 +1,7 @@
 import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import { Direction } from '../../grid/direction';
 import type { LinkedCell } from '../../grid/linked-cell';
-import { hasPropagation, hasFlammability, isFire, isAsh } from '../entities/trait-guards';
+import { hasPropagation, isAsh } from '../entities/trait-guards';
 import { GameLayers } from '../layers/types';
 
 /**
@@ -38,7 +38,6 @@ interface PropagationConfig extends EntityData {
  * PropagationSystem - Handles spreading effects across the grid.
  *
  * Manages entities with propagation trait that spread to adjacent cells:
- * - Fire: Probabilistically spreads through flammable materials
  * - Liquid: Water, oil flow across floor (deterministic)
  * - Gas: Poison gas, smoke expanding through air (deterministic)
  * - Chain: Explosions, cascading reactions (deterministic)
@@ -59,16 +58,15 @@ interface PropagationConfig extends EntityData {
  * const propagationSystem = new PropagationSystem();
  * gameLoop.addSystem(propagationSystem);
  *
- * // Spawn fire that spreads probabilistically
- * spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
- *   propagationType: 'fire',
- *   spreadRate: 2,              // Spread every 2 ticks
- *   spreadProbability: 0.6,     // 60% chance per neighbor
- *   spreadLayer: GameLayers.FLOOR_EFFECTS,
- *   spreadType: 'fire',
- *   // No maxDistance - fire spread is naturally limited by flammable materials
- *   lifetime: 20,               // Burns for 20 ticks
- *   blockedByLayers: [GameLayers.WALLS]
+ * // Spawn water that spreads deterministically
+ * spatial.spawn('water', 10, 10, GameLayers.FLOOR, {
+ *   propagationType: 'liquid',
+ *   spreadRate: 1,              // Spread every tick
+ *   spreadProbability: 1.0,     // 100% chance
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'water',
+ *   maxDistance: 10,
+ *   color: '#4a90e2'
  * });
  * ```
  */
@@ -82,9 +80,6 @@ export class PropagationSystem implements GameSystem {
   // Track current tick for timing
   private currentTick = 0;
 
-  // Queue of positions where ash should be spawned (deferred to next tick after fire removal)
-  private ashSpawnQueue: Position[] = [];
-
   /**
    * Update called by GameLoop each tick.
    *
@@ -97,15 +92,6 @@ export class PropagationSystem implements GameSystem {
   update(context: GameContext): void {
     this.currentTick++;
 
-    // Phase 0: Spawn ash from previous tick's expired fire
-    for (const pos of this.ashSpawnQueue) {
-      context.spatial.spawn('ash', pos.x, pos.y, GameLayers.FLOOR_EFFECTS, {
-        color: '#4a4a4a',
-      });
-    }
-    // Clear queue after spawning (before canSpreadTo checks in Phase 2)
-    this.ashSpawnQueue = [];
-
     // Phase 1: Identify spread sources
     const sources = this.identifySpreadSources(context);
 
@@ -115,7 +101,7 @@ export class PropagationSystem implements GameSystem {
     // Phase 3: Update spread state (already updated in phase 2)
     // (State is updated as we propagate for efficiency)
 
-    // Phase 4: Clean up expired effects (may add new items to ashSpawnQueue for next tick)
+    // Phase 4: Clean up expired effects
     this.cleanupExpiredEffects(context);
   }
 
@@ -219,28 +205,9 @@ export class PropagationSystem implements GameSystem {
       for (const dir of directions) {
         const neighbor = cell.neighbor(dir);
         if (!neighbor) continue; // Out of bounds
-
-        // Calculate effective probability (modified by target flammability for fire)
-        let effectiveProbability = probability;
-        
-        // For fire, multiply by target's flammability
-        // Check multiple layers for flammable targets
-        if (sourceData.propagationType === 'fire') {
-          const layersToCheck = [GameLayers.FLOOR, GameLayers.COLLECTIBLES];
-          for (const layer of layersToCheck) {
-            const targetValue = neighbor.getValue(layer);
-            if (targetValue !== undefined) {
-              const targetEntity = context.spatial.getEntityData(targetValue);
-              if (targetEntity && hasFlammability(targetEntity)) {
-                effectiveProbability *= targetEntity.flammability;
-                break; // Use first flammable entity found
-              }
-            }
-          }
-        }
         
         // Probability check: roll for each neighbor independently
-        if (Math.random() > effectiveProbability) {
+        if (Math.random() > probability) {
           continue; // Failed probability roll for this neighbor
         }
 
@@ -258,7 +225,7 @@ export class PropagationSystem implements GameSystem {
           if (distance > sourceData.maxDistance) continue;
         }
 
-        // Check if already occupied by fire entity from this source on spreadLayer
+        // Check if already occupied by propagated entity from this source on spreadLayer
         const existingEntityId = context.spatial.getEntityIdAt(
           neighbor.x,
           neighbor.y,
@@ -268,20 +235,6 @@ export class PropagationSystem implements GameSystem {
           const existingMeta = this.propagatedEntities.get(existingEntityId);
           if (existingMeta && existingMeta.sourceId === sourceId) {
             continue; // Already has propagated entity from this source
-          }
-        }
-
-        // For fire propagation, consume flammable target entities on FLOOR and COLLECTIBLES
-        if (sourceData.propagationType === 'fire') {
-          const layersToConsume = [GameLayers.FLOOR, GameLayers.COLLECTIBLES];
-          for (const layer of layersToConsume) {
-            const targetEntityId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, layer);
-            if (targetEntityId !== undefined) {
-              const targetEntity = context.spatial.getEntityData(targetEntityId);
-              if (targetEntity && hasFlammability(targetEntity)) {
-                context.spatial.remove(targetEntityId);
-              }
-            }
           }
         }
 
@@ -343,11 +296,10 @@ export class PropagationSystem implements GameSystem {
    * Phase 4: Clean up expired effects.
    *
    * Removes entities with propagation trait that have exceeded their lifetime (tick-based).
-   * For fire, spawns ash in its place to mark consumed cells.
    * Cleans up tracking state for removed entities.
    */
   private cleanupExpiredEffects(context: GameContext): void {
-    const entitiesToRemove: Array<{id: number, pos: Position, wasFire: boolean}> = [];
+    const entitiesToRemove: Array<{id: number, pos: Position}> = [];
 
     // Check ALL entities with propagation trait for expiration (not just propagated ones)
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
@@ -370,20 +322,13 @@ export class PropagationSystem implements GameSystem {
       // Check if expired
       const age = this.currentTick - spawnTick;
       if (age >= entityData.lifetime) {
-        // Save whether this was fire BEFORE removing
-        const wasFire = isFire(entityData);
-        entitiesToRemove.push({id: entityId, pos, wasFire});
+        entitiesToRemove.push({id: entityId, pos});
       }
     }
 
-    // Remove expired entities and queue ash spawning for next tick
-    for (const {id, pos, wasFire} of entitiesToRemove) {
+    // Remove expired entities
+    for (const {id} of entitiesToRemove) {
       context.spatial.remove(id);
-      
-      // If this was fire, queue ash to be spawned next tick (after removal is committed)
-      if (wasFire) {
-        this.ashSpawnQueue.push(pos);
-      }
     }
 
     // Clean up tracking state for removed entities
@@ -436,30 +381,6 @@ export class PropagationSystem implements GameSystem {
       return false;
     }
 
-    // Fire-specific flammability check
-    if (config.propagationType === 'fire') {
-      // Fire only spreads to cells with flammable entities
-      // Check multiple layers: FLOOR (grass) and COLLECTIBLES (gasoline, barrels)
-      let hasFlammableTarget = false;
-      
-      const layersToCheck = [GameLayers.FLOOR, GameLayers.COLLECTIBLES];
-      for (const layer of layersToCheck) {
-        const targetValue = cell.getValue(layer);
-        if (targetValue !== undefined) {
-          const targetEntity = context.spatial.getEntityData(targetValue);
-          if (targetEntity && hasFlammability(targetEntity)) {
-            hasFlammableTarget = true;
-            break;
-          }
-        }
-      }
-      
-      // If no flammable entity on checked layers, fire cannot spread
-      if (!hasFlammableTarget) {
-        return false;
-      }
-    }
-
     return true;
   }
 
@@ -483,7 +404,6 @@ export class PropagationSystem implements GameSystem {
     this.spreadState.clear();
     this.propagatedEntities.clear();
     this.currentTick = 0;
-    this.ashSpawnQueue = [];
   }
 
   /**
@@ -493,8 +413,6 @@ export class PropagationSystem implements GameSystem {
   public getDebugState() {
     return {
       currentTick: this.currentTick,
-      ashQueueSize: this.ashSpawnQueue.length,
-      ashQueue: [...this.ashSpawnQueue],
       spreadStateSize: this.spreadState.size,
       spreadSources: Array.from(this.spreadState.entries()).map(([id, state]) => ({
         entityId: id,

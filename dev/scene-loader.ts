@@ -8,6 +8,7 @@ import { DoorSystem } from '../packages/spartan/systems/door-system';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
 import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-system';
 import { PropagationSystem } from '../packages/spartan/systems/propagation-system';
+import { FireSystem } from '../packages/spartan/systems/fire-system';
 import { ExplosionSystem } from '../packages/spartan/systems/explosion-system';
 import type { GameSystem, EntityData } from '../packages/spartan/types';
 import {
@@ -18,7 +19,7 @@ import {
   hasAI,
   hasTeleportTarget,
   hasPropagation,
-  hasFlammability,
+  hasTemperature,
 } from '../packages/spartan/entities/trait-guards';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
@@ -75,6 +76,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
   PropagationSystem: () => new PropagationSystem(),
+  FireSystem: () => new FireSystem(),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
   ExplosionSystem: () => new ExplosionSystem(),
 };
@@ -332,13 +334,13 @@ export class SceneLoader {
         }
       }
 
-      // Validate flammability for grass, gasoline, fuses
+      // Validate temperature for grass, gasoline, fuses
       if (tempEntityForValidation.type === 'grass' || 
           tempEntityForValidation.type === 'gasoline' ||
           tempEntityForValidation.type === 'fuse') {
-        if (!hasFlammability(tempEntityForValidation)) {
+        if (!hasTemperature(tempEntityForValidation)) {
           console.warn(
-            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing flammability property (0.0-1.0).`
+            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`
           );
         }
       }

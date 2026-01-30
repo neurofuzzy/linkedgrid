@@ -319,17 +319,29 @@ visual('explosion ignites flammable entities', {
 
     // Spawn flammable entities
     spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 20,
+      maxHp: 20,
       color: '#7cba00',
     });
 
     spatial.spawn('grass', 12, 10, GameLayers.FLOOR, {
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 20,
+      maxHp: 20,
       color: '#7cba00',
     });
 
     spatial.spawn('gasoline', 10, 11, GameLayers.COLLECTIBLES, {
-      flammability: 0.95,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 100,
+      hp: 10,
+      maxHp: 10,
       color: '#d4af37',
     });
 
@@ -348,34 +360,36 @@ visual('explosion ignites flammable entities', {
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
-    expect('Fire spawned at grass position (11, 10)', () => {
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Grass at (11, 10) is ignited (temperature raised)', () => {
+      const grassId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR);
+      if (!grassId) throw new Error('No grass found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const grassData = spatial.getEntityData(grassId);
+      if (!grassData) throw new Error('No grass data');
+      if (grassData.temperature < grassData.flamePoint) {
+        throw new Error(`Temperature ${grassData.temperature} below flame point ${grassData.flamePoint}`);
       }
     });
 
-    expect('Fire spawned at grass position (12, 10)', () => {
-      const fireId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Grass at (12, 10) is ignited (temperature raised)', () => {
+      const grassId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR);
+      if (!grassId) throw new Error('No grass found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const grassData = spatial.getEntityData(grassId);
+      if (!grassData) throw new Error('No grass data');
+      if (grassData.temperature < grassData.flamePoint) {
+        throw new Error(`Temperature ${grassData.temperature} below flame point ${grassData.flamePoint}`);
       }
     });
 
-    expect('Fire spawned at gasoline position (10, 11)', () => {
-      // Note: Fire on FLOOR_EFFECTS layer, gasoline gets consumed/replaced
-      const fireId = spatial.getEntityIdAt(10, 11, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Gasoline at (10, 11) is ignited (temperature raised)', () => {
+      const gasolineId = spatial.getEntityIdAt(10, 11, GameLayers.COLLECTIBLES);
+      if (!gasolineId) throw new Error('No gasoline found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const gasolineData = spatial.getEntityData(gasolineId);
+      if (!gasolineData) throw new Error('No gasoline data');
+      if (gasolineData.temperature < gasolineData.flamePoint) {
+        throw new Error(`Temperature ${gasolineData.temperature} below flame point ${gasolineData.flamePoint}`);
       }
     });
   },
@@ -475,7 +489,9 @@ visual('on-fire trigger - barrel explodes when ignited', {
       explosionDamage: 35,
       explosionRadius: 4,
       triggerCondition: 'on-fire',
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 200,
       color: '#8B4513',
     });
 
@@ -494,15 +510,14 @@ visual('on-fire trigger - barrel explodes when ignited', {
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(explosionSystem);
 
-    // Spawn fire at barrel position
-    spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
-      propagationType: 'fire',
-      spreadRate: 2,
-      spreadLayer: GameLayers.FLOOR_EFFECTS,
-      spreadType: 'fire',
-      lifetime: 20,
-      color: '#ff4500',
-    });
+    // Raise barrel temperature to trigger on-fire explosion
+    const barrelId = spatial.getEntityIdAt(10, 10, GameLayers.COLLECTIBLES);
+    if (barrelId) {
+      const barrelData = spatial.getEntityData(barrelId);
+      if (barrelData) {
+        barrelData.temperature = barrelData.flamePoint + 50; // Ignite the barrel
+      }
+    }
 
     spatial.commit();
 
