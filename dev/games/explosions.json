@@ -1,0 +1,459 @@
+{
+  "scenes": [
+    {
+      "id": "explosion-playground",
+      "width": 30,
+      "height": 20,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "explosion-playground"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 6,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 10,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 14,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 8,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 9,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 10,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 11,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 12,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 18,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 35,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 22,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "damage": 5,
+            "aiState": "idle"
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 6,
+          "y": 5,
+          "layer": 2,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 20,
+            "color": "#8b7355"
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 7,
+          "y": 5,
+          "layer": 2,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 20,
+            "color": "#8b7355"
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 8,
+          "y": 5,
+          "layer": 2,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 20,
+            "color": "#8b7355"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 7,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 40,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 6,
+          "y": 15,
+          "layer": 3,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "explosionDamage": 35,
+            "explosionRadius": 4,
+            "triggerCondition": "on-fire",
+            "flammability": 0.8,
+            "color": "#A0522D"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 5,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 9,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "flammability": 0.8,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "torch",
+          "x": 10,
+          "y": 15,
+          "layer": 2,
+          "data": {
+            "color": "#ff6b35"
+          }
+        },
+        {
+          "type": "fire",
+          "x": 10,
+          "y": 15,
+          "layer": 1,
+          "data": {
+            "propagationType": "fire",
+            "spreadRate": 2,
+            "spreadProbability": 0.9,
+            "spreadLayer": 1,
+            "spreadType": "fire",
+            "lifetime": 30,
+            "color": "#ff4500",
+            "effectType": "damage",
+            "triggerMode": "continuous",
+            "damage": 5,
+            "cadence": 3
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 14,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 15,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 16,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 17,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "flammability": 0.95,
+            "color": "#d4af37"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 18,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 35,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 20,
+          "y": 5,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "damage": 5,
+            "aiState": "idle"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 3,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 4,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 5,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 6,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 7,
+          "layer": 2,
+          "data": {
+            "color": "#808080"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 23,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "hp": 20,
+            "maxHp": 20,
+            "explosionDamage": 40,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 27,
+          "y": 5,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "damage": 5,
+            "aiState": "idle"
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 14,
+          "y": 15,
+          "layer": 2,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "hardness": 15,
+            "color": "#a0826d"
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 15,
+          "y": 15,
+          "layer": 2,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "hardness": 15,
+            "color": "#a0826d"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 14,
+          "y": 17,
+          "layer": 3,
+          "data": {
+            "hp": 15,
+            "maxHp": 15,
+            "explosionDamage": 25,
+            "explosionRadius": 3,
+            "triggerCondition": "on-death",
+            "flammability": 0.7,
+            "color": "#8B4513"
+          }
+        }
+      ]
+    }
+  ],
+  "systems": ["PropagationSystem", "FloorEffectSystem", "ExplosionSystem"],
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

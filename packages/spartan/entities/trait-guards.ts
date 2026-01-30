@@ -38,6 +38,8 @@ import type {
   HasFloorEffect,
   HasPropagation,
   HasFlammability,
+  HasExplosion,
+  HasDamageable,
 } from './traits';
 import type {
   PlayerData,
@@ -60,6 +62,9 @@ import type {
   GasolineData,
   FuseData,
   TorchData,
+  BarrelData,
+  ExplosionVisualData,
+  DestructibleWallData,
 } from './entity-types';
 
 /**
@@ -265,6 +270,39 @@ export function hasFlammability(
 }
 
 /**
+ * Check if entity has explosion trait.
+ *
+ * Entities with explosion trait can detonate, dealing area damage.
+ * Used by ExplosionSystem to detect and trigger explosions.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses explosion trait
+ */
+export function hasExplosion(
+  entity: EntityData
+): entity is EntityData & HasExplosion {
+  return (
+    'explosionDamage' in entity && typeof entity.explosionDamage === 'number' &&
+    'explosionRadius' in entity && typeof entity.explosionRadius === 'number'
+  );
+}
+
+/**
+ * Check if entity has damageable trait.
+ *
+ * Entities with damageable trait have damage resistance thresholds.
+ * Used by damage systems to check minimum damage requirements.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses damageable trait
+ */
+export function hasDamageable(
+  entity: EntityData
+): entity is EntityData & HasDamageable {
+  return 'hardness' in entity && typeof entity.hardness === 'number';
+}
+
+/**
  * Entity Type Guards
  *
  * These check for specific entity archetypes and narrow to full type contracts.
@@ -463,6 +501,36 @@ export function isFuse(entity: EntityData): entity is FuseData {
  */
 export function isTorch(entity: EntityData): entity is TorchData {
   return entity.type === 'torch';
+}
+
+/**
+ * Check if entity is a barrel.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'barrel'
+ */
+export function isBarrel(entity: EntityData): entity is BarrelData {
+  return entity.type === 'barrel';
+}
+
+/**
+ * Check if entity is an explosion visual.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'explosion-visual'
+ */
+export function isExplosionVisual(entity: EntityData): entity is ExplosionVisualData {
+  return entity.type === 'explosion-visual';
+}
+
+/**
+ * Check if entity is a destructible wall.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'destructible-wall'
+ */
+export function isDestructibleWall(entity: EntityData): entity is DestructibleWallData {
+  return entity.type === 'destructible-wall';
 }
 
 /**

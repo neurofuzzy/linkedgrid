@@ -361,6 +361,111 @@ export interface HasFlammability {
 }
 
 /**
+ * HasExplosion - Entity can explode, dealing area damage.
+ *
+ * Used by:
+ * - ExplosionSystem (trigger and process explosions)
+ * - Damage systems (chain reactions)
+ *
+ * Explosions are instantaneous area-of-effect events that:
+ * - Deal damage to entities within radius
+ * - Respect line-of-sight (walls block and create shadows)
+ * - Ignite flammable entities
+ * - Can trigger chain reactions
+ *
+ * Trigger conditions:
+ * - 'on-death': Explodes when entity dies (hp reaches 0)
+ * - 'on-fire': Explodes when fire entity is at same position
+ * - 'manual': Only explodes via explicit system trigger
+ *
+ * Common explosion values:
+ * - Small barrel: damage 20, radius 3
+ * - Large barrel: damage 40, radius 5
+ * - Grenade: damage 30, radius 4
+ * - Mine: damage 50, radius 3 (concentrated)
+ *
+ * @example
+ * ```typescript
+ * // Explosive barrel that detonates when destroyed
+ * const barrel = {
+ *   id: 17,
+ *   type: 'barrel',
+ *   hp: 20,
+ *   maxHp: 20,
+ *   explosionDamage: 30,
+ *   explosionRadius: 4,
+ *   triggerCondition: 'on-death',
+ *   flammability: 0.7  // Can also catch fire
+ * };
+ *
+ * // Fire-triggered bomb
+ * const bomb = {
+ *   id: 18,
+ *   type: 'bomb',
+ *   explosionDamage: 50,
+ *   explosionRadius: 5,
+ *   triggerCondition: 'on-fire'
+ * };
+ * ```
+ */
+export interface HasExplosion {
+  explosionDamage: number;      // Base damage at epicenter
+  explosionRadius: number;      // Radius of effect (used with fieldOfView)
+  triggerCondition?: 'on-death' | 'on-fire' | 'manual'; // Default: 'on-death'
+}
+
+/**
+ * HasDamageable - Entity has damage resistance threshold.
+ *
+ * Used by:
+ * - ExplosionSystem (check minimum damage to apply)
+ * - Damage systems (filter weak attacks)
+ *
+ * Hardness represents a minimum damage threshold that must be met
+ * before any damage is applied to the entity. This allows for:
+ * - Walls that only break from explosions, not punches
+ * - Armored entities immune to weak attacks
+ * - Destructible terrain requiring specific tools
+ *
+ * Damage application logic:
+ * - If incoming damage >= hardness: apply full damage
+ * - If incoming damage < hardness: apply NO damage
+ *
+ * Hardness is NOT damage reduction - it's a threshold check.
+ *
+ * Common hardness values:
+ * - Wooden crate: 5 (breaks from most attacks)
+ * - Stone wall: 20 (requires explosions or strong attacks)
+ * - Reinforced wall: 40 (requires powerful explosions)
+ * - Invulnerable (no HasDamageable trait): immune to all damage sources checking hardness
+ *
+ * @example
+ * ```typescript
+ * // Destructible wall - immune to weak attacks
+ * const wall = {
+ *   id: 19,
+ *   type: 'destructible-wall',
+ *   hp: 50,
+ *   maxHp: 50,
+ *   hardness: 20,  // Player punch (10 dmg) won't hurt, explosion (30 dmg) will
+ *   color: '#8b7355'
+ * };
+ *
+ * // Armored crate - some resistance
+ * const crate = {
+ *   id: 20,
+ *   type: 'crate',
+ *   hp: 30,
+ *   maxHp: 30,
+ *   hardness: 10  // Weak attacks blocked
+ * };
+ * ```
+ */
+export interface HasDamageable {
+  hardness: number; // Minimum damage required to hurt this entity
+}
+
+/**
  * Extending the Trait System
  *
  * Game developers can define their own traits following this pattern:
