@@ -84,6 +84,13 @@ spartan/
 │   ├── combat.system.ts          # Combat resolution
 │   └── index.ts                  # Re-exports all systems
 │
+├── input/
+│   ├── input-manager.ts          # Unified input orchestration
+│   ├── keyboard-input-manager.ts # Keyboard input handling
+│   ├── gamepad-manager.ts        # Gamepad input handling
+│   ├── mouse-manager.ts          # Mouse input handling
+│   └── index.ts                  # Re-exports input managers
+│
 ├── traits/
 │   ├── health.trait.ts           # Health trait type & guards
 │   ├── inventory.trait.ts        # Inventory trait type & guards

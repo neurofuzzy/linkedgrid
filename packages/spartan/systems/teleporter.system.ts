@@ -7,6 +7,28 @@ import { isPlayer, isTeleporter } from '../traits/trait-guards';
 
 type TeleporterState = 'ready' | 'inactive';
 
+/**
+ * TeleporterSystem - Handles player teleportation between scenes.
+ *
+ * Manages teleporter pads that transport the player to different scenes.
+ * Uses state tracking to prevent immediate re-teleportation loops.
+ *
+ * @system
+ * @reactsTo Entity overlaps (player + teleporter)
+ * @modifies TeleporterEntity state, triggers GameManager.movePlayerToScene
+ *
+ * Behavior:
+ * - Detects player overlap with ready teleporter
+ * - Triggers scene transition via GameManager
+ * - Sets source and destination teleporters to 'inactive'
+ * - Reactivates teleporters when player moves away
+ *
+ * @example
+ * ```typescript
+ * const teleporterSystem = new TeleporterSystem(gameManager);
+ * gameLoop.addSystem(teleporterSystem);
+ * ```
+ */
 export class TeleporterSystem extends BaseReactiveSystem {
   constructor(private gameManager: GameManager) {
     super();

@@ -44,6 +44,10 @@ interface FloorEffectData extends EntityData {
  * - Slide: Entity continues moving one cell in same direction (ice) - on-entry
  * - Slow: Cancels ONE move per cell entry (mud) - on-entry
  *
+ * @system
+ * @reactsTo Entity overlaps with floor effect tiles
+ * @modifies Entity HP, position; cancels pending moves
+ *
  * Trigger modes:
  * - 'on-entry': Effect triggers once per cell entry, tracked per entity/cell/effect
  * - 'continuous': Effect triggers repeatedly based on cadence

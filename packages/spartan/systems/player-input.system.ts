@@ -4,6 +4,28 @@ import { InputManager } from '../input/input-manager';
 import { Direction } from '../core/grid/direction';
 import type { GameManager } from '../core/game-manager';
 
+/**
+ * PlayerInputSystem - Translates player input into movement intents.
+ *
+ * Processes input buffer and held keys to determine player movement direction.
+ * Stages movement intents for the player entity each tick.
+ *
+ * @system
+ * @reactsTo InputManager buffer and held keys
+ * @modifies PlayerEntity position (via spatial.move intent)
+ *
+ * Behavior:
+ * - Drains input buffer to get most recent direction
+ * - Falls back to currently held keys if buffer empty
+ * - Validates grid bounds before staging move
+ * - Tracks debug stats for input diagnostics
+ *
+ * @example
+ * ```typescript
+ * const inputSystem = new PlayerInputSystem(gameManager, inputManager);
+ * gameLoop.addSystem(inputSystem);
+ * ```
+ */
 export class PlayerInputSystem extends BaseReactiveSystem {
   public debugStats = {
     bufferSize: 0,

@@ -138,10 +138,16 @@ export {
 export * from './helpers';
 
 // Systems
-export { TeleporterSystem } from './systems/teleporter.system';
-export { CollectionSystem } from './systems/collection.system';
-export { DoorSystem } from './systems/door.system';
-export { PlayerInputSystem } from './systems/player-input.system';
-export { FloorEffectSystem } from './systems/floor-effect.system';
-export { ExplosionSystem } from './systems/explosion.system';
-export { FireSystem } from './systems/fire.system';
+export {
+  ChainReactionSystem,
+  CollectionSystem,
+  DoorSystem,
+  ExplosionSystem,
+  FireSystem,
+  FloorEffectSystem,
+  LiquidSystem,
+  PlayerInputSystem,
+  PoisonSystem,
+  TeleporterSystem,
+} from './systems';
+

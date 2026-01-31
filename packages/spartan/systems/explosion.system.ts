@@ -28,6 +28,10 @@ interface ExplosionEvent {
  * - Create visual effects
  * - Support chain reactions
  *
+ * @system
+ * @reactsTo Entities with HasExplosion trait reaching trigger condition
+ * @modifies Entity HP, temperature; spawns explosion-visual entities
+ *
  * Explosions use LinkedCellUtils.fieldOfView for realistic wall blocking:
  * - Walls create shadow zones (cover from explosions)
  * - Line-of-sight determines affected area

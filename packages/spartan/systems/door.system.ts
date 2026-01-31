@@ -10,6 +10,22 @@ import { isPlayer, isDoor, hasInventory } from '../traits/trait-guards';
  * Reactively checks player movement intents to unlock doors.
  * When player tries to move onto a locked door and has the key,
  * unlocks the door BEFORE commit validates moves.
+ *
+ * @system
+ * @reactsTo Pending move operations (player moving to door cell)
+ * @modifies DoorEntity isLocked state, spawns open-door visual
+ *
+ * Behavior:
+ * - Monitors pending move ops for player on ACTORS layer
+ * - Checks destination cell for locked door on WALLS layer
+ * - Matches door.requiredKey against player.inventory
+ * - Removes locked door from WALLS, spawns open-door on FLOOR
+ *
+ * @example
+ * ```typescript
+ * const doorSystem = new DoorSystem(gameManager);
+ * gameLoop.addSystem(doorSystem);
+ * ```
  */
 export class DoorSystem extends BaseReactiveSystem {
   constructor(private gameManager: GameManager) {
@@ -31,7 +47,7 @@ export class DoorSystem extends BaseReactiveSystem {
 
     // Check pending move operations to see if player is trying to move onto a door
     const pendingOps = spatial.getPendingOps();
-    
+
     for (const op of pendingOps) {
       // Only care about player moves on ACTORS layer
       if (op.type !== 'move' || op.entityId !== playerId || op.layer !== GameLayers.ACTORS) {
