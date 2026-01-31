@@ -52,6 +52,11 @@ const AVAILABLE_GAMES = [
     name: 'Gasoline & Fire',
     path: '/dev/games/gasoline.json',
   },
+  {
+    id: 'chain',
+    name: 'Chain Reaction (Dominos)',
+    path: '/dev/games/chain-reaction.json',
+  },
 ];
 
 /**

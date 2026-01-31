@@ -986,12 +986,7 @@
     }
   ],
   "initialScene": "propagation-demo",
-  "systems": [
-    "PropagationSystem",
-    "ExplosionSystem",
-    "FloorEffectSystem",
-    "FireSystem"
-  ],
+  "systems": ["ExplosionSystem", "FloorEffectSystem", "FireSystem"],
   "tickRate": 10,
   "input": {
     "type": "keyboard",

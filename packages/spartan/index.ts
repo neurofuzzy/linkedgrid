@@ -181,7 +181,6 @@ export { CollectionSystem } from './systems/collection-system';
 export { DoorSystem } from './systems/door-system';
 export { PlayerInputSystem } from './systems/player-input-system';
 export { FloorEffectSystem } from './systems/floor-effect-system';
-export { PropagationSystem } from './systems/propagation-system';
 export { ExplosionSystem } from './systems/explosion-system';
 export { FireSystem } from './systems/fire-system';
 export type { GameSystem, GameContext, Overlap } from './types';

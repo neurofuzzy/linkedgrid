@@ -1,6 +1,5 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../layers/types';
-import { PropagationSystem } from '../systems/propagation-system';
 import { FireSystem } from '../systems/fire-system';
 import { GameLoop } from '../game-loop';
 
@@ -51,7 +50,9 @@ visual('fire spreads through grass field', {
       }).length;
 
       if (fireCount < 5) {
-        throw new Error(`Expected fire to spread through grass, got ${fireCount} fire entities`);
+        throw new Error(
+          `Expected fire to spread through grass, got ${fireCount} fire entities`
+        );
       }
     });
   },
@@ -101,7 +102,9 @@ visual('gasoline trail burns fast', {
       }).length;
 
       if (fireCount < 4) {
-        throw new Error(`Expected fire to spread through gasoline, got ${fireCount} fire entities`);
+        throw new Error(
+          `Expected fire to spread through gasoline, got ${fireCount} fire entities`
+        );
       }
     });
   },
@@ -151,7 +154,9 @@ visual('fuse burns in sequence', {
       }).length;
 
       if (fireCount < 3) {
-        throw new Error(`Expected fuse to burn, got ${fireCount} fire entities`);
+        throw new Error(
+          `Expected fuse to burn, got ${fireCount} fire entities`
+        );
       }
     });
   },
@@ -164,17 +169,17 @@ visual('fire blocked by non-flammable entities', {
       flammability: 0.8,
       color: '#7cba00',
     });
-    
+
     spatial.spawn('grass', 4, 5, GameLayers.FLOOR, {
       flammability: 0.8,
       color: '#7cba00',
     });
-    
+
     spatial.spawn('grass', 6, 5, GameLayers.FLOOR, {
       flammability: 0.8,
       color: '#7cba00',
     });
-    
+
     spatial.spawn('grass', 7, 5, GameLayers.FLOOR, {
       flammability: 0.8,
       color: '#7cba00',
@@ -221,7 +226,7 @@ visual('fire blocked by non-flammable entities', {
       // Check that fire never reached the right grass (x=7)
       const fireAtRight = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR_EFFECTS);
       const fireData = fireAtRight ? spatial.getEntityData(fireAtRight) : null;
-      
+
       if (fireData && fireData.type === 'fire') {
         throw new Error('Fire should not have crossed water barrier');
       }
@@ -230,7 +235,7 @@ visual('fire blocked by non-flammable entities', {
     expect('Water still present (not consumed)', () => {
       const waterEntity = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR_EFFECTS);
       const waterData = waterEntity ? spatial.getEntityData(waterEntity) : null;
-      
+
       if (!waterData || waterData.type !== 'water') {
         throw new Error('Water should still be present');
       }
@@ -260,7 +265,7 @@ visual('mixed flammability terrain creates realistic spread', {
       flammability: 0.99,
       color: '#ff4500',
     });
-    
+
     spatial.spawn('fuse', 5, 5, GameLayers.COLLECTIBLES, {
       flammability: 0.99,
       color: '#ff4500',
@@ -300,7 +305,9 @@ visual('mixed flammability terrain creates realistic spread', {
       }).length;
 
       if (fireCount < 2) {
-        throw new Error(`Expected fire to spread through terrain, got ${fireCount} fire entities`);
+        throw new Error(
+          `Expected fire to spread through terrain, got ${fireCount} fire entities`
+        );
       }
     });
   },
@@ -357,26 +364,38 @@ visual('fire spreads through connected grass via temperature', {
   assert: ({ spatial, expect }) => {
     expect('Fire spread to adjacent grass', () => {
       // Check that at least 2 grass tiles are burning
-      const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
-        const data = spatial.getEntityData(id);
-        return data && data.type === 'grass' && 
-               'temperature' in data && 'flamePoint' in data && 
-               data.temperature >= data.flamePoint;
-      }).length;
+      const burningCount = Array.from(spatial.getAllPositions()).filter(
+        ([id]) => {
+          const data = spatial.getEntityData(id);
+          return (
+            data &&
+            data.type === 'grass' &&
+            'temperature' in data &&
+            'flamePoint' in data &&
+            data.temperature >= data.flamePoint
+          );
+        }
+      ).length;
 
       if (burningCount < 2) {
-        throw new Error(`Expected fire to spread to adjacent grass, got ${burningCount} burning grass entities`);
+        throw new Error(
+          `Expected fire to spread to adjacent grass, got ${burningCount} burning grass entities`
+        );
       }
     });
 
     expect('Fire visuals spawned on EPHEMERALS layer', () => {
-      const visualCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
-        const data = spatial.getEntityData(id);
-        return data && data.type === 'fire-visual';
-      }).length;
+      const visualCount = Array.from(spatial.getAllPositions()).filter(
+        ([id]) => {
+          const data = spatial.getEntityData(id);
+          return data && data.type === 'fire-visual';
+        }
+      ).length;
 
       if (visualCount < 1) {
-        throw new Error(`Expected fire visuals to be spawned, got ${visualCount}`);
+        throw new Error(
+          `Expected fire visuals to be spawned, got ${visualCount}`
+        );
       }
     });
   },
@@ -420,15 +439,23 @@ visual('fire cannot spread without flammable materials', {
   assert: ({ spatial, expect }) => {
     expect('Fire did not spread (no flammable materials)', () => {
       // Count entities that are burning (temperature >= flamePoint)
-      const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
-        const data = spatial.getEntityData(id);
-        return data && 'temperature' in data && 'flamePoint' in data && 
-               data.temperature >= data.flamePoint;
-      }).length;
+      const burningCount = Array.from(spatial.getAllPositions()).filter(
+        ([id]) => {
+          const data = spatial.getEntityData(id);
+          return (
+            data &&
+            'temperature' in data &&
+            'flamePoint' in data &&
+            data.temperature >= data.flamePoint
+          );
+        }
+      ).length;
 
       // Only the original grass should be burning (or 0 if it burned to ash)
       if (burningCount > 1) {
-        throw new Error(`Fire should not spread without adjacent flammable materials, got ${burningCount} burning entities`);
+        throw new Error(
+          `Fire should not spread without adjacent flammable materials, got ${burningCount} burning entities`
+        );
       }
     });
   },

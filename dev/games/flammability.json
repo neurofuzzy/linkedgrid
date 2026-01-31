@@ -352,12 +352,59 @@
             "hp": 15,
             "maxHp": 15
           }
+        },
+        {
+          "type": "water",
+          "x": 5,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            "maxDistance": 10,
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
+          }
+        },
+        {
+          "type": "water",
+          "x": 6,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            "maxDistance": 10,
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
+          }
+        },
+        {
+          "type": "water",
+          "x": 7,
+          "y": 10,
+          "layer": 1,
+          "data": {
+            "propagationType": "liquid",
+            "spreadRate": 1,
+            "spreadLayer": 1,
+            "spreadType": "water",
+            "maxDistance": 10,
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
+          }
         }
       ]
     }
   ],
   "systems": [
-    "PropagationSystem",
     "FireSystem",
     "FloorEffectSystem",
     "LiquidSystem"

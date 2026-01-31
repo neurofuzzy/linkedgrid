@@ -560,6 +560,16 @@ export function isDestructibleWall(entity: EntityData): entity is DestructibleWa
 }
 
 /**
+ * Check if entity is a chain link.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'chain-link'
+ */
+export function isChainLink(entity: EntityData): boolean {
+  return entity.type === 'chain-link';
+}
+
+/**
  * Combined Trait + Type Guards
  *
  * Convenience guards that check both entity type and trait possession.

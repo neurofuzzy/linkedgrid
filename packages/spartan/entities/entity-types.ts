@@ -729,3 +729,26 @@ export type ExplosionVisualData = EntityData & {
 export type DestructibleWallData = EntityData & {
   type: 'destructible-wall';
 } & HasHealth & HasDamageable & HasColor;
+
+/**
+ * ChainLinkData - Entity for deterministic chain reactions (dominoes, wires).
+ *
+ * Traits:
+ * - HasPropagation: propagationType='chain'
+ * - HasColor: Visual feedback
+ *
+ * @example
+ * ```typescript
+ * const domino = {
+ *   type: 'domino',
+ *   propagationType: 'chain',
+ *   spreadRate: 5,
+ *   spreadLayer: GameLayers.FLOOR,
+ *   spreadType: 'domino',
+ *   color: '#ffffff'
+ * };
+ * ```
+ */
+export type ChainLinkData = EntityData & {
+  type: 'chain-link';
+} & HasPropagation & HasColor;

@@ -23,6 +23,7 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   medbay: 'entity-medbay',
   ice: 'entity-ice',
   mud: 'entity-mud',
+  'chain-link': 'entity-chain-link',
 };
 
 /**
@@ -43,6 +44,7 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   medbay: '+',
   ice: '❄',
   mud: '▒',
+  'chain-link': '≡',
 };
 
 /**

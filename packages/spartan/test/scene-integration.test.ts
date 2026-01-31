@@ -4,7 +4,7 @@ import { GameLayers } from '../index';
 
 /**
  * Integration tests for scene loading and gameplay.
- * 
+ *
  * These tests load actual JSON scene configs and verify that:
  * - Scene loading works correctly
  * - Entity properties are loaded from JSON
@@ -66,13 +66,13 @@ describe('Scene Integration Tests', () => {
           },
         ],
         initialScene: 'test-scene',
-        systems: ['PropagationSystem'],
+        systems: [],
         tickRate: 100,
       };
 
       const runtime = loader.load(config);
       expect(runtime).toBeDefined();
-      
+
       // Verify that runtime has expected structure
       expect(runtime.game).toBeDefined();
       expect((runtime as any).spatial).toBeDefined();
@@ -113,7 +113,7 @@ describe('Scene Integration Tests', () => {
           },
         ],
         initialScene: 'test-scene',
-        systems: ['PropagationSystem'],
+        systems: [],
       };
 
       const runtime = loader.load(config);
@@ -122,7 +122,7 @@ describe('Scene Integration Tests', () => {
       // Verify fire entity has propagation properties
       const fireId = spatial.getEntityIdAt(5, 5, GameLayers.COLLECTIBLES);
       expect(fireId).toBeDefined();
-      
+
       const fireData = spatial.getEntityData(fireId!);
       expect(fireData).toBeDefined();
       expect(fireData!.type).toBe('fire');
@@ -133,7 +133,7 @@ describe('Scene Integration Tests', () => {
       // Verify grass entity has flammability
       const grassId = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
       expect(grassId).toBeDefined();
-      
+
       const grassData = spatial.getEntityData(grassId!);
       expect(grassData).toBeDefined();
       expect(grassData!.type).toBe('grass');
@@ -194,7 +194,7 @@ describe('Scene Integration Tests', () => {
       expect(grass1Data!.temperature).toBe(25);
       expect(grass1Data!.flammable).toBe(true);
       expect(grass1Data!.flamePoint).toBe(150);
-      
+
       const grass2Id = spatial.getEntityIdAt(6, 5, GameLayers.FLOOR);
       expect(grass2Id).toBeDefined();
       const grass2Data = spatial.getEntityData(grass2Id);
@@ -283,7 +283,9 @@ describe('Scene Integration Tests', () => {
       loader.load(config);
 
       // Verify warning was logged
-      expect(warnings.some(w => w.includes('propagation properties'))).toBe(true);
+      expect(warnings.some((w) => w.includes('propagation properties'))).toBe(
+        true
+      );
 
       // Restore console.warn
       console.warn = originalWarn;
@@ -323,7 +325,7 @@ describe('Scene Integration Tests', () => {
       loader.load(config);
 
       // Verify warning was logged
-      expect(warnings.some(w => w.includes('temperature'))).toBe(true);
+      expect(warnings.some((w) => w.includes('temperature'))).toBe(true);
 
       // Restore console.warn
       console.warn = originalWarn;
@@ -377,8 +379,8 @@ describe('Scene Integration Tests', () => {
       spatial.commit();
 
       // Verify collision warning was logged
-      expect(warnings.some(w => w.includes('COLLISION'))).toBe(true);
-      expect(warnings.some(w => w.includes('grass'))).toBe(true);
+      expect(warnings.some((w) => w.includes('COLLISION'))).toBe(true);
+      expect(warnings.some((w) => w.includes('grass'))).toBe(true);
 
       // Restore console.warn
       console.warn = originalWarn;

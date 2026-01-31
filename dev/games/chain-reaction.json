@@ -1,0 +1,48 @@
+{
+  "scenes": [
+    {
+      "id": "chain-reaction-demo",
+      "name": "Dominos Chain Reaction",
+      "width": 20,
+      "height": 20,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 2,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "chain-reaction-demo"
+          }
+        },
+        {
+          "type": "chain-link",
+          "x": 5,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "propagationType": "chain",
+            "spreadRate": 5,
+            "spreadLayer": 4,
+            "spreadType": "chain-link",
+            "maxDistance": 15,
+            "color": "#ffffff",
+            "lifetime": 10
+          }
+        }
+      ]
+    }
+  ],
+  "initialScene": "chain-reaction-demo",
+  "systems": ["ChainReactionSystem"],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}
