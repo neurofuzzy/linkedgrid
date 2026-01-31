@@ -595,6 +595,32 @@
           "layer": 5
         },
         {
+          "type": "torch",
+          "x": 4,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "color": "#ff6b35",
+            "temperature": 500,
+            "flammable": false,
+            "flamePoint": 400
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 5,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
           "type": "gasoline",
           "x": 6,
           "y": 10,
@@ -815,10 +841,10 @@
             "explosionDamage": 30,
             "explosionRadius": 4,
             "triggerCondition": "on-death",
-            "color": "#8B4513",
-            "temperature": 0,
             "flammable": true,
-            "flamePoint": 200
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
           }
         },
         {
@@ -832,10 +858,10 @@
             "explosionDamage": 30,
             "explosionRadius": 4,
             "triggerCondition": "on-death",
-            "color": "#8B4513",
-            "temperature": 0,
             "flammable": true,
-            "flamePoint": 200
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
           }
         },
         {
@@ -849,10 +875,10 @@
             "explosionDamage": 30,
             "explosionRadius": 4,
             "triggerCondition": "on-death",
-            "color": "#8B4513",
-            "temperature": 0,
             "flammable": true,
-            "flamePoint": 200
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
           }
         },
         {
@@ -866,10 +892,10 @@
             "explosionDamage": 30,
             "explosionRadius": 4,
             "triggerCondition": "on-death",
-            "color": "#8B4513",
-            "temperature": 0,
             "flammable": true,
-            "flamePoint": 200
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
           }
         },
         {
@@ -878,12 +904,12 @@
           "y": 11,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         },
         {
@@ -892,12 +918,12 @@
           "y": 11,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         },
         {
@@ -906,12 +932,12 @@
           "y": 11,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         },
         {
@@ -920,12 +946,12 @@
           "y": 9,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         },
         {
@@ -934,12 +960,12 @@
           "y": 9,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         },
         {
@@ -948,12 +974,12 @@
           "y": 9,
           "layer": 1,
           "data": {
-            "color": "#7cba00",
-            "temperature": 0,
             "flammable": true,
             "flamePoint": 150,
+            "temperature": 0,
             "hp": 20,
-            "maxHp": 20
+            "maxHp": 20,
+            "color": "#7cba00"
           }
         }
       ]
@@ -961,9 +987,10 @@
   ],
   "initialScene": "propagation-demo",
   "systems": [
-    "PropagationSystem", "FireSystem",
+    "PropagationSystem",
     "ExplosionSystem",
-    "FloorEffectSystem"
+    "FloorEffectSystem",
+    "FireSystem"
   ],
   "tickRate": 10,
   "input": {
