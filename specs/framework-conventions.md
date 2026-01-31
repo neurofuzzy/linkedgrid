@@ -62,7 +62,8 @@ Currently, an LLM working with Spartan must:
 ```
 spartan/
 ├── core/
-│   ├── spatial-system.ts         # Core spatial grid system
+│   ├── grid/                     # Underlying grid topology (LinkedGrid, LinkedCell)
+│   ├── spatial-system.ts         # Core spatial entity system
 │   ├── game-loop.ts              # Tick loop orchestration
 │   ├── base-system.ts            # Base classes for systems
 │   └── types.ts                  # Core type definitions
