@@ -68,10 +68,10 @@ spartan/
 │   └── types.ts                  # Core type definitions
 │
 ├── entities/
-│   ├── player.entity.ts          # PlayerEntity type definition
-│   ├── enemy.entity.ts           # EnemyEntity type definition
-│   ├── door.entity.ts            # DoorEntity type definition
-│   ├── collectible.entity.ts    # CollectibleEntity type definition
+│   ├── player.entity.ts          # Type, Guard, & Factory for Player
+│   ├── enemy.entity.ts           # Type, Guard, & Factory for Enemy
+│   ├── door.entity.ts            # Type, Guard, & Factory for Door
+│   ├── collectible.entity.ts     # Type, Guard, & Factory for Collectible
 │   ├── index.ts                  # Re-exports all entities
 │   └── entity.types.ts           # Discriminated union of all entities
 │
@@ -116,6 +116,7 @@ spartan/
 
 - **Systems:** `[name].system.ts` (e.g., `fire.system.ts`)
 - **Entities:** `[name].entity.ts` (e.g., `player.entity.ts`)
+  - *Exports:* Type (`PlayerEntity`), Guard (`isPlayer`), Factory (`spawnPlayer`)
 - **Traits:** `[name].trait.ts` (e.g., `health.trait.ts`)
 - **Config:** `[domain].config.ts` (e.g., `systems.config.ts`)
 - **Tests:** `[name].test.ts` or `[name].spec.ts`
@@ -409,6 +410,8 @@ export class DoorSystem extends BaseReactiveSystem {
 
 ### 5. Structured Metadata Comments
 
+**Note:** Temporal configuration (`tickRate`, `executionPhase`, `dependencies`) is defined in `config/systems.config.ts`. Do not duplicate it here to avoid drift. Use comments for semantic behavior description.
+
 **Template for Systems:**
 
 ```typescript
@@ -418,9 +421,6 @@ export class DoorSystem extends BaseReactiveSystem {
  * [Detailed explanation of what this system does]
  * 
  * @system
- * @tickRate [number] ([constant name if applicable])
- * @executionPhase [input|pre-commit|main|post-commit]
- * @dependencies [comma-separated list]
  * @reactsTo [what triggers this system]
  * @modifies [what entities/state it changes]
  * 
@@ -446,15 +446,9 @@ export class DoorSystem extends BaseReactiveSystem {
 /**
  * FireSystem - Spreads fire to adjacent grass tiles
  * 
- * Simulates fire propagation in the game world. Every 3 ticks, each fire
- * entity checks its 4 adjacent cells (north, south, east, west). If a cell
- * contains grass, there's a 30% probability the fire will spread to it.
- * When fire spreads, it consumes the grass entity and creates a new fire entity.
+ * Simulates fire propagation in the game world.
  * 
  * @system
- * @tickRate 3 (FIRE_SPREAD_DELAY)
- * @executionPhase main
- * @dependencies SpatialSystem
  * @reactsTo Fire entities in the scene
  * @modifies Creates Fire entities, Removes Grass entities
  * 
@@ -473,21 +467,20 @@ export class DoorSystem extends BaseReactiveSystem {
  * ```typescript
  * const fireSystem = new FireSystem(spatialSystem);
  * gameLoop.addSystem(fireSystem);
- * 
- * // Fire will spread every 3 ticks with 30% probability per adjacent grass
  * ```
  */
 export class FireSystem extends BaseTickedSystem {
-  protected tickRate = FIRE_SPREAD_DELAY;
+  // Config injected/lookup from systems.config.ts
   // ...
 }
 ```
 
 **LLM Benefit:** 
-- Can understand system without reading code
+- Can understand system behavior without reading code
 - Structured tags are parseable
 - Examples show usage patterns
 - Edge cases documented upfront
+- No conflicting timing info between comments and config
 
 ---
 
