@@ -143,46 +143,31 @@ export class LiquidSystem implements GameSystem {
 
       if (recipients.length === 0) continue;
 
-      // Calculate Flow using Average Distribution (Pressure Equalization)
-      // 1. Calculate average depth of self + all eligible recipients
-      let totalPoolDepth = entityData.depth;
-      for (const r of recipients) totalPoolDepth += r.currentDepth;
-      
-      const count = recipients.length + 1;
-      const targetDepth = Math.floor(totalPoolDepth / count);
-      const remainder = totalPoolDepth % count;
-      
-      // 2. Determine target for source
-      // Source keeps its share + 1 unit of remainder if available
-      const sourceTarget = targetDepth + (remainder > 0 ? 1 : 0);
-      let surplus = entityData.depth - sourceTarget;
-      
-      if (surplus <= 0) continue;
-
-      // 3. Distribute surplus to recipients
-      // Sort by depth (lowest first) to fill from bottom
-      // Sort stability ensures bias is consistent (UP/left bias if equal)
-      recipients.sort((a, b) => a.currentDepth - b.currentDepth);
-
-      let distributedRemainder = (remainder > 0 ? 1 : 0); // Source already took its 1
+      // Calculate Flow: Damped Pairwise Diffusion (Float)
+      // Distribute flow to lower neighbors, damped by the number of connections.
+      const divisor = recipients.length + 1;
 
       for (const recipient of recipients) {
-        if (surplus <= 0) break;
+        // Only flow to lower neighbors
+        if (entityData.depth <= recipient.currentDepth) continue;
+
+        // User requested: Cells with depth < 2 should not spread (surface tension)
+        if (entityData.depth < 2) continue;
+
+        // Calculate transfer amount (Float)
+        const diff = entityData.depth - recipient.currentDepth;
+        let transfer = diff / divisor;
         
-        // Calculate target for this neighbor
-        const neighborTarget = targetDepth + (distributedRemainder < remainder ? 1 : 0);
-        if (distributedRemainder < remainder) distributedRemainder++;
-
-        const needed = neighborTarget - recipient.currentDepth;
-        if (needed <= 0) continue;
-
-        const transfer = Math.min(surplus, needed);
+        // Min flow threshold to prevent Zeno's paradox
+        if (transfer < 0.05) continue;
+        
+        // Cap transfer to not overshoot equilibrium pairwise (diff/2 is max for pairwise, but diff/divisor handles multi)
+        // With simultaneous updates, we stick to calculated share.
         
         if (transfer > 0) {
           // Me
           const myDelta = depthDeltas.get(entityId) || 0;
           depthDeltas.set(entityId, myDelta - transfer);
-          surplus -= transfer;
 
           // Them
           if (recipient.entityId !== undefined) {
@@ -198,7 +183,6 @@ export class LiquidSystem implements GameSystem {
               originY: state.originY
             };
             pending.amount += transfer;
-            // Update template logic: keep ref to original data
             pending.template = entityData as unknown as LiquidConfig;
             pendingSpawns.set(key, pending);
           }
@@ -215,7 +199,8 @@ export class LiquidSystem implements GameSystem {
       const entityData = context.spatial.getEntityData(id);
       if (entityData && hasLiquid(entityData)) {
         entityData.depth += delta;
-        if (entityData.depth <= 0) {
+        // Cleanup if depth drops below threshold
+        if (entityData.depth < 0.05) {
           context.spatial.remove(id);
           this.spreadState.delete(id);
           this.propagatedEntities.delete(id);
