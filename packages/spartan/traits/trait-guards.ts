@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { EntityData } from './entity-types';
+import type { EntityData } from '../entities/entity.types';
 import type {
   PlayerData,
   EnemyData,
@@ -51,7 +51,7 @@ import type {
   DestructibleWallData,
   ChainLinkData,
   FireVisualData,
-} from './entity-types';
+} from '../entities';
 
 /**
  * Trait Guards

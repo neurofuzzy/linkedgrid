@@ -43,7 +43,28 @@ import type {
   TeleporterData,
   ItemData,
   WallData,
-} from './entity-types';
+  DoorData,
+  KeyData,
+  OpenDoorData,
+  LavaData,
+  AcidData,
+  MedbayData,
+  IceData,
+  MudData,
+  PoisonGasData,
+  WaterData,
+  AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
+  BarrelData,
+  ExplosionVisualData,
+  DestructibleWallData,
+  ChainLinkData,
+  FireVisualData,
+  EntityData,
+} from './index';
 
 /**
  * Spawn a player entity with type-safe properties.

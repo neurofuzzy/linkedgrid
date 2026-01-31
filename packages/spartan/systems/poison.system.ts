@@ -1,5 +1,5 @@
 import type { GameSystem, GameContext, Position } from '../core/types';
-import type { EntityData } from '../entities/entity-types';
+import type { EntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation, hasDensity, hasHealth, hasFloorEffect } from '../traits/trait-guards';

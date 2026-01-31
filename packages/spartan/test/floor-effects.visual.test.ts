@@ -2,7 +2,7 @@ import { visual } from './visual-helpers';
 import { GameLayers } from "../core/types";
 import { spawnPlayer } from '../entities/spawn-helpers';
 import { hasHealth } from '../traits/trait-guards';
-import { FloorEffectSystem } from '../systems/floor-effect-system';
+import { FloorEffectSystem } from '../systems/floor-effect.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
 

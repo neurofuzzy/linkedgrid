@@ -1,6 +1,6 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from "../core/types";
-import { ExplosionSystem } from '../systems/explosion-system';
+import { ExplosionSystem } from '../systems/explosion.system';
 import { GameLoop } from '../core/game-loop';
 import { spawnPlayer } from '../entities/spawn-helpers';
 

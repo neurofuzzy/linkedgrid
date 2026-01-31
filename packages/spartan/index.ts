@@ -86,32 +86,7 @@ export type {
 } from './traits/traits';
 
 // Entity archetypes (example patterns)
-export type {
-  PlayerData,
-  EnemyData,
-  TeleporterData,
-  ItemData,
-  WallData,
-  DoorData,
-  KeyData,
-  OpenDoorData,
-  LavaData,
-  AcidData,
-  MedbayData,
-  IceData,
-  MudData,
-  FireVisualData,
-  PoisonGasData,
-  WaterData,
-  AshData,
-  GrassData,
-  GasolineData,
-  FuseData,
-  TorchData,
-  BarrelData,
-  ExplosionVisualData,
-  DestructibleWallData,
-} from './entities/entity-types';
+export * from './entities/entity.types';
 
 // Trait guards (runtime checks)
 export {
@@ -176,11 +151,11 @@ export { GameRuntime } from './core/game-runtime';
 export type { GameRuntimeConfig } from './core/game-runtime';
 
 // Systems
-export { TeleporterSystem } from './systems/teleporter-system';
-export { CollectionSystem } from './systems/collection-system';
-export { DoorSystem } from './systems/door-system';
-export { PlayerInputSystem } from './systems/player-input-system';
-export { FloorEffectSystem } from './systems/floor-effect-system';
-export { ExplosionSystem } from './systems/explosion-system';
-export { FireSystem } from './systems/fire-system';
+export { TeleporterSystem } from './systems/teleporter.system';
+export { CollectionSystem } from './systems/collection.system';
+export { DoorSystem } from './systems/door.system';
+export { PlayerInputSystem } from './systems/player-input.system';
+export { FloorEffectSystem } from './systems/floor-effect.system';
+export { ExplosionSystem } from './systems/explosion.system';
+export { FireSystem } from './systems/fire.system';
 export type { GameSystem, GameContext, Overlap } from './core/types';

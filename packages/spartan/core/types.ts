@@ -7,7 +7,7 @@
  * - Spatial operations are first-class
  */
 
-import type { EntityData } from '../entities/entity-types';
+import type { EntityData } from '../entities/entity.types';
 export { EntityData };
 
 /**

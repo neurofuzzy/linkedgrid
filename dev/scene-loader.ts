@@ -2,18 +2,18 @@ import {
   GameRuntime,
   GameRuntimeConfig,
 } from '../packages/spartan/core/game-runtime';
-import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
-import { CollectionSystem } from '../packages/spartan/systems/collection-system';
-import { DoorSystem } from '../packages/spartan/systems/door-system';
-import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
-import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-system';
-import { ExplosionSystem } from '../packages/spartan/systems/explosion-system';
-import { PoisonSystem } from '../packages/spartan/systems/poison-system';
-import { FireSystem } from '../packages/spartan/systems/fire-system';
-import { LiquidSystem } from '../packages/spartan/systems/liquid-system';
-import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction-system';
+import { TeleporterSystem } from '../packages/spartan/systems/teleporter.system';
+import { CollectionSystem } from '../packages/spartan/systems/collection.system';
+import { DoorSystem } from '../packages/spartan/systems/door.system';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
+import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect.system';
+import { ExplosionSystem } from '../packages/spartan/systems/explosion.system';
+import { PoisonSystem } from '../packages/spartan/systems/poison.system';
+import { FireSystem } from '../packages/spartan/systems/fire.system';
+import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
+import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
 import type { GameSystem } from '../packages/spartan/core/types';
-import type { EntityData } from '../packages/spartan/entities/entity-types';
+import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
   isPlayer,
   isEnemy,

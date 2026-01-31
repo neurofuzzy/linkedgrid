@@ -1,6 +1,6 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from "../core/types";
-import { FireSystem } from '../systems/fire-system';
+import { FireSystem } from '../systems/fire.system';
 import { GameLoop } from '../core/game-loop';
 
 visual('fire spreads through grass field', {
