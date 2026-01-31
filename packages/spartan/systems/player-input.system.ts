@@ -26,7 +26,7 @@ export class PlayerInputSystem extends BaseReactiveSystem {
     const bufferState = this.inputManager.directionBuffer;
     const keysHeld = this.inputManager.keysHeld;
 
-    const input = this.inputManager.getState();
+    this.inputManager.getState();
     this.debugStats.bufferSize = bufferState.length;
     this.debugStats.keysHeld = keysHeld.size;
 

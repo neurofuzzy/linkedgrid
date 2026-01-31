@@ -8,6 +8,7 @@
  */
 
 import type { EntityData } from '../entities/entity.types';
+import { LinkedCell } from './grid';
 export type { EntityData };
 
 /**
@@ -64,6 +65,24 @@ export interface Overlap {
 }
 
 /**
+ * Pending operation types for unified transaction model.
+ */
+export interface PendingOperation {
+  type: 'move' | 'remove' | 'spawn';
+  entityId?: number;
+  fromX?: number;
+  fromY?: number;
+  toX?: number;
+  toY?: number;
+  x?: number;
+  y?: number;
+  layer: Layer;
+  blockFn?: (cell: LinkedCell | null) => boolean;
+  typeStr?: string;
+  props?: object;
+}
+
+/**
  * GameContext - Context passed to systems each tick.
  *
  * Provides systems with overlap data and spatial access.
@@ -72,28 +91,33 @@ export interface Overlap {
 export interface GameContext {
   overlaps: Overlap[];
   spatial: {
-    grid: { width: number; height: number };
-    spawn: (type: string, x: number, y: number, layer: number, data?: Record<string, unknown>) => number;
+    grid: { width: number; height: number; cell: (x: number, y: number) => LinkedCell | null };
+    spawn: (
+      type: string,
+      x: number,
+      y: number,
+      layer: number,
+      data?: Record<string, unknown>
+    ) => number;
     move: (entityId: number, x: number, y: number) => void;
     remove: (entityId: number) => void;
     removeAt: (x: number, y: number, layer: number) => boolean;
-    getEntityPosition: (entityId: number) => { x: number; y: number; layer: number } | null;
+    getEntityPosition: (
+      entityId: number
+    ) => { x: number; y: number; layer: number } | null;
     getEntitiesInCell: (x: number, y: number) => number[];
     getEntitiesInLayer: (layer: number) => number[];
     commitPendingActions: () => void;
     commit: () => void; // Alias for commitPendingActions
     getEntityData: (entityId: number) => EntityData | undefined;
-    getEntityIdAt: (
-      x: number,
-      y: number,
-      layer: number
-    ) => number | undefined;
+    getEntityIdAt: (x: number, y: number, layer: number) => number | undefined;
     getAllPositions: () => IterableIterator<
       [number, { x: number; y: number; layer: number }]
     >;
     getEntityIdsInRadius: (x: number, y: number, radius: number) => number[];
-    isBlocked: (cell: any) => boolean;
+    isBlocked: (cell: LinkedCell) => boolean;
     isAlive: (entityId: number) => boolean;
+    getPendingOps: () => ReadonlyArray<PendingOperation>;
   };
   sceneManager?: {
     getScene: (id: string) => unknown;
@@ -107,7 +131,12 @@ export interface GameContext {
         setData: (id: number, data: Partial<EntityData>) => void;
       };
     };
-    movePlayerToScene: (sceneId: string, x: number, y: number, layer: number) => void;
+    movePlayerToScene: (
+      sceneId: string,
+      x: number,
+      y: number,
+      layer: number
+    ) => void;
   };
 }
 

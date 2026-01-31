@@ -2,6 +2,7 @@ import {
   GameRuntime,
   GameRuntimeConfig,
 } from '../packages/spartan/core/game-runtime';
+import { GameManager } from '../packages/spartan/core/game-manager';
 import { TeleporterSystem } from '../packages/spartan/systems/teleporter.system';
 import { CollectionSystem } from '../packages/spartan/systems/collection.system';
 import { DoorSystem } from '../packages/spartan/systems/door.system';
@@ -71,19 +72,24 @@ export interface SceneConfig {
 }
 
 /**
+ * System factory function type.
+ */
+type SystemFactory = (gameManager: GameManager) => GameSystem;
+
+/**
  * System registry for mapping string names to system constructors.
  * Add new systems here as they're implemented.
  */
-const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
+const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
-  ExplosionSystem: (gameManager) => new ExplosionSystem(),
+  ExplosionSystem: () => new ExplosionSystem(),
   PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
-  FireSystem: (gameManager) => new FireSystem(),
-  LiquidSystem: (gameManager) => new LiquidSystem(),
-  ChainReactionSystem: (gameManager) => new ChainReactionSystem(),
+  FireSystem: () => new FireSystem(),
+  LiquidSystem: () => new LiquidSystem(),
+  ChainReactionSystem: () => new ChainReactionSystem(),
 };
 
 /**
@@ -173,12 +179,11 @@ export class SceneLoader {
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
       const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
-      (runtime as any).systems.push(playerInputSystem);
-      (runtime as any).gameLoop.addSystem(playerInputSystem);
+      runtime.addSystem(playerInputSystem);
 
       // Store references for external access
-      (runtime as any).inputManager = manager;
-      (runtime as any).inputCleanup = cleanup;
+      runtime.inputManager = manager;
+      runtime.inputCleanup = cleanup;
     }
 
     // Register other systems AFTER PlayerInputSystem
@@ -193,8 +198,7 @@ export class SceneLoader {
 
         const system = systemFactory(runtime.game);
         // Add to both systems array (persists across scene transitions) and gameLoop
-        (runtime as any).systems.push(system);
-        (runtime as any).gameLoop.addSystem(system);
+        runtime.addSystem(system);
       }
     }
 
@@ -234,7 +238,8 @@ export class SceneLoader {
       cellSize: inputConfig.options?.cellSize || 24,
       cellGap: inputConfig.options?.cellGap || 0,
       bufferInput: inputConfig.options?.bufferInput || false,
-      directionMode: inputConfig.options?.directionMode || ('continuous' as const),
+      directionMode:
+        inputConfig.options?.directionMode || ('continuous' as const),
     };
 
     const manager = new InputManager(container, null, options);
@@ -267,8 +272,8 @@ export class SceneLoader {
       if ((entityDef as any).props && !entityDef.data) {
         console.error(
           `[SceneLoader] ❌ SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
-          `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
-          `  → Properties will NOT be loaded until this is fixed!`
+            `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
+            `  → Properties will NOT be loaded until this is fixed!`
         );
         // Fallback to support legacy JSON
         entityDef.data = (entityDef as any).props;
@@ -318,14 +323,16 @@ export class SceneLoader {
       }
 
       // Validate propagation properties for fire, water, etc.
-      if (tempEntityForValidation.type === 'fire' || 
-          tempEntityForValidation.type === 'water' ||
-          tempEntityForValidation.type === 'poison-gas') {
+      if (
+        tempEntityForValidation.type === 'fire' ||
+        tempEntityForValidation.type === 'water' ||
+        tempEntityForValidation.type === 'poison-gas'
+      ) {
         if (!hasPropagation(tempEntityForValidation)) {
           console.warn(
             `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
-            `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
-            `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
+              `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
+              `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
           );
         } else {
           // Validate that spreadType is set
@@ -333,16 +340,18 @@ export class SceneLoader {
           if (!propData.spreadType) {
             console.warn(
               `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
-              `  → This will cause spawned entities to have type 'undefined'!`
+                `  → This will cause spawned entities to have type 'undefined'!`
             );
           }
         }
       }
 
       // Validate temperature for grass, gasoline, fuses
-      if (tempEntityForValidation.type === 'grass' || 
-          tempEntityForValidation.type === 'gasoline' ||
-          tempEntityForValidation.type === 'fuse') {
+      if (
+        tempEntityForValidation.type === 'grass' ||
+        tempEntityForValidation.type === 'gasoline' ||
+        tempEntityForValidation.type === 'fuse'
+      ) {
         if (!hasTemperature(tempEntityForValidation)) {
           console.warn(
             `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`

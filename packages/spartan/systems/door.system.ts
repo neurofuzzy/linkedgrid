@@ -23,14 +23,14 @@ export class DoorSystem extends BaseReactiveSystem {
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId || playerId === 0) return;
 
-    // Get player data
+    // Check player data
     const playerData = spatial.getEntityData(playerId);
     if (!playerData || !isPlayer(playerData) || !hasInventory(playerData)) {
       return;
     }
 
     // Check pending move operations to see if player is trying to move onto a door
-    const pendingOps = (spatial as any).getPendingOps();
+    const pendingOps = spatial.getPendingOps();
     
     for (const op of pendingOps) {
       // Only care about player moves on ACTORS layer
@@ -39,6 +39,7 @@ export class DoorSystem extends BaseReactiveSystem {
       }
 
       // Check destination cell for a locked door
+      if (op.toX === undefined || op.toY === undefined) continue;
       const destCell = spatial.grid.cell(op.toX, op.toY);
       if (!destCell) continue;
 
@@ -56,10 +57,6 @@ export class DoorSystem extends BaseReactiveSystem {
         });
 
         // Remove door from WALLS layer (clears BLOCKING mask)
-        // spatial.removeAt does not exist in GameContext interface, use spatial.remove if ID known
-        // Or access spatial.removeAt via cast if exists
-        // Wait, removeAt is method of SpatialSystem?
-        // Let's use remove(id)
         spatial.remove(doorData.id);
 
         // Spawn open door visual on FLOOR layer

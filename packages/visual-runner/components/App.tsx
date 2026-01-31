@@ -111,12 +111,7 @@ export function App() {
   const handleRestart = async () => {
     if (state.type !== 'completed') return; // Type guard!
 
-    const {
-      definition,
-      testName,
-      testIndex,
-      snapshots: currentSnapshots,
-    } = state;
+    const { definition, testName, testIndex } = state;
 
     // Keep showing the last frame while we restart
     try {
@@ -294,7 +289,12 @@ export function App() {
       const modulePath = `../../${file}`;
       await import(modulePath);
 
-      const testRegistry = (globalThis as { visualTests?: Array<{ name: string; definition: unknown }> }).visualTests || [];
+      const testRegistry =
+        (
+          globalThis as {
+            visualTests?: Array<{ name: string; definition: unknown }>;
+          }
+        ).visualTests || [];
       const testEntry = testRegistry.find((t) => t.name === testName);
 
       if (!testEntry) {

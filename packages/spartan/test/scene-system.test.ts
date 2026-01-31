@@ -4,7 +4,7 @@ import { Scene } from '../core/scene';
 import { SceneManager } from '../core/scene-manager';
 import { GameManager } from '../core/game-manager';
 import { SparseEntityStore } from '../core/entity-store';
-import { GameLayers } from "../config/layers.config";
+import { GameLayers } from '../config/layers.config';
 
 describe('GameState', () => {
   let gameState: GameState;
@@ -438,7 +438,7 @@ describe('GameManager', () => {
 
     it('preserves all player properties during migration', () => {
       const scene1 = game.sceneManager.createScene('room1', 10, 10);
-      const scene2 = game.sceneManager.createScene('room2', 10, 10);
+      game.sceneManager.createScene('room2', 10, 10);
 
       const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
         hp: 100,

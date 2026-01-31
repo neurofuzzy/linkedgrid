@@ -35,35 +35,14 @@
  * ```
  */
 
-import type { SpatialSystem } from '../spatial-system';
-import { GameLayers } from "../config/layers.config";
+import type { SpatialSystem } from '../core/spatial-system';
+import { GameLayers } from '../config/layers.config';
 import type {
   PlayerData,
   EnemyData,
   TeleporterData,
   ItemData,
   WallData,
-  DoorData,
-  KeyData,
-  OpenDoorData,
-  LavaData,
-  AcidData,
-  MedbayData,
-  IceData,
-  MudData,
-  PoisonGasData,
-  WaterData,
-  AshData,
-  GrassData,
-  GasolineData,
-  FuseData,
-  TorchData,
-  BarrelData,
-  ExplosionVisualData,
-  DestructibleWallData,
-  ChainLinkData,
-  FireVisualData,
-  EntityData,
 } from './index';
 
 /**

@@ -58,6 +58,10 @@ export class GameRuntime {
   private _tickCount = 0;
   private _isRunning = false;
 
+  // Optional input manager attached by SceneLoader
+  public inputManager?: unknown;
+  public inputCleanup?: () => void;
+
   private constructor(
     game: GameManager,
     systems: GameSystem[],
@@ -153,6 +157,20 @@ export class GameRuntime {
       config,
       saveData.tickCount || 0
     );
+  }
+
+  /**
+   * Add a system to the runtime.
+   *
+   * The system will be:
+   * 1. Added to the persistent systems list (restored on scene transition)
+   * 2. Registered with the current game loop immediately
+   *
+   * @param system - Game system to add
+   */
+  public addSystem(system: GameSystem): void {
+    this.systems.push(system);
+    this.gameLoop.addSystem(system);
   }
 
   /**

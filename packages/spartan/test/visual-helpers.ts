@@ -10,7 +10,6 @@ export interface AssertionResult {
   error?: string;
 }
 
-
 export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
@@ -47,21 +46,27 @@ export function visual(
 
   // Register in global array (for both browser and Node.js)
   if (typeof globalThis !== 'undefined') {
-    const global = globalThis as { visualTests?: Array<{ name: string; definition: VisualTestDefinition }> };
+    const global = globalThis as {
+      visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
+    };
     global.visualTests = global.visualTests || [];
     global.visualTests.push({ name, definition: normalized });
   }
 
   // Also register in window if in browser
   if (typeof window !== 'undefined') {
-    const win = window as { visualTests?: Array<{ name: string; definition: VisualTestDefinition }> };
+    const win = window as {
+      visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
+    };
     win.visualTests = win.visualTests || [];
     win.visualTests.push({ name, definition: normalized });
   }
 
   // Only register as Vitest test if vitest globals are available
   if (typeof (globalThis as { it?: unknown }).it === 'function') {
-    const it = (globalThis as { it: (name: string, fn: () => Promise<void>) => void }).it;
+    const it = (
+      globalThis as { it: (name: string, fn: () => Promise<void>) => void }
+    ).it;
     try {
       it(name, async () => {
         const grid = new LinkedGrid(20, 20);
@@ -119,7 +124,8 @@ export function visual(
         await normalized.act(ctx);
         if (normalized.assert) await normalized.assert(ctx);
       });
-    } catch (e) {
+    } catch (err) {
+      console.debug('Error registering visual test:', err);
       // Silently ignore if not in a proper test context
     }
   }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { LinkedGrid } from '../core/grid/index';
 import { SparseEntityStore } from '../core/entity-store';
 import { SpatialSystem } from '../core/spatial-system';
-import { GameLayers } from "../config/layers.config";
+import { GameLayers } from '../config/layers.config';
 
 describe('Transaction Consistency', () => {
   it('defers all operations until commit', () => {
@@ -201,7 +201,7 @@ describe('Transaction Consistency', () => {
     // Stage more operations
     spatial.move(id1, 6, 6);
     spatial.removeAt(6, 5, GameLayers.ACTORS);
-    const id3 = spatial.spawn('item', 7, 7, GameLayers.COLLECTIBLES);
+    spatial.spawn('item', 7, 7, GameLayers.COLLECTIBLES);
 
     // Check pending operations
     const pending = spatial.getPendingOps();
@@ -227,7 +227,7 @@ describe('Transaction Consistency', () => {
 
     spatial.move(id1, 6, 6);
     spatial.removeAt(5, 5, GameLayers.ACTORS);
-    const id2 = spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
+    spatial.spawn('enemy', 7, 7, GameLayers.ACTORS);
 
     // Verify operations are staged
     expect(spatial.getPendingOps().length).toBeGreaterThan(0);

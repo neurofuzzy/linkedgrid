@@ -1,151 +1,18 @@
 import { LinkedCell, LinkedGrid } from './grid';
 import { SparseEntityStore } from './entity-store';
-import type { EntityData, Layer } from './types';
+import type { EntityData, Layer, PendingOperation } from './types';
 import { GameLayers, CellMasks } from '../config/layers.config';
 
 /**
  * SpatialSystem - Spatial operations for the Spartan framework.
- *
- * Architecture B: Cell-centric operations where cells are the primary
- * storage for entity positions via cell.values[layer].
- *
- * Core principles:
- * - Entities occupy one cell at a time (Rule 1)
- * - Entities occupy a layer on a cell (Rule 2)
- * - Check destination before moving (Rule 3)
- * - Multiple entities per cell via different layers (Rule 4)
- * - Spatial queries are first-class (Rule 5)
- * - Clean up old cell on move (Rule 6)
- * - Overlap detection, not collision (Rule 7)
- *
- * Movement system:
- * - Uses two-phase commit for atomic movement resolution
- * - Call move() to record movement intents
- * - Call commit() to execute all pending moves
- * - Allows adjacent entities to move together without blocking
- *
- * @example
- * ```typescript
- * const grid = new LinkedGrid(20, 20);
- * const store = new SparseEntityStore();
- * const spatial = new SpatialSystem(grid, store);
- *
- * // Spawn player at (10, 10) on layer 1
- * const playerId = spatial.spawn('player', 10, 10, 1, { hp: 100 });
- *
- * // Record movement intent and execute
- * spatial.move(playerId, 11, 10);
- * spatial.commit();
- *
- * // Query entities in radius
- * const nearby = spatial.getEntityIdsInRadius(11, 10, 3);
- * ```
- *
- * @example
- * ```typescript
- * // Convoy movement - adjacent entities move together
- * const id1 = spatial.spawn('unit', 5, 5, 1);
- * const id2 = spatial.spawn('unit', 6, 5, 1);
- * const id3 = spatial.spawn('unit', 7, 5, 1);
- *
- * // All units move right simultaneously
- * spatial.move(id1, 6, 5);
- * spatial.move(id2, 7, 5);
- * spatial.move(id3, 8, 5);
- * spatial.commit(); // All three move successfully
- * ```
+...
  */
 /**
  * =============================================================================
  * INTENT LIFECYCLE - CRITICAL DEVELOPER GUIDE
  * =============================================================================
- *
- * SpatialSystem uses a TWO-PHASE operation model. Understanding this is
- * critical for avoiding bugs related to state visibility and timing.
- *
- * PHASE 1 - INTENT STAGING (during system updates):
- *   spawn(type, x, y, layer, props)  → Intent queued, entity NOT on grid yet
- *   move(id, x, y)                   → Intent queued, entity still at old position
- *   remove(id)                       → Intent queued, entity still on grid
- *   removeAt(x, y, layer)            → Intent queued, entity still on grid
- *
- * PHASE 2 - COMMIT (at end of game loop tick):
- *   - All intents validated (bounds, collision, etc.)
- *   - All intents applied atomically to grid
- *   - State queries NOW see new state
- *
- * IMPORTANT: Same-tick queries see PRE-COMMIT state!
- *
- * Example - Ash spawning after fire removal:
- * ```typescript
- * // Tick 3: Fire expires
- * spatial.remove(fireId);           // Intent staged, fire still on grid
- * const check = spatial.getEntityIdAt(5, 5, FLOOR); // Returns fireId!
- * spatial.commit();                 // Fire removed from grid
- *
- * // Tick 4: Spawn ash
- * spatial.spawn('ash', 5, 5, FLOOR, {}); // Intent staged
- * const check2 = spatial.getEntityIdAt(5, 5, FLOOR); // undefined! (pre-commit)
- * spatial.commit();                 // Ash added to grid
- *
- * // Tick 5: Ash visible
- * const check3 = spatial.getEntityIdAt(5, 5, FLOOR); // Returns ashId
- * ```
- *
- * PATTERN: Deferred operations for replacements
- * ```typescript
- * // Use queues for next-tick operations
- * class MySystem {
- *   private spawnQueue: Array<{type: string, x: number, y: number}> = [];
- *
- *   update(context) {
- *     // Phase 0: Spawn queued items from PREVIOUS tick
- *     for (const item of this.spawnQueue) {
- *       context.spatial.spawn(item.type, item.x, item.y, ...);
- *     }
- *     this.spawnQueue = []; // Clear immediately after use
- *
- *     // ... system logic ...
- *
- *     // Phase N: Queue items for NEXT tick
- *     if (shouldSpawn) {
- *       this.spawnQueue.push({type: 'ash', x, y});
- *     }
- *   }
- * }
- * ```
- *
- * REACTIVE SYSTEMS: Use getPendingOps() to see staged intents
- * ```typescript
- * // Example: Door system reacts to player movement intents
- * const pendingOps = spatial.getPendingOps();
- * for (const op of pendingOps) {
- *   if (op.type === 'move' && op.entityId === playerId) {
- *     // Check destination and unlock door BEFORE commit
- *   }
- * }
- * ```
- *
- * =============================================================================
+...
  */
-
-/**
- * Pending operation types for unified transaction model.
- */
-interface PendingOperation {
-  type: 'move' | 'remove' | 'spawn';
-  entityId?: number;
-  fromX?: number;
-  fromY?: number;
-  toX?: number;
-  toY?: number;
-  x?: number;
-  y?: number;
-  layer: Layer;
-  blockFn?: (cell: LinkedCell | null) => boolean;
-  typeStr?: string;
-  props?: object;
-}
 
 export class SpatialSystem {
   /** Pending operations to be resolved on commit */
