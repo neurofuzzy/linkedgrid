@@ -1,5 +1,10 @@
 import React from 'react';
 import type { Scene } from '../packages/spartan/core/scene';
+import { GameRuntime } from '../packages/spartan/core/game-runtime';
+import { EntityData } from '../packages/spartan/core/types';
+import { InputManager } from '../packages/spartan/input/input-manager';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
+import { hasColor, hasDensity, hasLiquid, hasHealth } from '../packages/spartan/traits/trait-guards';
 
 interface Props {
   scene: Scene | null;
@@ -110,11 +115,15 @@ export function GridRenderer({ scene }: Props) {
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
-        let color = (entityData as any)?.color;
+        
+        let color: string | undefined;
+        if (entityData && hasColor(entityData)) {
+          color = entityData.color;
+        }
 
         // Apply density opacity if present (e.g., poison gas)
-        if (color && (entityData as any).density !== undefined) {
-          const density = (entityData as any).density;
+        if (color && entityData && hasDensity(entityData)) {
+          const density = entityData.density;
           // Map 0-100 density to 0.1-1.0 opacity
           const opacity = Math.max(0.1, Math.min(1.0, density / 100));
           // Convert hex to rgba to apply opacity
@@ -126,11 +135,12 @@ export function GridRenderer({ scene }: Props) {
           }
         } else if (
           color &&
-          (entityData as any).depth !== undefined &&
-          (entityData as any).type !== 'poison-gas'
+          entityData &&
+          hasLiquid(entityData) &&
+          entityData.type !== 'poison-gas'
         ) {
           // Apply liquid depth opacity
-          const depth = (entityData as any).depth;
+          const depth = entityData.depth;
           // Map depth 1 -> 0.4, depth 10 -> 1.0
           const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
 
@@ -191,7 +201,7 @@ export function GridRenderer({ scene }: Props) {
  * ```
  */
 interface HUDProps {
-  runtime: any; // GameRuntime
+  runtime: GameRuntime;
 }
 
 export function HUD({ runtime }: HUDProps) {
@@ -204,8 +214,14 @@ export function HUD({ runtime }: HUDProps) {
   const playerData = playerId ? scene.spatial.getEntityData(playerId) : null;
 
   // Get HP (default to 0/0 if no player or no health)
-  const hp = (playerData as any)?.hp ?? 0;
-  const maxHp = (playerData as any)?.maxHp ?? 0;
+  let hp = 0;
+  let maxHp = 0;
+  
+  if (playerData && hasHealth(playerData)) {
+    hp = playerData.hp;
+    maxHp = playerData.maxHp;
+  }
+  
   const hpPercent = maxHp > 0 ? (hp / maxHp) * 100 : 0;
 
   // Get Score and Lives from game state (placeholder for now)
@@ -349,9 +365,9 @@ export function HUD({ runtime }: HUDProps) {
  * ```
  */
 interface DebugPanelProps {
-  runtime: any; // GameRuntime
-  inputManager?: any; // InputManager
-  playerInputSystem?: any; // PlayerInputSystem
+  runtime: GameRuntime;
+  inputManager?: InputManager;
+  playerInputSystem?: PlayerInputSystem;
 }
 
 export function DebugPanel({
@@ -409,7 +425,7 @@ export function DebugPanel({
         <p>
           <span className="label">Input Mode:</span>{' '}
           <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
-            {(inputManager as any).config.directionMode}
+            {inputManager.config.directionMode}
           </span>{' '}
           <span style={{ color: '#808080', fontSize: '11px' }}>
             (press K to toggle)
