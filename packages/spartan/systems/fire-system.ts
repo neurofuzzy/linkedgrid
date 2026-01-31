@@ -77,21 +77,24 @@ export class FireSystem implements GameSystem {
       if (!entityData || !hasTemperature(entityData)) continue;
       if (this.burningEntities.has(entityId)) continue; // Already burning
       
-      // Check if ignited
-      if (entityData.temperature >= entityData.flamePoint && entityData.flammable) {
-        // Entity is now on fire
+      // Check if ignited (or just hot enough to radiate)
+      // We treat anything > flamePoint as "active heat source"
+      if (entityData.temperature >= entityData.flamePoint) {
+        // Entity is now on fire (or radiating heat)
         this.burningEntities.set(entityId, {
           lastDamageTick: this.currentTick,
           visualEffectId: undefined,
         });
         
-        // Spawn visual effect
-        const visualId = context.spatial.spawn('fire-visual', pos.x, pos.y, GameLayers.EPHEMERALS, {
-          color: '#ff4500',
-        });
-        const burnState = this.burningEntities.get(entityId);
-        if (burnState) {
-          burnState.visualEffectId = visualId;
+        // Only spawn visual effect if flammable (otherwise it's just hot, or has its own visual like torch)
+        if (entityData.flammable) {
+          const visualId = context.spatial.spawn('fire-visual', pos.x, pos.y, GameLayers.EPHEMERALS, {
+            color: '#ff4500',
+          });
+          const burnState = this.burningEntities.get(entityId);
+          if (burnState) {
+            burnState.visualEffectId = visualId;
+          }
         }
       }
     }
@@ -153,6 +156,8 @@ export class FireSystem implements GameSystem {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasHealth(entityData)) continue;
       
+      if (!entityData.flammable) continue; // Don't damage non-flammable sources
+
       // Check cadence
       const ticksSinceLastDamage = this.currentTick - burnState.lastDamageTick;
       if (ticksSinceLastDamage < this.FIRE_DAMAGE_CADENCE) continue;

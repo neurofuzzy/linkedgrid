@@ -47,6 +47,11 @@ const AVAILABLE_GAMES = [
     name: 'Liquid Simulation',
     path: '/dev/games/liquids.json',
   },
+  {
+    id: 'gasoline',
+    name: 'Gasoline & Fire',
+    path: '/dev/games/gasoline.json',
+  },
 ];
 
 /**

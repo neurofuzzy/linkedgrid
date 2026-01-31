@@ -223,6 +223,12 @@ export class LiquidSystem implements GameSystem {
         spawn.template.spreadLayer,
         {
           ...spawn.template,
+          // Copy flammability if present (important for oil/gasoline)
+          ...((spawn.template as any).flammable !== undefined && { 
+            flammable: (spawn.template as any).flammable,
+            flamePoint: (spawn.template as any).flamePoint,
+            temperature: (spawn.template as any).temperature 
+          }),
           depth: spawn.amount,
           lastSpreadTick: this.currentTick,
         }
