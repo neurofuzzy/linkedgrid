@@ -23,7 +23,7 @@ import {
   hasTeleportTarget,
   hasPropagation,
   hasTemperature,
-} from '../packages/spartan/entities/trait-guards';
+} from '../packages/spartan/traits/trait-guards';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
 

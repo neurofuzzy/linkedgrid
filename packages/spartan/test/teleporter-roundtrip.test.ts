@@ -3,7 +3,7 @@ import { GameRuntime } from '../core/game-runtime';
 import { TeleporterSystem } from '../systems/teleporter-system';
 import { GameLayers } from "../core/types";
 import { spawnPlayer, spawnTeleporter } from '../entities/spawn-helpers';
-import { isPlayer, isTeleporter } from '../entities/trait-guards';
+import { isPlayer, isTeleporter } from '../traits/trait-guards';
 
 describe('TeleporterSystem round-trip', () => {
   it('allows player to teleport back after stepping off destination pad', () => {

@@ -1,7 +1,7 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from "../core/types";
 import { spawnPlayer, spawnEnemy, spawnItem } from '../entities/spawn-helpers';
-import { isPlayer, isEnemy, isItem, hasHealth } from '../entities/trait-guards';
+import { isPlayer, isEnemy, isItem, hasHealth } from '../traits/trait-guards';
 
 visual('player moves right 3 times', {
   arrange: ({ spatial }) => {

@@ -375,7 +375,7 @@ class MySystem implements GameSystem {
 
 1. Define trait in `entities/traits.ts` (if needed)
 2. Define type in `entities/entity-types.ts`
-3. Add guard in `entities/trait-guards.ts`
+3. Add guard in `traits/trait-guards.ts`
 4. Add spawn helper in `entities/spawn-helpers.ts`
 5. Use in systems with type guards
 
@@ -591,7 +591,7 @@ When modifying code:
 
 **Entities:**
 - `packages/spartan/entities/traits.ts` - Trait interfaces
-- `packages/spartan/entities/trait-guards.ts` - Type guards
+- `packages/spartan/traits/trait-guards.ts` - Type guards
 
 **Systems:**
 - `packages/spartan/systems/player-input-system.ts` - Input translation

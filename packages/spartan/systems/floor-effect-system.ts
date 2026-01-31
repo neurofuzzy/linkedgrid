@@ -2,7 +2,7 @@ import type { GameSystem, GameContext, Position } from '../core/types';
 import type { EntityData } from '../entities/entity-types';
 import type { GameManager } from '../core/game-manager';
 import { GameLayers } from "../core/types";
-import { hasFloorEffect, hasHealth, hasDensity } from '../entities/trait-guards';
+import { hasFloorEffect, hasHealth, hasDensity } from '../traits/trait-guards';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.

@@ -19,7 +19,7 @@ export { EntityData };
  * See:
  * - entities/traits.ts - Trait interfaces (HasHealth, CanDealDamage, etc.)
  * - entities/entity-types.ts - Entity archetypes (PlayerData, EnemyData, etc.)
- * - entities/trait-guards.ts - Type guards for traits and entities
+ * - traits/trait-guards.ts - Type guards for traits and entities
  * - entities/spawn-helpers.ts - Type-safe spawn functions
  * - entities/README.md - Full documentation on the trait system
  */

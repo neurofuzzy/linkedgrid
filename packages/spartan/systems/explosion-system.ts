@@ -1,7 +1,7 @@
 import type { GameSystem, GameContext } from '../core/types';
 import type { EntityData } from '../entities/entity-types';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
-import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../entities/trait-guards';
+import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../traits/trait-guards';
 import { GameLayers } from "../core/types";
 
 /**

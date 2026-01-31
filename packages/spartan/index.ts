@@ -83,7 +83,7 @@ export type {
   HasTemperature,
   HasExplosion,
   HasDamageable,
-} from './entities/traits';
+} from './traits/traits';
 
 // Entity archetypes (example patterns)
 export type {
@@ -154,7 +154,7 @@ export {
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
-} from './entities/trait-guards';
+} from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
 export {

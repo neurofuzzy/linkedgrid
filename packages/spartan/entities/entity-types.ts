@@ -56,7 +56,7 @@ import type {
   HasDamageable,
   HasDensity,
   HasLiquid,
-} from './traits';
+} from '../traits/traits';
 
 /**
  * PlayerData - Player-controlled entity.

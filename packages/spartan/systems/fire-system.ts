@@ -1,5 +1,5 @@
 import type { GameSystem, GameContext } from '../core/types';
-import { hasTemperature, hasHealth, hasExplosion } from '../entities/trait-guards';
+import { hasTemperature, hasHealth, hasExplosion } from '../traits/trait-guards';
 import { GameLayers } from "../core/types";
 import { Direction } from '../core/grid/direction';
 

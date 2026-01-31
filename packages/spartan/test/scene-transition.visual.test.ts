@@ -6,7 +6,7 @@ import {
   spawnTeleporter,
   spawnItem,
 } from '../entities/spawn-helpers';
-import { isPlayer } from '../entities/trait-guards';
+import { isPlayer } from '../traits/trait-guards';
 
 visual('player teleports between rooms', {
   arrange: (ctx) => {

@@ -1,7 +1,7 @@
 import type { GameSystem, GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import { GameLayers } from "../core/types";
-import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards';
+import { isPlayer, isDoor, hasInventory } from '../traits/trait-guards';
 
 /**
  * DoorSystem - Handles door unlocking with keys.

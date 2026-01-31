@@ -2,7 +2,7 @@ import type { GameSystem, GameContext } from '../core/types';
 import type { TeleporterData } from '../entities/entity-types';
 import type { GameManager } from '../core/game-manager';
 import type { SpatialSystem } from '../spatial-system';
-import { isPlayer, isTeleporter } from '../entities/trait-guards';
+import { isPlayer, isTeleporter } from '../traits/trait-guards';
 
 type TeleporterState = 'ready' | 'inactive';
 

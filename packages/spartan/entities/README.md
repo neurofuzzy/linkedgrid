@@ -118,7 +118,7 @@ const enemyId = spawnEnemy(spatial, 10, 10, {
 ### Pattern 2: Generic System Logic (Trait-Based)
 
 ```typescript
-import { hasHealth, canDealDamage } from './entities/trait-guards';
+import { hasHealth, canDealDamage } from './traits/trait-guards';
 
 class DamageSystem implements GameSystem {
   update(context: GameContext): void {
@@ -140,7 +140,7 @@ class DamageSystem implements GameSystem {
 ### Pattern 3: Specific System Logic (Type-Based)
 
 ```typescript
-import { isPlayer, isTeleporter } from './entities/trait-guards';
+import { isPlayer, isTeleporter } from './traits/trait-guards';
 
 class TeleporterSystem implements GameSystem {
   update(context: GameContext): void {
@@ -368,7 +368,7 @@ if (isPlayer(entity)) {
 ### Example 1: Health System (Generic)
 
 ```typescript
-import { hasHealth } from './entities/trait-guards';
+import { hasHealth } from './traits/trait-guards';
 
 class HealthSystem implements GameSystem {
   update(context: GameContext): void {
@@ -389,7 +389,7 @@ class HealthSystem implements GameSystem {
 ### Example 2: Damage System (Trait Combination)
 
 ```typescript
-import { hasHealth, canDealDamage } from './entities/trait-guards';
+import { hasHealth, canDealDamage } from './traits/trait-guards';
 
 class DamageSystem implements GameSystem {
   update(context: GameContext): void {
@@ -417,7 +417,7 @@ class DamageSystem implements GameSystem {
 ### Example 3: Player-Specific System (Type-Based)
 
 ```typescript
-import { isPlayer } from './entities/trait-guards';
+import { isPlayer } from './traits/trait-guards';
 
 class PlayerInputSystem implements GameSystem {
   update(context: GameContext): void {

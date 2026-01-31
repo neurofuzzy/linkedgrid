@@ -92,7 +92,7 @@ Reduced linting issues from **133 problems (2 errors, 131 warnings)** to **94 pr
 ### Core Systems
 1. `packages/spartan/systems/floor-effect-system.ts`
 2. `packages/spartan/systems/propagation-system.ts`
-3. `packages/spartan/entities/trait-guards.ts`
+3. `packages/spartan/traits/trait-guards.ts`
 4. `packages/spartan/game-manager.ts`
 5. `packages/spartan/game-runtime.ts`
 6. `packages/spartan/spatial-system.ts`

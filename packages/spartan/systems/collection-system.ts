@@ -1,6 +1,6 @@
 import type { GameSystem, GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';
-import { isPlayer, isCollectible, hasInventory } from '../entities/trait-guards';
+import { isPlayer, isCollectible, hasInventory } from '../traits/trait-guards';
 
 /**
  * CollectionSystem - Handles picking up collectible items.
