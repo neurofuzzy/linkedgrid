@@ -112,30 +112,34 @@ export function GridRenderer({ scene }: Props) {
 
         // Apply density opacity if present (e.g., poison gas)
         if (color && (entityData as any).density !== undefined) {
-           const density = (entityData as any).density;
-           // Map 0-100 density to 0.1-1.0 opacity
-           const opacity = Math.max(0.1, Math.min(1.0, density / 100));
-           // Convert hex to rgba to apply opacity
-           if (color.startsWith('#')) {
-             const r = parseInt(color.slice(1, 3), 16);
-             const g = parseInt(color.slice(3, 5), 16);
-             const b = parseInt(color.slice(5, 7), 16);
-             color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
-           }
+          const density = (entityData as any).density;
+          // Map 0-100 density to 0.1-1.0 opacity
+          const opacity = Math.max(0.1, Math.min(1.0, density / 100));
+          // Convert hex to rgba to apply opacity
+          if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
         }
-        
+
         // Apply liquid depth opacity
-        if (color && (entityData as any).depth !== undefined && (entityData as any).type !== 'poison-gas') {
-           const depth = (entityData as any).depth;
-           // Map depth 1 -> 0.4, depth 10 -> 1.0
-           const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
-           
-           if (color.startsWith('#')) {
-             const r = parseInt(color.slice(1, 3), 16);
-             const g = parseInt(color.slice(3, 5), 16);
-             const b = parseInt(color.slice(5, 7), 16);
-             color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
-           }
+        if (
+          color &&
+          (entityData as any).depth !== undefined &&
+          (entityData as any).type !== 'poison-gas'
+        ) {
+          const depth = (entityData as any).depth;
+          // Map depth 1 -> 0.4, depth 10 -> 1.0
+          const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
+
+          if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
         }
 
         row.push({ char, className, color });
@@ -209,95 +213,117 @@ export function HUD({ runtime }: HUDProps) {
   const lives = runtime.game.gameState.lives ?? 3;
 
   // HP bar color based on percentage
-  let hpColor = '#4ec9b0'; // Green
+  let hpColor = '#33cccc'; // Desaturated Cyan (Healthy)
   if (hpPercent < 25) {
-    hpColor = '#f48771'; // Red
+    hpColor = '#cc3366'; // Desaturated Neon Red (Critical)
   } else if (hpPercent < 50) {
-    hpColor = '#ce9178'; // Orange
+    hpColor = '#cc8833'; // Desaturated Orange (Warning)
   }
 
   return (
-    <div className="hud" style={{
-      marginTop: '12px',
-      padding: '16px',
-      backgroundColor: '#1e1e1e',
-      border: '1px solid #3c3c3c',
-      borderRadius: '4px',
-      fontFamily: 'Consolas, Monaco, monospace',
-      fontSize: '14px',
-    }}>
+    <div
+      className="hud"
+      style={{
+        marginTop: '12px',
+        padding: '16px',
+        backgroundColor: '#0f0f1a',
+        border: '1px solid #222',
+        borderLeft: '4px solid #333344',
+        borderRadius: '0',
+        fontFamily: 'Sixtyfour, monospace',
+        fontSize: '12px',
+      }}
+    >
       <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
         {/* HP Display */}
         <div style={{ flex: '1', minWidth: '200px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            marginBottom: '6px',
-            fontSize: '12px',
-            color: '#808080'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '6px',
+              fontSize: '10px',
+              color: '#33b5cc',
+            }}
+          >
             <span>HP</span>
-            <span>{hp} / {maxHp}</span>
+            <span>
+              {hp} / {maxHp}
+            </span>
           </div>
-          <div style={{
-            width: '100%',
-            height: '20px',
-            backgroundColor: '#2d2d2d',
-            border: '1px solid #3c3c3c',
-            borderRadius: '2px',
-            overflow: 'hidden',
-            position: 'relative',
-          }}>
-            <div style={{
-              width: `${hpPercent}%`,
-              height: '100%',
-              backgroundColor: hpColor,
-              transition: 'width 0.3s ease, background-color 0.3s ease',
-            }} />
+          <div
+            style={{
+              width: '100%',
+              height: '16px',
+              backgroundColor: '#1a1a2a',
+              border: '1px solid #333',
+              borderRadius: '0',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                width: `${hpPercent}%`,
+                height: '100%',
+                backgroundColor: hpColor,
+                transition: 'width 0.3s ease, background-color 0.3s ease',
+              }}
+            />
           </div>
         </div>
 
         {/* Score Display */}
-        <div style={{ 
-          minWidth: '120px',
-          textAlign: 'center',
-        }}>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#808080',
-            marginBottom: '4px'
-          }}>
+        <div
+          style={{
+            minWidth: '120px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '10px',
+              color: '#33b5cc',
+              marginBottom: '4px',
+            }}
+          >
             SCORE
           </div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 'bold',
-            color: '#dcdcaa',
-          }}>
+          <div
+            style={{
+              fontSize: '16px',
+              color: '#cccc33',
+            }}
+          >
             {score.toLocaleString()}
           </div>
         </div>
 
         {/* Lives Display */}
-        <div style={{ 
-          minWidth: '100px',
-          textAlign: 'center',
-        }}>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#808080',
-            marginBottom: '4px'
-          }}>
+        <div
+          style={{
+            minWidth: '100px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '10px',
+              color: '#33b5cc',
+              marginBottom: '4px',
+            }}
+          >
             LIVES
           </div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 'bold',
-            color: '#f48771',
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '4px',
-          }}>
+          <div
+            style={{
+              fontSize: '16px',
+              color: '#cc3366',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '4px',
+            }}
+          >
             {Array.from({ length: lives }).map((_, i) => (
               <span key={i}>♥</span>
             ))}
