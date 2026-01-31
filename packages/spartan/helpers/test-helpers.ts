@@ -2,17 +2,28 @@ import { GameLoop } from '../core/game-loop';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 
 /**
+ * Advance game loop for N ticks.
+ *
+ * Helper to advance multiple ticks since GameLoop.tick() advances one tick.
+ */
+function tickN(gameLoop: GameLoop, n: number): void {
+  for (let i = 0; i < n; i++) {
+    gameLoop.tick();
+  }
+}
+
+/**
  * Advance game loop until fire spreads (based on configured tick rate).
  */
 export function advanceUntilFireSpreads(gameLoop: GameLoop): void {
-  gameLoop.tickN(SYSTEM_CONFIG.Fire.tickRate);
+  tickN(gameLoop, SYSTEM_CONFIG.Fire.tickRate);
 }
 
 /**
  * Advance game loop until liquid flows.
  */
 export function advanceUntilLiquidFlows(gameLoop: GameLoop): void {
-  gameLoop.tickN(SYSTEM_CONFIG.Liquid.tickRate);
+  tickN(gameLoop, SYSTEM_CONFIG.Liquid.tickRate);
 }
 
 /**
@@ -20,5 +31,5 @@ export function advanceUntilLiquidFlows(gameLoop: GameLoop): void {
  */
 export function advanceSpreadCycles(gameLoop: GameLoop, cycles: number = 1): void {
   const rate = SYSTEM_CONFIG.Fire.tickRate;
-  gameLoop.tickN(rate * cycles);
+  tickN(gameLoop, rate * cycles);
 }

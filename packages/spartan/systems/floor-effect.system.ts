@@ -1,10 +1,10 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, Position } from '../core/types';
-import type { EntityData } from '../entities/entity.types';
+import type { BaseEntityData } from '../entities/entity.types';
 import type { GameManager } from '../core/game-manager';
 import { GameLayers } from "../config/layers.config";
-import { hasFloorEffect, hasHealth, hasDensity } from '../traits/trait-guards';
+import { hasFloorEffect, hasHealth } from '../traits/trait-guards';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.
@@ -16,24 +16,27 @@ interface EntityTimingState {
 }
 
 /**
- * Entity with health properties for floor effects
+ * Entity with health properties for floor effects.
+ * Uses intersection with BaseEntityData for proper typing.
  */
-interface EntityWithHealth extends EntityData {
+type EntityWithHealth = BaseEntityData & {
   hp: number;
   maxHp: number;
-}
+};
 
 /**
- * Floor effect data with trigger configuration
+ * Floor effect data with trigger configuration.
+ * Uses intersection with BaseEntityData for proper typing.
  */
-interface FloorEffectData extends EntityData {
+type FloorEffectData = BaseEntityData & {
   effectType?: 'damage' | 'heal' | 'slide' | 'slow';
   triggerMode?: 'on-entry' | 'continuous';
   damage?: number;
   healRate?: number;
   cadence?: number;
   cooldown?: number;
-}
+  density?: number;
+};
 
 /**
  * FloorEffectSystem - Handles floor hazards and effects.
@@ -361,7 +364,7 @@ export class FloorEffectSystem extends BaseTickedSystem {
 
     // Calculate effective damage (scale by density if present)
     let effectiveDamage = floorData.damage;
-    if (hasDensity(floorData)) {
+    if (floorData.density !== undefined && floorData.density > 0) {
       const densityMultiplier = Math.max(0.1, floorData.density / 100);
       effectiveDamage *= densityMultiplier;
     }

@@ -64,11 +64,11 @@ export class SparseEntityStore {
    */
   createId(type: string, props?: Record<string, unknown>): number {
     const id = this.idGenerator ? this.idGenerator() : this.nextId++;
-    const entityData: EntityData = {
+    const entityData = {
       id,
       type,
       ...props,
-    };
+    } as EntityData;
     this.data.set(id, entityData);
     return id;
   }
@@ -115,7 +115,7 @@ export class SparseEntityStore {
     if (!existing) {
       throw new Error(`Entity ${id} not found`);
     }
-    this.data.set(id, { ...existing, ...data });
+    this.data.set(id, { ...existing, ...data } as EntityData);
   }
 
   /**
@@ -141,11 +141,11 @@ export class SparseEntityStore {
   ): void {
     if (this.data.has(id)) return;
 
-    const entityData: EntityData = {
+    const entityData = {
       id,
       type,
       ...props,
-    };
+    } as EntityData;
 
     this.data.set(id, entityData);
 

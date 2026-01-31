@@ -1,7 +1,7 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, Position } from '../core/types';
-import type { EntityData } from '../entities/entity.types';
+import type { BaseEntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation } from '../traits/trait-guards';
@@ -17,7 +17,11 @@ interface PropagatedEntity {
   spawnTick: number;
 }
 
-interface ChainConfig extends EntityData {
+/**
+ * Chain reaction propagation configuration.
+ * Uses intersection with BaseEntityData for proper typing.
+ */
+type ChainConfig = BaseEntityData & {
   propagationType: 'chain';
   spreadRate: number;
   spreadLayer: number;
@@ -25,7 +29,7 @@ interface ChainConfig extends EntityData {
   maxDistance?: number;
   lifetime?: number;
   blockedByLayers?: number[];
-}
+};
 
 /**
  * ChainReactionSystem - Handles deterministic cascading effects.
@@ -36,7 +40,7 @@ interface ChainConfig extends EntityData {
 export class ChainReactionSystem extends BaseTickedSystem {
   private spreadState = new Map<number, ChainState>();
   private propagatedEntities = new Map<number, PropagatedEntity>();
-  
+
   protected tickRate = SYSTEM_CONFIG.ChainReaction.tickRate;
 
   protected onTick(context: GameContext): void {
@@ -106,7 +110,7 @@ export class ChainReactionSystem extends BaseTickedSystem {
             lastSpreadTick: this.currentTick,
             spawnTick: this.currentTick
           });
-          
+
           this.propagatedEntities.set(newId, {
             sourceId: sourceId,
             distance: (this.propagatedEntities.get(sourceId)?.distance || 0) + 1,
@@ -114,7 +118,7 @@ export class ChainReactionSystem extends BaseTickedSystem {
           });
         }
       }
-      
+
       state.lastSpreadTick = this.currentTick;
     }
   }
@@ -130,7 +134,7 @@ export class ChainReactionSystem extends BaseTickedSystem {
       if (entityData.lifetime) {
         const state = this.spreadState.get(entityId);
         const spawnTick = state?.spawnTick || this.propagatedEntities.get(entityId)?.spawnTick || 0;
-        
+
         if (this.currentTick - spawnTick >= entityData.lifetime) {
           toRemove.push(entityId);
         }
@@ -146,7 +150,7 @@ export class ChainReactionSystem extends BaseTickedSystem {
 
   private canSpreadTo(cell: LinkedCell, config: ChainConfig, context: GameContext): boolean {
     if (context.spatial.isBlocked(cell)) return false;
-    
+
     if (config.blockedByLayers) {
       for (const layer of config.blockedByLayers) {
         if (cell.getValue(layer) !== undefined) return false;

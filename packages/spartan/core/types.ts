@@ -105,10 +105,8 @@ export interface GameContext {
     getEntityPosition: (
       entityId: number
     ) => { x: number; y: number; layer: number } | null;
-    getEntitiesInCell: (x: number, y: number) => number[];
-    getEntitiesInLayer: (layer: number) => number[];
-    commitPendingActions: () => void;
-    commit: () => void; // Alias for commitPendingActions
+    getEntityIdsInCell: (x: number, y: number) => number[];
+    commit: () => void;
     getEntityData: (entityId: number) => EntityData | undefined;
     getEntityIdAt: (x: number, y: number, layer: number) => number | undefined;
     getAllPositions: () => IterableIterator<
@@ -118,6 +116,7 @@ export interface GameContext {
     isBlocked: (cell: LinkedCell) => boolean;
     isAlive: (entityId: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
+    cancelMove: (entityId: number) => void;
   };
   sceneManager?: {
     getScene: (id: string) => unknown;

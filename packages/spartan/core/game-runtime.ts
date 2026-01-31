@@ -264,13 +264,13 @@ export class GameRuntime {
    * localStorage.setItem('save-slot-1', JSON.stringify(saveData));
    * ```
    */
-  save(): SaveData & { tickCount: number; tickRate: number } {
+  save(): SaveData {
     const wasRunning = this._isRunning;
     if (wasRunning) {
       this.stop();
     }
 
-    const saveData = {
+    const saveData: SaveData = {
       ...this.game.save(),
       tickCount: this._tickCount,
       tickRate: 1000 / this.tickInterval,

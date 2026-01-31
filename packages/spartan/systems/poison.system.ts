@@ -1,7 +1,7 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, Position } from '../core/types';
-import type { EntityData } from '../entities/entity.types';
+import type { BaseEntityData, EntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation, hasDensity, hasHealth, hasFloorEffect } from '../traits/trait-guards';
@@ -31,14 +31,19 @@ interface PropagatedEntity {
 
 /**
  * Poison propagation configuration from entity data.
+ * Uses intersection with BaseEntityData for proper typing.
  */
-interface PoisonConfig extends EntityData {
+type PoisonConfig = BaseEntityData & {
   propagationType?: string;
   spreadLayer: number;
   blockedByLayers?: number[];
   density: number;
   minDensity: number;
-}
+  spreadRate: number;
+  spreadType: string;
+  maxDistance?: number;
+  lifetime?: number;
+};
 
 /**
  * Poison status effect for entities.
@@ -87,8 +92,9 @@ export class PoisonSystem extends BaseTickedSystem {
    */
   protected onTick(context: GameContext): void {
     // If gameManager is not injected, try to get it from context
+    // Note: context.gameManager is a partial interface, cast to GameManager for compatibility
     if (!this.gameManager && context.gameManager) {
-      this.gameManager = context.gameManager;
+      this.gameManager = context.gameManager as unknown as GameManager;
     }
 
     // Phase 0: Process lingering poison statuses
@@ -204,17 +210,17 @@ export class PoisonSystem extends BaseTickedSystem {
 
       // Check relevant layers for poison gas
       const layersToCheck = [GameLayers.EPHEMERALS, GameLayers.FLOOR_EFFECTS];
-      
+
       for (const layer of layersToCheck) {
         const gasId = cell.getValue(layer);
         if (gasId === undefined) continue;
 
         const gasData = context.spatial.getEntityData(gasId);
-        if (!gasData || 
-            !hasPropagation(gasData) || 
-            gasData.propagationType !== 'gas' ||
-            !hasFloorEffect(gasData) ||
-            gasData.effectType !== 'damage') {
+        if (!gasData ||
+          !hasPropagation(gasData) ||
+          gasData.propagationType !== 'gas' ||
+          !hasFloorEffect(gasData) ||
+          gasData.effectType !== 'damage') {
           continue;
         }
 
@@ -224,12 +230,12 @@ export class PoisonSystem extends BaseTickedSystem {
         // For simplicity in this iteration, let's just apply damage every tick scaled by small amount, 
         // OR implement proper cadence tracking.
         // Given we are moving from FloorEffectSystem, we should support cadence.
-        
+
         // However, adding state tracking map to PoisonSystem is cleaner than polluting entity.
         // Let's implement simple per-tick damage for now, scaled by density.
         // "Continuous" usually implies per-tick or high frequency.
         // If the gas definition has `cadence`, we should respect it.
-        
+
         // Let's implement basic cadence tracking here.
         this.applyDamageWithCadence(entityId, entityData, gasData, context);
       }
@@ -240,22 +246,23 @@ export class PoisonSystem extends BaseTickedSystem {
   private damageTracking = new Map<number, number>();
 
   private applyDamageWithCadence(
-    victimId: number, 
-    victimData: EntityData, 
+    victimId: number,
+    victimData: EntityData,
     gasData: EntityData,
     context: GameContext
   ): void {
     if (!this.gameManager) return;
 
-    const cadence = gasData.cadence || 1;
+    // Use type-safe property access with defaults
+    const cadence = (typeof gasData.cadence === 'number' ? gasData.cadence : 1);
     const lastTick = this.damageTracking.get(victimId) || 0;
-    
+
     if (this.currentTick - lastTick < cadence) return;
 
-    // Calculate damage
-    let damage = gasData.damage || 0;
-    
-    // Scale by density
+    // Calculate damage with type-safe access
+    let damage = (typeof gasData.damage === 'number' ? gasData.damage : 0);
+
+    // Scale by density (gasData is already narrowed by hasDensity check in caller)
     if (hasDensity(gasData)) {
       const densityMultiplier = Math.max(0.1, gasData.density / 100);
       damage *= densityMultiplier;
@@ -263,20 +270,20 @@ export class PoisonSystem extends BaseTickedSystem {
 
     // Ensure integer damage, min 1
     if (damage > 0) {
-        damage = Math.max(1, Math.round(damage));
+      damage = Math.max(1, Math.round(damage));
     }
 
-    if (damage > 0) {
+    if (damage > 0 && hasHealth(victimData)) {
       const newHp = Math.max(0, victimData.hp - damage);
       this.gameManager.gameState.entityStore.setData(victimId, { hp: newHp });
       this.damageTracking.set(victimId, this.currentTick);
-      
+
       // Apply lingering poison status (lasts 12 ticks, dmg every 3)
       // This ensures poison persists even if entity moves out
       this.applyPoison(victimId, damage, 12, 3);
 
       if (newHp <= 0) {
-         context.spatial.remove(victimId);
+        context.spatial.remove(victimId);
       }
     }
   }
@@ -294,10 +301,10 @@ export class PoisonSystem extends BaseTickedSystem {
     // Check ALL entities with propagation trait for expiration/dissipation
     for (const [entityId] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
-      
+
       // Only process 'gas' propagation
       if (!entityData || !hasPropagation(entityData) || entityData.propagationType !== 'gas') continue;
-      
+
       // Check dissipation (density too low)
       if (hasDensity(entityData)) {
         if (entityData.density < entityData.minDensity) {
@@ -353,12 +360,12 @@ export class PoisonSystem extends BaseTickedSystem {
 
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
-      
+
       // Valid gas source?
-      if (!entityData || 
-          !hasPropagation(entityData) || 
-          entityData.propagationType !== 'gas' ||
-          !hasDensity(entityData)) {
+      if (!entityData ||
+        !hasPropagation(entityData) ||
+        entityData.propagationType !== 'gas' ||
+        !hasDensity(entityData)) {
         continue;
       }
 
@@ -407,7 +414,7 @@ export class PoisonSystem extends BaseTickedSystem {
   ): void {
     for (const [sourceId, pos] of sources) {
       const sourceData = context.spatial.getEntityData(sourceId);
-      
+
       // Guard checks (should pass from identifySpreadSources, but strict type check needed for TS)
       if (!sourceData || !hasPropagation(sourceData) || !hasDensity(sourceData)) continue;
 
@@ -455,7 +462,7 @@ export class PoisonSystem extends BaseTickedSystem {
       }
 
       // Apply changes
-      
+
       // 1. Update source density
       sourceData.density = newDensity;
 
@@ -463,7 +470,7 @@ export class PoisonSystem extends BaseTickedSystem {
       const rootSourceId = this.propagatedEntities.get(sourceId)?.sourceId ?? sourceId;
 
       for (const neighbor of availableNeighbors) {
-         const newEntityId = context.spatial.spawn(
+        const newEntityId = context.spatial.spawn(
           sourceData.spreadType,
           neighbor.x,
           neighbor.y,
@@ -477,11 +484,11 @@ export class PoisonSystem extends BaseTickedSystem {
             maxDistance: sourceData.maxDistance,
             lifetime: sourceData.lifetime,
             blockedByLayers: sourceData.blockedByLayers,
-            
+
             // Density traits
             density: newDensity, // Starts with split density
             minDensity: sourceData.minDensity,
-            
+
             // Effect traits
             ...(sourceData.effectType && {
               effectType: sourceData.effectType,
@@ -527,7 +534,7 @@ export class PoisonSystem extends BaseTickedSystem {
     if (config.blockedByLayers) {
       for (const layer of config.blockedByLayers) {
         if (cell.getValue(layer) !== undefined) {
-          return false; 
+          return false;
         }
       }
     }

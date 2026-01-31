@@ -111,7 +111,7 @@ export class Scene {
       x: number;
       y: number;
       values: (number | undefined)[];
-      masks: number[];
+      masks: boolean[];
       distances: number[];
     }> = [];
 
@@ -121,7 +121,7 @@ export class Scene {
         if (cell) {
           // Check if cell has any data
           const hasValues = cell.values.some((v) => v !== undefined);
-          const hasMasks = cell.masks.some((m) => m !== 0);
+          const hasMasks = cell.masks.some((m) => m === true);
           const hasDistances = cell.distances.some((d) => d !== 0);
 
           if (hasValues || hasMasks || hasDistances) {
@@ -164,7 +164,7 @@ export class Scene {
       x: number;
       y: number;
       values: (number | undefined)[];
-      masks: number[];
+      masks: boolean[];
       distances: number[];
     }>;
   }, gameState: GameState): Scene {
@@ -187,16 +187,17 @@ export class Scene {
             cell.setValue(layer, value);
           }
         }
-        // Restore masks array
+        // Restore masks array (boolean flags)
         for (let layer = 0; layer < cellData.masks.length; layer++) {
-          if (cellData.masks[layer] !== 0) {
-            cell.setMask(layer, cellData.masks[layer]);
+          if (cellData.masks[layer] === true) {
+            cell.setMask(layer, true);
           }
         }
-        // Restore distances array
+        // Restore distances array (direct array access since no simple setter)
         for (let layer = 0; layer < cellData.distances.length; layer++) {
           if (cellData.distances[layer] !== 0) {
-            cell.setDistance(layer, cellData.distances[layer]);
+            // Access private _distances array for restoration
+            (cell as unknown as { _distances: number[] })._distances[layer] = cellData.distances[layer];
           }
         }
       }
@@ -208,7 +209,7 @@ export class Scene {
         const entityId = cellData.values[layer];
         if (entityId !== undefined) {
           // Update position tracking directly (accessing private field)
-          const positions = (scene.spatial as { positions: Map<number, { x: number; y: number; layer: Layer }> }).positions;
+          const positions = (scene.spatial as unknown as { positions: Map<number, { x: number; y: number; layer: Layer }> }).positions;
           positions.set(entityId, { x: cellData.x, y: cellData.y, layer });
         }
       }

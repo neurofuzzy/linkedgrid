@@ -4,14 +4,52 @@ import { Scene } from './scene';
 import type { Layer } from './types';
 
 /**
+ * Serialized scene data format
+ */
+export interface SerializedScene {
+  id: string;
+  width: number;
+  height: number;
+  metadata?: Record<string, unknown>;
+  cells?: Array<{
+    x: number;
+    y: number;
+    values: (number | undefined)[];
+    masks: boolean[];
+    distances: number[];
+  }>;
+}
+
+/**
+ * Serialized game state data format
+ */
+export interface SerializedGameState {
+  playerEntityId?: number;
+  lives?: number;
+  score?: number;
+  inventory?: Array<[string, number]>;
+  buffs?: Array<[string, number]>;
+  upgrades?: string[];
+  flags?: Array<[string, boolean]>;
+  data?: Array<[string, unknown]>;
+  connections?: Array<[string, Array<{ sceneId: string; x: number; y: number; layer: number }>]>;
+  nextEntityId?: number;
+  entities?: Array<{ id: number; type: string;[key: string]: unknown }>;
+}
+
+/**
  * Save data format for serialization
  */
 export interface SaveData {
   version: number;
   timestamp: number;
-  gameState: unknown; // Serialized GameState
-  scenes: unknown[]; // Serialized Scene data
+  gameState: SerializedGameState;
+  scenes: SerializedScene[];
   activeSceneId: string | null;
+  /** Runtime tick count (optional, for GameRuntime) */
+  tickCount?: number;
+  /** Runtime tick rate (optional, for GameRuntime) */
+  tickRate?: number;
 }
 
 /**
@@ -257,9 +295,7 @@ export class GameManager {
     }
 
     // Extract properties (excluding id and type which will be set by spawn)
-    const playerProps = { ...playerData };
-    delete playerProps.id;
-    delete playerProps.type;
+    const { id: _id, type: _type, ...playerProps } = playerData;
 
     // Update sceneId to reflect new scene
     playerProps.sceneId = targetSceneId;
@@ -300,8 +336,8 @@ export class GameManager {
       );
     } catch {
       // Revert if spawn failed
-      this.gameState.playerEntityId = null;
-      throw new Error(`Failed to spawn player in scene ${sceneId}`);
+      this.gameState.playerEntityId = 0;
+      throw new Error(`Failed to spawn player in scene ${targetSceneId}`);
     }
 
     if (transitioned) {
@@ -340,19 +376,19 @@ export class GameManager {
    * localStorage.setItem('save', JSON.stringify(saveData));
    * ```
    */
-  save(): object {
+  save(): SaveData {
     const scenes = this.sceneManager
       .getAllSceneIds()
       .map((id) => {
         const scene = this.sceneManager.getScene(id);
         return scene ? scene.serialize() : null;
       })
-      .filter((s) => s !== null);
+      .filter((s): s is SerializedScene => s !== null);
 
     return {
       version: 1,
       timestamp: Date.now(),
-      gameState: this.gameState.serialize(),
+      gameState: this.gameState.serialize() as SerializedGameState,
       scenes,
       activeSceneId: this.sceneManager.activeId,
     };
@@ -377,14 +413,15 @@ export class GameManager {
     const restoredGameState = GameState.deserialize(data.gameState);
 
     // Replace the new GameState with the restored one
-    // These are intentionally private but need to be set during deserialization
-    (game as GameManager & { gameState: GameState }).gameState = restoredGameState;
-    (game.sceneManager as SceneManager & { gameState: GameState }).gameState = restoredGameState;
+    // Use Object.assign to set readonly properties during deserialization
+    Object.assign(game, { gameState: restoredGameState });
+    Object.assign(game.sceneManager, { gameState: restoredGameState });
 
     // Restore scenes
     for (const sceneData of data.scenes || []) {
-      const scene = Scene.deserialize(sceneData, game.gameState);
-      (game.sceneManager as SceneManager & { scenes: Map<string, Scene> }).scenes.set(scene.id, scene);
+      const scene = Scene.deserialize(sceneData as Parameters<typeof Scene.deserialize>[0], game.gameState);
+      // Use internal method if available, or direct map access
+      (game.sceneManager as unknown as { scenes: Map<string, Scene> }).scenes.set(scene.id, scene);
     }
 
     // Restore active scene

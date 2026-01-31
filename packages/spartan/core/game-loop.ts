@@ -22,7 +22,7 @@ import type { GameSystem, GameContext } from './types';
 export class GameLoop {
   private systems: GameSystem[] = [];
 
-  constructor(private spatial: SpatialSystem) {}
+  constructor(private spatial: SpatialSystem) { }
 
   /**
    * Register systems in execution order.
@@ -79,7 +79,7 @@ export class GameLoop {
     // 2. Run systems
     const context: GameContext = {
       overlaps,
-      spatial: this.spatial,
+      spatial: this.spatial as unknown as GameContext['spatial'],
     };
 
     for (const system of this.systems) {

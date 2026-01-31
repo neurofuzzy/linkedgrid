@@ -12,7 +12,13 @@ import { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData } from './
 import { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData } from './elemental.entity';
 import { ChainLinkData } from './logic.entity';
 
-export { BaseEntityData };
+// Re-export commonly used types for external consumption
+export { BaseEntityData, TeleporterData, PlayerData, EnemyData };
+export { ItemData, KeyData, GasolineData, FuseData };
+export { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData };
+export { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData };
+export { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData };
+export { ChainLinkData };
 
 export type EntityData = PlayerData |
   EnemyData |

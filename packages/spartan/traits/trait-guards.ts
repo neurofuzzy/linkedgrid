@@ -191,9 +191,9 @@ export function isCollectible(
  */
 export function hasColor(
   entity: EntityData
-): entity is DoorData | KeyData | OpenDoorData | LavaData | AcidData | MedbayData | IceData | MudData | 
-              PoisonGasData | WaterData | AshData | GrassData | GasolineData | FuseData | TorchData | 
-              BarrelData | ExplosionVisualData | DestructibleWallData | ChainLinkData | FireVisualData {
+): entity is DoorData | KeyData | OpenDoorData | LavaData | AcidData | MedbayData | IceData | MudData |
+PoisonGasData | WaterData | AshData | GrassData | GasolineData | FuseData | TorchData |
+BarrelData | ExplosionVisualData | DestructibleWallData | ChainLinkData | FireVisualData {
   return 'color' in entity && typeof entity.color === 'string';
 }
 
@@ -584,13 +584,13 @@ export function isFireVisual(entity: EntityData): entity is FireVisualData {
  */
 
 /**
- * Check if entity is fire (legacy or visual).
+ * Check if entity is fire (visual effect).
  *
  * @param entity - Entity to check
- * @returns true if entity type is 'fire' or 'fire-visual'
+ * @returns true if entity type is 'fire-visual'
  */
 export function isFire(entity: EntityData): entity is FireVisualData {
-  return entity.type === 'fire' || entity.type === 'fire-visual';
+  return entity.type === 'fire-visual';
 }
 
 /**
