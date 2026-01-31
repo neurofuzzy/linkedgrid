@@ -246,11 +246,14 @@ export class LiquidSystem implements GameSystem {
   }
 
   private isBlocked(cell: LinkedCell, config: LiquidConfig, context: GameContext): boolean {
+    // Check spatial blocking mask (e.g. static walls)
     if (context.spatial.isBlocked(cell)) return true;
     
+    // Check specific layer blocking (e.g. objects)
     if (config.blockedByLayers) {
       for (const layer of config.blockedByLayers) {
-        if (cell.getValue(layer) !== undefined) return true;
+        const id = cell.getValue(layer);
+        if (id !== undefined && id > 0) return true;
       }
     }
     return false;
