@@ -1,22 +1,17 @@
-import type { GameSystem, GameContext } from '../core/types';
+import { BaseTickedSystem } from '../core/base-system';
+import { SYSTEM_CONFIG } from '../config/systems.config';
+import type { GameContext } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation, hasLiquid } from '../traits/trait-guards';
 
-/**
- * Spread state tracked per source entity.
- */
 interface SpreadState {
   lastSpreadTick: number;
   originX: number;
   originY: number;
 }
 
-/**
- * Metadata tracked for propagated entities.
- * System-owned state (not serialized in entity data).
- */
 interface PropagatedEntity {
   sourceId: number;
   distance: number;
@@ -24,44 +19,29 @@ interface PropagatedEntity {
   originY: number;
 }
 
-/**
- * Liquid propagation configuration.
- */
 interface LiquidConfig extends EntityData {
   propagationType?: string;
   spreadLayer: number;
   blockedByLayers?: number[];
   depth: number;
-  // Optional flammability properties (for oil/gasoline)
   flammable?: boolean;
   flamePoint?: number;
   temperature?: number;
+  maxDistance?: number;
 }
 
 /**
  * LiquidSystem - Handles volumetric liquid flow.
  *
- * Simulates fluid dynamics using local equalization (cellular automata):
- * - Liquids have `depth` (integer volume).
- * - Liquid flows from high depth to low depth (neighbors).
- * - Conservation of volume is maintained.
- *
- * Algorithm:
- * 1. Iterate all liquid entities.
- * 2. Identify lower-depth neighbors (including empty cells).
- * 3. Calculate flow amount to equalize depth.
- * 4. Apply changes (reduce source depth, increase/spawn neighbor depth).
- *
- * Equilibrium is reached when all connected cells have depth 1 (or equal).
+ * Simulates fluid dynamics using local equalization (cellular automata).
  */
-export class LiquidSystem implements GameSystem {
+export class LiquidSystem extends BaseTickedSystem {
   private spreadState = new Map<number, SpreadState>();
   private propagatedEntities = new Map<number, PropagatedEntity>();
-  private currentTick = 0;
+  
+  protected tickRate = SYSTEM_CONFIG.Liquid.tickRate;
 
-  update(context: GameContext): void {
-    this.currentTick++;
-
+  protected onTick(context: GameContext): void {
     // Track deltas to apply at end of tick (prevent order bias)
     // Map<EntityId, number>
     const depthDeltas = new Map<number, number>();
@@ -102,6 +82,8 @@ export class LiquidSystem implements GameSystem {
       // If just spawned this tick, don't spread yet
       if (state.lastSpreadTick === this.currentTick) continue;
       
+      // Check spread rate relative to last spread
+      // Note: BaseTickedSystem already limits onTick calls, but entities might have custom rates
       if (this.currentTick - state.lastSpreadTick < entityData.spreadRate) {
         continue;
       }
@@ -148,7 +130,6 @@ export class LiquidSystem implements GameSystem {
       if (recipients.length === 0) continue;
 
       // Calculate Flow: Damped Pairwise Diffusion (Float)
-      // Distribute flow to lower neighbors, damped by the number of connections.
       const divisor = recipients.length + 1;
 
       for (const recipient of recipients) {
@@ -164,9 +145,6 @@ export class LiquidSystem implements GameSystem {
         
         // Min flow threshold to prevent Zeno's paradox
         if (transfer < 0.05) continue;
-        
-        // Cap transfer to not overshoot equilibrium pairwise (diff/2 is max for pairwise, but diff/divisor handles multi)
-        // With simultaneous updates, we stick to calculated share.
         
         if (transfer > 0) {
           // Me
@@ -245,7 +223,7 @@ export class LiquidSystem implements GameSystem {
         originY: spawn.originY
       });
       
-      // Init propagation metadata (for inheritance if spreadState cleared)
+      // Init propagation metadata
       this.propagatedEntities.set(id, {
         sourceId: 0, // Not tracking exact parent ID, just origin
         distance: this.manhattanDistance(spawn.originX, spawn.originY, x, y),
@@ -271,5 +249,11 @@ export class LiquidSystem implements GameSystem {
 
   private manhattanDistance(x1: number, y1: number, x2: number, y2: number): number {
     return Math.abs(x2 - x1) + Math.abs(y2 - y1);
+  }
+
+  public override resetState(): void {
+    super.resetState();
+    this.spreadState.clear();
+    this.propagatedEntities.clear();
   }
 }

@@ -4,7 +4,7 @@ import { Scene } from '../core/scene';
 import { SceneManager } from '../core/scene-manager';
 import { GameManager } from '../core/game-manager';
 import { SparseEntityStore } from '../core/entity-store';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 
 describe('GameState', () => {
   let gameState: GameState;

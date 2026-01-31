@@ -1,5 +1,5 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 import { spawnPlayer, spawnEnemy, spawnItem } from '../entities/spawn-helpers';
 import { isPlayer, isEnemy, isItem, hasHealth } from '../traits/trait-guards';
 

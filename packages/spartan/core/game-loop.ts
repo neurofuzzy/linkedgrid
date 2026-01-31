@@ -25,6 +25,22 @@ export class GameLoop {
   constructor(private spatial: SpatialSystem) {}
 
   /**
+   * Register systems in execution order.
+   *
+   * CRITICAL: Order matters! Systems execute in registration order.
+   * See GUIDELINES.md for execution phase requirements.
+   *
+   * Recommended order:
+   * 1. Input systems (PlayerInputSystem)
+   * 2. Pre-commit systems (DoorSystem)
+   * 3. Main systems (FireSystem, CombatSystem)
+   * 4. Post-commit systems (CollectionSystem)
+   */
+  registerSystems(systems: GameSystem[]): void {
+    this.systems = systems;
+  }
+
+  /**
    * Register a game system to run each tick.
    *
    * Systems are executed in registration order.

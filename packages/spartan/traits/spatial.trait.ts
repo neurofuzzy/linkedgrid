@@ -1,4 +1,4 @@
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 
 export interface HasFloorEffect {
   effectType: 'damage' | 'heal' | 'slide' | 'slow';

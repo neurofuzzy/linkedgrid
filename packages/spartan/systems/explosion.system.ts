@@ -1,8 +1,10 @@
-import type { GameSystem, GameContext } from '../core/types';
+import { BaseTickedSystem } from '../core/base-system';
+import { SYSTEM_CONFIG } from '../config/systems.config';
+import type { GameContext } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../traits/trait-guards';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 
 /**
  * Explosion event to be processed.
@@ -52,15 +54,14 @@ interface ExplosionEvent {
  * });
  * ```
  */
-export class ExplosionSystem implements GameSystem {
+export class ExplosionSystem extends BaseTickedSystem {
   // Queue of explosions to process this tick
   private explosionQueue: ExplosionEvent[] = [];
 
   // Track entities that triggered explosions this tick (prevent duplicates)
   private explodedThisTick = new Set<number>();
 
-  // Track current tick for lifetime management
-  private currentTick = 0;
+  protected tickRate = SYSTEM_CONFIG.Explosion.tickRate;
 
   /**
    * Update called by GameLoop each tick.
@@ -71,9 +72,7 @@ export class ExplosionSystem implements GameSystem {
    * 3. Clean up expired visuals
    * 4. Track removed entities for next tick
    */
-  update(context: GameContext): void {
-    this.currentTick++;
-
+  protected onTick(context: GameContext): void {
     // Clear per-tick state
     this.explodedThisTick.clear();
 
@@ -301,18 +300,18 @@ export class ExplosionSystem implements GameSystem {
    * Reset system state.
    * Useful for testing or scene transitions.
    */
-  public resetState(): void {
+  public override resetState(): void {
+    super.resetState();
     this.explosionQueue = [];
     this.explodedThisTick.clear();
-    this.currentTick = 0;
   }
 
   /**
    * Get debug state for troubleshooting.
    */
-  public getDebugState() {
+  public override getDebugState() {
     return {
-      currentTick: this.currentTick,
+      ...super.getDebugState(),
       explosionQueueSize: this.explosionQueue.length,
       explosions: [...this.explosionQueue],
       explodedThisTick: Array.from(this.explodedThisTick),

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan/input';
-import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
 import { GridRenderer, HUD, DebugPanel } from './grid-renderer';
-import type { GameRuntime } from '../packages/spartan/game-runtime';
+import type { GameRuntime } from '../packages/spartan/core/game-runtime';
 
 /**
  * Available game configurations.

@@ -8,19 +8,7 @@
  */
 
 import type { EntityData } from '../entities/entity.types';
-export { EntityData };
-
-// Export layer constants from config
-export {
-  GameLayers,
-  GameLayer,
-  BLOCKING_LAYERS,
-  VISION_BLOCKING_LAYERS,
-  GAMEPLAY_VISIBLE_LAYERS,
-  ALL_LAYERS,
-  CellMasks,
-  CellMask,
-} from '../config/layers.config';
+export type { EntityData };
 
 /**
  * Entity Traits and Archetypes
@@ -40,7 +28,7 @@ export {
  * Layer index in cell arrays.
  *
  * The Spartan Framework uses a fixed 8-layer architecture with semantic meaning.
- * See GameLayers constant for the standard layer assignments.
+ * See GameLayers constant in config/layers.config.ts for standard assignments.
  *
  * Conceptually, higher layer indexes are "on top of" lower ones (Rule 8).
  *
@@ -87,7 +75,8 @@ export interface GameContext {
     grid: { width: number; height: number };
     spawn: (type: string, x: number, y: number, layer: number, data?: Record<string, unknown>) => number;
     move: (entityId: number, x: number, y: number) => void;
-    destroy: (entityId: number) => void;
+    remove: (entityId: number) => void;
+    removeAt: (x: number, y: number, layer: number) => boolean;
     getEntityPosition: (entityId: number) => { x: number; y: number; layer: number } | null;
     getEntitiesInCell: (x: number, y: number) => number[];
     getEntitiesInLayer: (layer: number) => number[];

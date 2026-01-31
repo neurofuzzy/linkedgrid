@@ -5,7 +5,7 @@ import { SpatialSystem } from '../core/spatial-system';
 import { ExplosionSystem } from '../systems/explosion.system';
 import { FloorEffectSystem } from '../systems/floor-effect.system';
 import { GameManager } from '../core/game-manager';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 import type { GameContext } from '../core/types';
 
 describe('ExplosionSystem', () => {

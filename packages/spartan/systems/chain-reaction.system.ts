@@ -1,4 +1,6 @@
-import type { GameSystem, GameContext, Position } from '../core/types';
+import { BaseTickedSystem } from '../core/base-system';
+import { SYSTEM_CONFIG } from '../config/systems.config';
+import type { GameContext, Position } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
@@ -31,13 +33,13 @@ interface ChainConfig extends EntityData {
  * Manages entities with propagationType='chain'.
  * Used for dominos, wire signals, and other deterministic spread logic.
  */
-export class ChainReactionSystem implements GameSystem {
+export class ChainReactionSystem extends BaseTickedSystem {
   private spreadState = new Map<number, ChainState>();
   private propagatedEntities = new Map<number, PropagatedEntity>();
-  private currentTick = 0;
+  
+  protected tickRate = SYSTEM_CONFIG.ChainReaction.tickRate;
 
-  update(context: GameContext): void {
-    this.currentTick++;
+  protected onTick(context: GameContext): void {
     this.processSpreading(context);
     this.processCleanup(context);
   }
@@ -151,5 +153,19 @@ export class ChainReactionSystem implements GameSystem {
       }
     }
     return true;
+  }
+
+  public override resetState(): void {
+    super.resetState();
+    this.spreadState.clear();
+    this.propagatedEntities.clear();
+  }
+
+  public override getDebugState() {
+    return {
+      ...super.getDebugState(),
+      spreadStateSize: this.spreadState.size,
+      propagatedCount: this.propagatedEntities.size,
+    };
   }
 }

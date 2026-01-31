@@ -1,5 +1,5 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 
 // Test basic unblocked movement
 visual('player explores the room', {

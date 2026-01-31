@@ -1,9 +1,11 @@
-import type { GameSystem, GameContext, Position } from '../core/types';
+import { BaseTickedSystem } from '../core/base-system';
+import { SYSTEM_CONFIG } from '../config/systems.config';
+import type { GameContext, Position } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation, hasDensity, hasHealth, hasFloorEffect } from '../traits/trait-guards';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 import type { GameManager } from '../core/game-manager';
 
 /**
@@ -64,31 +66,30 @@ interface PoisonStatus {
  *
  * Timing is tick-based (not ms-based) for deterministic behavior.
  */
-export class PoisonSystem implements GameSystem {
+export class PoisonSystem extends BaseTickedSystem {
   // System-owned state per source entity (timing and origin position)
   private spreadState = new Map<number, SpreadState>();
 
   // System-owned state per propagated entity (source, distance, spawn tick)
   private propagatedEntities = new Map<number, PropagatedEntity>();
 
-  // Track current tick for timing
-  private currentTick = 0;
+  protected tickRate = SYSTEM_CONFIG.Poison.tickRate;
 
   // Track poison status effects on entities
   private poisonStatuses = new Map<number, PoisonStatus>();
 
-  constructor(private gameManager?: GameManager) {}
+  constructor(private gameManager?: GameManager) {
+    super();
+  }
 
   /**
    * Update called by GameLoop each tick.
    */
-  update(context: GameContext): void {
+  protected onTick(context: GameContext): void {
     // If gameManager is not injected, try to get it from context
     if (!this.gameManager && context.gameManager) {
       this.gameManager = context.gameManager;
     }
-
-    this.currentTick++;
 
     // Phase 0: Process lingering poison statuses
     this.processPoisonStatuses(context);
@@ -543,15 +544,17 @@ export class PoisonSystem implements GameSystem {
     return Math.abs(x2 - x1) + Math.abs(y2 - y1);
   }
 
-  public resetState(): void {
+  public override resetState(): void {
+    super.resetState();
     this.spreadState.clear();
     this.propagatedEntities.clear();
-    this.currentTick = 0;
+    this.poisonStatuses.clear();
+    this.damageTracking.clear();
   }
 
-  public getDebugState() {
+  public override getDebugState() {
     return {
-      currentTick: this.currentTick,
+      ...super.getDebugState(),
       spreadStateSize: this.spreadState.size,
       propagatedCount: this.propagatedEntities.size,
     };

@@ -1,7 +1,9 @@
-import type { GameSystem, GameContext, Position } from '../core/types';
+import { BaseTickedSystem } from '../core/base-system';
+import { SYSTEM_CONFIG } from '../config/systems.config';
+import type { GameContext, Position } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import type { GameManager } from '../core/game-manager';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 import { hasFloorEffect, hasHealth, hasDensity } from '../traits/trait-guards';
 
 /**
@@ -52,7 +54,7 @@ interface FloorEffectData extends EntityData {
  * gameLoop.addSystem(floorSystem);
  * ```
  */
-export class FloorEffectSystem implements GameSystem {
+export class FloorEffectSystem extends BaseTickedSystem {
   // System-owned timing state per entity (damage/heal cadence)
   private timingState = new Map<number, EntityTimingState>();
 
@@ -63,10 +65,11 @@ export class FloorEffectSystem implements GameSystem {
   // Map structure: effectType -> Set of "entityId:x:y" keys
   private effectTriggers = new Map<string, Set<string>>();
 
-  // Current tick count for poison status tracking
-  private currentTick = 0;
+  protected tickRate = SYSTEM_CONFIG.FloorEffect.tickRate;
 
-  constructor(private gameManager: GameManager) {}
+  constructor(private gameManager: GameManager) {
+    super();
+  }
 
   /**
    * Get trigger mode for a floor effect, inferring from effectType if not explicitly set.
@@ -141,9 +144,7 @@ export class FloorEffectSystem implements GameSystem {
    * 2. Process continuous effects (damage, heal) - triggers based on cadence
    * 3. Update position tracking and clean up effect triggers
    */
-  update(context: GameContext): void {
-    this.currentTick++;
-
+  protected onTick(context: GameContext): void {
     // Phase 1: Process on-entry effects
     this.processOnEntryEffects(context);
 
@@ -448,18 +449,25 @@ export class FloorEffectSystem implements GameSystem {
    * Reset all timing state and effect triggers.
    * Useful for testing or scene transitions.
    */
-  public resetTimingState(): void {
+  public override resetState(): void {
+    super.resetState();
     this.timingState.clear();
     this.previousPositions.clear();
     this.effectTriggers.clear();
+  }
+
+  // Deprecated alias
+  public resetTimingState(): void {
+    this.resetState();
   }
 
   /**
    * Get debug state for troubleshooting.
    * Useful for understanding system state during development.
    */
-  public getDebugState() {
+  public override getDebugState() {
     return {
+      ...super.getDebugState(),
       timingStateSize: this.timingState.size,
       trackedEntities: Array.from(this.timingState.entries()).map(
         ([id, state]) => ({

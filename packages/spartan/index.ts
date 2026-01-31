@@ -50,7 +50,7 @@ export {
   ALL_LAYERS,
   CellMask,
   CellMasks,
-} from './core/types';
+} from './config/layers.config';
 
 // Layers
 

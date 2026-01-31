@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Scene } from '../packages/spartan/scene';
+import type { Scene } from '../packages/spartan/core/scene';
 
 interface Props {
   scene: Scene | null;
@@ -121,22 +121,26 @@ export function GridRenderer({ scene }: Props) {
           if (color.startsWith('#')) {
             const r = parseInt(color.slice(1, 3), 16);
             const g = parseInt(color.slice(3, 5), 16);
-                         const b = parseInt(color.slice(5, 7), 16);
-                         color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                       }
-                    } else if (color && (entityData as any).depth !== undefined && (entityData as any).type !== 'poison-gas') {
-                       // Apply liquid depth opacity
-                       const depth = (entityData as any).depth;
-                       // Map depth 1 -> 0.4, depth 10 -> 1.0
-                       const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
-                       
-                       if (color.startsWith('#')) {
-                         const r = parseInt(color.slice(1, 3), 16);
-                         const g = parseInt(color.slice(3, 5), 16);
-                         const b = parseInt(color.slice(5, 7), 16);
-                         color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                       }
-                    }
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
+        } else if (
+          color &&
+          (entityData as any).depth !== undefined &&
+          (entityData as any).type !== 'poison-gas'
+        ) {
+          // Apply liquid depth opacity
+          const depth = (entityData as any).depth;
+          // Map depth 1 -> 0.4, depth 10 -> 1.0
+          const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
+
+          if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
+        }
 
         row.push({ char, className, color });
       }

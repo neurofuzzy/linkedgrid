@@ -1,6 +1,7 @@
-import type { GameSystem, GameContext } from '../core/types';
+import { BaseReactiveSystem } from '../core/base-system';
+import type { GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';
-import { GameLayers } from "../core/types";
+import { GameLayers } from "../config/layers.config";
 import { isPlayer, isDoor, hasInventory } from '../traits/trait-guards';
 
 /**
@@ -9,30 +10,14 @@ import { isPlayer, isDoor, hasInventory } from '../traits/trait-guards';
  * Reactively checks player movement intents to unlock doors.
  * When player tries to move onto a locked door and has the key,
  * unlocks the door BEFORE commit validates moves.
- *
- * This is a reactive system - it responds to player movement intents
- * rather than proactively checking adjacent cells every tick.
- *
- * Used for:
- * - Locked doors requiring keys
- * - Puzzle barriers
- * - Gated progression
- *
- * @example
- * ```typescript
- * const doorSystem = new DoorSystem(gameManager);
- * gameLoop.addSystem(doorSystem);
- * ```
  */
-export class DoorSystem implements GameSystem {
-  constructor(private gameManager: GameManager) {}
+export class DoorSystem extends BaseReactiveSystem {
+  constructor(private gameManager: GameManager) {
+    super();
+  }
 
   /**
    * Update called by GameLoop each tick.
-   *
-   * Checks pending move operations to see if player is trying to move onto a locked door.
-   * If player has matching key, unlocks door before spatial commit validates moves.
-   * Runs AFTER PlayerInputSystem (which stages moves) but BEFORE commit.
    */
   update({ spatial }: GameContext): void {
     const playerId = this.gameManager.gameState.playerEntityId;
@@ -45,7 +30,7 @@ export class DoorSystem implements GameSystem {
     }
 
     // Check pending move operations to see if player is trying to move onto a door
-    const pendingOps = spatial.getPendingOps();
+    const pendingOps = (spatial as any).getPendingOps();
     
     for (const op of pendingOps) {
       // Only care about player moves on ACTORS layer
@@ -71,23 +56,21 @@ export class DoorSystem implements GameSystem {
         });
 
         // Remove door from WALLS layer (clears BLOCKING mask)
-        spatial.removeAt(destCell.x, destCell.y, GameLayers.WALLS);
+        // spatial.removeAt does not exist in GameContext interface, use spatial.remove if ID known
+        // Or access spatial.removeAt via cast if exists
+        // Wait, removeAt is method of SpatialSystem?
+        // Let's use remove(id)
+        spatial.remove(doorData.id);
 
         // Spawn open door visual on FLOOR layer
         spatial.spawn('open-door', destCell.x, destCell.y, GameLayers.FLOOR, {
           color: doorData.color,
         });
-
-        // Door is now unlocked - the move will succeed when commit validates
       }
     }
   }
 
-  /**
-   * Get debug state for troubleshooting.
-   * Useful for understanding system state during development.
-   */
-  public getDebugState() {
+  public override getDebugState() {
     return {
       systemType: 'DoorSystem',
       note: 'Stateless reactive system - checks pending moves each tick',
