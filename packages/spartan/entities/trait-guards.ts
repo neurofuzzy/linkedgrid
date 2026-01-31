@@ -26,24 +26,6 @@
 
 import type { EntityData } from '../types';
 import type {
-  HasHealth,
-  CanDealDamage,
-  HasAI,
-  HasSceneLocation,
-  HasTeleportTarget,
-  HasInventory,
-  IsLockable,
-  IsCollectible,
-  HasColor,
-  HasFloorEffect,
-  HasPropagation,
-  HasTemperature,
-  HasExplosion,
-  HasDamageable,
-  HasDensity,
-  HasLiquid,
-} from './traits';
-import type {
   PlayerData,
   EnemyData,
   TeleporterData,
@@ -51,6 +33,7 @@ import type {
   WallData,
   DoorData,
   KeyData,
+  OpenDoorData,
   LavaData,
   AcidData,
   MedbayData,
@@ -66,6 +49,8 @@ import type {
   BarrelData,
   ExplosionVisualData,
   DestructibleWallData,
+  ChainLinkData,
+  FireVisualData,
 } from './entity-types';
 
 /**
@@ -85,7 +70,7 @@ import type {
  */
 export function hasHealth(
   entity: EntityData
-): entity is EntityData & HasHealth {
+): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData {
   return (
     'hp' in entity && typeof entity.hp === 'number' &&
     'maxHp' in entity && typeof entity.maxHp === 'number'
@@ -102,7 +87,7 @@ export function hasHealth(
  */
 export function canDealDamage(
   entity: EntityData
-): entity is EntityData & CanDealDamage {
+): entity is PlayerData | EnemyData {
   return 'damage' in entity && typeof entity.damage === 'number';
 }
 
@@ -114,7 +99,7 @@ export function canDealDamage(
  * @param entity - Entity to check
  * @returns true if entity possesses AI trait
  */
-export function hasAI(entity: EntityData): entity is EntityData & HasAI {
+export function hasAI(entity: EntityData): entity is EnemyData {
   if (!('aiState' in entity)) return false;
   const state = entity.aiState;
   return state === 'idle' || state === 'chase' || state === 'attack';
@@ -130,7 +115,7 @@ export function hasAI(entity: EntityData): entity is EntityData & HasAI {
  */
 export function hasSceneLocation(
   entity: EntityData
-): entity is EntityData & HasSceneLocation {
+): entity is PlayerData | TeleporterData {
   return 'sceneId' in entity && typeof entity.sceneId === 'string';
 }
 
@@ -144,7 +129,7 @@ export function hasSceneLocation(
  */
 export function hasTeleportTarget(
   entity: EntityData
-): entity is EntityData & HasTeleportTarget {
+): entity is TeleporterData {
   return 'targetKey' in entity && typeof entity.targetKey === 'string';
 }
 
@@ -158,7 +143,7 @@ export function hasTeleportTarget(
  */
 export function hasInventory(
   entity: EntityData
-): entity is EntityData & HasInventory {
+): entity is PlayerData {
   return 'inventory' in entity && Array.isArray(entity.inventory);
 }
 
@@ -172,7 +157,7 @@ export function hasInventory(
  */
 export function isLockable(
   entity: EntityData
-): entity is EntityData & IsLockable {
+): entity is DoorData {
   return (
     'isLocked' in entity && typeof entity.isLocked === 'boolean' &&
     'requiredKey' in entity && typeof entity.requiredKey === 'string'
@@ -189,7 +174,7 @@ export function isLockable(
  */
 export function isCollectible(
   entity: EntityData
-): entity is EntityData & IsCollectible {
+): entity is KeyData {
   return (
     'collectibleType' in entity && typeof entity.collectibleType === 'string' &&
     'collectibleId' in entity && typeof entity.collectibleId === 'string'
@@ -206,7 +191,9 @@ export function isCollectible(
  */
 export function hasColor(
   entity: EntityData
-): entity is EntityData & HasColor {
+): entity is DoorData | KeyData | OpenDoorData | LavaData | AcidData | MedbayData | IceData | MudData | 
+              PoisonGasData | WaterData | AshData | GrassData | GasolineData | FuseData | TorchData | 
+              BarrelData | ExplosionVisualData | DestructibleWallData | ChainLinkData | FireVisualData {
   return 'color' in entity && typeof entity.color === 'string';
 }
 
@@ -220,7 +207,7 @@ export function hasColor(
  */
 export function hasFloorEffect(
   entity: EntityData
-): entity is EntityData & HasFloorEffect {
+): entity is LavaData | AcidData | MedbayData | IceData | MudData | PoisonGasData {
   if (!('effectType' in entity)) return false;
   const effectType = entity.effectType;
   return (
@@ -241,7 +228,7 @@ export function hasFloorEffect(
  */
 export function hasPropagation(
   entity: EntityData
-): entity is EntityData & HasPropagation {
+): entity is PoisonGasData | WaterData | ChainLinkData {
   if (!('propagationType' in entity)) return false;
   const propagationType = entity.propagationType;
   return (
@@ -266,11 +253,11 @@ export function hasPropagation(
  */
 export function hasTemperature(
   entity: EntityData
-): entity is EntityData & HasTemperature {
+): entity is GrassData | GasolineData | FuseData | BarrelData {
   return (
-    typeof (entity as any).temperature === 'number' &&
-    typeof (entity as any).flammable === 'boolean' &&
-    typeof (entity as any).flamePoint === 'number'
+    'temperature' in entity && typeof entity.temperature === 'number' &&
+    'flammable' in entity && typeof entity.flammable === 'boolean' &&
+    'flamePoint' in entity && typeof entity.flamePoint === 'number'
   );
 }
 
@@ -285,7 +272,7 @@ export function hasTemperature(
  */
 export function hasExplosion(
   entity: EntityData
-): entity is EntityData & HasExplosion {
+): entity is BarrelData {
   return (
     'explosionDamage' in entity && typeof entity.explosionDamage === 'number' &&
     'explosionRadius' in entity && typeof entity.explosionRadius === 'number'
@@ -303,7 +290,7 @@ export function hasExplosion(
  */
 export function hasDamageable(
   entity: EntityData
-): entity is EntityData & HasDamageable {
+): entity is DestructibleWallData {
   return 'hardness' in entity && typeof entity.hardness === 'number';
 }
 
@@ -317,7 +304,7 @@ export function hasDamageable(
  */
 export function hasDensity(
   entity: EntityData
-): entity is EntityData & HasDensity {
+): entity is PoisonGasData {
   return (
     'density' in entity && typeof entity.density === 'number' &&
     'minDensity' in entity && typeof entity.minDensity === 'number'
@@ -334,7 +321,7 @@ export function hasDensity(
  */
 export function hasLiquid(
   entity: EntityData
-): entity is EntityData & HasLiquid {
+): entity is WaterData {
   return 'depth' in entity && typeof entity.depth === 'number';
 }
 
@@ -490,6 +477,16 @@ export function isAsh(entity: EntityData): entity is AshData {
 }
 
 /**
+ * Check if entity is an open door.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'open-door'
+ */
+export function isOpenDoor(entity: EntityData): entity is OpenDoorData {
+  return entity.type === 'open-door';
+}
+
+/**
  * Check if entity is grass.
  *
  * @param entity - Entity to check
@@ -565,8 +562,18 @@ export function isDestructibleWall(entity: EntityData): entity is DestructibleWa
  * @param entity - Entity to check
  * @returns true if entity type is 'chain-link'
  */
-export function isChainLink(entity: EntityData): boolean {
+export function isChainLink(entity: EntityData): entity is ChainLinkData {
   return entity.type === 'chain-link';
+}
+
+/**
+ * Check if entity is a fire visual.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'fire-visual'
+ */
+export function isFireVisual(entity: EntityData): entity is FireVisualData {
+  return entity.type === 'fire-visual';
 }
 
 /**
@@ -582,7 +589,7 @@ export function isChainLink(entity: EntityData): boolean {
  * @param entity - Entity to check
  * @returns true if entity type is 'fire' or 'fire-visual'
  */
-export function isFire(entity: EntityData): boolean {
+export function isFire(entity: EntityData): entity is FireVisualData {
   return entity.type === 'fire' || entity.type === 'fire-visual';
 }
 

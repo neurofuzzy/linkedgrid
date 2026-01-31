@@ -7,32 +7,85 @@
  * - Spatial operations are first-class
  */
 
+import type {
+  PlayerData,
+  EnemyData,
+  TeleporterData,
+  ItemData,
+  WallData,
+  DoorData,
+  KeyData,
+  OpenDoorData,
+  LavaData,
+  AcidData,
+  MedbayData,
+  IceData,
+  MudData,
+  PoisonGasData,
+  WaterData,
+  AshData,
+  GrassData,
+  GasolineData,
+  FuseData,
+  TorchData,
+  BarrelData,
+  ExplosionVisualData,
+  DestructibleWallData,
+  ChainLinkData,
+  FireVisualData,
+} from './entities/entity-types';
+
 /**
- * Minimal entity data stored externally in SparseEntityStore.
+ * EntityData - Discriminated union of all entity types.
  *
- * The ID is stored in cell.values[layer] for spatial operations.
- * This object holds non-spatial metadata about the entity.
+ * This type system provides compile-time type safety through discriminated unions.
+ * The `type` property acts as the discriminant, enabling TypeScript to automatically
+ * narrow types when using type guards.
+ *
+ * Benefits:
+ * - Automatic type narrowing through type guards (isPlayer, isDoor, etc.)
+ * - IDE autocomplete for entity-specific properties
+ * - Compile-time validation of property access
+ * - Exhaustiveness checking in switch statements
  *
  * @example
  * ```typescript
- * const entityData: EntityData = {
- *   id: 1,
- *   type: 'player',
- *   hp: 100,
- *   damage: 10
- * };
+ * const entity = spatial.getEntityData(id);
+ * 
+ * if (isPlayer(entity)) {
+ *   // TypeScript automatically narrows to PlayerData
+ *   entity.hp;        // ✓ number
+ *   entity.inventory; // ✓ string[]
+ *   entity.aiState;   // ✗ TypeScript error - doesn't exist on PlayerData
+ * }
  * ```
  */
-export type EntityData = {
-  /** Unique numeric ID (auto-generated) */
-  id: number;
-
-  /** Entity type identifier (e.g., 'player', 'enemy', 'projectile') */
-  type: string;
-
-  /** Extensible properties for game-specific data */
-  [key: string]: unknown;
-};
+export type EntityData =
+  | PlayerData
+  | EnemyData
+  | TeleporterData
+  | ItemData
+  | WallData
+  | DoorData
+  | KeyData
+  | OpenDoorData
+  | LavaData
+  | AcidData
+  | MedbayData
+  | IceData
+  | MudData
+  | PoisonGasData
+  | WaterData
+  | AshData
+  | GrassData
+  | GasolineData
+  | FuseData
+  | TorchData
+  | BarrelData
+  | ExplosionVisualData
+  | DestructibleWallData
+  | ChainLinkData
+  | FireVisualData;
 
 /**
  * Entity Traits and Archetypes
