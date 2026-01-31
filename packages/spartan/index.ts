@@ -32,15 +32,8 @@
  */
 
 // Core framework
-export { SparseEntityStore } from './core/entity-store';
-export { SpatialSystem } from './core/spatial-system';
-export { GameState } from './core/game-state';
-export { Scene } from './core/scene';
-export { SceneManager } from './core/scene-manager';
-export { GameManager } from './core/game-manager';
+export * from './core';
 
-// Core framework types
-export type { EntityData, Layer, Position } from './core/types';
 export {
   GameLayer,
   GameLayers,
@@ -141,14 +134,8 @@ export {
   spawnPlayerWithId,
 } from './entities/spawn-helpers';
 
-// Layer utilities (for visual/rendering helpers)
-// For spatial queries, use SpatialSystem methods: spatial.isBlocked(), spatial.blocksVision(), spatial.isWalkable()
-export { getTopmostEntity } from './helpers/layer-helpers';
-
-// Game loop and runtime
-export { GameLoop } from './core/game-loop';
-export { GameRuntime } from './core/game-runtime';
-export type { GameRuntimeConfig } from './core/game-runtime';
+// Helpers
+export * from './helpers';
 
 // Systems
 export { TeleporterSystem } from './systems/teleporter.system';
@@ -158,4 +145,3 @@ export { PlayerInputSystem } from './systems/player-input.system';
 export { FloorEffectSystem } from './systems/floor-effect.system';
 export { ExplosionSystem } from './systems/explosion.system';
 export { FireSystem } from './systems/fire.system';
-export type { GameSystem, GameContext, Overlap } from './core/types';

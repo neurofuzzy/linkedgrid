@@ -1,5 +1,5 @@
 import type { LinkedCell } from '../core/grid/linked-cell';
-import { GAMEPLAY_VISIBLE_LAYERS } from "../core/types";
+import { GAMEPLAY_VISIBLE_LAYERS } from "../config/layers.config";
 
 /**
  * Layer Helpers - Visual and rendering utilities.
