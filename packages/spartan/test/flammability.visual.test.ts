@@ -1,7 +1,7 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 import { FireSystem } from '../systems/fire-system';
-import { GameLoop } from '../game-loop';
+import { GameLoop } from '../core/game-loop';
 
 visual('fire spreads through grass field', {
   arrange: ({ spatial }) => {

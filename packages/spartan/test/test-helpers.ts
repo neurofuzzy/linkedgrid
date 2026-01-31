@@ -1,5 +1,5 @@
-import { GameRuntime } from '../game-runtime';
-import type { GameSystem } from '../types';
+import { GameRuntime } from '../core/game-runtime';
+import type { GameSystem } from '../core/types';
 
 /**
  * Create GameRuntime with systems properly registered.

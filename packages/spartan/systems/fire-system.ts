@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../types';
+import type { GameSystem, GameContext } from '../core/types';
 import { hasTemperature, hasHealth, hasExplosion } from '../entities/trait-guards';
-import { GameLayers } from '../layers/types';
-import { Direction } from '../../grid/direction';
+import { GameLayers } from "../core/types";
+import { Direction } from '../core/grid/direction';
 
 /**
  * Fire state for burning entities.

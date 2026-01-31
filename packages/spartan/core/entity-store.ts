@@ -1,4 +1,4 @@
-import type { EntityData } from './types';
+import type { EntityData } from '../entities/entity-types';
 
 /**
  * SparseEntityStore - Minimal storage for entity metadata.

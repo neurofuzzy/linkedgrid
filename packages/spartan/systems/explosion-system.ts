@@ -1,7 +1,8 @@
-import type { GameSystem, GameContext, EntityData } from '../types';
-import { LinkedCellUtils } from '../../grid/linked-cell-utils';
+import type { GameSystem, GameContext } from '../core/types';
+import type { EntityData } from '../entities/entity-types';
+import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../entities/trait-guards';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 
 /**
  * Explosion event to be processed.

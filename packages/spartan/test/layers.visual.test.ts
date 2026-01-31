@@ -1,5 +1,5 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 
 /**
  * Layer System Visual Tests

@@ -1,9 +1,10 @@
-import type { GameSystem, GameContext, Position, EntityData } from '../types';
-import { Direction } from '../../grid/direction';
-import type { LinkedCell } from '../../grid/linked-cell';
+import type { GameSystem, GameContext, Position } from '../core/types';
+import type { EntityData } from '../entities/entity-types';
+import { Direction } from '../core/grid/direction';
+import type { LinkedCell } from '../core/grid/linked-cell';
 import { hasPropagation, hasDensity, hasHealth, hasFloorEffect } from '../entities/trait-guards';
-import { GameLayers } from '../layers/types';
-import type { GameManager } from '../game-manager';
+import { GameLayers } from "../core/types";
+import type { GameManager } from '../core/game-manager';
 
 /**
  * Spread state tracked per source entity.

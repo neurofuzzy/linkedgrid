@@ -1,7 +1,7 @@
-import { LinkedCell, LinkedGrid } from '../grid';
+import { LinkedCell, LinkedGrid } from './grid';
 import { SparseEntityStore } from './entity-store';
 import type { EntityData, Layer } from './types';
-import { GameLayers, CellMasks } from './layers/types';
+import { GameLayers, CellMasks } from './types';
 
 /**
  * SpatialSystem - Spatial operations for the Spartan framework.

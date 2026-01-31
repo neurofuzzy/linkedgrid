@@ -1,4 +1,4 @@
-import { LinkedGrid } from '../grid';
+import { LinkedGrid } from './grid';
 import { SpatialSystem } from './spatial-system';
 import { GameState } from './game-state';
 import type { Layer } from './types';

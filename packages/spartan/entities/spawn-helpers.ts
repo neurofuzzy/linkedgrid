@@ -36,7 +36,7 @@
  */
 
 import type { SpatialSystem } from '../spatial-system';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 import type {
   PlayerData,
   EnemyData,

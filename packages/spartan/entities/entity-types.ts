@@ -38,7 +38,7 @@
  * ```
  */
 
-import type { EntityData } from '../types';
+import type { PlayerData, EnemyData, TeleporterData, ItemData, WallData, DoorData, KeyData, OpenDoorData, LavaData, AcidData, MedbayData, IceData, MudData, PoisonGasData, WaterData, AshData, GrassData, GasolineData, FuseData, TorchData, BarrelData, ExplosionVisualData, DestructibleWallData, ChainLinkData, FireVisualData } from './entity-types';
 import type {
   HasHealth,
   CanDealDamage,
@@ -751,4 +751,55 @@ export type DestructibleWallData = EntityData & {
  */
 export type ChainLinkData = EntityData & {
   type: 'chain-link';
-} & HasPropagation & HasColor;
+} & HasPropagation & HasColor;/**
+ * EntityData - Discriminated union of all entity types.
+ *
+ * This type system provides compile-time type safety through discriminated unions.
+ * The `type` property acts as the discriminant, enabling TypeScript to automatically
+ * narrow types when using type guards.
+ *
+ * Benefits:
+ * - Automatic type narrowing through type guards (isPlayer, isDoor, etc.)
+ * - IDE autocomplete for entity-specific properties
+ * - Compile-time validation of property access
+ * - Exhaustiveness checking in switch statements
+ *
+ * @example
+ * ```typescript
+ * const entity = spatial.getEntityData(id);
+ *
+ * if (isPlayer(entity)) {
+ *   // TypeScript automatically narrows to PlayerData
+ *   entity.hp;        // ✓ number
+ *   entity.inventory; // ✓ string[]
+ *   entity.aiState;   // ✗ TypeScript error - doesn't exist on PlayerData
+ * }
+ * ```
+ */
+
+export type EntityData = PlayerData |
+  EnemyData |
+  TeleporterData |
+  ItemData |
+  WallData |
+  DoorData |
+  KeyData |
+  OpenDoorData |
+  LavaData |
+  AcidData |
+  MedbayData |
+  IceData |
+  MudData |
+  PoisonGasData |
+  WaterData |
+  AshData |
+  GrassData |
+  GasolineData |
+  FuseData |
+  TorchData |
+  BarrelData |
+  ExplosionVisualData |
+  DestructibleWallData |
+  ChainLinkData |
+  FireVisualData;
+

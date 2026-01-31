@@ -1,5 +1,5 @@
-import type { GameSystem, GameContext } from '../types';
-import type { GameManager } from '../game-manager';
+import type { GameSystem, GameContext } from '../core/types';
+import type { GameManager } from '../core/game-manager';
 import { isPlayer, isCollectible, hasInventory } from '../entities/trait-guards';
 
 /**

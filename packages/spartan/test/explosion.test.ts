@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
+import { LinkedGrid } from '../core/grid/linked-grid';
+import { SparseEntityStore } from '../core/entity-store';
+import { SpatialSystem } from '../core/spatial-system';
 import { ExplosionSystem } from '../systems/explosion-system';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
-import { GameManager } from '../game-manager';
-import { GameLayers } from '../layers/types';
-import type { GameContext } from '../types';
+import { GameManager } from '../core/game-manager';
+import { GameLayers } from "../core/types";
+import type { GameContext } from '../core/types';
 
 describe('ExplosionSystem', () => {
   let grid: LinkedGrid;

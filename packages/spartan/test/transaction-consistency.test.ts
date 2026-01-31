@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { LinkedGrid } from '../../grid/index';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
-import { GameLayers } from '../layers/types';
+import { LinkedGrid } from '../core/grid/index';
+import { SparseEntityStore } from '../core/entity-store';
+import { SpatialSystem } from '../core/spatial-system';
+import { GameLayers } from "../core/types";
 
 describe('Transaction Consistency', () => {
   it('defers all operations until commit', () => {

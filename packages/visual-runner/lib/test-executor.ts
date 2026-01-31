@@ -1,5 +1,5 @@
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../../spartan/entity-store';
+import { LinkedGrid } from '../../spartan/core/grid/linked-grid';
+import { SparseEntityStore } from '../../spartan/core/entity-store';
 import { SpatialSystem } from '../../spartan/spatial-system';
 
 export interface Snapshot {
@@ -32,7 +32,7 @@ export interface TestResult {
   }>;
 }
 
-import type { LinkedGrid } from '../../grid';
+import type { LinkedGrid } from '../../spartan/core/grid';
 import type { SpatialSystem } from '../spatial-system';
 import type { SparseEntityStore } from '../entity-store';
 import type { GameManager } from '../game-manager';

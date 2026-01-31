@@ -1,10 +1,10 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 import { spawnPlayer } from '../entities/spawn-helpers';
 import { hasHealth } from '../entities/trait-guards';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
-import { GameManager } from '../game-manager';
-import { GameLoop } from '../game-loop';
+import { GameManager } from '../core/game-manager';
+import { GameLoop } from '../core/game-loop';
 
 visual('lava deals damage over time', {
   arrange: ({ spatial }) => {

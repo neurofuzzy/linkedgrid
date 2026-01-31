@@ -32,15 +32,15 @@
  */
 
 // Core framework
-export { SparseEntityStore } from './entity-store';
-export { SpatialSystem } from './spatial-system';
-export { GameState } from './game-state';
-export { Scene } from './scene';
-export { SceneManager } from './scene-manager';
-export { GameManager } from './game-manager';
+export { SparseEntityStore } from './core/entity-store';
+export { SpatialSystem } from './core/spatial-system';
+export { GameState } from './core/game-state';
+export { Scene } from './core/scene';
+export { SceneManager } from './core/scene-manager';
+export { GameManager } from './core/game-manager';
 
 // Core framework types
-export type { EntityData, Layer, Position } from './types';
+export type { EntityData, Layer, Position } from './core/types';
 export {
   GameLayer,
   GameLayers,
@@ -50,7 +50,7 @@ export {
   ALL_LAYERS,
   CellMask,
   CellMasks,
-} from './layers/types';
+} from './core/types';
 
 // Layers
 
@@ -168,12 +168,12 @@ export {
 
 // Layer utilities (for visual/rendering helpers)
 // For spatial queries, use SpatialSystem methods: spatial.isBlocked(), spatial.blocksVision(), spatial.isWalkable()
-export { getTopmostEntity } from './layers/layer-helpers';
+export { getTopmostEntity } from './helpers/layer-helpers';
 
 // Game loop and runtime
-export { GameLoop } from './game-loop';
-export { GameRuntime } from './game-runtime';
-export type { GameRuntimeConfig } from './game-runtime';
+export { GameLoop } from './core/game-loop';
+export { GameRuntime } from './core/game-runtime';
+export type { GameRuntimeConfig } from './core/game-runtime';
 
 // Systems
 export { TeleporterSystem } from './systems/teleporter-system';
@@ -183,4 +183,4 @@ export { PlayerInputSystem } from './systems/player-input-system';
 export { FloorEffectSystem } from './systems/floor-effect-system';
 export { ExplosionSystem } from './systems/explosion-system';
 export { FireSystem } from './systems/fire-system';
-export type { GameSystem, GameContext, Overlap } from './types';
+export type { GameSystem, GameContext, Overlap } from './core/types';

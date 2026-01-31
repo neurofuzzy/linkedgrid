@@ -1,6 +1,7 @@
-import type { GameSystem, GameContext, Position, EntityData } from '../types';
-import type { GameManager } from '../game-manager';
-import { GameLayers } from '../layers/types';
+import type { GameSystem, GameContext, Position } from '../core/types';
+import type { EntityData } from '../entities/entity-types';
+import type { GameManager } from '../core/game-manager';
+import { GameLayers } from "../core/types";
 import { hasFloorEffect, hasHealth, hasDensity } from '../entities/trait-guards';
 
 /**

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameState } from '../game-state';
-import { Scene } from '../scene';
-import { SceneManager } from '../scene-manager';
-import { GameManager } from '../game-manager';
-import { SparseEntityStore } from '../entity-store';
-import { GameLayers } from '../layers/types';
+import { GameState } from '../core/game-state';
+import { Scene } from '../core/scene';
+import { SceneManager } from '../core/scene-manager';
+import { GameManager } from '../core/game-manager';
+import { SparseEntityStore } from '../core/entity-store';
+import { GameLayers } from "../core/types";
 
 describe('GameState', () => {
   let gameState: GameState;

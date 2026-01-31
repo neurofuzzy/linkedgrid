@@ -1,7 +1,7 @@
-import type { GameSystem, GameContext } from '../types';
+import type { GameSystem, GameContext } from '../core/types';
 import { InputManager } from '../input/input-manager';
-import { Direction } from '../../grid/direction';
-import type { GameManager } from '../game-manager';
+import { Direction } from '../core/grid/direction';
+import type { GameManager } from '../core/game-manager';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.

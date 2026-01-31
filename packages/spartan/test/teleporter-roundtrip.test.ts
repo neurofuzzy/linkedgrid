@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { GameRuntime } from '../game-runtime';
+import { GameRuntime } from '../core/game-runtime';
 import { TeleporterSystem } from '../systems/teleporter-system';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 import { spawnPlayer, spawnTeleporter } from '../entities/spawn-helpers';
 import { isPlayer, isTeleporter } from '../entities/trait-guards';
 

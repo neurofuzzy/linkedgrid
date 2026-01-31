@@ -31,7 +31,7 @@
  * ```
  */
 
-import { Direction } from '../../grid/direction';
+import { Direction } from '../core/grid/direction';
 
 /**
  * Headless input state for a single frame.

@@ -22,7 +22,7 @@
  * ```
  */
 
-import { Direction } from '../../grid/direction';
+import { Direction } from '../core/grid/direction';
 
 /**
  * Stick processing mode.

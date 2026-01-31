@@ -1,7 +1,7 @@
 import {
   GameRuntime,
   GameRuntimeConfig,
-} from '../packages/spartan/game-runtime';
+} from '../packages/spartan/core/game-runtime';
 import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
 import { CollectionSystem } from '../packages/spartan/systems/collection-system';
 import { DoorSystem } from '../packages/spartan/systems/door-system';
@@ -12,7 +12,8 @@ import { PoisonSystem } from '../packages/spartan/systems/poison-system';
 import { FireSystem } from '../packages/spartan/systems/fire-system';
 import { LiquidSystem } from '../packages/spartan/systems/liquid-system';
 import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction-system';
-import type { GameSystem, EntityData } from '../packages/spartan/types';
+import type { GameSystem } from '../packages/spartan/core/types';
+import type { EntityData } from '../packages/spartan/entities/entity-types';
 import {
   isPlayer,
   isEnemy,

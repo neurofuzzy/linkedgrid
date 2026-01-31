@@ -1,6 +1,6 @@
-import type { GameSystem, GameContext } from '../types';
+import type { GameSystem, GameContext } from '../core/types';
 import type { TeleporterData } from '../entities/entity-types';
-import type { GameManager } from '../game-manager';
+import type { GameManager } from '../core/game-manager';
 import type { SpatialSystem } from '../spatial-system';
 import { isPlayer, isTeleporter } from '../entities/trait-guards';
 

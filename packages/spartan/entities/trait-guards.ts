@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { EntityData } from '../types';
+import type { EntityData } from './entity-types';
 import type {
   PlayerData,
   EnemyData,

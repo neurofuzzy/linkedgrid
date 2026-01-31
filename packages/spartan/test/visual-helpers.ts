@@ -1,6 +1,8 @@
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
+import { LinkedGrid } from '../core/grid';
+import { SpatialSystem } from '../core/spatial-system';
+import { SparseEntityStore } from '../core/entity-store';
+import type { GameManager } from '../core/game-manager';
+import type { Scene } from '../core/scene';
 
 export interface AssertionResult {
   description: string;
@@ -8,11 +10,6 @@ export interface AssertionResult {
   error?: string;
 }
 
-import type { LinkedGrid } from '../../grid';
-import type { SpatialSystem } from '../spatial-system';
-import type { SparseEntityStore } from '../entity-store';
-import type { GameManager } from '../game-manager';
-import type { Scene } from '../scene';
 
 export interface VisualTestContext {
   grid: LinkedGrid;

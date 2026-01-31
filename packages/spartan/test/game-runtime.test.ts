@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { GameRuntime } from '../game-runtime';
-import { GameLayers } from '../layers/types';
+import { GameRuntime } from '../core/game-runtime';
+import { GameLayers } from "../core/types";
 
 describe('GameRuntime', () => {
   it('should create and initialize game', () => {

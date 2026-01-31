@@ -25,7 +25,7 @@
  * ```
  */
 
-import { Direction } from '../../grid/direction';
+import { Direction } from '../core/grid/direction';
 
 /**
  * Direction input mode.

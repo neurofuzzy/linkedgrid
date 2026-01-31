@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ChainReactionSystem } from '../systems/chain-reaction-system';
-import { GameLayers } from '../layers/types';
+import { GameLayers } from "../core/types";
 import { createRuntimeWithSystems } from './test-helpers';
-import type { GameRuntime } from '../game-runtime';
-import type { GameContext } from '../types';
+import type { GameRuntime } from '../core/game-runtime';
+import type { GameContext } from '../core/types';
 
 describe('ChainReactionSystem', () => {
   let context: GameContext;

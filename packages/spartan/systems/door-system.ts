@@ -1,6 +1,6 @@
-import type { GameSystem, GameContext } from '../types';
-import type { GameManager } from '../game-manager';
-import { GameLayers } from '../layers/types';
+import type { GameSystem, GameContext } from '../core/types';
+import type { GameManager } from '../core/game-manager';
+import { GameLayers } from "../core/types";
 import { isPlayer, isDoor, hasInventory } from '../entities/trait-guards';
 
 /**

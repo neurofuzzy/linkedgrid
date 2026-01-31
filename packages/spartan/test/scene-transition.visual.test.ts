@@ -1,6 +1,6 @@
 import { visual } from './visual-helpers';
-import { GameManager } from '../game-manager';
-import { GameLayers } from '../layers/types';
+import { GameManager } from '../core/game-manager';
+import { GameLayers } from "../core/types";
 import {
   spawnPlayer,
   spawnTeleporter,

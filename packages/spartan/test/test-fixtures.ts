@@ -1,5 +1,5 @@
-import { SpatialSystem } from '../spatial-system';
-import { Layer } from '../types';
+import { SpatialSystem } from '../core/spatial-system';
+import { Layer } from '../core/types';
 
 /**
  * Test fixture helper for setting up initial spatial state.
