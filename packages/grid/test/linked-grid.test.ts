@@ -222,7 +222,10 @@ describe('LinkedGrid', () => {
     it('prints grid with custom values', () => {
       const grid = new LinkedGrid(3, 3);
       // Clear default values to make them undefined
-      grid.cells.forEach((c) => delete (c.values as any)[0]);
+      grid.cells.forEach((c) => {
+        // Use Reflect.deleteProperty to avoid type issues
+        Reflect.deleteProperty(c.values, '0');
+      });
 
       // Create a pattern
       grid.cell(0, 0)!.setValue(0, 1);

@@ -8,6 +8,12 @@ export interface AssertionResult {
   error?: string;
 }
 
+import type { LinkedGrid } from '../../grid';
+import type { SpatialSystem } from '../spatial-system';
+import type { SparseEntityStore } from '../entity-store';
+import type { GameManager } from '../game-manager';
+import type { Scene } from '../scene';
+
 export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
@@ -16,8 +22,8 @@ export interface VisualTestContext {
   assertions?: AssertionResult[]; // Will be populated by test executor
 
   // Optional scene system support
-  game?: any; // GameManager - use any to avoid circular dependency
-  scene?: any; // Scene - for single-scene tests with metadata
+  game?: GameManager;
+  scene?: Scene;
 }
 
 export interface VisualTestDefinition {
@@ -44,19 +50,21 @@ export function visual(
 
   // Register in global array (for both browser and Node.js)
   if (typeof globalThis !== 'undefined') {
-    (globalThis as any).visualTests = (globalThis as any).visualTests || [];
-    (globalThis as any).visualTests.push({ name, definition: normalized });
+    const global = globalThis as { visualTests?: Array<{ name: string; definition: VisualTestDefinition }> };
+    global.visualTests = global.visualTests || [];
+    global.visualTests.push({ name, definition: normalized });
   }
 
   // Also register in window if in browser
   if (typeof window !== 'undefined') {
-    (window as any).visualTests = (window as any).visualTests || [];
-    (window as any).visualTests.push({ name, definition: normalized });
+    const win = window as { visualTests?: Array<{ name: string; definition: VisualTestDefinition }> };
+    win.visualTests = win.visualTests || [];
+    win.visualTests.push({ name, definition: normalized });
   }
 
   // Only register as Vitest test if vitest globals are available
-  if (typeof (globalThis as any).it === 'function') {
-    const it = (globalThis as any).it;
+  if (typeof (globalThis as { it?: unknown }).it === 'function') {
+    const it = (globalThis as { it: (name: string, fn: () => Promise<void>) => void }).it;
     try {
       it(name, async () => {
         const grid = new LinkedGrid(20, 20);

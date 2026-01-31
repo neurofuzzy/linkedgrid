@@ -48,10 +48,11 @@ export function createRuntimeWithSystems(config: {
   if (config.systems) {
     for (const system of config.systems) {
       // Add to persistent systems array (survives transitions)
-      (runtime as any).systems.push(system);
+      // Access private field via type assertion
+      (runtime as unknown as { systems: unknown[] }).systems.push(system);
 
       // Add to current gameLoop (active immediately)
-      (runtime as any).gameLoop.addSystem(system);
+      (runtime as unknown as { gameLoop: { addSystem: (s: unknown) => void } }).gameLoop.addSystem(system);
     }
   }
 

@@ -294,8 +294,8 @@ export function App() {
       const modulePath = `../../${file}`;
       await import(modulePath);
 
-      const testRegistry = (globalThis as any).visualTests || [];
-      const testEntry = testRegistry.find((t: any) => t.name === testName);
+      const testRegistry = (globalThis as { visualTests?: Array<{ name: string; definition: unknown }> }).visualTests || [];
+      const testEntry = testRegistry.find((t) => t.name === testName);
 
       if (!testEntry) {
         throw new Error(`Test "${testName}" not found in registry`);

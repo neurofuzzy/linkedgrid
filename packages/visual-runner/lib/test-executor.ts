@@ -32,6 +32,12 @@ export interface TestResult {
   }>;
 }
 
+import type { LinkedGrid } from '../../grid';
+import type { SpatialSystem } from '../spatial-system';
+import type { SparseEntityStore } from '../entity-store';
+import type { GameManager } from '../game-manager';
+import type { Scene } from '../scene';
+
 export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
@@ -39,8 +45,8 @@ export interface VisualTestContext {
   expect?: (description: string, fn: () => void) => void;
 
   // Optional scene system support
-  game?: any; // GameManager - use any to avoid circular dependency
-  scene?: any; // Scene - for single-scene tests with metadata
+  game?: GameManager;
+  scene?: Scene;
 }
 
 export interface VisualTestDefinition {
@@ -84,7 +90,7 @@ export class TestExecutor {
     };
 
     // Store context globally for snapshot capture to access scene info
-    (globalThis as any).__currentTestContext = this.context;
+    (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext = this.context;
 
     // Disable snapshot capture during arrange - we only want the final state
     this.captureEnabled = false;
@@ -148,7 +154,7 @@ export class TestExecutor {
     this.context.expect = expect;
 
     // Update global context with expect function
-    (globalThis as any).__currentTestContext = this.context;
+    (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext = this.context;
 
     try {
       // Act phase
@@ -217,7 +223,7 @@ export class TestExecutor {
     result: unknown
   ): void {
     const entities = [];
-    const grid = (spatial as any).grid;
+    const grid = (spatial as unknown as { grid: LinkedGrid }).grid;
 
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
@@ -240,7 +246,7 @@ export class TestExecutor {
     let sceneId: string | undefined;
     let sceneName: string | undefined;
 
-    const testCtx = (globalThis as any).__currentTestContext;
+    const testCtx = (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext;
     if (testCtx?.game) {
       // Multi-scene test with GameManager
       const activeScene = testCtx.game.sceneManager?.getActiveScene();
@@ -338,7 +344,7 @@ export class TestExecutor {
     // Wrap GameManager.movePlayerToScene if present
     if (ctx.game && ctx.game.movePlayerToScene) {
       const originalMove = ctx.game.movePlayerToScene.bind(ctx.game);
-      ctx.game.movePlayerToScene = (...args: any[]) => {
+      ctx.game.movePlayerToScene = (...args: [sceneId: string, x: number, y: number, layer: number]) => {
         const result = originalMove(...args);
 
         // Visual tests expect immediate scene change: execute queued transition now

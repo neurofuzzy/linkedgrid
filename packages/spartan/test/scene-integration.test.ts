@@ -75,7 +75,7 @@ describe('Scene Integration Tests', () => {
 
       // Verify that runtime has expected structure
       expect(runtime.game).toBeDefined();
-      expect((runtime as any).spatial).toBeDefined();
+      expect((runtime as unknown as { spatial: unknown }).spatial).toBeDefined();
     });
 
     it('should spawn entities with correct properties from JSON', () => {
@@ -117,7 +117,7 @@ describe('Scene Integration Tests', () => {
       };
 
       const runtime = loader.load(config);
-      const spatial = (runtime as any).spatial;
+      const spatial = (runtime as unknown as { spatial: SpatialSystem }).spatial;
 
       // Verify fire entity has propagation properties
       const fireId = spatial.getEntityIdAt(5, 5, GameLayers.COLLECTIBLES);
@@ -126,9 +126,9 @@ describe('Scene Integration Tests', () => {
       const fireData = spatial.getEntityData(fireId!);
       expect(fireData).toBeDefined();
       expect(fireData!.type).toBe('fire');
-      expect((fireData as any).propagationType).toBe('fire');
-      expect((fireData as any).spreadType).toBe('fire');
-      expect((fireData as any).spreadRate).toBe(2);
+      expect((fireData as unknown as { propagationType: string }).propagationType).toBe('fire');
+      expect((fireData as unknown as { spreadType: string }).spreadType).toBe('fire');
+      expect((fireData as unknown as { spreadRate: number }).spreadRate).toBe(2);
 
       // Verify grass entity has flammability
       const grassId = spatial.getEntityIdAt(6, 5, GameLayers.COLLECTIBLES);
@@ -137,7 +137,7 @@ describe('Scene Integration Tests', () => {
       const grassData = spatial.getEntityData(grassId!);
       expect(grassData).toBeDefined();
       expect(grassData!.type).toBe('grass');
-      expect((grassData as any).flammability).toBe(0.9);
+      expect((grassData as unknown as { flammability: number }).flammability).toBe(0.9);
     });
 
     it('should load grass entities with temperature properties', () => {
@@ -184,7 +184,7 @@ describe('Scene Integration Tests', () => {
       };
 
       const runtime = loader.load(config);
-      const spatial = (runtime as any).spatial;
+      const spatial = (runtime as unknown as { spatial: SpatialSystem }).spatial;
 
       // Verify grass entities have temperature properties
       const grass1Id = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
@@ -208,7 +208,7 @@ describe('Scene Integration Tests', () => {
       // Spy on console.error to verify warning is logged
       const errors: string[] = [];
       const originalError = console.error;
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 
@@ -253,7 +253,7 @@ describe('Scene Integration Tests', () => {
       // Spy on console.warn
       const warnings: string[] = [];
       const originalWarn = console.warn;
-      console.warn = (...args: any[]) => {
+      console.warn = (...args: unknown[]) => {
         warnings.push(args.join(' '));
       };
 
@@ -295,7 +295,7 @@ describe('Scene Integration Tests', () => {
       // Spy on console.warn
       const warnings: string[] = [];
       const originalWarn = console.warn;
-      console.warn = (...args: any[]) => {
+      console.warn = (...args: unknown[]) => {
         warnings.push(args.join(' '));
       };
 
@@ -359,7 +359,7 @@ describe('Scene Integration Tests', () => {
 
       const loader = new SceneLoader();
       const runtime = loader.load(config);
-      const spatial = (runtime as any).spatial;
+      const spatial = (runtime as unknown as { spatial: SpatialSystem }).spatial;
 
       // Enable debug mode
       spatial.setDebugCommit(true);
@@ -367,7 +367,7 @@ describe('Scene Integration Tests', () => {
       // Spy on console.warn
       const warnings: string[] = [];
       const originalWarn = console.warn;
-      console.warn = (...args: any[]) => {
+      console.warn = (...args: unknown[]) => {
         warnings.push(args.join(' '));
       };
 
