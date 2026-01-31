@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SceneLoader, SceneConfig } from '../../../dev/scene-loader';
-import { SpatialSystem } from '../core/spatial-system';
-import { GameLayers } from '../index';
+import { SceneLoader, SceneConfig } from '../dev/scene-loader';
+import { SpatialSystem } from '../packages/spartan/core/spatial-system';
+import { GameLayers } from '../packages/spartan/index';
 
 /**
  * Integration tests for scene loading and gameplay.

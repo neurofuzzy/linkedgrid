@@ -226,9 +226,11 @@ function Playground() {
 
   // Hot reload support - listen for Vite HMR events
   useEffect(() => {
-    if (import.meta.hot) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((import.meta as any).hot) {
       // When any JSON file changes, reload the game
-      import.meta.hot.on('vite:beforeUpdate', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (import.meta as any).hot.on('vite:beforeUpdate', () => {
         console.log('Hot reload triggered - reloading game...');
         setGameKey((prev) => prev + 1);
       });
@@ -400,12 +402,14 @@ function Playground() {
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         <div style={{ marginTop: '20px' }}>
           <GridRenderer scene={runtime?.activeScene || null} />
-          <HUD runtime={runtime} />
+          {runtime && <HUD runtime={runtime} />}
         </div>
         <div style={{ flex: '1', minWidth: '300px' }}>
           <DebugPanel
-            runtime={runtime}
-            inputManager={inputManager}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            runtime={runtime as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            inputManager={inputManager as any}
             playerInputSystem={playerInputSystem}
           />
 
@@ -415,7 +419,7 @@ function Playground() {
               <>
                 <p>
                   <span className="label">Name:</span>{' '}
-                  {runtime.activeScene.metadata?.name || runtime.activeScene.id}
+                  {(runtime.activeScene.metadata?.name as string) || runtime.activeScene.id || 'Unknown'}
                 </p>
                 <p>
                   <span className="label">ID:</span> {runtime.activeScene.id}

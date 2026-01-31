@@ -1,6 +1,6 @@
 import { LinkedGrid } from '../../spartan/core/grid/linked-grid';
 import { SparseEntityStore } from '../../spartan/core/entity-store';
-import { SpatialSystem } from '../../spartan/spatial-system';
+import { SpatialSystem } from '../../spartan/core/spatial-system';
 
 export interface Snapshot {
   operation: string;
@@ -32,11 +32,8 @@ export interface TestResult {
   }>;
 }
 
-import type { LinkedGrid } from '../../spartan/core/grid';
-import type { SpatialSystem } from '../spatial-system';
-import type { SparseEntityStore } from '../entity-store';
-import type { GameManager } from '../game-manager';
-import type { Scene } from '../scene';
+import type { GameManager } from '../../spartan/core/game-manager';
+import type { Scene } from '../../spartan/core/scene';
 
 export interface VisualTestContext {
   grid: LinkedGrid;
@@ -190,7 +187,8 @@ export class TestExecutor {
         if (typeof originalMethod !== 'function') return originalMethod;
 
         return (...args: unknown[]) => {
-          const result = originalMethod.apply(target, args);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const result = (originalMethod as any).apply(target, args);
 
           const handleResult = (res: unknown) => {
             // Only capture if enabled (disabled during arrange phase)
@@ -206,8 +204,9 @@ export class TestExecutor {
           };
 
           // Handle async methods
-          if (result instanceof Promise) {
-            return result.then(handleResult);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((result as any) instanceof Promise) {
+            return (result as Promise<unknown>).then(handleResult);
           }
 
           return handleResult(result);
@@ -222,7 +221,7 @@ export class TestExecutor {
     args: unknown[],
     result: unknown
   ): void {
-    const entities = [];
+    const entities: Snapshot['entities'] = [];
     const grid = (spatial as unknown as { grid: LinkedGrid }).grid;
 
     for (let y = 0; y < grid.height; y++) {
@@ -303,7 +302,8 @@ export class TestExecutor {
             const boundMethod = value.bind(activeSpatial);
 
             return (...args: unknown[]) => {
-              const result = boundMethod(...args);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const result = (boundMethod as any)(...(args as any[]));
 
               const handleResult = (res: unknown) => {
                 // Capture snapshots only for operations that change visible state
@@ -348,12 +348,12 @@ export class TestExecutor {
         const result = originalMove(...args);
 
         // Visual tests expect immediate scene change: execute queued transition now
-        if (ctx.game.executePendingTransition) {
+        if (ctx.game?.executePendingTransition) {
           ctx.game.executePendingTransition();
         }
 
         // Capture snapshot after transition has been applied
-        const activeScene = ctx.game.sceneManager?.getActiveScene();
+        const activeScene = ctx.game?.sceneManager?.getActiveScene();
         if (activeScene && this.captureEnabled) {
           this.captureSnapshot(
             activeScene.spatial,

@@ -136,7 +136,7 @@ export function GridRenderer({ scene }: Props) {
           color &&
           entityData &&
           hasLiquid(entityData) &&
-          entityData.type !== 'poison-gas'
+          (entityData.type as string) !== 'poison-gas'
         ) {
           // Apply liquid depth opacity
           const depth = entityData.depth;
@@ -424,7 +424,8 @@ export function DebugPanel({
         <p>
           <span className="label">Input Mode:</span>{' '}
           <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
-            {inputManager.config.directionMode}
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(inputManager as any).config.directionMode}
           </span>{' '}
           <span style={{ color: '#808080', fontSize: '11px' }}>
             (press K to toggle)

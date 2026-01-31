@@ -19,30 +19,30 @@ import { usePlayback } from '../hooks/usePlayback.js';
 type TestRunnerState =
   | { type: 'selecting' }
   | {
-      type: 'loaded';
-      testName: string;
-      testIndex: number;
-      snapshot: Snapshot;
-      definition: VisualTestDefinition;
-      executor: TestExecutor;
-    }
+    type: 'loaded';
+    testName: string;
+    testIndex: number;
+    snapshot: Snapshot;
+    definition: VisualTestDefinition;
+    executor: TestExecutor;
+  }
   | {
-      type: 'running';
-      testName: string;
-      testIndex: number;
-      snapshots: Snapshot[];
-      definition: VisualTestDefinition;
-      executor: TestExecutor;
-      result: TestResult; // Store result while playing
-    }
+    type: 'running';
+    testName: string;
+    testIndex: number;
+    snapshots: Snapshot[];
+    definition: VisualTestDefinition;
+    executor: TestExecutor;
+    result: TestResult; // Store result while playing
+  }
   | {
-      type: 'completed';
-      testName: string;
-      testIndex: number;
-      snapshots: Snapshot[];
-      result: TestResult;
-      definition: VisualTestDefinition;
-    };
+    type: 'completed';
+    testName: string;
+    testIndex: number;
+    snapshots: Snapshot[];
+    result: TestResult;
+    definition: VisualTestDefinition;
+  };
 
 export function App() {
   const [tests, setTests] = useState<TestFile[]>([]);
@@ -292,7 +292,7 @@ export function App() {
       const testRegistry =
         (
           globalThis as {
-            visualTests?: Array<{ name: string; definition: unknown }>;
+            visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
           }
         ).visualTests || [];
       const testEntry = testRegistry.find((t) => t.name === testName);
