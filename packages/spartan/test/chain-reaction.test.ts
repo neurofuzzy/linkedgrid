@@ -17,7 +17,7 @@ describe('ChainReactionSystem', () => {
       systems: [system]
     });
     context = {
-      spatial: runtime.spatial,
+      spatial: runtime.spatial as unknown as GameContext['spatial'],
       gameManager: runtime.game,
       sceneManager: runtime.game.sceneManager,
       overlaps: []
@@ -38,7 +38,7 @@ describe('ChainReactionSystem', () => {
     // Act - Tick 1 (Wait for spread rate)
     system.update(context);
     context.spatial.commit();
-    
+
     // Act - Tick 2 (Should spread)
     system.update(context);
     context.spatial.commit();

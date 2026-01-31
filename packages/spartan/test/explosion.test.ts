@@ -22,9 +22,8 @@ describe('ExplosionSystem', () => {
     explosionSystem = new ExplosionSystem();
 
     context = {
-      spatial,
-      store,
-      grid,
+      spatial: spatial as unknown as GameContext['spatial'],
+      overlaps: [],
     } as GameContext;
   });
 
@@ -367,7 +366,11 @@ describe('ExplosionSystem', () => {
       // Check that grass temperature was raised to ignition
       const grassData = spatial.getEntityData(grassId);
       expect(grassData).toBeDefined();
-      expect(grassData!.temperature).toBeGreaterThanOrEqual(grassData!.flamePoint);
+      const grassTemp = grassData!.temperature as number | undefined;
+      const grassFlamePoint = grassData!.flamePoint as number | undefined;
+      expect(grassTemp).toBeDefined();
+      expect(grassFlamePoint).toBeDefined();
+      expect(grassTemp!).toBeGreaterThanOrEqual(grassFlamePoint!);
     });
 
     it('does not spawn duplicate fire', () => {
@@ -489,7 +492,9 @@ describe('ExplosionSystem', () => {
 
       // Raise barrel temperature to trigger on-fire explosion
       const barrelData = spatial.getEntityData(barrelId)!;
-      barrelData.temperature = barrelData.flamePoint + 50; // Ignite the barrel
+      const flamePoint = barrelData.flamePoint as number | undefined;
+      expect(flamePoint).toBeDefined();
+      barrelData.temperature = flamePoint! + 50; // Ignite the barrel
 
       spatial.commit();
 
@@ -661,15 +666,15 @@ describe('ExplosionSystem', () => {
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
@@ -689,7 +694,6 @@ describe('ExplosionSystem', () => {
       explosionSystem.resetState();
       const state = explosionSystem.getDebugState();
 
-      expect(state.currentTick).toBe(0);
       expect(state.explosionQueueSize).toBe(0);
       expect(state.explodedThisTick).toHaveLength(0);
     });

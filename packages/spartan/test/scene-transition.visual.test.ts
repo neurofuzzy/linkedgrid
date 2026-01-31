@@ -32,7 +32,7 @@ visual('player teleports between rooms', {
     game.gameState.playerEntityId = playerId;
 
     // Verify player using type guard
-    const playerData = room1.spatial.getEntityData(playerId);
+    const playerData = room1.spatial.getEntityData(playerId)!;
     if (!isPlayer(playerData)) {
       throw new Error('Player entity failed type check');
     }
@@ -221,7 +221,7 @@ visual('scene with metadata and player tracking', {
 
     // Add some entities
     scene.spatial.spawn('enemy', 3, 3, GameLayers.ACTORS);
-    scene.spatial.spawn('item', 7, 7, GameLayers.ITEMS);
+    scene.spatial.spawn('item', 7, 7, GameLayers.COLLECTIBLES);
     scene.spatial.commit();
   },
   act: (ctx) => {

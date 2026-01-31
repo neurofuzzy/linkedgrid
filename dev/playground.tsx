@@ -100,6 +100,7 @@ function getInitialGame(): string {
 function Playground() {
   const [runtime, setRuntime] = useState<GameRuntime | null>(null);
   const [inputManager, setInputManager] = useState<InputManager | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [playerInputSystem, setPlayerInputSystem] = useState<any>(null);
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -111,6 +112,7 @@ function Playground() {
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
   const inputManagerRef = useRef<InputManager | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerInputSystemRef = useRef<any>(null);
 
   // Load and initialize runtime when scene changes
@@ -128,6 +130,7 @@ function Playground() {
         if (runtimeRef.current) {
           runtimeRef.current.stop();
           // Clean up input manager if it exists
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const cleanup = (runtimeRef.current as any).inputCleanup;
           if (cleanup) {
             cleanup();
@@ -159,10 +162,13 @@ function Playground() {
         loadedRuntime = loader.load(config);
 
         // Get input manager from runtime (created by loader)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         loadedInputManager = (loadedRuntime as any).inputManager;
 
         // Get player input system from runtime
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const loadedPlayerInputSystem = (loadedRuntime as any).systems.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (s: any) => s instanceof PlayerInputSystem
         );
 
@@ -236,11 +242,13 @@ function Playground() {
       if (e.key === 'k' || e.key === 'K') {
         if (!inputManagerRef.current) return;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentMode = (inputManagerRef.current as any).config
           .directionMode;
         const newMode = currentMode === 'continuous' ? 'tap' : 'continuous';
 
         // Update config
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (inputManagerRef.current as any).config.directionMode = newMode;
 
         // For tap mode, disable buffering (single press should move once)

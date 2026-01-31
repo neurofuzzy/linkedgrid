@@ -29,7 +29,7 @@ describe('TeleporterSystem round-trip', () => {
     room1.spatial.commit();
 
     // Verify player data using type guard
-    const playerData = room1.spatial.getEntityData(playerId);
+    const playerData = room1.spatial.getEntityData(playerId)!;
     expect(isPlayer(playerData)).toBe(true);
 
     // Create teleporter in room1 at (5, 7) → room2 at (3, 3) using type-safe spawn helper
@@ -46,7 +46,7 @@ describe('TeleporterSystem round-trip', () => {
     room1.spatial.commit();
 
     // Verify teleporter data using type guard
-    const pad1Data = room1.spatial.getEntityData(pad1Id);
+    const pad1Data = room1.spatial.getEntityData(pad1Id)!;
     expect(isTeleporter(pad1Data)).toBe(true);
 
     // Create return teleporter in room2 at (3, 3) → room1 at (5, 7) using type-safe spawn helper

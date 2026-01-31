@@ -1,7 +1,6 @@
 import React from 'react';
 import type { Scene } from '../packages/spartan/core/scene';
 import { GameRuntime } from '../packages/spartan/core/game-runtime';
-import { EntityData } from '../packages/spartan/core/types';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
 import { hasColor, hasDensity, hasLiquid, hasHealth } from '../packages/spartan/traits/trait-guards';
@@ -115,7 +114,7 @@ export function GridRenderer({ scene }: Props) {
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
-        
+
         let color: string | undefined;
         if (entityData && hasColor(entityData)) {
           color = entityData.color;
@@ -216,12 +215,12 @@ export function HUD({ runtime }: HUDProps) {
   // Get HP (default to 0/0 if no player or no health)
   let hp = 0;
   let maxHp = 0;
-  
+
   if (playerData && hasHealth(playerData)) {
     hp = playerData.hp;
     maxHp = playerData.maxHp;
   }
-  
+
   const hpPercent = maxHp > 0 ? (hp / maxHp) * 100 : 0;
 
   // Get Score and Lives from game state (placeholder for now)

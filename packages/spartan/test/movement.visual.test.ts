@@ -36,7 +36,7 @@ visual('player moves right 3 times', {
       }
 
       // Verify using type guard
-      const playerData = spatial.getEntityData(playerId);
+      const playerData = spatial.getEntityData(playerId)!;
       if (!isPlayer(playerData)) {
         throw new Error('Entity is not a player');
       }
@@ -101,7 +101,7 @@ visual('spawn multiple entities', {
     expect('Player at (10, 10) ACTORS layer', () => {
       const id = spatial.getEntityIdAt(10, 10, GameLayers.ACTORS);
       if (id === undefined) throw new Error('Not found');
-      const data = spatial.getEntityData(id);
+      const data = spatial.getEntityData(id)!;
       // Use type guard instead of manual check
       if (!isPlayer(data)) throw new Error(`Wrong type: ${data?.type}`);
     });
@@ -109,7 +109,7 @@ visual('spawn multiple entities', {
     expect('Enemy at (12, 10) ACTORS layer', () => {
       const id = spatial.getEntityIdAt(12, 10, GameLayers.ACTORS);
       if (id === undefined) throw new Error('Not found');
-      const data = spatial.getEntityData(id);
+      const data = spatial.getEntityData(id)!;
       // Use type guard instead of manual check
       if (!isEnemy(data)) throw new Error(`Wrong type: ${data?.type}`);
     });
@@ -117,7 +117,7 @@ visual('spawn multiple entities', {
     expect('Enemy at (10, 12) ACTORS layer', () => {
       const id = spatial.getEntityIdAt(10, 12, GameLayers.ACTORS);
       if (id === undefined) throw new Error('Not found');
-      const data = spatial.getEntityData(id);
+      const data = spatial.getEntityData(id)!;
       // Use type guard instead of manual check
       if (!isEnemy(data)) throw new Error(`Wrong type: ${data?.type}`);
     });
@@ -125,7 +125,7 @@ visual('spawn multiple entities', {
     expect('Item at (11, 11) COLLECTIBLES layer', () => {
       const id = spatial.getEntityIdAt(11, 11, GameLayers.COLLECTIBLES);
       if (id === undefined) throw new Error('Not found');
-      const data = spatial.getEntityData(id);
+      const data = spatial.getEntityData(id)!;
       // Use type guard instead of manual check
       if (!isItem(data)) throw new Error(`Wrong type: ${data?.type}`);
     });
@@ -333,7 +333,7 @@ visual('convoy movement: adjacent entities move together', {
         throw new Error('No unit at (6, 5)');
       }
       const data = spatial.getEntityData(id);
-      if (data?.type !== 'unit') {
+      if ((data?.type as string) !== 'unit') {
         throw new Error(`Wrong type: ${data?.type}`);
       }
     });

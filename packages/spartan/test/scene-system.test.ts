@@ -186,7 +186,7 @@ describe('Scene', () => {
       cell?.setValue(GameLayers.WALLS, 999);
 
       const serialized = scene.serialize();
-      const deserialized = Scene.deserialize(serialized, gameState);
+      const deserialized = Scene.deserialize(serialized as Parameters<typeof Scene.deserialize>[0], gameState);
 
       expect(deserialized.id).toBe('test-scene');
       expect(deserialized.grid.width).toBe(10);

@@ -110,7 +110,7 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
  * ```
  */
 export class SceneLoader {
-  constructor(private container?: HTMLElement | null) {}
+  constructor(private container?: HTMLElement | null) { }
 
   /**
    * Load scene configuration and create initialized GameRuntime.
@@ -178,7 +178,8 @@ export class SceneLoader {
 
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
-      const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
+      // Cast to InputManager - HeadlessInputManager has compatible interface for PlayerInputSystem
+      const playerInputSystem = new PlayerInputSystem(runtime.game, manager as InputManager);
       runtime.addSystem(playerInputSystem);
 
       // Store references for external access
@@ -242,7 +243,7 @@ export class SceneLoader {
         inputConfig.options?.directionMode || ('continuous' as const),
     };
 
-    const manager = new InputManager(container, null, options);
+    const manager = new InputManager(container ?? null, null, options);
     manager.enableKeyboard().enableBuffering(true);
 
     return {
@@ -269,13 +270,15 @@ export class SceneLoader {
     // Spawn all entities
     for (const entityDef of entities) {
       // Validate schema: Check for common mistake of using 'props' instead of 'data'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((entityDef as any).props && !entityDef.data) {
         console.error(
           `[SceneLoader] ❌ SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
-            `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
-            `  → Properties will NOT be loaded until this is fixed!`
+          `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
+          `  → Properties will NOT be loaded until this is fixed!`
         );
         // Fallback to support legacy JSON
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         entityDef.data = (entityDef as any).props;
       }
 
@@ -286,11 +289,12 @@ export class SceneLoader {
       };
 
       // Validate entity data using trait guards
-      const tempEntityForValidation: EntityData = {
+      // Cast type to EntityData - JSON provides string type but EntityData expects literal union
+      const tempEntityForValidation = {
         id: 0,
         type: entityDef.type,
         ...entityData,
-      };
+      } as EntityData;
 
       // Validate required traits for known entity types
       if (isPlayer(tempEntityForValidation)) {
@@ -323,24 +327,27 @@ export class SceneLoader {
       }
 
       // Validate propagation properties for fire, water, etc.
+      // Use entityDef.type (raw JSON string) since EntityData union uses different names (e.g. 'fire-visual' not 'fire')
       if (
-        tempEntityForValidation.type === 'fire' ||
-        tempEntityForValidation.type === 'water' ||
-        tempEntityForValidation.type === 'poison-gas'
+        entityDef.type === 'fire' ||
+        entityDef.type === 'fire-visual' ||
+        entityDef.type === 'water' ||
+        entityDef.type === 'poison-gas'
       ) {
         if (!hasPropagation(tempEntityForValidation)) {
           console.warn(
-            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
-              `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
-              `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
+            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
+            `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
+            `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
           );
         } else {
           // Validate that spreadType is set
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const propData = tempEntityForValidation as any;
           if (!propData.spreadType) {
             console.warn(
-              `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
-                `  → This will cause spawned entities to have type 'undefined'!`
+              `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
+              `  → This will cause spawned entities to have type 'undefined'!`
             );
           }
         }
@@ -348,13 +355,13 @@ export class SceneLoader {
 
       // Validate temperature for grass, gasoline, fuses
       if (
-        tempEntityForValidation.type === 'grass' ||
-        tempEntityForValidation.type === 'gasoline' ||
-        tempEntityForValidation.type === 'fuse'
+        entityDef.type === 'grass' ||
+        entityDef.type === 'gasoline' ||
+        entityDef.type === 'fuse'
       ) {
         if (!hasTemperature(tempEntityForValidation)) {
           console.warn(
-            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`
+            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`
           );
         }
       }

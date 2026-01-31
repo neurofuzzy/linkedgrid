@@ -65,7 +65,7 @@ export function visual(
   // Only register as Vitest test if vitest globals are available
   if (typeof (globalThis as { it?: unknown }).it === 'function') {
     const it = (
-      globalThis as { it: (name: string, fn: () => Promise<void>) => void }
+      globalThis as unknown as { it: (name: string, fn: () => Promise<void>) => void }
     ).it;
     try {
       it(name, async () => {

@@ -30,7 +30,7 @@ visual('lava deals damage over time', {
     // Create game manager and replace its entity store with the shared one
     const gameManager = new GameManager();
     gameManager.gameState.entityStore = store; // Use the same store as spatial system
-    
+
     // Create floor effect system
     const floorSystem = new FloorEffectSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
@@ -46,7 +46,7 @@ visual('lava deals damage over time', {
         throw new Error('Player not found');
       }
 
-      const playerData = spatial.getEntityData(playerId);
+      const playerData = spatial.getEntityData(playerId)!;
       if (!hasHealth(playerData)) {
         throw new Error('Player missing health');
       }
@@ -94,7 +94,7 @@ visual('acid deals faster damage than lava', {
         throw new Error('Player not found');
       }
 
-      const playerData = spatial.getEntityData(playerId);
+      const playerData = spatial.getEntityData(playerId)!;
       if (!hasHealth(playerData)) {
         throw new Error('Player missing health');
       }
@@ -145,7 +145,7 @@ visual('medbay heals player with cooldown', {
         throw new Error('Player not found');
       }
 
-      const playerData = spatial.getEntityData(playerId);
+      const playerData = spatial.getEntityData(playerId)!;
       if (!hasHealth(playerData)) {
         throw new Error('Player missing health');
       }
@@ -200,7 +200,7 @@ visual('medbay does not heal player at max HP', {
         throw new Error('Player not found');
       }
 
-      const playerData = spatial.getEntityData(playerId);
+      const playerData = spatial.getEntityData(playerId)!;
       if (!hasHealth(playerData)) {
         throw new Error('Player missing health');
       }

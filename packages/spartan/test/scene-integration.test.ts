@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SceneLoader, SceneConfig } from '../../../dev/scene-loader';
+import { SpatialSystem } from '../core/spatial-system';
 import { GameLayers } from '../index';
 
 /**
@@ -189,19 +190,19 @@ describe('Scene Integration Tests', () => {
       // Verify grass entities have temperature properties
       const grass1Id = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
       expect(grass1Id).toBeDefined();
-      const grass1Data = spatial.getEntityData(grass1Id);
+      const grass1Data = spatial.getEntityData(grass1Id!);
       expect(grass1Data).toBeDefined();
-      expect(grass1Data!.temperature).toBe(25);
-      expect(grass1Data!.flammable).toBe(true);
-      expect(grass1Data!.flamePoint).toBe(150);
+      expect((grass1Data as unknown as { temperature: number }).temperature).toBe(25);
+      expect((grass1Data as unknown as { flammable: boolean }).flammable).toBe(true);
+      expect((grass1Data as unknown as { flamePoint: number }).flamePoint).toBe(150);
 
       const grass2Id = spatial.getEntityIdAt(6, 5, GameLayers.FLOOR);
       expect(grass2Id).toBeDefined();
-      const grass2Data = spatial.getEntityData(grass2Id);
+      const grass2Data = spatial.getEntityData(grass2Id!);
       expect(grass2Data).toBeDefined();
-      expect(grass2Data!.temperature).toBe(0);
-      expect(grass2Data!.flammable).toBe(true);
-      expect(grass2Data!.flamePoint).toBe(150);
+      expect((grass2Data as unknown as { temperature: number }).temperature).toBe(0);
+      expect((grass2Data as unknown as { flammable: boolean }).flammable).toBe(true);
+      expect((grass2Data as unknown as { flamePoint: number }).flamePoint).toBe(150);
     });
 
     it('should catch schema error: props vs data', () => {
@@ -224,7 +225,6 @@ describe('Scene Integration Tests', () => {
                 x: 5,
                 y: 5,
                 layer: GameLayers.COLLECTIBLES,
-                // @ts-expect-error - Testing error case
                 props: {
                   // WRONG! Should be 'data'
                   propagationType: 'fire',

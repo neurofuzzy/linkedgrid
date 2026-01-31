@@ -295,7 +295,8 @@ export class GameManager {
     }
 
     // Extract properties (excluding id and type which will be set by spawn)
-    const { id: _id, type: _type, ...playerProps } = playerData;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _, type: __, ...playerProps } = playerData;
 
     // Update sceneId to reflect new scene
     playerProps.sceneId = targetSceneId;

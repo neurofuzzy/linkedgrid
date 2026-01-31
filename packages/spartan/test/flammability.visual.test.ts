@@ -48,7 +48,7 @@ visual('fire spreads through grass field', {
       // Check how many grass entities are burning (temp > flamePoint)
       const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
         const data = spatial.getEntityData(id);
-        return data && 'temperature' in data && data.temperature >= data.flamePoint;
+        return data && 'temperature' in data && (data.temperature as number) >= (data.flamePoint as number);
       }).length;
 
       // Should have spread to neighbors
@@ -80,8 +80,8 @@ visual('gasoline trail burns fast', {
     // Ignite start of trail
     const gasId = spatial.getEntityIdAt(3, 5, GameLayers.COLLECTIBLES);
     if (gasId) {
-        const data = spatial.getEntityData(gasId);
-        if (data) data.temperature = 200;
+      const data = spatial.getEntityData(gasId);
+      if (data) data.temperature = 200;
     }
 
     spatial.commit();
@@ -102,13 +102,13 @@ visual('gasoline trail burns fast', {
       // Gasoline burns fast and has low HP, so check for Ash OR Burning
       const entities = Array.from(spatial.getAllPositions());
       const ashCount = entities.filter(([id]) => {
-          const d = spatial.getEntityData(id);
-          return d?.type === 'ash';
+        const d = spatial.getEntityData(id);
+        return d?.type === 'ash';
       }).length;
-      
+
       const burningCount = entities.filter(([id]) => {
         const d = spatial.getEntityData(id);
-        return d && 'temperature' in d && d.temperature >= d.flamePoint;
+        return d && 'temperature' in d && (d.temperature as number) >= (d.flamePoint as number);
       }).length;
 
       if (ashCount + burningCount < 4) {
@@ -139,8 +139,8 @@ visual('fuse burns in sequence', {
     // Ignite start
     const fuseId = spatial.getEntityIdAt(3, 5, GameLayers.COLLECTIBLES);
     if (fuseId) {
-        const data = spatial.getEntityData(fuseId);
-        if (data) data.temperature = 200;
+      const data = spatial.getEntityData(fuseId);
+      if (data) data.temperature = 200;
     }
 
     spatial.commit();
@@ -161,8 +161,8 @@ visual('fuse burns in sequence', {
       // Check for burning or consumed entities
       const entities = Array.from(spatial.getAllPositions());
       const affectedCount = entities.filter(([id]) => {
-          const d = spatial.getEntityData(id);
-          return d?.type === 'ash' || (d && 'temperature' in d && d.temperature >= d.flamePoint);
+        const d = spatial.getEntityData(id);
+        return d?.type === 'ash' || (d && 'temperature' in d && (d.temperature as number) >= (d.flamePoint as number));
       }).length;
 
       if (affectedCount < 3) {
@@ -179,21 +179,21 @@ visual('fire blocked by non-flammable entities', {
     // Create flammable grass on left and right
     // Left side
     spatial.spawn('grass', 3, 5, GameLayers.FLOOR, {
-        temperature: 0,
-        flammable: true,
-        flamePoint: 150,
-        hp: 100,
-        maxHp: 100,
-        color: '#7cba00'
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00'
     });
     // Right side
     spatial.spawn('grass', 5, 5, GameLayers.FLOOR, {
-        temperature: 0,
-        flammable: true,
-        flamePoint: 150,
-        hp: 100,
-        maxHp: 100,
-        color: '#7cba00'
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00'
     });
 
     // Place non-flammable water in the middle
@@ -216,8 +216,8 @@ visual('fire blocked by non-flammable entities', {
     // Ignite left grass
     const grassId = spatial.getEntityIdAt(3, 5, GameLayers.FLOOR);
     if (grassId) {
-        const data = spatial.getEntityData(grassId);
-        if (data) data.temperature = 200;
+      const data = spatial.getEntityData(grassId);
+      if (data) data.temperature = 200;
     }
 
     spatial.commit();
@@ -239,7 +239,7 @@ visual('fire blocked by non-flammable entities', {
       const rightGrass = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
       const data = rightGrass ? spatial.getEntityData(rightGrass) : null;
 
-      if (data && 'temperature' in data && data.temperature >= data.flamePoint) {
+      if (data && 'temperature' in data && (data.temperature as number) >= (data.flamePoint as number)) {
         throw new Error(`Fire jumped the water! Right grass temp: ${data.temperature}`);
       }
     });
@@ -251,22 +251,22 @@ visual('mixed flammability terrain creates realistic spread', {
     // Mixed terrain
     // Grass (high flame point)
     spatial.spawn('grass', 3, 5, GameLayers.FLOOR, {
-        temperature: 0,
-        flammable: true,
-        flamePoint: 150,
-        hp: 100,
-        maxHp: 100,
-        color: '#7cba00'
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 100,
+      maxHp: 100,
+      color: '#7cba00'
     });
-    
+
     // Gasoline (low flame point) adjacent
     spatial.spawn('gasoline', 4, 5, GameLayers.COLLECTIBLES, {
-        temperature: 0,
-        flammable: true,
-        flamePoint: 100,
-        hp: 10,
-        maxHp: 10,
-        color: '#d4af37'
+      temperature: 0,
+      flammable: true,
+      flamePoint: 100,
+      hp: 10,
+      maxHp: 10,
+      color: '#d4af37'
     });
 
     spatial.commit();
@@ -274,8 +274,8 @@ visual('mixed flammability terrain creates realistic spread', {
     // Ignite Grass (3,5)
     const grassId = spatial.getEntityIdAt(3, 5, GameLayers.FLOOR);
     if (grassId) {
-        const data = spatial.getEntityData(grassId);
-        if (data) data.temperature = 200;
+      const data = spatial.getEntityData(grassId);
+      if (data) data.temperature = 200;
     }
 
     spatial.commit();
@@ -296,21 +296,21 @@ visual('mixed flammability terrain creates realistic spread', {
       // Gasoline should be burning or consumed (ash)
       const entities = Array.from(spatial.getAllPositions());
       const affected = entities.filter(([id]) => {
-          const d = spatial.getEntityData(id);
-          // Check if gasoline ID or ash at (4,5)
-          // Harder to check exact ID if it turned to ash.
-          // Just check if any entity at (4,5) is ash or burning.
-          // But wait, getAllPositions returns ALL.
-          
-          // Let's check specifically for gasoline entity ID if still alive
-          if (d?.type === 'gasoline') {
-              return d.temperature >= d.flamePoint;
-          }
-          return d?.type === 'ash';
+        const d = spatial.getEntityData(id);
+        // Check if gasoline ID or ash at (4,5)
+        // Harder to check exact ID if it turned to ash.
+        // Just check if any entity at (4,5) is ash or burning.
+        // But wait, getAllPositions returns ALL.
+
+        // Let's check specifically for gasoline entity ID if still alive
+        if (d?.type === 'gasoline') {
+          return (d.temperature as number) >= (d.flamePoint as number);
+        }
+        return d?.type === 'ash';
       }).length;
 
       if (affected < 1) {
-          throw new Error("Gasoline did not ignite from adjacent burning grass");
+        throw new Error("Gasoline did not ignite from adjacent burning grass");
       }
     });
   },
@@ -375,7 +375,7 @@ visual('fire spreads through connected grass via temperature', {
             data.type === 'grass' &&
             'temperature' in data &&
             'flamePoint' in data &&
-            data.temperature >= data.flamePoint
+            (data.temperature as number) >= (data.flamePoint as number)
           );
         }
       ).length;
@@ -428,7 +428,7 @@ visual('fire cannot spread without flammable materials', {
     if (grassId) {
       const grassData = spatial.getEntityData(grassId);
       if (grassData) {
-        grassData.temperature = grassData.flamePoint + 50;
+        grassData.temperature = (grassData.flamePoint as number) + 50;
       }
     }
     spatial.commit();
@@ -449,7 +449,7 @@ visual('fire cannot spread without flammable materials', {
             data &&
             'temperature' in data &&
             'flamePoint' in data &&
-            data.temperature >= data.flamePoint
+            (data.temperature as number) >= (data.flamePoint as number)
           );
         }
       ).length;
