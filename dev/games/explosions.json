@@ -269,7 +269,9 @@
             "color": "#ff6b35",
             "temperature": 500,
             "flamePoint": 9999,
-            "flammable": false
+            "flammable": false,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {

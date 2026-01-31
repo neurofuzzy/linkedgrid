@@ -211,11 +211,17 @@ export class FireSystem implements GameSystem {
           });
         }
         
-        context.spatial.remove(entityId);
-        entitiesToRemove.push(entityId);
-      }
-    }
-    
+         
+        
+         context.spatial.remove(entityId);
+        
+         entitiesToRemove.push(entityId);
+        
+         continue;
+        
+       }
+        
+     }    
     // Clean up tracking state and visuals
     for (const entityId of entitiesToRemove) {
       const burnState = this.burningEntities.get(entityId);

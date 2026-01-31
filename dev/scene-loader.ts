@@ -78,11 +78,11 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
-  ExplosionSystem: () => new ExplosionSystem(),
+  ExplosionSystem: (gameManager) => new ExplosionSystem(),
   PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
-  FireSystem: () => new FireSystem(),
-  LiquidSystem: () => new LiquidSystem(),
-  ChainReactionSystem: () => new ChainReactionSystem(),
+  FireSystem: (gameManager) => new FireSystem(),
+  LiquidSystem: (gameManager) => new LiquidSystem(),
+  ChainReactionSystem: (gameManager) => new ChainReactionSystem(),
 };
 
 /**

@@ -42,13 +42,12 @@ export class PlayerInputSystem implements GameSystem {
     // Reset tick stats
     this.debugStats.movesThisTick = 0;
 
-    // Capture buffer state before consuming (accessing private fields)
-    const inputManagerInternal = this.inputManager as unknown as {
-      directionBuffer: Direction[];
-      keysDown: Set<string>;
-    };
-    const bufferState = inputManagerInternal.directionBuffer;
-    const keysHeld = inputManagerInternal.keysDown;
+    // Capture buffer state before consuming
+    const bufferState = this.inputManager.directionBuffer;
+    const keysHeld = this.inputManager.keysHeld;
+
+    // Get input for this frame (this drains the buffer in InputManager)
+    const input = this.inputManager.getState();
     this.debugStats.bufferSize = bufferState.length;
     this.debugStats.keysHeld = keysHeld.size;
 

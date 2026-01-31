@@ -157,6 +157,7 @@ export interface GameContext {
     getEntitiesInCell: (x: number, y: number) => number[];
     getEntitiesInLayer: (layer: number) => number[];
     commitPendingActions: () => void;
+    commit: () => void; // Alias for commitPendingActions
   };
   sceneManager?: {
     getScene: (id: string) => unknown;

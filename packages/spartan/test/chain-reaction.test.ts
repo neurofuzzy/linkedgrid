@@ -76,10 +76,11 @@ describe('ChainReactionSystem', () => {
     // Should only have source + immediate neighbors (dist 1)
     // 1 (source) + 4 (neighbors) = 5
     // Neighbors of neighbors (dist 2) should NOT exist.
-    let count = 0;
-    for (const _ of context.spatial.getAllPositions()) {
-      count++;
-    }
-    expect(count).toBe(5);
+    const entitiesAtDist1 = context.spatial.getEntityIdsInRadius(10, 10, 1);
+    expect(entitiesAtDist1.length).toBe(5);
+
+    // Verify no entities spread to distance 2 (should still be 5)
+    const entitiesAtDist2 = context.spatial.getEntityIdsInRadius(10, 10, 2);
+    expect(entitiesAtDist2.length).toBe(5);
   });
 });

@@ -247,7 +247,7 @@ export class InputManager {
   };
 
   // Input buffering for low-framerate games
-  private directionBuffer: Direction[] = [];
+  private directionBufferInternal: Direction[] = [];
   private actionBuffer: boolean = false;
   private bufferEnabled: boolean = false;
 
@@ -561,7 +561,7 @@ export class InputManager {
     this.bufferEnabled = enabled;
 
     // Clear any stale buffered input when toggling modes
-    this.directionBuffer.length = 0;
+    this.directionBufferInternal.length = 0;
     this.actionBuffer = false;
 
     return this;
@@ -623,7 +623,7 @@ export class InputManager {
         if (this.bufferEnabled) {
           const directionKey = this.getDirectionFromKey(e.key);
           if (directionKey !== Direction.NONE && directionKey !== null) {
-            this.directionBuffer.push(directionKey);
+            this.directionBufferInternal.push(directionKey);
           }
 
           // Buffer action inputs
@@ -790,7 +790,7 @@ export class InputManager {
     // Clear all state
     this.keysDown.clear();
     this.keysJustPressed.clear();
-    this.directionBuffer.length = 0;
+    this.directionBufferInternal.length = 0;
     this.actionBuffer = false;
     this.bufferedDirection = Direction.NONE;
     this.bufferedTimestamp = 0;
@@ -881,9 +881,9 @@ export class InputManager {
     if (
       consumeBuffer &&
       this.bufferEnabled &&
-      this.directionBuffer.length > 0
+      this.directionBufferInternal.length > 0
     ) {
-      this.state.direction = this.directionBuffer.shift()!;
+      this.state.direction = this.directionBufferInternal.shift()!;
     } else {
       // PRIORITY 2: Fall back to currently held keys
       this.state.direction = this.getCurrentDirection();
@@ -1084,6 +1084,14 @@ export class InputManager {
   // Convenience Getters
   // ========================================================================
 
+  get directionBuffer(): Direction[] {
+    return this.directionBufferInternal;
+  }
+
+  get keysHeld(): Set<string> {
+    return this.keysDown;
+  }
+
   get direction(): Direction {
     return this.state.direction;
   }
@@ -1260,7 +1268,7 @@ export class InputManager {
 
     // Also update buffer if enabled
     if (this.bufferEnabled && direction !== Direction.NONE) {
-      this.directionBuffer.push(direction);
+      this.directionBufferInternal.push(direction);
     }
 
     // Update state from injected input
