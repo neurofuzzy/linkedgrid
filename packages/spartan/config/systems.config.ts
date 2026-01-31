@@ -82,16 +82,6 @@ export const FIRE_SPREAD_DELAY = SYSTEM_CONFIG.Fire.tickRate;
 export const LIQUID_FLOW_DELAY = SYSTEM_CONFIG.Liquid.tickRate;
 export const GAS_DISPERSION_DELAY = SYSTEM_CONFIG.Poison.tickRate;
 
-// Entity constants
-export const GameLayers = {
-  FLOOR: 1,
-  FLOOR_EFFECTS: 2, // Liquids, Fire, Gas, Ash
-  COLLECTIBLES: 3,
-  WALLS: 4,
-  ACTORS: 5,
-  EPHEMERALS: 6, // Visuals, particles
-} as const;
-
 // Type-safe access
 export type SystemName = keyof typeof SYSTEM_CONFIG;
 export type SystemConfig = (typeof SYSTEM_CONFIG)[SystemName];
