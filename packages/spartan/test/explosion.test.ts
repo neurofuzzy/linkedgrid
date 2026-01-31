@@ -5,7 +5,6 @@ import { SpatialSystem } from '../spatial-system';
 import { ExplosionSystem } from '../systems/explosion-system';
 import { FloorEffectSystem } from '../systems/floor-effect-system';
 import { GameManager } from '../game-manager';
-import { GameState } from '../game-state';
 import { GameLayers } from '../layers/types';
 import type { GameContext } from '../types';
 

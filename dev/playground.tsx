@@ -290,9 +290,7 @@ function Playground() {
   if (loading) {
     return (
       <div style={{ padding: '20px' }}>
-        <h1 style={{ fontFamily: 'Sixtyfour, sans-serif' }}>
-          Spartan Playground
-        </h1>
+        <h1 style={{ fontFamily: 'Lexend, sans-serif' }}>Spartan Playground</h1>
         <p style={{ color: '#33cccc' }}>Loading game...</p>
       </div>
     );
@@ -301,9 +299,7 @@ function Playground() {
   if (error) {
     return (
       <div style={{ padding: '20px' }}>
-        <h1 style={{ fontFamily: 'Sixtyfour, sans-serif' }}>
-          Spartan Playground
-        </h1>
+        <h1 style={{ fontFamily: 'Lexend, sans-serif' }}>Spartan Playground</h1>
         <div
           style={{
             marginTop: '20px',
@@ -317,7 +313,7 @@ function Playground() {
           <h3
             style={{
               marginBottom: '10px',
-              fontFamily: 'Sixtyfour, sans-serif',
+              fontFamily: 'Lexend, sans-serif',
               fontSize: '14px',
             }}
           >
@@ -337,7 +333,7 @@ function Playground() {
               borderRadius: '0',
               color: '#0a0a12',
               cursor: 'pointer',
-              fontFamily: 'Sixtyfour, sans-serif',
+              fontFamily: 'Lexend, sans-serif',
               fontSize: '12px',
             }}
           >

@@ -1,8 +1,7 @@
-import type { GameSystem, GameContext, Position, EntityData } from '../types';
+import type { GameSystem, GameContext, EntityData } from '../types';
 import { Direction } from '../../grid/direction';
 import type { LinkedCell } from '../../grid/linked-cell';
 import { hasPropagation, hasLiquid } from '../entities/trait-guards';
-import { GameLayers } from '../layers/types';
 
 /**
  * Spread state tracked per source entity.
@@ -32,6 +31,10 @@ interface LiquidConfig extends EntityData {
   spreadLayer: number;
   blockedByLayers?: number[];
   depth: number;
+  // Optional flammability properties (for oil/gasoline)
+  flammable?: boolean;
+  flamePoint?: number;
+  temperature?: number;
 }
 
 /**
@@ -156,7 +159,7 @@ export class LiquidSystem implements GameSystem {
 
         // Calculate transfer amount (Float)
         const diff = entityData.depth - recipient.currentDepth;
-        let transfer = diff / divisor;
+        const transfer = diff / divisor;
         
         // Min flow threshold to prevent Zeno's paradox
         if (transfer < 0.05) continue;
@@ -224,10 +227,10 @@ export class LiquidSystem implements GameSystem {
         {
           ...spawn.template,
           // Copy flammability if present (important for oil/gasoline)
-          ...((spawn.template as any).flammable !== undefined && { 
-            flammable: (spawn.template as any).flammable,
-            flamePoint: (spawn.template as any).flamePoint,
-            temperature: (spawn.template as any).temperature 
+          ...(spawn.template.flammable !== undefined && { 
+            flammable: spawn.template.flammable,
+            flamePoint: spawn.template.flamePoint,
+            temperature: spawn.template.temperature 
           }),
           depth: spawn.amount,
           lastSpreadTick: this.currentTick,

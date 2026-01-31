@@ -155,7 +155,19 @@ export class Scene {
    * @param gameState - Global game state reference
    * @returns New Scene instance
    */
-  static deserialize(data: any, gameState: GameState): Scene {
+  static deserialize(data: {
+    id: string;
+    width: number;
+    height: number;
+    metadata?: Record<string, unknown>;
+    cells?: Array<{
+      x: number;
+      y: number;
+      values: (number | undefined)[];
+      masks: number[];
+      distances: number[];
+    }>;
+  }, gameState: GameState): Scene {
     const scene = new Scene(
       data.id,
       data.width,
@@ -195,8 +207,8 @@ export class Scene {
       for (let layer = 0; layer < cellData.values.length; layer++) {
         const entityId = cellData.values[layer];
         if (entityId !== undefined) {
-          // Update position tracking directly
-          const positions = (scene.spatial as any).positions;
+          // Update position tracking directly (accessing private field)
+          const positions = (scene.spatial as { positions: Map<number, { x: number; y: number; layer: Layer }> }).positions;
           positions.set(entityId, { x: cellData.x, y: cellData.y, layer });
         }
       }

@@ -189,7 +189,7 @@ export class ExplosionSystem implements GameSystem {
     // Apply effects to all affected cells
     for (const cell of affectedCells) {
       // Calculate distance for potential damage falloff (currently using full damage)
-      const distance = Math.sqrt((cell.x - x) ** 2 + (cell.y - y) ** 2);
+      // const distance = Math.sqrt((cell.x - x) ** 2 + (cell.y - y) ** 2);
       const effectiveDamage = damage; // Could add falloff: damage * (1 - distance / radius)
 
       // Apply damage and ignition to all entities at this position
@@ -197,7 +197,7 @@ export class ExplosionSystem implements GameSystem {
     }
 
     // Spawn visual effect at epicenter
-    const visualId = context.spatial.spawn('explosion-visual', x, y, GameLayers.EPHEMERALS, {
+    context.spatial.spawn('explosion-visual', x, y, GameLayers.EPHEMERALS, {
       lifetime: 2, // Lasts 2 ticks
       color: '#ff6600',
       spawnTick: this.currentTick, // Track spawn tick for cleanup

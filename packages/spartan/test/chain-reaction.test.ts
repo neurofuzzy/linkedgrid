@@ -24,7 +24,7 @@ describe('ChainReactionSystem', () => {
 
   it('should spread chain reaction to neighbors', () => {
     // Arrange
-    const sourceId = context.spatial.spawn('chain-link', 10, 10, GameLayers.FLOOR, {
+    context.spatial.spawn('chain-link', 10, 10, GameLayers.FLOOR, {
       propagationType: 'chain',
       spreadRate: 1,
       spreadLayer: GameLayers.FLOOR,
@@ -50,7 +50,7 @@ describe('ChainReactionSystem', () => {
 
   it('should respect maxDistance', () => {
     // Arrange
-    const sourceId = context.spatial.spawn('chain-link', 10, 10, GameLayers.FLOOR, {
+    context.spatial.spawn('chain-link', 10, 10, GameLayers.FLOOR, {
       propagationType: 'chain',
       spreadRate: 1,
       spreadLayer: GameLayers.FLOOR,
@@ -75,7 +75,7 @@ describe('ChainReactionSystem', () => {
     // 1 (source) + 4 (neighbors) = 5
     // Neighbors of neighbors (dist 2) should NOT exist.
     let count = 0;
-    for (const [id] of context.spatial.getAllPositions()) {
+    for (const _ of context.spatial.getAllPositions()) {
       count++;
     }
     expect(count).toBe(5);

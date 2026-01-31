@@ -1,6 +1,7 @@
 import type { GameSystem, GameContext } from '../types';
 import { InputManager } from '../input/input-manager';
 import { Direction } from '../../grid/direction';
+import type { GameManager } from '../game-manager';
 
 /**
  * PlayerInputSystem - Bridges InputManager to player movement.
@@ -28,7 +29,7 @@ export class PlayerInputSystem implements GameSystem {
   };
 
   constructor(
-    private gameManager: any,
+    private gameManager: GameManager,
     private inputManager: InputManager
   ) {}
 
@@ -41,9 +42,13 @@ export class PlayerInputSystem implements GameSystem {
     // Reset tick stats
     this.debugStats.movesThisTick = 0;
 
-    // Capture buffer state before consuming
-    const bufferState = (this.inputManager as any).directionBuffer;
-    const keysHeld = (this.inputManager as any).keysDown;
+    // Capture buffer state before consuming (accessing private fields)
+    const inputManagerInternal = this.inputManager as unknown as {
+      directionBuffer: Direction[];
+      keysDown: Set<string>;
+    };
+    const bufferState = inputManagerInternal.directionBuffer;
+    const keysHeld = inputManagerInternal.keysDown;
     this.debugStats.bufferSize = bufferState.length;
     this.debugStats.keysHeld = keysHeld.size;
 
@@ -118,12 +123,17 @@ export class PlayerInputSystem implements GameSystem {
    * Useful for understanding system state during development.
    */
   public getDebugState() {
+    const inputManagerInternal = this.inputManager as unknown as {
+      keyboardManager: unknown;
+      mouseManager: unknown;
+      gamepadManager: unknown;
+    };
     return {
       systemType: 'PlayerInputSystem',
       inputManager: {
-        hasKeyboard: (this.inputManager as any).keyboardManager !== null,
-        hasMouse: (this.inputManager as any).mouseManager !== null,
-        hasGamepad: (this.inputManager as any).gamepadManager !== null,
+        hasKeyboard: inputManagerInternal.keyboardManager !== null,
+        hasMouse: inputManagerInternal.mouseManager !== null,
+        hasGamepad: inputManagerInternal.gamepadManager !== null,
       },
       ...this.debugStats,
     };

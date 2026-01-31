@@ -1,6 +1,7 @@
 import type { GameSystem, GameContext } from '../types';
 import type { TeleporterData } from '../entities/entity-types';
 import type { GameManager } from '../game-manager';
+import type { SpatialSystem } from '../spatial-system';
 import { isPlayer, isTeleporter } from '../entities/trait-guards';
 
 type TeleporterState = 'ready' | 'inactive';
@@ -96,7 +97,7 @@ export class TeleporterSystem implements GameSystem {
   private handlePlayerTeleporterOverlap(
     teleporterId: number,
     teleporter: TeleporterData,
-    spatial: any
+    _spatial: SpatialSystem
   ): void {
     // Check state from entity props (defaults to 'ready')
     const state = (teleporter.teleporterState as TeleporterState) || 'ready';
@@ -149,7 +150,7 @@ export class TeleporterSystem implements GameSystem {
    * Inactive pads become ready when player steps off.
    * Uses global entity store to check all teleporters across all scenes.
    */
-  private updateTeleporterStates(spatial: any, playerId: number): void {
+  private updateTeleporterStates(spatial: SpatialSystem, playerId: number): void {
     const playerPos = spatial.getEntityPosition(playerId);
     if (!playerPos) return;
 

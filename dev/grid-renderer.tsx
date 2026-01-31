@@ -152,8 +152,8 @@ export function GridRenderer({ scene }: Props) {
   }
 
   // Get scene metadata
-  const metadata = scene.metadata || {};
-  const sceneName = (metadata.name as string) || scene.id;
+  // const metadata = scene.metadata || {};
+  // const sceneName = (metadata.name as string) || scene.id;
 
   return (
     <div
@@ -232,7 +232,7 @@ export function HUD({ runtime }: HUDProps) {
         border: '1px solid #222',
         borderLeft: '4px solid #333344',
         borderRadius: '0',
-        fontFamily: 'Sixtyfour, monospace',
+        fontFamily: 'Lexend, monospace',
         fontSize: '12px',
       }}
     >
@@ -244,7 +244,7 @@ export function HUD({ runtime }: HUDProps) {
               display: 'flex',
               justifyContent: 'space-between',
               marginBottom: '6px',
-              fontSize: '10px',
+              fontSize: '12px',
               color: '#33b5cc',
             }}
           >
@@ -284,7 +284,7 @@ export function HUD({ runtime }: HUDProps) {
         >
           <div
             style={{
-              fontSize: '10px',
+              fontSize: '12px',
               color: '#33b5cc',
               marginBottom: '4px',
             }}
@@ -310,7 +310,7 @@ export function HUD({ runtime }: HUDProps) {
         >
           <div
             style={{
-              fontSize: '10px',
+              fontSize: '12px',
               color: '#33b5cc',
               marginBottom: '4px',
             }}

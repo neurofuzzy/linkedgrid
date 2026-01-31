@@ -1,6 +1,5 @@
 import { Direction } from './direction';
 import { LinkedCell } from './linked-cell';
-import type { ILinkedGrid } from './interfaces';
 
 /**
  * LinkedCellUtils - Static class for complex geometry, pathfinding, and lighting

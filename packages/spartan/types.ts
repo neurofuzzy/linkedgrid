@@ -95,9 +95,30 @@ export interface Overlap {
  */
 export interface GameContext {
   overlaps: Overlap[];
-  spatial: any; // SpatialSystem - avoid circular import
-  sceneManager?: any; // SceneManager - optional for cross-scene operations
-  gameManager?: any; // GameManager - optional for scene transitions
+  spatial: {
+    grid: { width: number; height: number };
+    spawn: (type: string, x: number, y: number, layer: number, data?: Record<string, unknown>) => number;
+    move: (entityId: number, x: number, y: number) => void;
+    destroy: (entityId: number) => void;
+    getEntityPosition: (entityId: number) => { x: number; y: number; layer: number } | null;
+    getEntitiesInCell: (x: number, y: number) => number[];
+    getEntitiesInLayer: (layer: number) => number[];
+    commitPendingActions: () => void;
+  };
+  sceneManager?: {
+    getScene: (id: string) => unknown;
+    getActiveScene: () => unknown;
+  };
+  gameManager?: {
+    gameState: {
+      playerEntityId: number;
+      entityStore: {
+        getData: (id: number) => EntityData | undefined;
+        setData: (id: number, data: Partial<EntityData>) => void;
+      };
+    };
+    movePlayerToScene: (sceneId: string, x: number, y: number, layer: number) => void;
+  };
 }
 
 /**

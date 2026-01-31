@@ -197,7 +197,19 @@ export class GameState {
    * @param data - Serialized game state data
    * @returns New GameState instance
    */
-  static deserialize(data: any): GameState {
+  static deserialize(data: {
+    playerEntityId?: number;
+    lives?: number;
+    score?: number;
+    inventory?: Array<[string, number]>;
+    buffs?: Array<[string, number]>;
+    upgrades?: string[];
+    flags?: Array<[string, boolean]>;
+    data?: Array<[string, unknown]>;
+    connections?: Array<[string, Array<{ sceneId: string; x: number; y: number; layer: number }>]>;
+    nextEntityId?: number;
+    entities?: Array<{ id: number; type: string; [key: string]: unknown }>;
+  }): GameState {
     const state = new GameState();
     state.playerEntityId = data.playerEntityId ?? 0;
     state.lives = data.lives ?? 3;

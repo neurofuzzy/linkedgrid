@@ -239,8 +239,8 @@ export class PoisonSystem implements GameSystem {
 
   private applyDamageWithCadence(
     victimId: number, 
-    victimData: any, 
-    gasData: any,
+    victimData: EntityData, 
+    gasData: EntityData,
     context: GameContext
   ): void {
     if (!this.gameManager) return;

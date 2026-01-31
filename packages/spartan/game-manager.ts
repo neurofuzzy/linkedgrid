@@ -298,8 +298,10 @@ export class GameManager {
         newPos.y === y &&
         newPos.layer === layer
       );
-    } catch (_error) {
-      transitioned = false;
+    } catch {
+      // Revert if spawn failed
+      this.gameState.playerEntityId = null;
+      throw new Error(`Failed to spawn player in scene ${sceneId}`);
     }
 
     if (transitioned) {

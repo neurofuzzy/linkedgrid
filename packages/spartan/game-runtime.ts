@@ -246,7 +246,7 @@ export class GameRuntime {
    * localStorage.setItem('save-slot-1', JSON.stringify(saveData));
    * ```
    */
-  save(): any {
+  save(): SaveData & { tickCount: number; tickRate: number } {
     const wasRunning = this._isRunning;
     if (wasRunning) {
       this.stop();
@@ -283,7 +283,9 @@ export class GameRuntime {
     this.stop();
 
     // Create new GameManager
-    (this as any).game = new GameManager();
+    const newGame = new GameManager();
+    // Need to update readonly field via object mutation
+    Object.assign(this, { game: newGame });
 
     // Recreate initial scene
     this.game.sceneManager.createScene(

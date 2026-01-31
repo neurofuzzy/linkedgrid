@@ -19,7 +19,7 @@ const ENTITY_COLORS: Record<string, (s: string) => string> = {
 
 const DEFAULT_GRID_SIZE = { w: 20, h: 20 };
 
-export function GridRenderer({ snapshot, previousSnapshot }: Props) {
+export function GridRenderer({ snapshot }: Props) {
   const grid = snapshot?.grid || DEFAULT_GRID_SIZE;
 
   // Build ASCII grid

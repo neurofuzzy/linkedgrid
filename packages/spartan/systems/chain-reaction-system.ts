@@ -2,7 +2,6 @@ import type { GameSystem, GameContext, Position, EntityData } from '../types';
 import { Direction } from '../../grid/direction';
 import type { LinkedCell } from '../../grid/linked-cell';
 import { hasPropagation } from '../entities/trait-guards';
-import { GameLayers } from '../layers/types';
 
 interface ChainState {
   lastSpreadTick: number;
