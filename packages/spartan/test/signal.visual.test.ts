@@ -3,6 +3,7 @@ import { GameLayers } from '../config/layers.config';
 import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnBollard, spawnTransceiver } from '../entities/spawn-helpers';
 import { hasSignalEmitter, hasSignalReceiver, isBollard, hasConductive } from '../traits/trait-guards';
 import { SignalSystem } from '../systems/signal.system';
+import { BollardSystem } from '../systems/bollard.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
 
@@ -34,6 +35,7 @@ visual('oscillator toggles on/off every 20 ticks', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick 20 times (should toggle once at tick 20)
     for (let i = 0; i < 20; i++) {
@@ -90,6 +92,7 @@ visual('pressure switch toggles when player steps on it', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Find player
     const playerId = spatial.getEntityIdAt(4, 5, GameLayers.ACTORS);
@@ -149,6 +152,7 @@ visual('conductive floor carries signal from oscillator to bollard', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick 1: Signal propagates, bollard receives and becomes pending
     gameLoop.tick();
@@ -207,6 +211,7 @@ visual('bollard closes when signal turns off', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick to propagate (no signal, bollard should close)
     gameLoop.tick();
@@ -274,6 +279,7 @@ visual('inverter outputs opposite of input signal', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick to propagate signals
     gameLoop.tick();
@@ -354,6 +360,7 @@ visual('inverter emits when not receiving signal', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick 1: Inverter emits (no input), downstream conductor powered, bollard pending
     gameLoop.tick();
@@ -428,6 +435,7 @@ visual('signal does not propagate without conductive path', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     gameLoop.tick();
   },
@@ -473,6 +481,7 @@ visual('oscillator cycles on and off over time', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick 41 times to see full cycle
     for (let i = 0; i < 41; i++) {
@@ -525,6 +534,7 @@ visual('pressure switch toggles off when stepped on again', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Find player at (4, 5)
     const playerId = spatial.getEntityIdAt(4, 5, GameLayers.ACTORS);
@@ -597,6 +607,7 @@ visual('transceiver broadcasts signal to same channel', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Tick 1: Signal propagates to TX-A, TX-A broadcasts to channel
     gameLoop.tick();
@@ -669,6 +680,7 @@ visual('transceivers on different channels do not interfere', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new BollardSystem(gameManager));
 
     // Multiple ticks to ensure no delayed propagation
     gameLoop.tick();

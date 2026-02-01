@@ -8,6 +8,7 @@
  * See docs/SYSTEMS.md for behavior documentation.
  */
 
+export { BollardSystem } from './bollard.system';
 export { ChainReactionSystem } from './chain-reaction.system';
 export { CollectionSystem } from './collection.system';
 export { DoorSystem } from './door.system';

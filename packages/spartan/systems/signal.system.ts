@@ -475,87 +475,22 @@ export class SignalSystem extends BaseReactiveSystem {
         continue;
       }
 
-      // Active components and receivers
+      // Receivers: update receivedSignal state
+      // Skip entities whose state is already set by earlier phases
       if (hasSignalReceiver(data)) {
-        // Inverters already have their receivedSignal set in resolveCircuit Pass 2
+        // Inverters already have their state set in resolveCircuit Pass 2
         if (data.receiverType === 'inverter') continue;
 
-        // Transceivers already have their receivedSignal set in resolveTransceiverChannels
+        // Transceivers already have their state set in resolveTransceiverChannels
         if (data.receiverType === 'transceiver') continue;
 
-        // Update visual receivedSignal state
+        // All other receivers (bollards, etc) get their receivedSignal updated
+        // Behavior based on this state is handled by other systems (e.g. BollardSystem)
         this.gameManager.gameState.entityStore.setData(entityId, {
           receivedSignal: hasSignal
         });
-
-        // Bollards: act on signal (no complex tick-delay, just use current state)
-        // Since signals propagate instantly within the tick, bollards react same tick
-        if (data.receiverType === 'bollard') {
-          this.applyToBollard(context, entityId, pos, { ...data, receivedSignal: hasSignal });
-        }
       }
     }
-  }
-
-  /**
-   * Apply signal to bollard: open when ON, close when OFF.
-   */
-  private applyToBollard(
-    context: GameContext,
-    entityId: number,
-    pos: { x: number; y: number; layer: number },
-    data: any
-  ): void {
-    const shouldBeOpen = data.receivedSignal; // ON signal = open
-    const isOpen = pos.layer !== GameLayers.WALLS;
-
-    if (shouldBeOpen && !isOpen) {
-      // Open: move to FLOOR layer (spawn new entity with same ID)
-      // Must remove from store immediately to allow spawnWithId to reuse ID
-      this.gameManager.gameState.entityStore.remove(entityId);
-      context.spatial.remove(entityId); // Stages grid cleanup
-
-      context.spatial.spawnWithId(
-        entityId,
-        'bollard-open',
-        pos.x,
-        pos.y,
-        GameLayers.FLOOR,
-        {
-          receiverType: 'bollard',
-          receivedSignal: true,
-          color: data.color || '#ff0000',
-          sceneId: data.sceneId,
-        }
-      );
-    } else if (!shouldBeOpen && isOpen) {
-      // Close: move to WALLS layer (spawn new entity with same ID)
-      // Must remove from store immediately to allow spawnWithId to reuse ID
-      this.gameManager.gameState.entityStore.remove(entityId);
-      context.spatial.remove(entityId); // Stages grid cleanup
-
-      context.spatial.spawnWithId(
-        entityId,
-        'bollard-closed',
-        pos.x,
-        pos.y,
-        GameLayers.WALLS,
-        {
-          receiverType: 'bollard',
-          receivedSignal: false,
-          color: data.color || '#ff0000',
-          sceneId: data.sceneId,
-        }
-      );
-    }
-  }
-
-  /**
-   * Apply signal to inverter: output opposite of input.
-   * (Now handled inside resolveCircuit)
-   */
-  private applyToInverter(entityId: number, data: any): void {
-    // Deprecated/Folded into resolveCircuit
   }
 
   /**

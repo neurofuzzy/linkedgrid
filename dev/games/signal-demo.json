@@ -321,7 +321,8 @@
     ],
     "initialScene": "signal-lab",
     "systems": [
-        "SignalSystem"
+        "SignalSystem",
+        "BollardSystem"
     ],
     "input": {
         "type": "keyboard",
