@@ -2,7 +2,6 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import chalk from 'chalk';
 import type { Snapshot } from '../lib/test-executor.js';
-import { GameLayers } from '../../spartan/types.js';
 
 interface Assertion {
   description: string;

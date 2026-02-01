@@ -1,0 +1,997 @@
+{
+  "scenes": [
+    {
+      "id": "propagation-demo",
+      "name": "Propagation & Explosion Demo",
+      "width": 30,
+      "height": 20,
+      "entities": [
+        {
+          "type": "player",
+          "x": 2,
+          "y": 10,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "propagation-demo"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 21,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 22,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 24,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 26,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 27,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 28,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 21,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 22,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 24,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 25,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 26,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 27,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 28,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 19,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 1,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 2,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 3,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 4,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 5,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 6,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 7,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 9,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 10,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 11,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 12,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 13,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 14,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 15,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 16,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 18,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 1,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 2,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 3,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 4,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 5,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 6,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 7,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 9,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 10,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 11,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 12,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 13,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 14,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 15,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 16,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 29,
+          "y": 18,
+          "layer": 5
+        },
+        {
+          "type": "torch",
+          "x": 4,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "color": "#ff6b35",
+            "temperature": 500,
+            "flammable": false,
+            "flamePoint": 400
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 5,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 6,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 7,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 8,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 9,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 10,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 11,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 12,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 13,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 14,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 15,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 16,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 17,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 18,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 19,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "gasoline",
+          "x": 20,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 21,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "hp": 5,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammable": true,
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 23,
+          "y": 12,
+          "layer": 4,
+          "data": {
+            "hp": 5,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammable": true,
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 21,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "hp": 5,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammable": true,
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "barrel",
+          "x": 22,
+          "y": 9,
+          "layer": 4,
+          "data": {
+            "hp": 5,
+            "maxHp": 20,
+            "explosionDamage": 30,
+            "explosionRadius": 4,
+            "triggerCondition": "on-death",
+            "flammable": true,
+            "flamePoint": 200,
+            "temperature": 0,
+            "color": "#8B4513"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 6,
+          "y": 11,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 11,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 11,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 6,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 7,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        },
+        {
+          "type": "grass",
+          "x": 8,
+          "y": 9,
+          "layer": 1,
+          "data": {
+            "flammable": true,
+            "flamePoint": 150,
+            "temperature": 0,
+            "hp": 20,
+            "maxHp": 20,
+            "color": "#7cba00"
+          }
+        }
+      ]
+    }
+  ],
+  "initialScene": "propagation-demo",
+  "systems": ["ExplosionSystem", "FloorEffectSystem", "FireSystem"],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

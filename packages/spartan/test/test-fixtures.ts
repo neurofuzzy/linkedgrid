@@ -1,5 +1,5 @@
-import { SpatialSystem } from '../spatial-system';
-import { Layer } from '../types';
+import { SpatialSystem } from '../core/spatial-system';
+import { Layer } from '../core/types';
 
 /**
  * Test fixture helper for setting up initial spatial state.
@@ -25,7 +25,7 @@ export class TestSpatialFixture {
   constructor(
     private spatial: SpatialSystem,
     private sceneId?: string
-  ) {}
+  ) { }
 
   /**
    * Place entity and auto-commit.
@@ -49,8 +49,8 @@ export class TestSpatialFixture {
   ): number {
     const entityProps = this.sceneId
       ? { ...props, sceneId: this.sceneId }
-      : props;
-    const id = this.spatial.spawn(type, x, y, layer, entityProps);
+      : props ?? undefined;
+    const id = this.spatial.spawn(type, x, y, layer, entityProps as Record<string, unknown> | undefined);
     this.spatial.commit();
     return id;
   }

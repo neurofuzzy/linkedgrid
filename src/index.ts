@@ -5,4 +5,4 @@
  * All values are constrained to numbers for simplicity.
  */
 
-export * from '../packages/grid/index';
+export * from '../packages/spartan/core/index';

@@ -16,7 +16,7 @@
  * headlessInput.enable();
  *
  * // Simulate pressing right arrow
- * headlessInput.setDirection(Direction.RT);
+ * headlessInput.setDirection(Direction.RIGHT);
  *
  * // In game loop
  * function tick() {
@@ -31,7 +31,7 @@
  * ```
  */
 
-import { Direction } from '../../grid/direction';
+import { Direction } from '../core/grid/direction';
 
 /**
  * Headless input state for a single frame.

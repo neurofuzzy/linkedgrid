@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "visual": "tsx packages/visual-runner/cli.tsx"
@@ -45,6 +46,7 @@
   "homepage": "https://github.com/neurofuzzy/linkedgrid#readme",
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/node": "^25.1.0",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "eslint": "^9.39.2",

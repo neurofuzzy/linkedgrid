@@ -72,7 +72,7 @@
  * ```
  */
 
-import { Direction } from '../../grid/direction';
+import { Direction } from '../core/grid/direction';
 
 /**
  * Stick processing mode.
@@ -247,7 +247,7 @@ export class InputManager {
   };
 
   // Input buffering for low-framerate games
-  private directionBuffer: Direction[] = [];
+  private directionBufferInternal: Direction[] = [];
   private actionBuffer: boolean = false;
   private bufferEnabled: boolean = false;
 
@@ -290,7 +290,7 @@ export class InputManager {
    *
    * // Headless mode (for testing)
    * const input = new InputManager(null, null, { cellSize: 32, cellGap: 2 });
-   * input.injectInput(Direction.RT);  // Programmatic input
+   * input.injectInput(Direction.RIGHT);  // Programmatic input
    * ```
    */
   constructor(
@@ -532,9 +532,9 @@ export class InputManager {
 
     // Return cardinal direction
     if (absY > absX) {
-      return y < 0 ? Direction.UP : Direction.DN;
+      return y < 0 ? Direction.UP : Direction.DOWN;
     } else {
-      return x < 0 ? Direction.LT : Direction.RT;
+      return x < 0 ? Direction.LEFT : Direction.RIGHT;
     }
   }
 
@@ -561,7 +561,7 @@ export class InputManager {
     this.bufferEnabled = enabled;
 
     // Clear any stale buffered input when toggling modes
-    this.directionBuffer.length = 0;
+    this.directionBufferInternal.length = 0;
     this.actionBuffer = false;
 
     return this;
@@ -578,13 +578,13 @@ export class InputManager {
         return Direction.UP;
       case 'ArrowDown':
       case 's':
-        return Direction.DN;
+        return Direction.DOWN;
       case 'ArrowLeft':
       case 'a':
-        return Direction.LT;
+        return Direction.LEFT;
       case 'ArrowRight':
       case 'd':
-        return Direction.RT;
+        return Direction.RIGHT;
       default:
         return null;
     }
@@ -623,7 +623,7 @@ export class InputManager {
         if (this.bufferEnabled) {
           const directionKey = this.getDirectionFromKey(e.key);
           if (directionKey !== Direction.NONE && directionKey !== null) {
-            this.directionBuffer.push(directionKey);
+            this.directionBufferInternal.push(directionKey);
           }
 
           // Buffer action inputs
@@ -790,7 +790,7 @@ export class InputManager {
     // Clear all state
     this.keysDown.clear();
     this.keysJustPressed.clear();
-    this.directionBuffer.length = 0;
+    this.directionBufferInternal.length = 0;
     this.actionBuffer = false;
     this.bufferedDirection = Direction.NONE;
     this.bufferedTimestamp = 0;
@@ -881,9 +881,9 @@ export class InputManager {
     if (
       consumeBuffer &&
       this.bufferEnabled &&
-      this.directionBuffer.length > 0
+      this.directionBufferInternal.length > 0
     ) {
-      this.state.direction = this.directionBuffer.shift()!;
+      this.state.direction = this.directionBufferInternal.shift()!;
     } else {
       // PRIORITY 2: Fall back to currently held keys
       this.state.direction = this.getCurrentDirection();
@@ -893,11 +893,11 @@ export class InputManager {
     if (this.keysDown.has('w') || this.keysDown.has('W')) {
       this.state.shootDirection = Direction.UP;
     } else if (this.keysDown.has('s') || this.keysDown.has('S')) {
-      this.state.shootDirection = Direction.DN;
+      this.state.shootDirection = Direction.DOWN;
     } else if (this.keysDown.has('a') || this.keysDown.has('A')) {
-      this.state.shootDirection = Direction.LT;
+      this.state.shootDirection = Direction.LEFT;
     } else if (this.keysDown.has('d') || this.keysDown.has('D')) {
-      this.state.shootDirection = Direction.RT;
+      this.state.shootDirection = Direction.RIGHT;
     } else {
       this.state.shootDirection = Direction.NONE;
     }
@@ -989,14 +989,14 @@ export class InputManager {
     // Fall back to currently held keys
     // Arrow keys take priority
     if (this.keysDown.has('ArrowUp')) return Direction.UP;
-    if (this.keysDown.has('ArrowDown')) return Direction.DN;
-    if (this.keysDown.has('ArrowLeft')) return Direction.LT;
-    if (this.keysDown.has('ArrowRight')) return Direction.RT;
+    if (this.keysDown.has('ArrowDown')) return Direction.DOWN;
+    if (this.keysDown.has('ArrowLeft')) return Direction.LEFT;
+    if (this.keysDown.has('ArrowRight')) return Direction.RIGHT;
     // WASD
     if (this.keysDown.has('w') || this.keysDown.has('W')) return Direction.UP;
-    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DN;
-    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LT;
-    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RT;
+    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DOWN;
+    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
+    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RIGHT;
     return Direction.NONE;
   }
 
@@ -1029,11 +1029,11 @@ export class InputManager {
     // D-pad (buttons 12-15)
     if (gp.buttons[12]?.pressed) this.state.gamepad.direction = Direction.UP;
     else if (gp.buttons[13]?.pressed)
-      this.state.gamepad.direction = Direction.DN;
+      this.state.gamepad.direction = Direction.DOWN;
     else if (gp.buttons[14]?.pressed)
-      this.state.gamepad.direction = Direction.LT;
+      this.state.gamepad.direction = Direction.LEFT;
     else if (gp.buttons[15]?.pressed)
-      this.state.gamepad.direction = Direction.RT;
+      this.state.gamepad.direction = Direction.RIGHT;
     else this.state.gamepad.direction = Direction.NONE;
 
     // Left stick (movement)
@@ -1083,6 +1083,14 @@ export class InputManager {
   // ========================================================================
   // Convenience Getters
   // ========================================================================
+
+  get directionBuffer(): readonly Direction[] {
+    return [...this.directionBufferInternal];
+  }
+
+  get keysHeld(): Set<string> {
+    return this.keysDown;
+  }
 
   get direction(): Direction {
     return this.state.direction;
@@ -1211,14 +1219,14 @@ export class InputManager {
    * @example
    * ```typescript
    * // Simulate pressing right arrow
-   * inputManager.injectInput(Direction.RT);
+   * inputManager.injectInput(Direction.RIGHT);
    *
    * // Simulate pressing action button
    * inputManager.injectInput(Direction.NONE, true);
    *
    * // Get the injected state
    * const state = inputManager.getState();
-   * expect(state.direction).toBe(Direction.RT);
+   * expect(state.direction).toBe(Direction.RIGHT);
    * ```
    */
   injectInput(
@@ -1239,13 +1247,13 @@ export class InputManager {
       case Direction.UP:
         this.keysDown.add('ArrowUp');
         break;
-      case Direction.DN:
+      case Direction.DOWN:
         this.keysDown.add('ArrowDown');
         break;
-      case Direction.LT:
+      case Direction.LEFT:
         this.keysDown.add('ArrowLeft');
         break;
-      case Direction.RT:
+      case Direction.RIGHT:
         this.keysDown.add('ArrowRight');
         break;
     }
@@ -1260,7 +1268,7 @@ export class InputManager {
 
     // Also update buffer if enabled
     if (this.bufferEnabled && direction !== Direction.NONE) {
-      this.directionBuffer.push(direction);
+      this.directionBufferInternal.push(direction);
     }
 
     // Update state from injected input

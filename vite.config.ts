@@ -45,6 +45,7 @@ export default defineConfig(() => {
       include: [
         'packages/**/test/**/*.test.ts',
         'packages/**/test/**/*.visual.test.ts',
+        'test-integration/**/*.test.ts',
       ],
       exclude: ['**/node_modules/**', '**/dist/**'],
     },

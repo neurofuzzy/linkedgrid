@@ -32,15 +32,8 @@
  */
 
 // Core framework
-export { SparseEntityStore } from './entity-store';
-export { SpatialSystem } from './spatial-system';
-export { GameState } from './game-state';
-export { Scene } from './scene';
-export { SceneManager } from './scene-manager';
-export { GameManager } from './game-manager';
+export * from './core';
 
-// Core framework types
-export type { EntityData, Layer, Position } from './types';
 export {
   GameLayer,
   GameLayers,
@@ -50,7 +43,7 @@ export {
   ALL_LAYERS,
   CellMask,
   CellMasks,
-} from './layers/types';
+} from './config/layers.config';
 
 // Layers
 
@@ -80,38 +73,13 @@ export type {
   HasColor,
   HasFloorEffect,
   HasPropagation,
-  HasFlammability,
+  HasTemperature,
   HasExplosion,
   HasDamageable,
-} from './entities/traits';
+} from './traits/traits';
 
 // Entity archetypes (example patterns)
-export type {
-  PlayerData,
-  EnemyData,
-  TeleporterData,
-  ItemData,
-  WallData,
-  DoorData,
-  KeyData,
-  OpenDoorData,
-  LavaData,
-  AcidData,
-  MedbayData,
-  IceData,
-  MudData,
-  FireData,
-  PoisonGasData,
-  WaterData,
-  AshData,
-  GrassData,
-  GasolineData,
-  FuseData,
-  TorchData,
-  BarrelData,
-  ExplosionVisualData,
-  DestructibleWallData,
-} from './entities/entity-types';
+export * from './entities/entity.types';
 
 // Trait guards (runtime checks)
 export {
@@ -126,7 +94,7 @@ export {
   hasColor,
   hasFloorEffect,
   hasPropagation,
-  hasFlammability,
+  hasTemperature,
   hasExplosion,
   hasDamageable,
   isPlayer,
@@ -141,7 +109,6 @@ export {
   isMedbay,
   isIce,
   isMud,
-  isFire,
   isPoisonGas,
   isWater,
   isAsh,
@@ -155,7 +122,7 @@ export {
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
-} from './entities/trait-guards';
+} from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
 export {
@@ -167,21 +134,20 @@ export {
   spawnPlayerWithId,
 } from './entities/spawn-helpers';
 
-// Layer utilities (for visual/rendering helpers)
-// For spatial queries, use SpatialSystem methods: spatial.isBlocked(), spatial.blocksVision(), spatial.isWalkable()
-export { getTopmostEntity } from './layers/layer-helpers';
-
-// Game loop and runtime
-export { GameLoop } from './game-loop';
-export { GameRuntime } from './game-runtime';
-export type { GameRuntimeConfig } from './game-runtime';
+// Helpers
+export * from './helpers';
 
 // Systems
-export { TeleporterSystem } from './systems/teleporter-system';
-export { CollectionSystem } from './systems/collection-system';
-export { DoorSystem } from './systems/door-system';
-export { PlayerInputSystem } from './systems/player-input-system';
-export { FloorEffectSystem } from './systems/floor-effect-system';
-export { PropagationSystem } from './systems/propagation-system';
-export { ExplosionSystem } from './systems/explosion-system';
-export type { GameSystem, GameContext, Overlap } from './types';
+export {
+  ChainReactionSystem,
+  CollectionSystem,
+  DoorSystem,
+  ExplosionSystem,
+  FireSystem,
+  FloorEffectSystem,
+  LiquidSystem,
+  PlayerInputSystem,
+  PoisonSystem,
+  TeleporterSystem,
+} from './systems';
+

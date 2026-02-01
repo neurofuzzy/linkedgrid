@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan/input';
-import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
 import { GridRenderer, HUD, DebugPanel } from './grid-renderer';
-import type { GameRuntime } from '../packages/spartan/game-runtime';
+import type { GameRuntime } from '../packages/spartan/core/game-runtime';
 
 /**
  * Available game configurations.
@@ -31,6 +31,31 @@ const AVAILABLE_GAMES = [
     id: 'flammability',
     name: 'Flammability',
     path: '/dev/games/flammability.json',
+  },
+  {
+    id: 'explosions',
+    name: 'Explosions Playground',
+    path: '/dev/games/explosions.json',
+  },
+  {
+    id: 'propagation',
+    name: 'Propagation & Chain Reaction',
+    path: '/dev/games/propagation.json',
+  },
+  {
+    id: 'liquids',
+    name: 'Liquid Simulation',
+    path: '/dev/games/liquids.json',
+  },
+  {
+    id: 'gasoline',
+    name: 'Gasoline & Fire',
+    path: '/dev/games/gasoline.json',
+  },
+  {
+    id: 'chain',
+    name: 'Chain Reaction (Dominos)',
+    path: '/dev/games/chain-reaction.json',
   },
 ];
 
@@ -75,6 +100,7 @@ function getInitialGame(): string {
 function Playground() {
   const [runtime, setRuntime] = useState<GameRuntime | null>(null);
   const [inputManager, setInputManager] = useState<InputManager | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [playerInputSystem, setPlayerInputSystem] = useState<any>(null);
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -86,6 +112,7 @@ function Playground() {
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
   const inputManagerRef = useRef<InputManager | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerInputSystemRef = useRef<any>(null);
 
   // Load and initialize runtime when scene changes
@@ -103,6 +130,7 @@ function Playground() {
         if (runtimeRef.current) {
           runtimeRef.current.stop();
           // Clean up input manager if it exists
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const cleanup = (runtimeRef.current as any).inputCleanup;
           if (cleanup) {
             cleanup();
@@ -134,10 +162,13 @@ function Playground() {
         loadedRuntime = loader.load(config);
 
         // Get input manager from runtime (created by loader)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         loadedInputManager = (loadedRuntime as any).inputManager;
 
         // Get player input system from runtime
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const loadedPlayerInputSystem = (loadedRuntime as any).systems.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (s: any) => s instanceof PlayerInputSystem
         );
 
@@ -195,9 +226,11 @@ function Playground() {
 
   // Hot reload support - listen for Vite HMR events
   useEffect(() => {
-    if (import.meta.hot) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((import.meta as any).hot) {
       // When any JSON file changes, reload the game
-      import.meta.hot.on('vite:beforeUpdate', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (import.meta as any).hot.on('vite:beforeUpdate', () => {
         console.log('Hot reload triggered - reloading game...');
         setGameKey((prev) => prev + 1);
       });
@@ -211,11 +244,13 @@ function Playground() {
       if (e.key === 'k' || e.key === 'K') {
         if (!inputManagerRef.current) return;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const currentMode = (inputManagerRef.current as any).config
           .directionMode;
         const newMode = currentMode === 'continuous' ? 'tap' : 'continuous';
 
         // Update config
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (inputManagerRef.current as any).config.directionMode = newMode;
 
         // For tap mode, disable buffering (single press should move once)
@@ -265,8 +300,8 @@ function Playground() {
   if (loading) {
     return (
       <div style={{ padding: '20px' }}>
-        <h1>Spartan Playground</h1>
-        <p style={{ color: '#4ec9b0' }}>Loading game...</p>
+        <h1 style={{ fontFamily: 'Lexend, sans-serif' }}>Spartan Playground</h1>
+        <p style={{ color: '#33cccc' }}>Loading game...</p>
       </div>
     );
   }
@@ -274,18 +309,26 @@ function Playground() {
   if (error) {
     return (
       <div style={{ padding: '20px' }}>
-        <h1>Spartan Playground</h1>
+        <h1 style={{ fontFamily: 'Lexend, sans-serif' }}>Spartan Playground</h1>
         <div
           style={{
             marginTop: '20px',
             padding: '15px',
-            background: '#3c1f1f',
-            border: '1px solid #f48771',
-            borderRadius: '4px',
-            color: '#f48771',
+            background: '#2a1a1a',
+            border: '1px solid #333344',
+            borderRadius: '0',
+            color: '#cc3366',
           }}
         >
-          <h3 style={{ marginBottom: '10px' }}>Error Loading Game</h3>
+          <h3
+            style={{
+              marginBottom: '10px',
+              fontFamily: 'Lexend, sans-serif',
+              fontSize: '14px',
+            }}
+          >
+            Error Loading Game
+          </h3>
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px' }}>
             {error}
           </pre>
@@ -295,12 +338,13 @@ function Playground() {
             onClick={() => setGameKey((prev) => prev + 1)}
             style={{
               padding: '8px 16px',
-              background: '#4ec9b0',
+              background: '#33cccc',
               border: 'none',
-              borderRadius: '4px',
-              color: '#1e1e1e',
+              borderRadius: '0',
+              color: '#0a0a12',
               cursor: 'pointer',
-              fontFamily: 'inherit',
+              fontFamily: 'Lexend, sans-serif',
+              fontSize: '12px',
             }}
           >
             Retry
@@ -322,9 +366,13 @@ function Playground() {
       >
         <h1 style={{ margin: 0 }}>Spartan Playground</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <label style={{ color: '#9cdcfe', fontSize: '14px' }}>Game:</label>
+          <label
+            style={{ color: '#33b5cc', fontSize: '14px', fontWeight: 'bold' }}
+          >
+            Game:
+          </label>
           <span
-            style={{ color: '#808080', fontSize: '12px', marginRight: '10px' }}
+            style={{ color: '#8888aa', fontSize: '12px', marginRight: '10px' }}
           >
             (TAB to cycle)
           </span>
@@ -333,10 +381,10 @@ function Playground() {
             onChange={handleGameChange}
             style={{
               padding: '6px 12px',
-              background: '#252526',
-              border: '1px solid #3c3c3c',
-              borderRadius: '4px',
-              color: '#d4d4d4',
+              background: '#0f0f1a',
+              border: '1px solid #222',
+              borderRadius: '0',
+              color: '#d0d0d0',
               fontFamily: 'inherit',
               fontSize: '14px',
               cursor: 'pointer',
@@ -354,12 +402,14 @@ function Playground() {
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         <div style={{ marginTop: '20px' }}>
           <GridRenderer scene={runtime?.activeScene || null} />
-          <HUD runtime={runtime} />
+          {runtime && <HUD runtime={runtime} />}
         </div>
         <div style={{ flex: '1', minWidth: '300px' }}>
           <DebugPanel
-            runtime={runtime}
-            inputManager={inputManager}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            runtime={runtime as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            inputManager={inputManager as any}
             playerInputSystem={playerInputSystem}
           />
 
@@ -369,7 +419,7 @@ function Playground() {
               <>
                 <p>
                   <span className="label">Name:</span>{' '}
-                  {runtime.activeScene.metadata?.name || runtime.activeScene.id}
+                  {(runtime.activeScene.metadata?.name as string) || runtime.activeScene.id || 'Unknown'}
                 </p>
                 <p>
                   <span className="label">ID:</span> {runtime.activeScene.id}

@@ -1,6 +1,8 @@
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
+import { LinkedGrid } from '../core/grid';
+import { SpatialSystem } from '../core/spatial-system';
+import { SparseEntityStore } from '../core/entity-store';
+import type { GameManager } from '../core/game-manager';
+import type { Scene } from '../core/scene';
 
 export interface AssertionResult {
   description: string;
@@ -16,8 +18,8 @@ export interface VisualTestContext {
   assertions?: AssertionResult[]; // Will be populated by test executor
 
   // Optional scene system support
-  game?: any; // GameManager - use any to avoid circular dependency
-  scene?: any; // Scene - for single-scene tests with metadata
+  game?: GameManager;
+  scene?: Scene;
 }
 
 export interface VisualTestDefinition {
@@ -44,19 +46,27 @@ export function visual(
 
   // Register in global array (for both browser and Node.js)
   if (typeof globalThis !== 'undefined') {
-    (globalThis as any).visualTests = (globalThis as any).visualTests || [];
-    (globalThis as any).visualTests.push({ name, definition: normalized });
+    const global = globalThis as {
+      visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
+    };
+    global.visualTests = global.visualTests || [];
+    global.visualTests.push({ name, definition: normalized });
   }
 
   // Also register in window if in browser
   if (typeof window !== 'undefined') {
-    (window as any).visualTests = (window as any).visualTests || [];
-    (window as any).visualTests.push({ name, definition: normalized });
+    const win = window as {
+      visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
+    };
+    win.visualTests = win.visualTests || [];
+    win.visualTests.push({ name, definition: normalized });
   }
 
   // Only register as Vitest test if vitest globals are available
-  if (typeof (globalThis as any).it === 'function') {
-    const it = (globalThis as any).it;
+  if (typeof (globalThis as { it?: unknown }).it === 'function') {
+    const it = (
+      globalThis as unknown as { it: (name: string, fn: () => Promise<void>) => void }
+    ).it;
     try {
       it(name, async () => {
         const grid = new LinkedGrid(20, 20);
@@ -114,7 +124,8 @@ export function visual(
         await normalized.act(ctx);
         if (normalized.assert) await normalized.assert(ctx);
       });
-    } catch (e) {
+    } catch (err) {
+      console.debug('Error registering visual test:', err);
       // Silently ignore if not in a proper test context
     }
   }

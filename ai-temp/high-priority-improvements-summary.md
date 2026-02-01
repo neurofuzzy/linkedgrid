@@ -144,7 +144,7 @@ it('should propagate fire to adjacent grass over multiple ticks', () => {
         { type: 'grass', x: 6, y: 5, layer: 1, data: {flammability: 1.0} },
       ],
     }],
-    systems: ['PropagationSystem'],
+    systems: [],
   };
 
   const runtime = loader.load(config);

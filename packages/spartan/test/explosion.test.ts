@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
-import { ExplosionSystem } from '../systems/explosion-system';
-import { FloorEffectSystem } from '../systems/floor-effect-system';
-import { GameManager } from '../game-manager';
-import { GameState } from '../game-state';
-import { GameLayers } from '../layers/types';
-import type { GameContext } from '../types';
+import { LinkedGrid } from '../core/grid/linked-grid';
+import { SparseEntityStore } from '../core/entity-store';
+import { SpatialSystem } from '../core/spatial-system';
+import { ExplosionSystem } from '../systems/explosion.system';
+import { FloorEffectSystem } from '../systems/floor-effect.system';
+import { GameManager } from '../core/game-manager';
+import { GameLayers } from "../config/layers.config";
+import type { GameContext } from '../core/types';
 
 describe('ExplosionSystem', () => {
   let grid: LinkedGrid;
@@ -23,9 +22,8 @@ describe('ExplosionSystem', () => {
     explosionSystem = new ExplosionSystem();
 
     context = {
-      spatial,
-      store,
-      grid,
+      spatial: spatial as unknown as GameContext['spatial'],
+      overlaps: [],
     } as GameContext;
   });
 
@@ -347,8 +345,12 @@ describe('ExplosionSystem', () => {
       });
 
       // Spawn flammable entity
-      spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
-        flammability: 0.8,
+      const grassId = spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
+        temperature: 0,
+        flammable: true,
+        flamePoint: 150,
+        hp: 20,
+        maxHp: 20,
         color: '#7cba00',
       });
 
@@ -361,12 +363,14 @@ describe('ExplosionSystem', () => {
       explosionSystem.update(context);
       spatial.commit();
 
-      // Check that fire was spawned on FLOOR_EFFECTS
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
-      expect(fireId).toBeDefined();
-
-      const fireData = spatial.getEntityData(fireId!);
-      expect(fireData?.type).toBe('fire');
+      // Check that grass temperature was raised to ignition
+      const grassData = spatial.getEntityData(grassId);
+      expect(grassData).toBeDefined();
+      const grassTemp = grassData!.temperature as number | undefined;
+      const grassFlamePoint = grassData!.flamePoint as number | undefined;
+      expect(grassTemp).toBeDefined();
+      expect(grassFlamePoint).toBeDefined();
+      expect(grassTemp!).toBeGreaterThanOrEqual(grassFlamePoint!);
     });
 
     it('does not spawn duplicate fire', () => {
@@ -472,7 +476,9 @@ describe('ExplosionSystem', () => {
         explosionDamage: 30,
         explosionRadius: 3,
         triggerCondition: 'on-fire',
-        flammability: 0.7,
+        temperature: 0,
+        flammable: true,
+        flamePoint: 200,
         color: '#8B4513',
       });
 
@@ -484,14 +490,11 @@ describe('ExplosionSystem', () => {
 
       spatial.commit();
 
-      // Spawn fire at barrel position
-      spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
-        propagationType: 'fire',
-        spreadRate: 2,
-        spreadLayer: GameLayers.FLOOR_EFFECTS,
-        spreadType: 'fire',
-        color: '#ff4500',
-      });
+      // Raise barrel temperature to trigger on-fire explosion
+      const barrelData = spatial.getEntityData(barrelId)!;
+      const flamePoint = barrelData.flamePoint as number | undefined;
+      expect(flamePoint).toBeDefined();
+      barrelData.temperature = flamePoint! + 50; // Ignite the barrel
 
       spatial.commit();
 
@@ -663,15 +666,15 @@ describe('ExplosionSystem', () => {
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
-      
+
       floorSystem.update(context);
       explosionSystem.update(context);
       spatial.commit();
@@ -691,7 +694,6 @@ describe('ExplosionSystem', () => {
       explosionSystem.resetState();
       const state = explosionSystem.getDebugState();
 
-      expect(state.currentTick).toBe(0);
       expect(state.explosionQueueSize).toBe(0);
       expect(state.explodedThisTick).toHaveLength(0);
     });

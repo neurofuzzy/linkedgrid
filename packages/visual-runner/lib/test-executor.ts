@@ -1,6 +1,6 @@
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../../spartan/entity-store';
-import { SpatialSystem } from '../../spartan/spatial-system';
+import { LinkedGrid } from '../../spartan/core/grid/linked-grid';
+import { SparseEntityStore } from '../../spartan/core/entity-store';
+import { SpatialSystem } from '../../spartan/core/spatial-system';
 
 export interface Snapshot {
   operation: string;
@@ -32,6 +32,9 @@ export interface TestResult {
   }>;
 }
 
+import type { GameManager } from '../../spartan/core/game-manager';
+import type { Scene } from '../../spartan/core/scene';
+
 export interface VisualTestContext {
   grid: LinkedGrid;
   spatial: SpatialSystem;
@@ -39,8 +42,8 @@ export interface VisualTestContext {
   expect?: (description: string, fn: () => void) => void;
 
   // Optional scene system support
-  game?: any; // GameManager - use any to avoid circular dependency
-  scene?: any; // Scene - for single-scene tests with metadata
+  game?: GameManager;
+  scene?: Scene;
 }
 
 export interface VisualTestDefinition {
@@ -84,7 +87,7 @@ export class TestExecutor {
     };
 
     // Store context globally for snapshot capture to access scene info
-    (globalThis as any).__currentTestContext = this.context;
+    (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext = this.context;
 
     // Disable snapshot capture during arrange - we only want the final state
     this.captureEnabled = false;
@@ -148,7 +151,7 @@ export class TestExecutor {
     this.context.expect = expect;
 
     // Update global context with expect function
-    (globalThis as any).__currentTestContext = this.context;
+    (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext = this.context;
 
     try {
       // Act phase
@@ -184,7 +187,8 @@ export class TestExecutor {
         if (typeof originalMethod !== 'function') return originalMethod;
 
         return (...args: unknown[]) => {
-          const result = originalMethod.apply(target, args);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const result = (originalMethod as any).apply(target, args);
 
           const handleResult = (res: unknown) => {
             // Only capture if enabled (disabled during arrange phase)
@@ -200,8 +204,9 @@ export class TestExecutor {
           };
 
           // Handle async methods
-          if (result instanceof Promise) {
-            return result.then(handleResult);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((result as any) instanceof Promise) {
+            return (result as Promise<unknown>).then(handleResult);
           }
 
           return handleResult(result);
@@ -216,8 +221,8 @@ export class TestExecutor {
     args: unknown[],
     result: unknown
   ): void {
-    const entities = [];
-    const grid = (spatial as any).grid;
+    const entities: Snapshot['entities'] = [];
+    const grid = (spatial as unknown as { grid: LinkedGrid }).grid;
 
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
@@ -240,7 +245,7 @@ export class TestExecutor {
     let sceneId: string | undefined;
     let sceneName: string | undefined;
 
-    const testCtx = (globalThis as any).__currentTestContext;
+    const testCtx = (globalThis as { __currentTestContext?: VisualTestContext }).__currentTestContext;
     if (testCtx?.game) {
       // Multi-scene test with GameManager
       const activeScene = testCtx.game.sceneManager?.getActiveScene();
@@ -297,7 +302,8 @@ export class TestExecutor {
             const boundMethod = value.bind(activeSpatial);
 
             return (...args: unknown[]) => {
-              const result = boundMethod(...args);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const result = (boundMethod as any)(...(args as any[]));
 
               const handleResult = (res: unknown) => {
                 // Capture snapshots only for operations that change visible state
@@ -338,16 +344,16 @@ export class TestExecutor {
     // Wrap GameManager.movePlayerToScene if present
     if (ctx.game && ctx.game.movePlayerToScene) {
       const originalMove = ctx.game.movePlayerToScene.bind(ctx.game);
-      ctx.game.movePlayerToScene = (...args: any[]) => {
+      ctx.game.movePlayerToScene = (...args: [sceneId: string, x: number, y: number, layer: number]) => {
         const result = originalMove(...args);
 
         // Visual tests expect immediate scene change: execute queued transition now
-        if (ctx.game.executePendingTransition) {
+        if (ctx.game?.executePendingTransition) {
           ctx.game.executePendingTransition();
         }
 
         // Capture snapshot after transition has been applied
-        const activeScene = ctx.game.sceneManager?.getActiveScene();
+        const activeScene = ctx.game?.sceneManager?.getActiveScene();
         if (activeScene && this.captureEnabled) {
           this.captureSnapshot(
             activeScene.spatial,

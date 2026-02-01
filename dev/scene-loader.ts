@@ -1,14 +1,20 @@
 import {
   GameRuntime,
   GameRuntimeConfig,
-} from '../packages/spartan/game-runtime';
-import { TeleporterSystem } from '../packages/spartan/systems/teleporter-system';
-import { CollectionSystem } from '../packages/spartan/systems/collection-system';
-import { DoorSystem } from '../packages/spartan/systems/door-system';
-import { PlayerInputSystem } from '../packages/spartan/systems/player-input-system';
-import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect-system';
-import { PropagationSystem } from '../packages/spartan/systems/propagation-system';
-import type { GameSystem, EntityData } from '../packages/spartan/types';
+} from '../packages/spartan/core/game-runtime';
+import { GameManager } from '../packages/spartan/core/game-manager';
+import { TeleporterSystem } from '../packages/spartan/systems/teleporter.system';
+import { CollectionSystem } from '../packages/spartan/systems/collection.system';
+import { DoorSystem } from '../packages/spartan/systems/door.system';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
+import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect.system';
+import { ExplosionSystem } from '../packages/spartan/systems/explosion.system';
+import { PoisonSystem } from '../packages/spartan/systems/poison.system';
+import { FireSystem } from '../packages/spartan/systems/fire.system';
+import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
+import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
+import type { GameSystem } from '../packages/spartan/core/types';
+import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
   isPlayer,
   isEnemy,
@@ -17,8 +23,8 @@ import {
   hasAI,
   hasTeleportTarget,
   hasPropagation,
-  hasFlammability,
-} from '../packages/spartan/entities/trait-guards';
+  hasTemperature,
+} from '../packages/spartan/traits/trait-guards';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
 
@@ -66,15 +72,24 @@ export interface SceneConfig {
 }
 
 /**
+ * System factory function type.
+ */
+type SystemFactory = (gameManager: GameManager) => GameSystem;
+
+/**
  * System registry for mapping string names to system constructors.
  * Add new systems here as they're implemented.
  */
-const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
+const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
-  PropagationSystem: () => new PropagationSystem(),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
+  ExplosionSystem: () => new ExplosionSystem(),
+  PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
+  FireSystem: () => new FireSystem(),
+  LiquidSystem: () => new LiquidSystem(),
+  ChainReactionSystem: () => new ChainReactionSystem(),
 };
 
 /**
@@ -95,7 +110,7 @@ const SYSTEM_REGISTRY: Record<string, (gameManager: any) => GameSystem> = {
  * ```
  */
 export class SceneLoader {
-  constructor(private container?: HTMLElement | null) {}
+  constructor(private container?: HTMLElement | null) { }
 
   /**
    * Load scene configuration and create initialized GameRuntime.
@@ -163,13 +178,13 @@ export class SceneLoader {
 
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
-      const playerInputSystem = new PlayerInputSystem(runtime.game, manager);
-      (runtime as any).systems.push(playerInputSystem);
-      (runtime as any).gameLoop.addSystem(playerInputSystem);
+      // Cast to InputManager - HeadlessInputManager has compatible interface for PlayerInputSystem
+      const playerInputSystem = new PlayerInputSystem(runtime.game, manager as InputManager);
+      runtime.addSystem(playerInputSystem);
 
       // Store references for external access
-      (runtime as any).inputManager = manager;
-      (runtime as any).inputCleanup = cleanup;
+      runtime.inputManager = manager;
+      runtime.inputCleanup = cleanup;
     }
 
     // Register other systems AFTER PlayerInputSystem
@@ -184,8 +199,7 @@ export class SceneLoader {
 
         const system = systemFactory(runtime.game);
         // Add to both systems array (persists across scene transitions) and gameLoop
-        (runtime as any).systems.push(system);
-        (runtime as any).gameLoop.addSystem(system);
+        runtime.addSystem(system);
       }
     }
 
@@ -225,10 +239,11 @@ export class SceneLoader {
       cellSize: inputConfig.options?.cellSize || 24,
       cellGap: inputConfig.options?.cellGap || 0,
       bufferInput: inputConfig.options?.bufferInput || false,
-      directionMode: inputConfig.options?.directionMode || ('continuous' as const),
+      directionMode:
+        inputConfig.options?.directionMode || ('continuous' as const),
     };
 
-    const manager = new InputManager(container, null, options);
+    const manager = new InputManager(container ?? null, null, options);
     manager.enableKeyboard().enableBuffering(true);
 
     return {
@@ -255,6 +270,7 @@ export class SceneLoader {
     // Spawn all entities
     for (const entityDef of entities) {
       // Validate schema: Check for common mistake of using 'props' instead of 'data'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((entityDef as any).props && !entityDef.data) {
         console.error(
           `[SceneLoader] ❌ SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
@@ -262,6 +278,7 @@ export class SceneLoader {
           `  → Properties will NOT be loaded until this is fixed!`
         );
         // Fallback to support legacy JSON
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         entityDef.data = (entityDef as any).props;
       }
 
@@ -272,11 +289,12 @@ export class SceneLoader {
       };
 
       // Validate entity data using trait guards
-      const tempEntityForValidation: EntityData = {
+      // Cast type to EntityData - JSON provides string type but EntityData expects literal union
+      const tempEntityForValidation = {
         id: 0,
         type: entityDef.type,
         ...entityData,
-      };
+      } as EntityData;
 
       // Validate required traits for known entity types
       if (isPlayer(tempEntityForValidation)) {
@@ -309,34 +327,41 @@ export class SceneLoader {
       }
 
       // Validate propagation properties for fire, water, etc.
-      if (tempEntityForValidation.type === 'fire' || 
-          tempEntityForValidation.type === 'water' ||
-          tempEntityForValidation.type === 'poison-gas') {
+      // Use entityDef.type (raw JSON string) since EntityData union uses different names (e.g. 'fire-visual' not 'fire')
+      if (
+        entityDef.type === 'fire' ||
+        entityDef.type === 'fire-visual' ||
+        entityDef.type === 'water' ||
+        entityDef.type === 'poison-gas'
+      ) {
         if (!hasPropagation(tempEntityForValidation)) {
           console.warn(
-            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
+            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
             `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
             `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
           );
         } else {
           // Validate that spreadType is set
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const propData = tempEntityForValidation as any;
           if (!propData.spreadType) {
             console.warn(
-              `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
+              `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
               `  → This will cause spawned entities to have type 'undefined'!`
             );
           }
         }
       }
 
-      // Validate flammability for grass, gasoline, fuses
-      if (tempEntityForValidation.type === 'grass' || 
-          tempEntityForValidation.type === 'gasoline' ||
-          tempEntityForValidation.type === 'fuse') {
-        if (!hasFlammability(tempEntityForValidation)) {
+      // Validate temperature for grass, gasoline, fuses
+      if (
+        entityDef.type === 'grass' ||
+        entityDef.type === 'gasoline' ||
+        entityDef.type === 'fuse'
+      ) {
+        if (!hasTemperature(tempEntityForValidation)) {
           console.warn(
-            `[SceneLoader] ${tempEntityForValidation.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing flammability property (0.0-1.0).`
+            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`
           );
         }
       }

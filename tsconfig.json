@@ -10,21 +10,19 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
-    "rootDir": "packages",
-    "paths": {
-      "@gamegrid/grid": ["./packages/grid/index.ts"],
-      "@gamegrid/engine": ["./packages/engine/index.ts"],
-      "@gamegrid/ecs": ["./packages/ecs/index.ts"],
-      "@gamegrid/gameplay": ["./packages/gameplay/index.ts"],
-      "@gamegrid/runtime": ["./packages/runtime/index.ts"],
-      "@gamegrid/editor": ["./packages/editor/index.ts"]
-    }
+    "rootDir": ".",
+    "jsx": "react-jsx"
   },
   "include": [
     "packages/**/*",
+    "dev/**/*",
     "examples/tower-defense-modes.test.ts",
     "etc/archive/compositor",
-    "test/linked-grid.test.ts"
+    "test/linked-grid.test.ts",
+    "test-integration/scene-integration.test.ts"
   ],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

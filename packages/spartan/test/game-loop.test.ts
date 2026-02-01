@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { LinkedGrid } from '../../grid/index';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
-import { GameLoop } from '../game-loop';
-import type { GameSystem, GameContext } from '../types';
+import { LinkedGrid } from '../core/grid/index';
+import { SparseEntityStore } from '../core/entity-store';
+import { SpatialSystem } from '../core/spatial-system';
+import { GameLoop } from '../core/game-loop';
+import type { GameSystem, GameContext } from '../core/types';
 
 describe('GameLoop', () => {
   it('should detect overlaps and run systems', () => {

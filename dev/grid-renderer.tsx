@@ -1,5 +1,9 @@
 import React from 'react';
-import type { Scene } from '../packages/spartan/scene';
+import type { Scene } from '../packages/spartan/core/scene';
+import { GameRuntime } from '../packages/spartan/core/game-runtime';
+import { InputManager } from '../packages/spartan/input/input-manager';
+import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
+import { hasColor, hasDensity, hasLiquid, hasHealth } from '../packages/spartan/traits/trait-guards';
 
 interface Props {
   scene: Scene | null;
@@ -23,6 +27,7 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   medbay: 'entity-medbay',
   ice: 'entity-ice',
   mud: 'entity-mud',
+  'chain-link': 'entity-chain-link',
 };
 
 /**
@@ -43,6 +48,7 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   medbay: '+',
   ice: '❄',
   mud: '▒',
+  'chain-link': '≡',
 };
 
 /**
@@ -108,7 +114,42 @@ export function GridRenderer({ scene }: Props) {
         const type = entityData?.type || 'unknown';
         const char = ENTITY_CHAR_MAP[type] || type[0]?.toUpperCase() || '?';
         const className = ENTITY_CLASS_MAP[type] || 'entity-player';
-        const color = (entityData as any)?.color;
+
+        let color: string | undefined;
+        if (entityData && hasColor(entityData)) {
+          color = entityData.color;
+        }
+
+        // Apply density opacity if present (e.g., poison gas)
+        if (color && entityData && hasDensity(entityData)) {
+          const density = entityData.density;
+          // Map 0-100 density to 0.1-1.0 opacity
+          const opacity = Math.max(0.1, Math.min(1.0, density / 100));
+          // Convert hex to rgba to apply opacity
+          if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
+        } else if (
+          color &&
+          entityData &&
+          hasLiquid(entityData) &&
+          (entityData.type as string) !== 'poison-gas'
+        ) {
+          // Apply liquid depth opacity
+          const depth = entityData.depth;
+          // Map depth 1 -> 0.4, depth 10 -> 1.0
+          const opacity = Math.min(1.0, 0.4 + (depth - 1) * 0.1);
+
+          if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            color = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+          }
+        }
 
         row.push({ char, className, color });
       }
@@ -118,8 +159,8 @@ export function GridRenderer({ scene }: Props) {
   }
 
   // Get scene metadata
-  const metadata = scene.metadata || {};
-  const sceneName = (metadata.name as string) || scene.id;
+  // const metadata = scene.metadata || {};
+  // const sceneName = (metadata.name as string) || scene.id;
 
   return (
     <div
@@ -159,7 +200,7 @@ export function GridRenderer({ scene }: Props) {
  * ```
  */
 interface HUDProps {
-  runtime: any; // GameRuntime
+  runtime: GameRuntime;
 }
 
 export function HUD({ runtime }: HUDProps) {
@@ -172,8 +213,14 @@ export function HUD({ runtime }: HUDProps) {
   const playerData = playerId ? scene.spatial.getEntityData(playerId) : null;
 
   // Get HP (default to 0/0 if no player or no health)
-  const hp = (playerData as any)?.hp ?? 0;
-  const maxHp = (playerData as any)?.maxHp ?? 0;
+  let hp = 0;
+  let maxHp = 0;
+
+  if (playerData && hasHealth(playerData)) {
+    hp = playerData.hp;
+    maxHp = playerData.maxHp;
+  }
+
   const hpPercent = maxHp > 0 ? (hp / maxHp) * 100 : 0;
 
   // Get Score and Lives from game state (placeholder for now)
@@ -181,95 +228,117 @@ export function HUD({ runtime }: HUDProps) {
   const lives = runtime.game.gameState.lives ?? 3;
 
   // HP bar color based on percentage
-  let hpColor = '#4ec9b0'; // Green
+  let hpColor = '#33cccc'; // Desaturated Cyan (Healthy)
   if (hpPercent < 25) {
-    hpColor = '#f48771'; // Red
+    hpColor = '#cc3366'; // Desaturated Neon Red (Critical)
   } else if (hpPercent < 50) {
-    hpColor = '#ce9178'; // Orange
+    hpColor = '#cc8833'; // Desaturated Orange (Warning)
   }
 
   return (
-    <div className="hud" style={{
-      marginTop: '12px',
-      padding: '16px',
-      backgroundColor: '#1e1e1e',
-      border: '1px solid #3c3c3c',
-      borderRadius: '4px',
-      fontFamily: 'Consolas, Monaco, monospace',
-      fontSize: '14px',
-    }}>
+    <div
+      className="hud"
+      style={{
+        marginTop: '12px',
+        padding: '16px',
+        backgroundColor: '#0f0f1a',
+        border: '1px solid #222',
+        borderLeft: '4px solid #333344',
+        borderRadius: '0',
+        fontFamily: 'Lexend, monospace',
+        fontSize: '12px',
+      }}
+    >
       <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
         {/* HP Display */}
         <div style={{ flex: '1', minWidth: '200px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            marginBottom: '6px',
-            fontSize: '12px',
-            color: '#808080'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '6px',
+              fontSize: '12px',
+              color: '#33b5cc',
+            }}
+          >
             <span>HP</span>
-            <span>{hp} / {maxHp}</span>
+            <span>
+              {hp} / {maxHp}
+            </span>
           </div>
-          <div style={{
-            width: '100%',
-            height: '20px',
-            backgroundColor: '#2d2d2d',
-            border: '1px solid #3c3c3c',
-            borderRadius: '2px',
-            overflow: 'hidden',
-            position: 'relative',
-          }}>
-            <div style={{
-              width: `${hpPercent}%`,
-              height: '100%',
-              backgroundColor: hpColor,
-              transition: 'width 0.3s ease, background-color 0.3s ease',
-            }} />
+          <div
+            style={{
+              width: '100%',
+              height: '16px',
+              backgroundColor: '#1a1a2a',
+              border: '1px solid #333',
+              borderRadius: '0',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                width: `${hpPercent}%`,
+                height: '100%',
+                backgroundColor: hpColor,
+                transition: 'width 0.3s ease, background-color 0.3s ease',
+              }}
+            />
           </div>
         </div>
 
         {/* Score Display */}
-        <div style={{ 
-          minWidth: '120px',
-          textAlign: 'center',
-        }}>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#808080',
-            marginBottom: '4px'
-          }}>
+        <div
+          style={{
+            minWidth: '120px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '12px',
+              color: '#33b5cc',
+              marginBottom: '4px',
+            }}
+          >
             SCORE
           </div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 'bold',
-            color: '#dcdcaa',
-          }}>
+          <div
+            style={{
+              fontSize: '16px',
+              color: '#cccc33',
+            }}
+          >
             {score.toLocaleString()}
           </div>
         </div>
 
         {/* Lives Display */}
-        <div style={{ 
-          minWidth: '100px',
-          textAlign: 'center',
-        }}>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#808080',
-            marginBottom: '4px'
-          }}>
+        <div
+          style={{
+            minWidth: '100px',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '12px',
+              color: '#33b5cc',
+              marginBottom: '4px',
+            }}
+          >
             LIVES
           </div>
-          <div style={{ 
-            fontSize: '20px', 
-            fontWeight: 'bold',
-            color: '#f48771',
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '4px',
-          }}>
+          <div
+            style={{
+              fontSize: '16px',
+              color: '#cc3366',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '4px',
+            }}
+          >
             {Array.from({ length: lives }).map((_, i) => (
               <span key={i}>♥</span>
             ))}
@@ -295,9 +364,9 @@ export function HUD({ runtime }: HUDProps) {
  * ```
  */
 interface DebugPanelProps {
-  runtime: any; // GameRuntime
-  inputManager?: any; // InputManager
-  playerInputSystem?: any; // PlayerInputSystem
+  runtime: GameRuntime;
+  inputManager?: InputManager;
+  playerInputSystem?: PlayerInputSystem;
 }
 
 export function DebugPanel({
@@ -355,6 +424,7 @@ export function DebugPanel({
         <p>
           <span className="label">Input Mode:</span>{' '}
           <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {(inputManager as any).config.directionMode}
           </span>{' '}
           <span style={{ color: '#808080', fontSize: '11px' }}>

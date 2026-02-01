@@ -35,15 +35,15 @@
  * ```
  */
 
-import type { SpatialSystem } from '../spatial-system';
-import { GameLayers } from '../layers/types';
+import type { SpatialSystem } from '../core/spatial-system';
+import { GameLayers } from '../config/layers.config';
 import type {
   PlayerData,
   EnemyData,
   TeleporterData,
   ItemData,
   WallData,
-} from './entity-types';
+} from './index';
 
 /**
  * Spawn a player entity with type-safe properties.

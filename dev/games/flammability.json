@@ -23,8 +23,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 200,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -33,8 +37,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -43,8 +51,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -53,8 +65,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -63,8 +79,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -73,8 +93,12 @@
           "y": 7,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -83,8 +107,12 @@
           "y": 6,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -93,8 +121,12 @@
           "y": 6,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -103,8 +135,12 @@
           "y": 6,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -113,8 +149,12 @@
           "y": 6,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -123,8 +163,12 @@
           "y": 6,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -133,8 +177,12 @@
           "y": 8,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -143,8 +191,12 @@
           "y": 8,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -153,8 +205,12 @@
           "y": 8,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -163,8 +219,12 @@
           "y": 8,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -173,8 +233,12 @@
           "y": 8,
           "layer": 1,
           "data": {
-            "flammability": 0.8,
-            "color": "#00ff00"
+            "color": "#00ff00",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150,
+            "hp": 100,
+            "maxHp": 100
           }
         },
         {
@@ -183,8 +247,12 @@
           "y": 5,
           "layer": 4,
           "data": {
-            "flammability": 0.95,
-            "color": "#d4af37"
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
           }
         },
         {
@@ -193,8 +261,12 @@
           "y": 6,
           "layer": 4,
           "data": {
-            "flammability": 0.95,
-            "color": "#d4af37"
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
           }
         },
         {
@@ -203,8 +275,12 @@
           "y": 7,
           "layer": 4,
           "data": {
-            "flammability": 0.95,
-            "color": "#d4af37"
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
           }
         },
         {
@@ -213,8 +289,12 @@
           "y": 8,
           "layer": 4,
           "data": {
-            "flammability": 0.95,
-            "color": "#d4af37"
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
           }
         },
         {
@@ -223,8 +303,12 @@
           "y": 9,
           "layer": 4,
           "data": {
-            "flammability": 0.95,
-            "color": "#d4af37"
+            "color": "#d4af37",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 100,
+            "hp": 10,
+            "maxHp": 10
           }
         },
         {
@@ -233,8 +317,12 @@
           "y": 7,
           "layer": 4,
           "data": {
-            "flammability": 0.99,
-            "color": "#ff4500"
+            "color": "#ff4500",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 120,
+            "hp": 15,
+            "maxHp": 15
           }
         },
         {
@@ -243,8 +331,12 @@
           "y": 7,
           "layer": 4,
           "data": {
-            "flammability": 0.99,
-            "color": "#ff4500"
+            "color": "#ff4500",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 120,
+            "hp": 15,
+            "maxHp": 15
           }
         },
         {
@@ -253,8 +345,12 @@
           "y": 7,
           "layer": 4,
           "data": {
-            "flammability": 0.99,
-            "color": "#ff4500"
+            "color": "#ff4500",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 120,
+            "hp": 15,
+            "maxHp": 15
           }
         },
         {
@@ -268,7 +364,9 @@
             "spreadLayer": 1,
             "spreadType": "water",
             "maxDistance": 10,
-            "color": "#4a90e2"
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
           }
         },
         {
@@ -282,7 +380,9 @@
             "spreadLayer": 1,
             "spreadType": "water",
             "maxDistance": 10,
-            "color": "#4a90e2"
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
           }
         },
         {
@@ -296,33 +396,19 @@
             "spreadLayer": 1,
             "spreadType": "water",
             "maxDistance": 10,
-            "color": "#4a90e2"
-          }
-        },
-        {
-          "type": "fire",
-          "x": 3,
-          "y": 7,
-          "layer": 2,
-          "data": {
-            "propagationType": "fire",
-            "spreadRate": 2,
-            "spreadProbability": 0.9,
-            "spreadLayer": 1,
-            "spreadType": "fire",
-            
-            "lifetime": 25,
-            "color": "#ff0000",
-            "effectType": "damage",
-            "triggerMode": "continuous",
-            "damage": 5,
-            "cadence": 3
+            "blockedByLayers": [5],
+            "color": "#4a90e2",
+            "depth": 20
           }
         }
       ]
     }
   ],
-  "systems": ["PropagationSystem", "FloorEffectSystem"],
+  "systems": [
+    "FireSystem",
+    "FloorEffectSystem",
+    "LiquidSystem"
+  ],
   "input": {
     "type": "keyboard",
     "options": {

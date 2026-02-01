@@ -1,7 +1,7 @@
 import { visual } from './visual-helpers';
-import { GameLayers } from '../layers/types';
-import { ExplosionSystem } from '../systems/explosion-system';
-import { GameLoop } from '../game-loop';
+import { GameLayers } from "../config/layers.config";
+import { ExplosionSystem } from '../systems/explosion.system';
+import { GameLoop } from '../core/game-loop';
 import { spawnPlayer } from '../entities/spawn-helpers';
 
 /**
@@ -64,7 +64,7 @@ visual('barrel explodes on death', {
         throw new Error('Player has no HP');
       }
 
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Player took no damage: ${playerData.hp}`);
       }
     });
@@ -78,7 +78,7 @@ visual('barrel explodes on death', {
         throw new Error('Enemy has no HP');
       }
 
-      if (enemyData.hp >= 50) {
+      if ((enemyData.hp as number) >= 50) {
         throw new Error(`Enemy took no damage: ${enemyData.hp}`);
       }
     });
@@ -167,7 +167,7 @@ visual('wall blocks explosion damage', {
         throw new Error('Player has no HP');
       }
 
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Player should take damage, HP: ${playerData.hp}`);
       }
     });
@@ -219,11 +219,11 @@ visual('destructible wall takes damage from explosion', {
         throw new Error('Wall has no HP');
       }
 
-      if (wallData.hp >= 50) {
+      if ((wallData.hp as number) >= 50) {
         throw new Error(`Wall took no damage: ${wallData.hp}`);
       }
 
-      if (wallData.hp !== 15) {
+      if ((wallData.hp as number) !== 15) {
         throw new Error(`Expected 15 HP (50-35), got ${wallData.hp}`);
       }
     });
@@ -297,7 +297,7 @@ visual('hardness blocks weak explosions', {
         throw new Error('Player has no HP');
       }
 
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Player should take damage, HP: ${playerData.hp}`);
       }
     });
@@ -319,17 +319,29 @@ visual('explosion ignites flammable entities', {
 
     // Spawn flammable entities
     spatial.spawn('grass', 11, 10, GameLayers.FLOOR, {
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 20,
+      maxHp: 20,
       color: '#7cba00',
     });
 
     spatial.spawn('grass', 12, 10, GameLayers.FLOOR, {
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 150,
+      hp: 20,
+      maxHp: 20,
       color: '#7cba00',
     });
 
     spatial.spawn('gasoline', 10, 11, GameLayers.COLLECTIBLES, {
-      flammability: 0.95,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 100,
+      hp: 10,
+      maxHp: 10,
       color: '#d4af37',
     });
 
@@ -348,34 +360,36 @@ visual('explosion ignites flammable entities', {
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
-    expect('Fire spawned at grass position (11, 10)', () => {
-      const fireId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Grass at (11, 10) is ignited (temperature raised)', () => {
+      const grassId = spatial.getEntityIdAt(11, 10, GameLayers.FLOOR);
+      if (!grassId) throw new Error('No grass found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const grassData = spatial.getEntityData(grassId);
+      if (!grassData) throw new Error('No grass data');
+      if ((grassData.temperature as number) < (grassData.flamePoint as number)) {
+        throw new Error(`Temperature ${grassData.temperature} below flame point ${grassData.flamePoint}`);
       }
     });
 
-    expect('Fire spawned at grass position (12, 10)', () => {
-      const fireId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Grass at (12, 10) is ignited (temperature raised)', () => {
+      const grassId = spatial.getEntityIdAt(12, 10, GameLayers.FLOOR);
+      if (!grassId) throw new Error('No grass found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const grassData = spatial.getEntityData(grassId);
+      if (!grassData) throw new Error('No grass data');
+      if ((grassData.temperature as number) < (grassData.flamePoint as number)) {
+        throw new Error(`Temperature ${grassData.temperature} below flame point ${grassData.flamePoint}`);
       }
     });
 
-    expect('Fire spawned at gasoline position (10, 11)', () => {
-      // Note: Fire on FLOOR_EFFECTS layer, gasoline gets consumed/replaced
-      const fireId = spatial.getEntityIdAt(10, 11, GameLayers.FLOOR_EFFECTS);
-      if (!fireId) throw new Error('No fire found');
+    expect('Gasoline at (10, 11) is ignited (temperature raised)', () => {
+      const gasolineId = spatial.getEntityIdAt(10, 11, GameLayers.COLLECTIBLES);
+      if (!gasolineId) throw new Error('No gasoline found');
 
-      const fireData = spatial.getEntityData(fireId);
-      if (fireData?.type !== 'fire') {
-        throw new Error(`Wrong type: ${fireData?.type}`);
+      const gasolineData = spatial.getEntityData(gasolineId);
+      if (!gasolineData) throw new Error('No gasoline data');
+      if ((gasolineData.temperature as number) < (gasolineData.flamePoint as number)) {
+        throw new Error(`Temperature ${gasolineData.temperature} below flame point ${gasolineData.flamePoint}`);
       }
     });
   },
@@ -432,7 +446,7 @@ visual('chain reaction - barrel destroys adjacent barrel', {
   assert: ({ spatial, expect }) => {
     expect('Second barrel destroyed or heavily damaged', () => {
       const barrel2Id = spatial.getEntityIdAt(12, 10, GameLayers.COLLECTIBLES);
-      
+
       if (barrel2Id === undefined) {
         // Barrel completely destroyed - chain reaction worked
         return;
@@ -443,7 +457,7 @@ visual('chain reaction - barrel destroys adjacent barrel', {
         throw new Error('Barrel has no HP');
       }
 
-      if (barrel2Data.hp > 0) {
+      if ((barrel2Data.hp as number) > 0) {
         throw new Error(`Second barrel should be destroyed or damaged, HP: ${barrel2Data.hp}`);
       }
     });
@@ -458,7 +472,7 @@ visual('chain reaction - barrel destroys adjacent barrel', {
       }
 
       // Player should be damaged by second barrel's explosion
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Player should be damaged by chain reaction, HP: ${playerData.hp}`);
       }
     });
@@ -475,7 +489,9 @@ visual('on-fire trigger - barrel explodes when ignited', {
       explosionDamage: 35,
       explosionRadius: 4,
       triggerCondition: 'on-fire',
-      flammability: 0.8,
+      temperature: 0,
+      flammable: true,
+      flamePoint: 200,
       color: '#8B4513',
     });
 
@@ -494,15 +510,14 @@ visual('on-fire trigger - barrel explodes when ignited', {
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(explosionSystem);
 
-    // Spawn fire at barrel position
-    spatial.spawn('fire', 10, 10, GameLayers.FLOOR_EFFECTS, {
-      propagationType: 'fire',
-      spreadRate: 2,
-      spreadLayer: GameLayers.FLOOR_EFFECTS,
-      spreadType: 'fire',
-      lifetime: 20,
-      color: '#ff4500',
-    });
+    // Raise barrel temperature to trigger on-fire explosion
+    const barrelId = spatial.getEntityIdAt(10, 10, GameLayers.COLLECTIBLES);
+    if (barrelId) {
+      const barrelData = spatial.getEntityData(barrelId);
+      if (barrelData) {
+        barrelData.temperature = (barrelData.flamePoint as number) + 50; // Ignite the barrel
+      }
+    }
 
     spatial.commit();
 
@@ -519,7 +534,7 @@ visual('on-fire trigger - barrel explodes when ignited', {
         throw new Error('Player has no HP');
       }
 
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Player should take explosion damage, HP: ${playerData.hp}`);
       }
     });
@@ -579,14 +594,14 @@ visual('multiple barrels in line create cascading explosions', {
   assert: ({ spatial, expect }) => {
     expect('Chain reaction destroyed multiple barrels', () => {
       let destroyedCount = 0;
-      
+
       for (let i = 0; i < 5; i++) {
         const barrelId = spatial.getEntityIdAt(10 + i * 2, 10, GameLayers.COLLECTIBLES);
         if (barrelId === undefined) {
           destroyedCount++;
         } else {
           const barrelData = spatial.getEntityData(barrelId);
-          if (barrelData && 'hp' in barrelData && barrelData.hp <= 0) {
+          if (barrelData && 'hp' in barrelData && (barrelData.hp as number) <= 0) {
             destroyedCount++;
           }
         }
@@ -607,7 +622,7 @@ visual('multiple barrels in line create cascading explosions', {
       }
 
       // Player likely damaged by cascade
-      if (playerData.hp >= 100) {
+      if ((playerData.hp as number) >= 100) {
         throw new Error(`Expected cascade to reach player, HP: ${playerData.hp}`);
       }
     });

@@ -213,26 +213,6 @@
           }
         },
         {
-          "type": "fire",
-          "x": 10,
-          "y": 3,
-          "layer": 2,
-          "data": {
-            "propagationType": "fire",
-            "spreadRate": 5,
-            "spreadProbability": 0.6,
-            "spreadLayer": 1,
-            "spreadType": "fire",
-            
-            "lifetime": 120,
-            "blockedByLayers": [4],
-            "effectType": "damage",
-            "damage": 8,
-            "cadence": 8,
-            "color": "#ff6b35"
-          }
-        },
-        {
           "type": "wall",
           "x": 12,
           "y": 3,
@@ -257,11 +237,11 @@
           "type": "poison-gas",
           "x": 10,
           "y": 11,
-          "layer": 2,
+          "layer": 7,
           "data": {
             "propagationType": "gas",
             "spreadRate": 1,
-            "spreadLayer": 2,
+            "spreadLayer": 7,
             "spreadType": "poison-gas",
             "maxDistance": 8,
             "lifetime": 80,
@@ -270,13 +250,15 @@
             "triggerMode": "continuous",
             "damage": 2,
             "cadence": 3,
-            "color": "#9acd32"
+            "color": "#9acd32",
+            "density": 1000,
+            "minDensity": 5
           }
         }
       ]
     }
   ],
-  "systems": ["PropagationSystem", "FloorEffectSystem"],
+  "systems": ["FloorEffectSystem", "PoisonSystem"],
   "input": {
     "type": "keyboard",
     "options": {

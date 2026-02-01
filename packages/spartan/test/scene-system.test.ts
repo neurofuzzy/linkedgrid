@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameState } from '../game-state';
-import { Scene } from '../scene';
-import { SceneManager } from '../scene-manager';
-import { GameManager } from '../game-manager';
-import { SparseEntityStore } from '../entity-store';
-import { GameLayers } from '../layers/types';
+import { GameState } from '../core/game-state';
+import { Scene } from '../core/scene';
+import { SceneManager } from '../core/scene-manager';
+import { GameManager } from '../core/game-manager';
+import { SparseEntityStore } from '../core/entity-store';
+import { GameLayers } from '../config/layers.config';
 
 describe('GameState', () => {
   let gameState: GameState;
@@ -186,7 +186,7 @@ describe('Scene', () => {
       cell?.setValue(GameLayers.WALLS, 999);
 
       const serialized = scene.serialize();
-      const deserialized = Scene.deserialize(serialized, gameState);
+      const deserialized = Scene.deserialize(serialized as Parameters<typeof Scene.deserialize>[0], gameState);
 
       expect(deserialized.id).toBe('test-scene');
       expect(deserialized.grid.width).toBe(10);
@@ -438,7 +438,7 @@ describe('GameManager', () => {
 
     it('preserves all player properties during migration', () => {
       const scene1 = game.sceneManager.createScene('room1', 10, 10);
-      const scene2 = game.sceneManager.createScene('room2', 10, 10);
+      game.sceneManager.createScene('room2', 10, 10);
 
       const playerId = scene1.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
         hp: 100,

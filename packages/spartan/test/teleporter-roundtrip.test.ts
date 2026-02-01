@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { GameRuntime } from '../game-runtime';
-import { TeleporterSystem } from '../systems/teleporter-system';
-import { GameLayers } from '../layers/types';
+import { GameRuntime } from '../core/game-runtime';
+import { TeleporterSystem } from '../systems/teleporter.system';
+import { GameLayers } from '../config/layers.config';
 import { spawnPlayer, spawnTeleporter } from '../entities/spawn-helpers';
-import { isPlayer, isTeleporter } from '../entities/trait-guards';
+import { isPlayer, isTeleporter } from '../traits/trait-guards';
 
 describe('TeleporterSystem round-trip', () => {
   it('allows player to teleport back after stepping off destination pad', () => {
@@ -29,7 +29,7 @@ describe('TeleporterSystem round-trip', () => {
     room1.spatial.commit();
 
     // Verify player data using type guard
-    const playerData = room1.spatial.getEntityData(playerId);
+    const playerData = room1.spatial.getEntityData(playerId)!;
     expect(isPlayer(playerData)).toBe(true);
 
     // Create teleporter in room1 at (5, 7) → room2 at (3, 3) using type-safe spawn helper
@@ -46,11 +46,11 @@ describe('TeleporterSystem round-trip', () => {
     room1.spatial.commit();
 
     // Verify teleporter data using type guard
-    const pad1Data = room1.spatial.getEntityData(pad1Id);
+    const pad1Data = room1.spatial.getEntityData(pad1Id)!;
     expect(isTeleporter(pad1Data)).toBe(true);
 
     // Create return teleporter in room2 at (3, 3) → room1 at (5, 7) using type-safe spawn helper
-    const pad2Id = spawnTeleporter(room2.spatial, 3, 3, {
+    spawnTeleporter(room2.spatial, 3, 3, {
       targetKey: 'red',
       sceneId: 'room2',
       destination: {
@@ -69,8 +69,13 @@ describe('TeleporterSystem round-trip', () => {
     // createRuntimeWithSystems() helper instead.
     // See specs/spartan-system-registration.md for details.
     const teleporterSystem = new TeleporterSystem(runtime.game);
-    (runtime as any).systems.push(teleporterSystem); // Persistent (survives scene transitions)
-    (runtime as any).gameLoop.addSystem(teleporterSystem); // Active immediately
+    // Access private fields via type assertion
+    (runtime as unknown as { systems: unknown[] }).systems.push(
+      teleporterSystem
+    ); // Persistent (survives scene transitions)
+    (
+      runtime as unknown as { gameLoop: { addSystem: (s: unknown) => void } }
+    ).gameLoop.addSystem(teleporterSystem); // Active immediately
 
     // STEP 1: Move player onto pad1 in room1
     room1.spatial.move(playerId, 5, 6);

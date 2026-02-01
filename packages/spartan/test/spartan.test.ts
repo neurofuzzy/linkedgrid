@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { LinkedGrid } from '../../grid/linked-grid';
-import { SparseEntityStore } from '../entity-store';
-import { SpatialSystem } from '../spatial-system';
+import { LinkedGrid } from '../core/grid/linked-grid';
+import { SparseEntityStore } from '../core/entity-store';
+import { SpatialSystem } from '../core/spatial-system';
 
 describe('SparseEntityStore', () => {
   let store: SparseEntityStore;

@@ -19,30 +19,30 @@ import { usePlayback } from '../hooks/usePlayback.js';
 type TestRunnerState =
   | { type: 'selecting' }
   | {
-      type: 'loaded';
-      testName: string;
-      testIndex: number;
-      snapshot: Snapshot;
-      definition: VisualTestDefinition;
-      executor: TestExecutor;
-    }
+    type: 'loaded';
+    testName: string;
+    testIndex: number;
+    snapshot: Snapshot;
+    definition: VisualTestDefinition;
+    executor: TestExecutor;
+  }
   | {
-      type: 'running';
-      testName: string;
-      testIndex: number;
-      snapshots: Snapshot[];
-      definition: VisualTestDefinition;
-      executor: TestExecutor;
-      result: TestResult; // Store result while playing
-    }
+    type: 'running';
+    testName: string;
+    testIndex: number;
+    snapshots: Snapshot[];
+    definition: VisualTestDefinition;
+    executor: TestExecutor;
+    result: TestResult; // Store result while playing
+  }
   | {
-      type: 'completed';
-      testName: string;
-      testIndex: number;
-      snapshots: Snapshot[];
-      result: TestResult;
-      definition: VisualTestDefinition;
-    };
+    type: 'completed';
+    testName: string;
+    testIndex: number;
+    snapshots: Snapshot[];
+    result: TestResult;
+    definition: VisualTestDefinition;
+  };
 
 export function App() {
   const [tests, setTests] = useState<TestFile[]>([]);
@@ -111,12 +111,7 @@ export function App() {
   const handleRestart = async () => {
     if (state.type !== 'completed') return; // Type guard!
 
-    const {
-      definition,
-      testName,
-      testIndex,
-      snapshots: currentSnapshots,
-    } = state;
+    const { definition, testName, testIndex } = state;
 
     // Keep showing the last frame while we restart
     try {
@@ -294,8 +289,13 @@ export function App() {
       const modulePath = `../../${file}`;
       await import(modulePath);
 
-      const testRegistry = (globalThis as any).visualTests || [];
-      const testEntry = testRegistry.find((t: any) => t.name === testName);
+      const testRegistry =
+        (
+          globalThis as {
+            visualTests?: Array<{ name: string; definition: VisualTestDefinition }>;
+          }
+        ).visualTests || [];
+      const testEntry = testRegistry.find((t) => t.name === testName);
 
       if (!testEntry) {
         throw new Error(`Test "${testName}" not found in registry`);
