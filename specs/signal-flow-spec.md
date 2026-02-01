@@ -29,7 +29,7 @@ sequenceDiagram
     
     Note over Receivers: Phase 3: Apply state
     Receivers->>Receivers: Update receivedSignal
-    Receivers->>Receivers: Bollards: use lastTickPending
+    Receivers->>Receivers: Gates: use lastTickPending
 ```
 
 ### State Tracking (Current)
@@ -37,8 +37,8 @@ sequenceDiagram
 | State | Type | Purpose | Problem |
 |-------|------|---------|---------|
 | `currentTickSignals` | `Set<entityId>` | Entities with signal this tick | Conflates "receiving" vs "emitting" |
-| `pendingNextTick` | `Set<entityId>` | Bollards waiting to act | Works correctly |
-| `lastTickPending` | `Set<entityId>` | Bollards ready to act | Works correctly |
+| `pendingNextTick` | `Set<entityId>` | Gates waiting to act | Works correctly |
+| `lastTickPending` | `Set<entityId>` | Gates ready to act | Works correctly |
 | `channelStates` | `Map<channel, bool>` | Transceiver channel power | Works correctly |
 | `inputLatches` | `Map<entityId, dir>` | Inverter back-feed prevention | Works correctly |
 
@@ -89,11 +89,11 @@ Current: Transceivers add themselves to `pendingNextTick` and flood-fill immedia
 
 Proposed: Transceivers broadcast `Signal` objects with `channel` property. Remote transceivers receive on next tick naturally.
 
-### Bollard Tick-Delay
+### Gate Tick-Delay
 
 Current: Uses separate `pendingNextTick`/`lastTickPending` sets.
 
-Proposed: Bollards check `Signal.originTick` vs current tick. If signal is from previous tick, act.
+Proposed: Gates check `Signal.originTick` vs current tick. If signal is from previous tick, act.
 
 ### Conductor Visual State
 

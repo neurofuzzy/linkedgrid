@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Signal System provides logic circuit simulation for puzzle mechanics. Signals propagate through conductive networks to control receivers like bollards (barriers) and inverters (NOT gates).
+The Signal System provides logic circuit simulation for puzzle mechanics. Signals propagate through conductive networks to control receivers like gates (barriers) and inverters (NOT gates).
 
 **Key Design Principle**: Conductors propagate instantly. Active components introduce 1-tick delay.
 
@@ -17,20 +17,20 @@ The Signal System provides logic circuit simulation for puzzle mechanics. Signal
 | **Conductor** | Conductive Floor | Instant | Wire (zero resistance) |
 | **Source** | Oscillator, Pressure Switch | Instant emit | Signal generator |
 | **Active Component** | Inverter, Transceiver | 1-tick delay | Logic gate (processing time) |
-| **Receiver** | Bollard | 1-tick delay | Actuator (mechanical delay) |
+| **Receiver** | Gate | 1-tick delay | Actuator (mechanical delay) |
 
 ### Tick-by-Tick Behavior
 
 ```
 Tick 0: Oscillator turns ON
         → Conductors light up instantly
-        → Bollard receives signal, becomes "pending"
+        → Gate receives signal, becomes "pending"
         
-Tick 1: Bollard acts on pending signal
+Tick 1: Gate acts on pending signal
         → Opens (moves from WALLS to FLOOR layer)
 ```
 
-**Result**: A chain of bollards connected through conductors opens simultaneously. A chain connected through transceivers opens sequentially (cascading effect).
+**Result**: A chain of gates connected through conductors opens simultaneously. A chain connected through transceivers opens sequentially (cascading effect).
 
 ---
 
@@ -95,18 +95,18 @@ Wireless signal relay. All transceivers on same channel share state.
 
 ### Receivers
 
-#### Bollard
+#### Gate
 Movable barrier. Opens when powered, closes when unpowered.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `type` | `'bollard' \| 'bollard-open' \| 'bollard-closed'` | State variants |
-| `receiverType` | `'bollard'` | Discriminator |
+| `type` | `'gate' \| 'gate-open' \| 'gate-closed'` | State variants |
+| `receiverType` | `'gate'` | Discriminator |
 | `receivedSignal` | `boolean` | Current power state |
 
 **Layer Behavior:**
-- `bollard-closed` → WALLS layer (blocks movement)
-- `bollard-open` → FLOOR layer (passable)
+- `gate-closed` → WALLS layer (blocks movement)
+- `gate-open` → FLOOR layer (passable)
 
 ---
 
@@ -122,7 +122,7 @@ The SignalSystem executes in phases each tick:
    a. Pass 1: Propagate from primary sources
    b. Pass 2: Process inverters (NOT gates)
    c. Pass 3: Resolve transceiver channels
-5. applyToReceivers()         // Update bollards (with delay)
+5. applyToReceivers()         // Update gates (with delay)
 ```
 
 ### Flood-Fill Algorithm
@@ -146,8 +146,8 @@ Signal propagation uses 4-directional flood-fill:
 | Conductive Floor | FLOOR | Base layer |
 | Inverter | COLLECTIBLES | On top of floor |
 | Transceiver | COLLECTIBLES | On top of floor |
-| Bollard (closed) | WALLS | Blocks movement |
-| Bollard (open) | FLOOR | Passable terrain |
+| Gate (closed) | WALLS | Blocks movement |
+| Gate (open) | FLOOR | Passable terrain |
 
 ---
 
@@ -161,17 +161,17 @@ spawnPressureSwitch(spatial, x, y, layer, { signalState, color });
 spawnConductiveFloor(spatial, x, y, { color });
 spawnInverter(spatial, x, y, layer, { signalState, receivedSignal, color });
 spawnTransceiver(spatial, x, y, layer, channel, { signalState, color });
-spawnBollard(spatial, x, y, layer, { receivedSignal, color });
+spawnGate(spatial, x, y, layer, { receivedSignal, color });
 ```
 
 ### Type Guards
 
 ```typescript
 hasSignalEmitter(entity)   // Oscillator, PressureSwitch, Inverter, Transceiver
-hasSignalReceiver(entity)  // Bollard, Inverter, ConductiveFloor, Transceiver
+hasSignalReceiver(entity)  // Gate, Inverter, ConductiveFloor, Transceiver
 hasConductive(entity)      // ConductiveFloor
 isTransceiver(entity)      // Transceiver
-isBollard(entity)          // Bollard variants
+isGate(entity)          // Gate variants
 ```
 
 ---
@@ -245,4 +245,4 @@ interface PressureSwitchData {
 | Version | Changes |
 |---------|---------|
 | 2.0 | Added tick-delay model, transceiver entity, future work section |
-| 1.0 | Initial spec with oscillators, pressure switches, inverters, bollards |
+| 1.0 | Initial spec with oscillators, pressure switches, inverters, gates |
