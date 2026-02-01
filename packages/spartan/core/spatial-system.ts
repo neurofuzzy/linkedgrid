@@ -43,7 +43,7 @@ export class SpatialSystem {
   constructor(
     private grid: LinkedGrid,
     private store: SparseEntityStore
-  ) {}
+  ) { }
 
   /**
    * Enable debug logging for commit operations.
@@ -118,6 +118,7 @@ export class SpatialSystem {
    * @param y - Y coordinate
    * @param layer - Layer index
    * @param props - Optional additional entity properties
+   * @returns boolean
    *
    * @example
    * ```typescript
@@ -133,9 +134,10 @@ export class SpatialSystem {
     y: number,
     layer: Layer,
     props?: Record<string, unknown>
-  ): void {
+  ): boolean {
     // Create entity in store with specific ID
-    this.store.createWithId(entityId, type, props);
+    const success = this.store.createWithId(entityId, type, props);
+    if (!success) return false;
 
     // Stage the spawn operation
     this.pendingOps.push({
@@ -147,6 +149,8 @@ export class SpatialSystem {
       typeStr: type,
       props,
     });
+
+    return true;
   }
 
   /**
