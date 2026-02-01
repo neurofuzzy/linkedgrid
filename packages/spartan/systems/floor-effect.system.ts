@@ -1,3 +1,6 @@
+/**
+ * @brief Manages temporary floor status effects.
+ */
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, Position } from '../core/types';

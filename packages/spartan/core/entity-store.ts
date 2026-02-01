@@ -1,3 +1,6 @@
+/**
+ * @brief Sparse set storage for efficient entity metadata management.
+ */
 import type { EntityData } from '../entities/entity.types';
 
 /**

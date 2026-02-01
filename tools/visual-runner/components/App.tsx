@@ -286,7 +286,26 @@ export function App() {
     setShowSidebar(false);
 
     try {
-      const modulePath = `../../${file}`;
+      // Security: Validate and sanitize the file path to prevent path traversal
+      // 1. Check for path traversal attempts
+      if (file.includes('..')) {
+        throw new Error('Invalid file path: path traversal detected');
+      }
+      
+      // 2. Normalize the path and ensure it stays within packages directory
+      const normalizedFile = file.replace(/\\/g, '/').replace(/^\/+/, '');
+      
+      // 3. Validate file extension
+      if (!normalizedFile.endsWith('.visual.test.ts')) {
+        throw new Error('Invalid file path: must be a .visual.test.ts file');
+      }
+      
+      // 4. Ensure path doesn't start with absolute indicators
+      if (normalizedFile.startsWith('/') || /^[a-zA-Z]:/.test(normalizedFile)) {
+        throw new Error('Invalid file path: absolute paths not allowed');
+      }
+      
+      const modulePath = `../../../packages/${normalizedFile}`;
       await import(modulePath);
 
       const testRegistry =

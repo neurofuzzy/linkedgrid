@@ -1,3 +1,6 @@
+/**
+ * @brief Registry and lifecycle management for active scenes.
+ */
 import { Scene } from './scene';
 import { GameState } from './game-state';
 

@@ -1,3 +1,6 @@
+/**
+ * @brief Handles poison gas spread and effects.
+ */
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, Position } from '../core/types';
@@ -508,7 +511,7 @@ export class PoisonSystem extends BaseTickedSystem {
     // Create new entities from pending spawns
     for (const [key, spawn] of pendingSpawns) {
       const [x, y] = key.split(',').map(Number);
-      
+
       // Double-check the cell is still available
       if (context.spatial.getEntityIdAt(x, y, spawn.config.spreadLayer) !== undefined) continue;
 

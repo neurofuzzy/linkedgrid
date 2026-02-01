@@ -1,3 +1,6 @@
+/**
+ * @brief Structural entity definitions.
+ */
 import { BaseEntityData } from './base.entity';
 import { IsLockable, HasColor, HasHealth, HasDamageable } from '../traits';
 

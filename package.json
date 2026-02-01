@@ -24,7 +24,8 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "visual": "tsx packages/visual-runner/cli.tsx"
+    "visual": "tsx tools/visual-runner/cli.tsx",
+    "ai:map": "tsx scripts/generate-map.ts packages/spartan > .ai/PACKAGE_CONTENTS.md"
   },
   "repository": {
     "type": "git",

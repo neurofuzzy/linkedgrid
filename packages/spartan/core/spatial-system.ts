@@ -1,3 +1,6 @@
+/**
+ * @brief Spatial queries, movement, and collision detection system.
+ */
 import { LinkedCell, LinkedGrid } from './grid';
 import { SparseEntityStore } from './entity-store';
 import type { EntityData, Layer, PendingOperation } from './types';

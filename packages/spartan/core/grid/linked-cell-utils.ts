@@ -1,3 +1,6 @@
+/**
+ * @brief Algorithms and utilities operating on individual grid cells.
+ */
 import { Direction } from './direction';
 import { LinkedCell } from './linked-cell';
 

@@ -1,3 +1,6 @@
+/**
+ * @brief Primary grid data structure based on doubly-linked cells.
+ */
 import { Direction } from './direction';
 import { LinkedCell } from './linked-cell';
 import { LinkedGridUtils } from './linked-grid-utils';

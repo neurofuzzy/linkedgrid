@@ -1,3 +1,6 @@
+/**
+ * @brief Translates raw input to player intentions.
+ */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
 import { InputManager } from '../input/input-manager';

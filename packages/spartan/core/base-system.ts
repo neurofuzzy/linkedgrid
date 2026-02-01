@@ -1,3 +1,6 @@
+/**
+ * @brief Abstract base classes and interfaces for game systems.
+ */
 import type { GameSystem, GameContext } from './types';
 
 /**
@@ -12,19 +15,19 @@ export abstract class BaseSystem implements GameSystem {
   get name(): string {
     return this.constructor.name;
   }
-  
+
   /**
    * Main update method - implemented by subclasses
    */
   abstract update(context: GameContext): void;
-  
+
   /**
    * Reset system state (for testing/scene transitions)
    */
   public resetState(): void {
     // Override if system has state to reset
   }
-  
+
   /**
    * Get debug information about system state
    */
@@ -44,39 +47,39 @@ export abstract class BaseSystem implements GameSystem {
  */
 export abstract class BaseTickedSystem extends BaseSystem {
   private _currentTick = 0;
-  
+
   /**
    * How often this system should run (in ticks)
    * Set this in your subclass constructor or as a class property
    */
   protected abstract tickRate: number;
-  
+
   /**
    * Final update implementation - handles tick counting
    */
   update(context: GameContext): void {
     this._currentTick++;
-    
+
     if (this._currentTick % this.tickRate !== 0) {
       return;
     }
-    
+
     this.onTick(context);
   }
-  
+
   /**
    * Called every N ticks (where N = tickRate)
    * Implement your system logic here
    */
   protected abstract onTick(context: GameContext): void;
-  
+
   /**
    * Reset tick counter
    */
   public override resetState(): void {
     this._currentTick = 0;
   }
-  
+
   /**
    * Debug state includes tick info
    */
