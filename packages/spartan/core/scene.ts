@@ -1,3 +1,6 @@
+/**
+ * @brief Container for a spatial game level and its grid.
+ */
 import { LinkedGrid } from './grid';
 import { SpatialSystem } from './spatial-system';
 import { GameState } from './game-state';

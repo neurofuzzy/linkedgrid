@@ -1,3 +1,6 @@
+/**
+ * @brief Default entity configuration values and property presets.
+ */
 import { GameLayers } from './layers.config';
 
 /**

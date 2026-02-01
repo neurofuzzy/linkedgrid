@@ -1,3 +1,6 @@
+/**
+ * @brief Simulates fire spread and damage.
+ */
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';

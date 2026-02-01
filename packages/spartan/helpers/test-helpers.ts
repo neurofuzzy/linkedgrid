@@ -1,3 +1,6 @@
+/**
+ * @brief Utilities for writing game tests.
+ */
 import { GameLoop } from '../core/game-loop';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 

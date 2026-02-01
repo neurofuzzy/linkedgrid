@@ -1,3 +1,6 @@
+/**
+ * @brief Unit tests for LinkedGrid functionality.
+ */
 import { describe, it, expect } from 'vitest';
 import { LinkedGrid, LinkedCell, Direction, LinkedGridUtils } from '../index';
 

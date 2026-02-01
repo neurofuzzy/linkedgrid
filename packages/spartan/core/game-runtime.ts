@@ -1,3 +1,6 @@
+/**
+ * @brief Real-time execution environment with fixed timestep loop.
+ */
 import { GameManager, type SaveData } from './game-manager';
 import { GameLoop } from './game-loop';
 import { Scene } from './scene';

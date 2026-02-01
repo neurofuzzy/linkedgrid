@@ -1,3 +1,6 @@
+/**
+ * @brief Static utilities for grid visualization and debugging.
+ */
 import { LinkedGrid } from './linked-grid';
 import { LinkedCell } from './linked-cell';
 

@@ -1,4 +1,7 @@
 /**
+ * @brief Programmatic input for testing.
+ */
+/**
  * HeadlessInputManager - Programmatic input for testing and headless environments.
  *
  * Provides the same interface as KeyboardInputManager but allows direct

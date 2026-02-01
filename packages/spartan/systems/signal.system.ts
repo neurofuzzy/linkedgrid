@@ -1,3 +1,6 @@
+/**
+ * @brief Logic circuit simulation system.
+ */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';

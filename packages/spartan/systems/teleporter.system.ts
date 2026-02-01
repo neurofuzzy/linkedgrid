@@ -1,3 +1,6 @@
+/**
+ * @brief Manages entity teleportation.
+ */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
 import type { TeleporterData } from '../entities/entity.types';

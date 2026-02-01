@@ -17,6 +17,9 @@ import { SparseEntityStore } from './entity-store';
  * const playerId = gameState.entityStore.createId('player', { sceneId: 'room1', hp: 100 });
  * ```
  */
+/**
+ * @brief Persistent state management including connectivity and flags.
+ */
 export class GameState {
   /** Global entity store - all entities in the game live here */
   entityStore: SparseEntityStore;
@@ -208,7 +211,7 @@ export class GameState {
     data?: Array<[string, unknown]>;
     connections?: Array<[string, Array<{ sceneId: string; x: number; y: number; layer: number }>]>;
     nextEntityId?: number;
-    entities?: Array<{ id: number; type: string; [key: string]: unknown }>;
+    entities?: Array<{ id: number; type: string;[key: string]: unknown }>;
   }): GameState {
     const state = new GameState();
     state.playerEntityId = data.playerEntityId ?? 0;

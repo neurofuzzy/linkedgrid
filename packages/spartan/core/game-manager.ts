@@ -1,3 +1,6 @@
+/**
+ * @brief Top-level manager for game state, saves, and scenes.
+ */
 import { GameState } from './game-state';
 import { SceneManager } from './scene-manager';
 import { Scene } from './scene';

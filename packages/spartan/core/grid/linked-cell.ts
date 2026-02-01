@@ -1,3 +1,6 @@
+/**
+ * @brief Single node in the LinkedGrid graph with neighbor connections.
+ */
 import { Direction } from './direction';
 import type { ILinkedGrid } from './interfaces';
 import { LinkedCellUtils } from './linked-cell-utils';

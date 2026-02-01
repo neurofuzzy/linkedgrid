@@ -1,3 +1,6 @@
+/**
+ * @brief Collectible item entities.
+ */
 import { BaseEntityData } from './base.entity';
 import { IsCollectible, HasColor, HasHealth, HasTemperature } from '../traits';
 

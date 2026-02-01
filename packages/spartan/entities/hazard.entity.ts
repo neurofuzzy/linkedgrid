@@ -1,3 +1,6 @@
+/**
+ * @brief Hazardous entity definitions.
+ */
 import { BaseEntityData } from './base.entity';
 import { HasFloorEffect, HasColor, HasHealth, HasExplosion, HasTemperature } from '../traits';
 

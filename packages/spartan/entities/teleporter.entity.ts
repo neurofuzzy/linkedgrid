@@ -1,3 +1,6 @@
+/**
+ * @brief Teleporter entity definitions.
+ */
 import { BaseEntityData } from './base.entity';
 import { HasTeleportTarget, HasSceneLocation } from '../traits';
 

@@ -1,3 +1,6 @@
+/**
+ * @brief Main game loop orchestrating systems and frame ticks.
+ */
 import { SpatialSystem } from './spatial-system';
 import type { GameSystem, GameContext } from './types';
 

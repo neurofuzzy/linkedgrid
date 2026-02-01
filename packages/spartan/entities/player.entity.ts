@@ -1,3 +1,6 @@
+/**
+ * @brief Player entity definition.
+ */
 import { BaseEntityData } from './base.entity';
 import { HasHealth, CanDealDamage, HasSceneLocation, HasInventory } from '../traits';
 

@@ -1,3 +1,6 @@
+/**
+ * @brief Elemental effect entities.
+ */
 import { BaseEntityData } from './base.entity';
 import { HasPropagation, HasFloorEffect, HasColor, HasDensity, HasLiquid, HasHealth, HasTemperature } from '../traits';
 

@@ -1,3 +1,6 @@
+/**
+ * @brief Logic gate and wire entities.
+ */
 import { BaseEntityData } from './base.entity';
 import { HasPropagation, HasColor } from '../traits';
 
