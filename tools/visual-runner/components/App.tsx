@@ -286,7 +286,7 @@ export function App() {
     setShowSidebar(false);
 
     try {
-      const modulePath = `../../${file}`;
+      const modulePath = `../../../packages/${file}`;
       await import(modulePath);
 
       const testRegistry =
