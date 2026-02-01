@@ -1,10 +1,9 @@
-/**
- * Auto-generated project map
- * Last updated: 2026-02-01 08:39:11
- * Files: 90
- * Lines of code: ~19244
- */
-
+```
+# Auto-generated project map
+# Last updated: 2026-02-01 08:41:31
+# Files: 90
+# Lines of code: ~19244
+```
 - **/config**
   - [entities.config.ts](../packages/spartan/config/entities.config.ts) - Default entity configuration values and propert...
     - Variable: `ENTITIES_CONFIG`

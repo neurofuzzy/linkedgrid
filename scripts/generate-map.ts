@@ -198,13 +198,12 @@ processDirectory(targetDir);
 const now = new Date();
 const formattedDate = now.toISOString().replace('T', ' ').substring(0, 19);
 
-console.log(`/**
- * Auto-generated project map
- * Last updated: ${formattedDate}
- * Files: ${stats.fileCount}
- * Lines of code: ~${stats.totalLoc}
- */
-`);
+console.log(`\`\`\`
+# Auto-generated project map
+# Last updated: ${formattedDate}
+# Files: ${stats.fileCount}
+# Lines of code: ~${stats.totalLoc}
+\`\`\``);
 
 // Print Buffered Output
 console.log(outputBuffer.join('\n'));
