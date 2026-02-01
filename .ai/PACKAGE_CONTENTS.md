@@ -1,15 +1,15 @@
 /**
  * Auto-generated project map
- * Last updated: 2026-02-01 08:16:37
+ * Last updated: 2026-02-01 08:39:11
  * Files: 90
  * Lines of code: ~19244
  */
 
 - **/config**
-  - [entities.config.ts](packages/spartan/config/entities.config.ts) - Default entity configuration values and propert...
+  - [entities.config.ts](../packages/spartan/config/entities.config.ts) - Default entity configuration values and propert...
     - Variable: `ENTITIES_CONFIG`
-  - [index.ts](packages/spartan/config/index.ts)
-  - [layers.config.ts](packages/spartan/config/layers.config.ts) - Spartan Framework Layer Constants
+  - [index.ts](../packages/spartan/config/index.ts)
+  - [layers.config.ts](../packages/spartan/config/layers.config.ts) - Spartan Framework Layer Constants
     - Variable: `GameLayers`
     - Type: `GameLayer`
     - Variable: `BLOCKING_LAYERS`
@@ -18,7 +18,7 @@
     - Variable: `ALL_LAYERS`
     - Variable: `CellMasks`
     - Type: `CellMask`
-  - [systems.config.ts](packages/spartan/config/systems.config.ts) - System Configuration - Single Source of Truth
+  - [systems.config.ts](../packages/spartan/config/systems.config.ts) - System Configuration - Single Source of Truth
     - Variable: `SYSTEM_CONFIG`
     - Variable: `FIRE_SPREAD_DELAY`
     - Variable: `LIQUID_FLOW_DELAY`
@@ -29,47 +29,47 @@
 - **/core**
   - **/grid**
     - **/test**
-      - [linked-grid.test.ts](packages/spartan/core/grid/test/linked-grid.test.ts) - Unit tests for LinkedGrid functionality.
-    - [direction.ts](packages/spartan/core/grid/direction.ts) - Direction enum for cardinal directions in the g...
+      - [linked-grid.test.ts](../packages/spartan/core/grid/test/linked-grid.test.ts) - Unit tests for LinkedGrid functionality.
+    - [direction.ts](../packages/spartan/core/grid/direction.ts) - Direction enum for cardinal directions in the g...
       - Enum: `Direction`
-    - [index.ts](packages/spartan/core/grid/index.ts) - Grid Package - LinkedGrid Data Structures
-    - [interfaces.ts](packages/spartan/core/grid/interfaces.ts) - Interfaces for LinkedGrid library.
+    - [index.ts](../packages/spartan/core/grid/index.ts) - Grid Package - LinkedGrid Data Structures
+    - [interfaces.ts](../packages/spartan/core/grid/interfaces.ts) - Interfaces for LinkedGrid library.
       - Interface: `ILinkedGrid`
       - Interface: `ILinkedCell`
-    - [linked-cell-utils.ts](packages/spartan/core/grid/linked-cell-utils.ts) - Algorithms and utilities operating on individua...
+    - [linked-cell-utils.ts](../packages/spartan/core/grid/linked-cell-utils.ts) - Algorithms and utilities operating on individua...
       - Class: `LinkedCellUtils` (Methods: raycast, getLine, getCircle, fieldOfView, fieldOfViewCone, propagateLight, applyFogOfWar, find, findPath, getNeighborsWithinRange, setDistance)
-    - [linked-cell.ts](packages/spartan/core/grid/linked-cell.ts) - Single node in the LinkedGrid graph with neighb...
+    - [linked-cell.ts](../packages/spartan/core/grid/linked-cell.ts) - Single node in the LinkedGrid graph with neighb...
       - Class: `LinkedCell` (Methods: getValue, setValue, clearValue, clearValues, getMask, setMask, getDistance, move, look, neighbors, neighbor, setNeighbor, raycast, getLine, getCircle, fieldOfView, fieldOfViewCone, propagateLight, applyFogOfWar, find, findPath, getNeighborsWithinRange, setDistance)
-    - [linked-grid-utils.ts](packages/spartan/core/grid/linked-grid-utils.ts) - Static utilities for grid visualization and deb...
+    - [linked-grid-utils.ts](../packages/spartan/core/grid/linked-grid-utils.ts) - Static utilities for grid visualization and deb...
       - Class: `LinkedGridUtils` (Methods: getLine, print, printDistances)
-    - [linked-grid.ts](packages/spartan/core/grid/linked-grid.ts) - Primary grid data structure based on doubly-lin...
+    - [linked-grid.ts](../packages/spartan/core/grid/linked-grid.ts) - Primary grid data structure based on doubly-lin...
       - Class: `LinkedGrid` (Methods: cell, getCellCoordinates, getLine)
-  - [base-system.ts](packages/spartan/core/base-system.ts) - Abstract base classes and interfaces for game s...
+  - [base-system.ts](../packages/spartan/core/base-system.ts) - Abstract base classes and interfaces for game s...
     - Class: `BaseSystem` (Methods: update, resetState, getDebugState)
     - Class: `BaseTickedSystem` (Methods: update, resetState, getDebugState)
     - Class: `BaseReactiveSystem`
-  - [entity-store.ts](packages/spartan/core/entity-store.ts) - Sparse set storage for efficient entity metadat...
+  - [entity-store.ts](../packages/spartan/core/entity-store.ts) - Sparse set storage for efficient entity metadat...
     - Class: `SparseEntityStore` (Methods: createId, getData, setData, createWithId, remove, getAllIds, clear)
-  - [game-loop.ts](packages/spartan/core/game-loop.ts) - Main game loop orchestrating systems and frame ...
+  - [game-loop.ts](../packages/spartan/core/game-loop.ts) - Main game loop orchestrating systems and frame ...
     - Class: `GameLoop` (Methods: registerSystems, addSystem, tick)
-  - [game-manager.ts](packages/spartan/core/game-manager.ts) - Top-level manager for game state, saves, and sc...
+  - [game-manager.ts](../packages/spartan/core/game-manager.ts) - Top-level manager for game state, saves, and sc...
     - Interface: `SerializedScene`
     - Interface: `SerializedGameState`
     - Interface: `SaveData`
     - Class: `GameManager` (Methods: getPlayerScene, getPlayerPosition, movePlayerToScene, executePendingTransition, save, load)
-  - [game-runtime.ts](packages/spartan/core/game-runtime.ts) - Real-time execution environment with fixed time...
+  - [game-runtime.ts](../packages/spartan/core/game-runtime.ts) - Real-time execution environment with fixed time...
     - Interface: `GameRuntimeConfig`
     - Class: `GameRuntime` (Methods: new, load, addSystem, start, stop, tick, save, restart)
-  - [game-state.ts](packages/spartan/core/game-state.ts)
+  - [game-state.ts](../packages/spartan/core/game-state.ts)
     - Class: `GameState` (Methods: generateEntityId, addConnection, getConnections, removeConnection, serialize, deserialize)
-  - [index.ts](packages/spartan/core/index.ts)
-  - [scene-manager.ts](packages/spartan/core/scene-manager.ts) - Registry and lifecycle management for active sc...
+  - [index.ts](../packages/spartan/core/index.ts)
+  - [scene-manager.ts](../packages/spartan/core/scene-manager.ts) - Registry and lifecycle management for active sc...
     - Class: `SceneManager` (Methods: createScene, getScene, getActiveScene, setActiveScene, getAllSceneIds, deleteScene)
-  - [scene.ts](packages/spartan/core/scene.ts) - Container for a spatial game level and its grid.
+  - [scene.ts](../packages/spartan/core/scene.ts) - Container for a spatial game level and its grid.
     - Class: `Scene` (Methods: getPlayerPosition, serialize, deserialize)
-  - [spatial-system.ts](packages/spartan/core/spatial-system.ts) - Spatial queries, movement, and collision detect...
+  - [spatial-system.ts](../packages/spartan/core/spatial-system.ts) - Spatial queries, movement, and collision detect...
     - Class: `SpatialSystem` (Methods: setDebugCommit, spawn, spawnWithId, move, moveEntity, commit, clearIntents, cancelMove, pause, removeAt, remove, getEntityIdAt, getEntityIdsInCell, getEntityIdsInRadius, getEntityIdsInLine, getEntityData, getEntityPosition, getPosition, isAlive, getAllPositions, detectOverlaps, getGrid, getStore, cancelRemoval, cancelSpawn, getPendingOps, getPendingRemovals, debug, syncMasks, isBlocked, blocksVision, isWalkable)
-  - [types.ts](packages/spartan/core/types.ts) - Core types for the Spartan game framework.
+  - [types.ts](../packages/spartan/core/types.ts) - Core types for the Spartan game framework.
     - Type: `Layer`
     - Type: `Position`
     - Interface: `Overlap`
@@ -78,43 +78,43 @@
     - Interface: `GameSystem`
 - **/docs**
 - **/entities**
-  - [base.entity.ts](packages/spartan/entities/base.entity.ts)
+  - [base.entity.ts](../packages/spartan/entities/base.entity.ts)
     - Interface: `BaseEntityData`
-  - [collectible.entity.ts](packages/spartan/entities/collectible.entity.ts) - Collectible item entities.
+  - [collectible.entity.ts](../packages/spartan/entities/collectible.entity.ts) - Collectible item entities.
     - Type: `ItemData`
     - Type: `KeyData`
     - Type: `GasolineData`
     - Type: `FuseData`
-  - [elemental.entity.ts](packages/spartan/entities/elemental.entity.ts) - Elemental effect entities.
+  - [elemental.entity.ts](../packages/spartan/entities/elemental.entity.ts) - Elemental effect entities.
     - Type: `FireVisualData`
     - Type: `PoisonGasData`
     - Type: `WaterData`
     - Type: `AshData`
     - Type: `GrassData`
     - Type: `ExplosionVisualData`
-  - [enemy.entity.ts](packages/spartan/entities/enemy.entity.ts) - Enemy entity definitions.
+  - [enemy.entity.ts](../packages/spartan/entities/enemy.entity.ts) - Enemy entity definitions.
     - Type: `EnemyData`
-  - [entity.types.ts](packages/spartan/entities/entity.types.ts) - EntityData - Discriminated union of all entity ...
+  - [entity.types.ts](../packages/spartan/entities/entity.types.ts) - EntityData - Discriminated union of all entity ...
     - Type: `EntityData`
-  - [hazard.entity.ts](packages/spartan/entities/hazard.entity.ts) - Hazardous entity definitions.
+  - [hazard.entity.ts](../packages/spartan/entities/hazard.entity.ts) - Hazardous entity definitions.
     - Type: `LavaData`
     - Type: `AcidData`
     - Type: `MedbayData`
     - Type: `IceData`
     - Type: `MudData`
     - Type: `BarrelData`
-  - [index.ts](packages/spartan/entities/index.ts)
-  - [logic.entity.ts](packages/spartan/entities/logic.entity.ts) - Logic gate and wire entities.
+  - [index.ts](../packages/spartan/entities/index.ts)
+  - [logic.entity.ts](../packages/spartan/entities/logic.entity.ts) - Logic gate and wire entities.
     - Type: `ChainLinkData`
-  - [player.entity.ts](packages/spartan/entities/player.entity.ts) - Player entity definition.
+  - [player.entity.ts](../packages/spartan/entities/player.entity.ts) - Player entity definition.
     - Type: `PlayerData`
-  - [signal.entity.ts](packages/spartan/entities/signal.entity.ts) - Signal system entities: switches, conductors, a...
+  - [signal.entity.ts](../packages/spartan/entities/signal.entity.ts) - Signal system entities: switches, conductors, a...
     - Type: `OscillatorData`
     - Type: `PressureSwitchData`
     - Type: `InverterData`
     - Type: `ConductiveFloorData`
     - Type: `BollardData`
-  - [spawn-helpers.ts](packages/spartan/entities/spawn-helpers.ts) - Type-Safe Entity Spawn Helpers
+  - [spawn-helpers.ts](../packages/spartan/entities/spawn-helpers.ts) - Type-Safe Entity Spawn Helpers
     - Function: `spawnPlayer`
     - Function: `spawnEnemy`
     - Function: `spawnTeleporter`
@@ -126,34 +126,34 @@
     - Function: `spawnInverter`
     - Function: `spawnConductiveFloor`
     - Function: `spawnBollard`
-  - [structure.entity.ts](packages/spartan/entities/structure.entity.ts) - Structural entity definitions.
+  - [structure.entity.ts](../packages/spartan/entities/structure.entity.ts) - Structural entity definitions.
     - Type: `WallData`
     - Type: `DoorData`
     - Type: `OpenDoorData`
     - Type: `TorchData`
     - Type: `DestructibleWallData`
-  - [teleporter.entity.ts](packages/spartan/entities/teleporter.entity.ts) - Teleporter entity definitions.
+  - [teleporter.entity.ts](../packages/spartan/entities/teleporter.entity.ts) - Teleporter entity definitions.
     - Type: `TeleporterData`
 - **/helpers**
-  - [index.ts](packages/spartan/helpers/index.ts)
-  - [layer-helpers.ts](packages/spartan/helpers/layer-helpers.ts)
+  - [index.ts](../packages/spartan/helpers/index.ts)
+  - [layer-helpers.ts](../packages/spartan/helpers/layer-helpers.ts)
     - Function: `getTopmostEntity`
-  - [test-helpers.ts](packages/spartan/helpers/test-helpers.ts) - Utilities for writing game tests.
+  - [test-helpers.ts](../packages/spartan/helpers/test-helpers.ts) - Utilities for writing game tests.
     - Function: `advanceUntilFireSpreads`
     - Function: `advanceUntilLiquidFlows`
     - Function: `advanceSpreadCycles`
 - **/input**
-  - [gamepad-manager.ts](packages/spartan/input/gamepad-manager.ts) - GamepadManager - Simplified gamepad input handl...
+  - [gamepad-manager.ts](../packages/spartan/input/gamepad-manager.ts) - GamepadManager - Simplified gamepad input handl...
     - Type: `StickMode`
     - Interface: `GamepadConfig`
     - Interface: `GamepadState`
     - Class: `GamepadManager` (Methods: enable, disable, getState, destroy)
-  - [headless-input-manager.ts](packages/spartan/input/headless-input-manager.ts) - Programmatic input for testing.
+  - [headless-input-manager.ts](../packages/spartan/input/headless-input-manager.ts) - Programmatic input for testing.
     - Interface: `HeadlessInputState`
     - Class: `HeadlessInputManager` (Methods: enable, disable, isEnabled, setDirection, setAction, setSecondary, pressStart, pressRestart, clearInput, getState, cleanup)
-  - [index.ts](packages/spartan/input/index.ts) - Unified input system exports.
+  - [index.ts](../packages/spartan/input/index.ts) - Unified input system exports.
     - Interface: `UnifiedInputState`
-  - [input-manager.ts](packages/spartan/input/input-manager.ts) - InputManager - Unified input system for keyboar...
+  - [input-manager.ts](../packages/spartan/input/input-manager.ts) - InputManager - Unified input system for keyboar...
     - Type: `StickMode`
     - Interface: `StickConfig`
     - Interface: `MouseState`
@@ -163,96 +163,96 @@
     - Interface: `InputConfig`
     - Interface: `GameInputConfig`
     - Class: `InputManager` (Methods: updateConfig, enableKeyboard, disableKeyboard, enableMouse, disableMouse, enableGamepad, disableGamepad, enableAll, disableAll, setLeftStickMode, setRightStickMode, getTwinStickInput, enableBuffering, destroy, getState, isKeyDown, wasKeyPressed, getBufferedDirection, clearBufferedDirection, hasBufferedDirection, injectInput)
-  - [keyboard-input-manager.ts](packages/spartan/input/keyboard-input-manager.ts) - KeyboardInputManager - Simplified keyboard inpu...
+  - [keyboard-input-manager.ts](../packages/spartan/input/keyboard-input-manager.ts) - KeyboardInputManager - Simplified keyboard inpu...
     - Type: `DirectionMode`
     - Interface: `KeyboardInputConfig`
     - Interface: `InputEvent`
     - Interface: `KeyboardState`
     - Class: `KeyboardInputManager` (Methods: getState, enable, disable, destroy, injectKey)
-  - [mouse-manager.ts](packages/spartan/input/mouse-manager.ts) - MouseManager - Simplified mouse input handling.
+  - [mouse-manager.ts](../packages/spartan/input/mouse-manager.ts) - MouseManager - Simplified mouse input handling.
     - Interface: `MouseConfig`
     - Interface: `MouseState`
     - Class: `MouseManager` (Methods: getState, enable, disable, destroy)
 - **/systems**
-  - [chain-reaction.system.ts](packages/spartan/systems/chain-reaction.system.ts) - Handles explosive chain reactions.
+  - [chain-reaction.system.ts](../packages/spartan/systems/chain-reaction.system.ts) - Handles explosive chain reactions.
     - Class: `ChainReactionSystem` (Methods: resetState, getDebugState)
-  - [collection.system.ts](packages/spartan/systems/collection.system.ts) - Handles item pickup and inventory.
+  - [collection.system.ts](../packages/spartan/systems/collection.system.ts) - Handles item pickup and inventory.
     - Class: `CollectionSystem` (Methods: update, getDebugState)
-  - [door.system.ts](packages/spartan/systems/door.system.ts) - Manages door states and interactions.
+  - [door.system.ts](../packages/spartan/systems/door.system.ts) - Manages door states and interactions.
     - Class: `DoorSystem` (Methods: update, getDebugState)
-  - [explosion.system.ts](packages/spartan/systems/explosion.system.ts) - Processes explosion effects and damage.
+  - [explosion.system.ts](../packages/spartan/systems/explosion.system.ts) - Processes explosion effects and damage.
     - Class: `ExplosionSystem` (Methods: resetState, getDebugState)
-  - [fire.system.ts](packages/spartan/systems/fire.system.ts) - Simulates fire spread and damage.
+  - [fire.system.ts](../packages/spartan/systems/fire.system.ts) - Simulates fire spread and damage.
     - Class: `FireSystem` (Methods: ignite, resetState)
-  - [floor-effect.system.ts](packages/spartan/systems/floor-effect.system.ts) - Manages temporary floor status effects.
+  - [floor-effect.system.ts](../packages/spartan/systems/floor-effect.system.ts) - Manages temporary floor status effects.
     - Class: `FloorEffectSystem` (Methods: cleanupTimingState, resetState, resetTimingState, getDebugState)
-  - [index.ts](packages/spartan/systems/index.ts) - Systems - Game logic processors
-  - [liquid.system.ts](packages/spartan/systems/liquid.system.ts) - Simulates liquid flow physics.
+  - [index.ts](../packages/spartan/systems/index.ts) - Systems - Game logic processors
+  - [liquid.system.ts](../packages/spartan/systems/liquid.system.ts) - Simulates liquid flow physics.
     - Class: `LiquidSystem` (Methods: resetState)
-  - [player-input.system.ts](packages/spartan/systems/player-input.system.ts) - Translates raw input to player intentions.
+  - [player-input.system.ts](../packages/spartan/systems/player-input.system.ts) - Translates raw input to player intentions.
     - Class: `PlayerInputSystem` (Methods: update, getDebugState)
-  - [poison.system.ts](packages/spartan/systems/poison.system.ts) - Handles poison gas spread and effects.
+  - [poison.system.ts](../packages/spartan/systems/poison.system.ts) - Handles poison gas spread and effects.
     - Class: `PoisonSystem` (Methods: resetState, getDebugState)
-  - [signal.system.ts](packages/spartan/systems/signal.system.ts) - Logic circuit simulation system.
+  - [signal.system.ts](../packages/spartan/systems/signal.system.ts) - Logic circuit simulation system.
     - Class: `SignalSystem` (Methods: update, resetState, getDebugState)
-  - [teleporter.system.ts](packages/spartan/systems/teleporter.system.ts) - Manages entity teleportation.
+  - [teleporter.system.ts](../packages/spartan/systems/teleporter.system.ts) - Manages entity teleportation.
     - Class: `TeleporterSystem` (Methods: update, getDebugState)
 - **/test**
-  - [assertions.visual.test.ts](packages/spartan/test/assertions.visual.test.ts)
-  - [chain-reaction.test.ts](packages/spartan/test/chain-reaction.test.ts)
-  - [explosion.test.ts](packages/spartan/test/explosion.test.ts)
-  - [explosion.visual.test.ts](packages/spartan/test/explosion.visual.test.ts)
-  - [flammability.visual.test.ts](packages/spartan/test/flammability.visual.test.ts)
-  - [floor-effects.visual.test.ts](packages/spartan/test/floor-effects.visual.test.ts)
-  - [game-loop.test.ts](packages/spartan/test/game-loop.test.ts)
-  - [game-runtime.test.ts](packages/spartan/test/game-runtime.test.ts)
-  - [layers.visual.test.ts](packages/spartan/test/layers.visual.test.ts)
-  - [movement.visual.test.ts](packages/spartan/test/movement.visual.test.ts)
-  - [scene-system.test.ts](packages/spartan/test/scene-system.test.ts)
-  - [scene-transition.visual.test.ts](packages/spartan/test/scene-transition.visual.test.ts)
-  - [signal.backfeed.test.ts](packages/spartan/test/signal.backfeed.test.ts)
-  - [signal.visual.test.ts](packages/spartan/test/signal.visual.test.ts)
-  - [spartan.test.ts](packages/spartan/test/spartan.test.ts)
-  - [teleporter-roundtrip.test.ts](packages/spartan/test/teleporter-roundtrip.test.ts)
-  - [test-fixtures.ts](packages/spartan/test/test-fixtures.ts)
+  - [assertions.visual.test.ts](../packages/spartan/test/assertions.visual.test.ts)
+  - [chain-reaction.test.ts](../packages/spartan/test/chain-reaction.test.ts)
+  - [explosion.test.ts](../packages/spartan/test/explosion.test.ts)
+  - [explosion.visual.test.ts](../packages/spartan/test/explosion.visual.test.ts)
+  - [flammability.visual.test.ts](../packages/spartan/test/flammability.visual.test.ts)
+  - [floor-effects.visual.test.ts](../packages/spartan/test/floor-effects.visual.test.ts)
+  - [game-loop.test.ts](../packages/spartan/test/game-loop.test.ts)
+  - [game-runtime.test.ts](../packages/spartan/test/game-runtime.test.ts)
+  - [layers.visual.test.ts](../packages/spartan/test/layers.visual.test.ts)
+  - [movement.visual.test.ts](../packages/spartan/test/movement.visual.test.ts)
+  - [scene-system.test.ts](../packages/spartan/test/scene-system.test.ts)
+  - [scene-transition.visual.test.ts](../packages/spartan/test/scene-transition.visual.test.ts)
+  - [signal.backfeed.test.ts](../packages/spartan/test/signal.backfeed.test.ts)
+  - [signal.visual.test.ts](../packages/spartan/test/signal.visual.test.ts)
+  - [spartan.test.ts](../packages/spartan/test/spartan.test.ts)
+  - [teleporter-roundtrip.test.ts](../packages/spartan/test/teleporter-roundtrip.test.ts)
+  - [test-fixtures.ts](../packages/spartan/test/test-fixtures.ts)
     - Class: `TestSpatialFixture` (Methods: placeEntity, removeEntity, moveEntity)
-  - [test-helpers.ts](packages/spartan/test/test-helpers.ts)
+  - [test-helpers.ts](../packages/spartan/test/test-helpers.ts)
     - Function: `createRuntimeWithSystems`
-  - [transaction-consistency.test.ts](packages/spartan/test/transaction-consistency.test.ts)
-  - [visual-helpers.ts](packages/spartan/test/visual-helpers.ts)
+  - [transaction-consistency.test.ts](../packages/spartan/test/transaction-consistency.test.ts)
+  - [visual-helpers.ts](../packages/spartan/test/visual-helpers.ts)
     - Interface: `AssertionResult`
     - Interface: `VisualTestContext`
     - Interface: `VisualTestDefinition`
     - Function: `visual`
 - **/traits**
-  - [ai.trait.ts](packages/spartan/traits/ai.trait.ts)
+  - [ai.trait.ts](../packages/spartan/traits/ai.trait.ts)
     - Interface: `HasAI`
-  - [combat.trait.ts](packages/spartan/traits/combat.trait.ts)
+  - [combat.trait.ts](../packages/spartan/traits/combat.trait.ts)
     - Interface: `CanDealDamage`
     - Interface: `HasDamageable`
     - Interface: `HasExplosion`
-  - [health.trait.ts](packages/spartan/traits/health.trait.ts)
+  - [health.trait.ts](../packages/spartan/traits/health.trait.ts)
     - Interface: `HasHealth`
-  - [index.ts](packages/spartan/traits/index.ts)
-  - [inventory.trait.ts](packages/spartan/traits/inventory.trait.ts)
+  - [index.ts](../packages/spartan/traits/index.ts)
+  - [inventory.trait.ts](../packages/spartan/traits/inventory.trait.ts)
     - Interface: `HasInventory`
     - Interface: `IsLockable`
     - Interface: `IsCollectible`
-  - [movement.trait.ts](packages/spartan/traits/movement.trait.ts)
+  - [movement.trait.ts](../packages/spartan/traits/movement.trait.ts)
     - Interface: `HasSceneLocation`
     - Interface: `HasTeleportTarget`
-  - [signal.trait.ts](packages/spartan/traits/signal.trait.ts) - Signal system traits for switches, conductors, ...
+  - [signal.trait.ts](../packages/spartan/traits/signal.trait.ts) - Signal system traits for switches, conductors, ...
     - Interface: `HasSignalEmitter`
     - Interface: `HasSignalReceiver`
     - Interface: `HasConductive`
-  - [spatial.trait.ts](packages/spartan/traits/spatial.trait.ts)
+  - [spatial.trait.ts](../packages/spartan/traits/spatial.trait.ts)
     - Interface: `HasFloorEffect`
     - Interface: `HasPropagation`
     - Interface: `HasDensity`
     - Interface: `HasLiquid`
-  - [thermal.trait.ts](packages/spartan/traits/thermal.trait.ts)
+  - [thermal.trait.ts](../packages/spartan/traits/thermal.trait.ts)
     - Interface: `HasTemperature`
-  - [trait-guards.ts](packages/spartan/traits/trait-guards.ts) - Type Guards for Entity Traits
+  - [trait-guards.ts](../packages/spartan/traits/trait-guards.ts) - Type Guards for Entity Traits
     - Function: `hasHealth`
     - Function: `canDealDamage`
     - Function: `hasAI`
@@ -306,7 +306,7 @@
     - Function: `isInverter`
     - Function: `isConductiveFloor`
     - Function: `isBollard`
-  - [traits.ts](packages/spartan/traits/traits.ts)
-  - [visual.trait.ts](packages/spartan/traits/visual.trait.ts)
+  - [traits.ts](../packages/spartan/traits/traits.ts)
+  - [visual.trait.ts](../packages/spartan/traits/visual.trait.ts)
     - Interface: `HasColor`
-- [index.ts](packages/spartan/index.ts) - Spartan Framework - Cell-centric game framework...
+- [index.ts](../packages/spartan/index.ts) - Spartan Framework - Cell-centric game framework...
