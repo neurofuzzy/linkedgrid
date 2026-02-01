@@ -95,14 +95,15 @@ export class ChainReactionSystem extends BaseTickedSystem {
             continue;
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, type, sceneId, ...propagationProps } = sourceData;
           const newId = context.spatial.spawn(
             sourceData.spreadType,
             neighbor.x,
             neighbor.y,
             sourceData.spreadLayer,
             {
-              ...sourceData, // Copy config
-              // Ensure we copy 'chain' specific props if we add them later
+              ...propagationProps, // Copy only config props, not instance-specific ones
             }
           );
 

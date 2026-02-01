@@ -82,17 +82,13 @@ export class FireSystem extends BaseTickedSystem {
   }
 
   private spreadFire(context: GameContext): void {
-    const posMap = new Map<number, { x: number; y: number; layer: number }>();
-    for (const [entityId, pos] of context.spatial.getAllPositions()) {
-      if (this.burningEntities.has(entityId)) {
-        posMap.set(entityId, pos);
-      }
-    }
+    // Two-phase update: calculate all temperature deltas first, then apply
+    const temperatureDeltas = new Map<number, number>();
 
     for (const entityId of this.burningEntities.keys()) {
       if (!context.spatial.isAlive(entityId)) continue;
 
-      const pos = posMap.get(entityId);
+      const pos = context.spatial.getEntityPosition(entityId);
       if (!pos) continue;
 
       const cell = context.spatial.grid.cell(pos.x, pos.y);
@@ -110,11 +106,21 @@ export class FireSystem extends BaseTickedSystem {
           const neighborData = context.spatial.getEntityData(neighborId);
           if (!neighborData || !hasTemperature(neighborData)) continue;
 
-          neighborData.temperature = Math.min(
-            neighborData.temperature + this.TEMPERATURE_INCREASE,
-            neighborData.flamePoint + 100
-          );
+          // Store the intended temperature increase in a temporary map
+          const currentDelta = temperatureDeltas.get(neighborId) || 0;
+          temperatureDeltas.set(neighborId, currentDelta + this.TEMPERATURE_INCREASE);
         }
+      }
+    }
+
+    // Apply all calculated temperature changes at once
+    for (const [entityId, delta] of temperatureDeltas.entries()) {
+      const entityData = context.spatial.getEntityData(entityId);
+      if (entityData && hasTemperature(entityData)) {
+        entityData.temperature = Math.min(
+          entityData.temperature + delta,
+          entityData.flamePoint + 100
+        );
       }
     }
   }

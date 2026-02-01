@@ -160,15 +160,20 @@ export class LiquidSystem extends BaseTickedSystem {
           } else {
             // Spawn new
             const key = `${recipient.cell.x},${recipient.cell.y}`;
-            const pending = pendingSpawns.get(key) || {
-              amount: 0,
-              template: entityData as unknown as LiquidConfig,
-              originX: state.originX,
-              originY: state.originY
-            };
-            pending.amount += transfer;
-            pending.template = entityData as unknown as LiquidConfig;
-            pendingSpawns.set(key, pending);
+            const pending = pendingSpawns.get(key);
+            if (pending) {
+              // If a spawn is already pending, just add to its amount
+              // Don't overwrite the template - keep the first liquid's properties
+              pending.amount += transfer;
+            } else {
+              // Otherwise, create a new pending spawn
+              pendingSpawns.set(key, {
+                amount: transfer,
+                template: entityData as unknown as LiquidConfig,
+                originX: state.originX,
+                originY: state.originY
+              });
+            }
           }
         }
       }
@@ -214,7 +219,7 @@ export class LiquidSystem extends BaseTickedSystem {
             temperature: spawn.template.temperature
           }),
           depth: spawn.amount,
-          lastSpreadTick: this.currentTick,
+          // Note: lastSpreadTick is system-internal state, not part of entity data
         }
       );
 

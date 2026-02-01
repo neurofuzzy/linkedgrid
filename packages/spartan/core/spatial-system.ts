@@ -20,7 +20,7 @@ export class SpatialSystem {
 
   /** Track pending removals for lifecycle queries */
   private pendingRemovals = new Set<number>();
-  
+
   /** Track one move per entity to prevent duplicates */
   private pendingMoves = new Map<number, PendingOperation>();
 
@@ -48,9 +48,9 @@ export class SpatialSystem {
   /**
    * Enable debug logging for commit operations.
    * Logs rejected spawns, moves, and removals with detailed reasons.
-   * 
+   *
    * @param enabled - Whether to enable debug logging
-   * 
+   *
    * @example
    * ```typescript
    * spatial.setDebugCommit(true);
@@ -219,11 +219,26 @@ export class SpatialSystem {
 
     // Store in pendingMoves Map (overwrites any existing move for this entity)
     this.pendingMoves.set(entityId, moveOp);
-    
+
     // Also add to pendingOps for backward compatibility with commit logic
     this.pendingOps.push(moveOp);
   }
 
+  /**
+   * Alias for move.
+   * @param entityId
+   * @param toX
+   * @param toY
+   * @param blockFn
+   */
+  moveEntity(
+    entityId: number,
+    toX: number,
+    toY: number,
+    blockFn?: (cell: LinkedCell | null) => boolean
+  ): void {
+    this.move(entityId, toX, toY, blockFn);
+  }
 
   /**
    * Execute all pending operations atomically.
@@ -307,7 +322,9 @@ export class SpatialSystem {
       if (!toCell) {
         if (this.debugCommit) {
           const entityData = this.store.getData(move.entityId!);
-          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - OUT OF BOUNDS`);
+          console.warn(
+            `[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - OUT OF BOUNDS`
+          );
         }
         continue;
       }
@@ -316,7 +333,9 @@ export class SpatialSystem {
       if (move.blockFn && move.blockFn(toCell)) {
         if (this.debugCommit) {
           const entityData = this.store.getData(move.entityId!);
-          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY CUSTOM FUNCTION`);
+          console.warn(
+            `[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY CUSTOM FUNCTION`
+          );
         }
         continue;
       }
@@ -329,18 +348,22 @@ export class SpatialSystem {
         if (this.isBlocked(toCell)) {
           if (this.debugCommit) {
             const entityData = this.store.getData(move.entityId!);
-            console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall)`);
+            console.warn(
+              `[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - CELL BLOCKED (wall)`
+            );
           }
           continue;
         }
-        
+
         // If moving on ACTORS layer, also check for other actors
         if (move.layer === GameLayers.ACTORS) {
           const hasActor = toCell.getValue(GameLayers.ACTORS) !== undefined;
           if (hasActor) {
             if (this.debugCommit) {
               const entityData = this.store.getData(move.entityId!);
-              console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY ACTOR`);
+              console.warn(
+                `[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - BLOCKED BY ACTOR`
+              );
             }
             continue;
           }
@@ -367,7 +390,9 @@ export class SpatialSystem {
             const occupyingData = this.store.getData(occupyingEntity);
             reason = `OCCUPIED by entity ${occupyingEntity} (${occupyingData?.type || 'unknown'})`;
           }
-          console.warn(`[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - ${reason}`);
+          console.warn(
+            `[SpatialSystem] Move rejected: Entity ${move.entityId!} (${entityData?.type || 'unknown'}) from (${move.fromX}, ${move.fromY}) to (${move.toX}, ${move.toY}) layer ${move.layer} - ${reason}`
+          );
         }
       }
     }
@@ -409,16 +434,20 @@ export class SpatialSystem {
       const cell = this.grid.cell(op.x!, op.y!);
       if (!cell) {
         if (this.debugCommit) {
-          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - OUT OF BOUNDS`);
+          console.warn(
+            `[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - OUT OF BOUNDS`
+          );
         }
         continue;
       }
-      
+
       const existingEntity = cell.getValue(op.layer);
       if (existingEntity !== undefined) {
         if (this.debugCommit) {
           const existingData = this.store.getData(existingEntity);
-          console.warn(`[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - COLLISION with entity ${existingEntity} (${existingData?.type || 'unknown'})`);
+          console.warn(
+            `[SpatialSystem] Spawn rejected: Entity ${op.entityId!} (${op.typeStr || 'unknown'}) at (${op.x}, ${op.y}) layer ${op.layer} - COLLISION with entity ${existingEntity} (${existingData?.type || 'unknown'})`
+          );
         }
         continue; // Occupied
       }
@@ -454,7 +483,7 @@ export class SpatialSystem {
     this.pendingMoves.clear();
     this.pendingRemovals.clear();
   }
-  
+
   /**
    * Cancel a pending move for a specific entity.
    *
@@ -796,6 +825,15 @@ export class SpatialSystem {
   }
 
   /**
+   * Alias for getEntityPosition.
+   * @param id
+   * @returns
+   */
+  getPosition(id: number): { x: number; y: number; layer: Layer } | null {
+    return this.getEntityPosition(id);
+  }
+
+  /**
    * Check if entity is valid for targeting/interaction.
    *
    * Returns false if entity is pending removal (staged for death).
@@ -1062,36 +1100,36 @@ export class SpatialSystem {
 
   /**
    * Update cell masks based on entities present on the cell.
-   * 
+   *
    * Sets BLOCKING mask if cell has walls (NOT actors - actors only block other actors).
    * Sets VISION_BLOCKING mask if cell has entities on WALLS layer.
-   * 
+   *
    * @param cell - Cell to update masks for
    * @private
    */
   private updateCellMasks(cell: LinkedCell): void {
     // Check if WALLS layer has entities
     const hasWall = cell.getValue(GameLayers.WALLS) !== undefined;
-    
+
     // Set BLOCKING mask only for walls (actors don't block everything, only other actors)
     cell.setMask(CellMasks.BLOCKING, hasWall);
-    
+
     // Set VISION_BLOCKING mask if walls present
     cell.setMask(CellMasks.VISION_BLOCKING, hasWall);
   }
 
   /**
    * Synchronize all cell masks with current grid state.
-   * 
+   *
    * Scans all cells in the grid and updates their masks based on
    * entities currently present. Useful after manually setting cell
    * values or when initializing a scene.
-   * 
+   *
    * @example
    * ```typescript
    * // Manually set terrain
    * grid.cell(5, 5).setValue(GameLayers.WALLS, 1);
-   * 
+   *
    * // Sync masks
    * spatial.syncMasks();
    * ```
@@ -1107,14 +1145,14 @@ export class SpatialSystem {
    *
    * The BLOCKING mask is automatically managed by SpatialSystem when entities
    * that block movement are spawned/removed (walls, closed doors, etc.).
-   * 
+   *
    * NOTE: Actors do NOT set the BLOCKING mask - they only block other actors.
    * Use layer-specific checks (e.g., check ACTORS layer) for actor blocking.
    *
    * @param cell - Cell to check
    * @param emptyFloorsBlock - If true, cells without floor entities block movement
    * @returns true if cell blocks movement (walls, etc.)
-   * 
+   *
    * @example
    * ```typescript
    * const targetCell = spatial.grid.cell(5, 5);
@@ -1142,7 +1180,7 @@ export class SpatialSystem {
    *
    * @param cell - Cell to check
    * @returns true if cell blocks vision
-   * 
+   *
    * @example
    * ```typescript
    * const targetCell = spatial.grid.cell(5, 5);
@@ -1158,11 +1196,11 @@ export class SpatialSystem {
 
   /**
    * Checks if a cell is walkable (inverse of isBlocked).
-   * 
+   *
    * @param cell - Cell to check
    * @param emptyFloorsBlock - If true, cells without floor entities block movement
    * @returns true if cell is walkable
-   * 
+   *
    * @example
    * ```typescript
    * const targetCell = spatial.grid.cell(5, 5);

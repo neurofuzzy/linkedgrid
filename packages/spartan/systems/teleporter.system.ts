@@ -121,25 +121,20 @@ export class TeleporterSystem extends BaseReactiveSystem {
     const playerData = this.gameManager.gameState.entityStore.getData(playerId);
     if (!playerData || !isPlayer(playerData)) return;
 
-    const playerSceneId = playerData.sceneId;
-
-    const allEntityIds = this.gameManager.gameState.entityStore.getAllIds();
-    for (const entityId of allEntityIds) {
+    // Iterate only entities in the current scene (more efficient than all game entities)
+    for (const [entityId, padPos] of spatial.getAllPositions()) {
       const entity = this.gameManager.gameState.entityStore.getData(entityId);
 
-      if (!entity || !isTeleporter(entity)) continue;
+      if (!entity || !isTeleporter(entity) || entity.teleporterState !== 'inactive') {
+        continue;
+      }
 
-      if (entity.teleporterState !== 'inactive') continue;
-
-      if (entity.sceneId === playerSceneId) {
-        const padPos = spatial.getEntityPosition(entityId);
-        if (padPos) {
-          if (padPos.x !== playerPos.x || padPos.y !== playerPos.y) {
-            this.gameManager.gameState.entityStore.setData(entityId, {
-              teleporterState: 'ready',
-            });
-          }
-        }
+      // Since we're iterating entities in the spatial system (current scene),
+      // we just need to check if the player is not on top of this teleporter
+      if (padPos.x !== playerPos.x || padPos.y !== playerPos.y) {
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          teleporterState: 'ready',
+        });
       }
     }
   }

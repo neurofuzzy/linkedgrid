@@ -407,11 +407,23 @@ export class PoisonSystem extends BaseTickedSystem {
    * 2. Identify available (empty) neighbors.
    * 3. Split current density among source + empty neighbors.
    * 4. If split density >= minDensity, update source and spawn neighbors.
+   * 
+   * Uses two-phase update to prevent order-dependent behavior.
    */
   private distributeDensity(
     context: GameContext,
     sources: Map<number, Position>
   ): void {
+    const densityDeltas = new Map<number, number>();
+    const pendingSpawns = new Map<string, {
+      config: PoisonConfig;
+      density: number;
+      rootSourceId: number;
+      originX: number;
+      originY: number;
+    }>();
+
+    // Phase 1: Calculate all density changes
     for (const [sourceId, pos] of sources) {
       const sourceData = context.spatial.getEntityData(sourceId);
 
@@ -461,58 +473,84 @@ export class PoisonSystem extends BaseTickedSystem {
         continue;
       }
 
-      // Apply changes
+      // Store density change for source
+      const densityChange = newDensity - sourceData.density;
+      densityDeltas.set(sourceId, (densityDeltas.get(sourceId) || 0) + densityChange);
 
-      // 1. Update source density
-      sourceData.density = newDensity;
-
-      // 2. Spawn neighbors
+      // Store pending spawns for neighbors
       const rootSourceId = this.propagatedEntities.get(sourceId)?.sourceId ?? sourceId;
 
       for (const neighbor of availableNeighbors) {
-        const newEntityId = context.spatial.spawn(
-          sourceData.spreadType,
-          neighbor.x,
-          neighbor.y,
-          sourceData.spreadLayer,
-          {
-            // Propagate traits
-            propagationType: sourceData.propagationType,
-            spreadRate: sourceData.spreadRate,
-            spreadLayer: sourceData.spreadLayer,
-            spreadType: sourceData.spreadType,
-            maxDistance: sourceData.maxDistance,
-            lifetime: sourceData.lifetime,
-            blockedByLayers: sourceData.blockedByLayers,
-
-            // Density traits
-            density: newDensity, // Starts with split density
-            minDensity: sourceData.minDensity,
-
-            // Effect traits
-            ...(sourceData.effectType && {
-              effectType: sourceData.effectType,
-              triggerMode: sourceData.triggerMode,
-              damage: sourceData.damage,
-              healRate: sourceData.healRate,
-              cadence: sourceData.cadence,
-              cooldown: sourceData.cooldown,
-            }),
-            ...(sourceData.color && { color: sourceData.color }),
-          }
-        );
-
-        // Track metadata
-        const dist = this.manhattanDistance(state.originX, state.originY, neighbor.x, neighbor.y);
-        this.propagatedEntities.set(newEntityId, {
-          sourceId: rootSourceId,
-          distance: dist,
-          spawnTick: this.currentTick,
+        const key = `${neighbor.x},${neighbor.y}`;
+        pendingSpawns.set(key, {
+          config: sourceData as unknown as PoisonConfig,
+          density: newDensity,
+          rootSourceId,
+          originX: state.originX,
+          originY: state.originY,
         });
       }
 
       // Update timing
       state.lastSpreadTick = this.currentTick;
+    }
+
+    // Phase 2: Apply all changes
+
+    // Apply density changes to existing sources
+    for (const [id, delta] of densityDeltas) {
+      const data = context.spatial.getEntityData(id);
+      if (data && hasDensity(data)) {
+        data.density += delta;
+      }
+    }
+
+    // Create new entities from pending spawns
+    for (const [key, spawn] of pendingSpawns) {
+      const [x, y] = key.split(',').map(Number);
+      
+      // Double-check the cell is still available
+      if (context.spatial.getEntityIdAt(x, y, spawn.config.spreadLayer) !== undefined) continue;
+
+      const newEntityId = context.spatial.spawn(
+        spawn.config.spreadType,
+        x,
+        y,
+        spawn.config.spreadLayer,
+        {
+          // Propagate traits
+          propagationType: spawn.config.propagationType,
+          spreadRate: spawn.config.spreadRate,
+          spreadLayer: spawn.config.spreadLayer,
+          spreadType: spawn.config.spreadType,
+          maxDistance: spawn.config.maxDistance,
+          lifetime: spawn.config.lifetime,
+          blockedByLayers: spawn.config.blockedByLayers,
+
+          // Density traits
+          density: spawn.density, // Starts with split density
+          minDensity: spawn.config.minDensity,
+
+          // Effect traits
+          ...(spawn.config.effectType && {
+            effectType: spawn.config.effectType,
+            triggerMode: spawn.config.triggerMode,
+            damage: spawn.config.damage,
+            healRate: spawn.config.healRate,
+            cadence: spawn.config.cadence,
+            cooldown: spawn.config.cooldown,
+          }),
+          ...(spawn.config.color && { color: spawn.config.color }),
+        }
+      );
+
+      // Track metadata
+      const dist = this.manhattanDistance(spawn.originX, spawn.originY, x, y);
+      this.propagatedEntities.set(newEntityId, {
+        sourceId: spawn.rootSourceId,
+        distance: dist,
+        spawnTick: this.currentTick,
+      });
     }
   }
 
