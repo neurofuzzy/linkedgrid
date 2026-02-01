@@ -1,0 +1,17 @@
+{
+  "name": "@linkedgrid/spartan-web",
+  "version": "1.0.0",
+  "description": "Web harness and input handling for Spartan game engine",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@linkedgrid/spartan": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

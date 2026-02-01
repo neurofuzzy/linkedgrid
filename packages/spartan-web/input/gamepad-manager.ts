@@ -22,7 +22,7 @@
  * ```
  */
 
-import { Direction } from '../core/grid/direction';
+import { Direction } from '../../spartan/core/grid/direction';
 
 /**
  * Stick processing mode.

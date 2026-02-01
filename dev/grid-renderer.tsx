@@ -472,14 +472,6 @@ export function DebugPanel({
       {playerInputSystem && (
         <>
           <p>
-            <span className="label">Input Buffer:</span>{' '}
-            {playerInputSystem.debugStats.bufferSize} queued
-          </p>
-          <p>
-            <span className="label">Keys Held:</span>{' '}
-            {playerInputSystem.debugStats.keysHeld}
-          </p>
-          <p>
             <span className="label">Last Direction:</span>{' '}
             {playerInputSystem.debugStats.lastDirection}
           </p>
