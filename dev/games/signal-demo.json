@@ -2,41 +2,47 @@
     "scenes": [
         {
             "id": "signal-lab",
-            "name": "Signal System Lab",
-            "width": 20,
-            "height": 20,
+            "name": "Signal Lab - Tick Delay & Transceivers",
+            "width": 25,
+            "height": 25,
             "entities": [
                 {
                     "type": "player",
-                    "x": 3,
-                    "y": 10,
+                    "x": 2,
+                    "y": 12,
                     "layer": 6,
                     "data": {
                         "hp": 100
                     }
                 },
                 {
-                    "type": "wall",
-                    "x": 0,
-                    "y": 0,
-                    "layer": 5
-                },
-                {
+                    "_comment": "=== SECTION 1: Basic Oscillator + Bollard (tick delay demo) ===",
                     "type": "oscillator",
                     "x": 5,
-                    "y": 5,
+                    "y": 3,
                     "layer": 4,
                     "data": {
                         "signalType": "oscillator",
                         "signalState": false,
-                        "oscillatorPeriod": 40,
+                        "oscillatorPeriod": 60,
                         "color": "#ffff00"
                     }
                 },
                 {
                     "type": "conductive-floor",
                     "x": 6,
-                    "y": 5,
+                    "y": 3,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 7,
+                    "y": 3,
                     "layer": 1,
                     "data": {
                         "conductiveType": "floor",
@@ -46,19 +52,20 @@
                 },
                 {
                     "type": "bollard-closed",
-                    "x": 7,
-                    "y": 5,
+                    "x": 8,
+                    "y": 3,
                     "layer": 5,
                     "data": {
                         "receiverType": "bollard",
                         "receivedSignal": false,
-                        "color": "#ff0000"
+                        "color": "#ff4400"
                     }
                 },
                 {
+                    "_comment": "=== SECTION 2: Transceiver Remote Control ===",
                     "type": "pressure-switch",
                     "x": 5,
-                    "y": 10,
+                    "y": 8,
                     "layer": 4,
                     "data": {
                         "signalType": "pressure",
@@ -69,7 +76,48 @@
                 {
                     "type": "conductive-floor",
                     "x": 6,
-                    "y": 10,
+                    "y": 8,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "TX-A on channel 'remote-1'",
+                    "type": "transceiver",
+                    "x": 7,
+                    "y": 8,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "transceiver",
+                        "receiverType": "transceiver",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "channel": "remote-1",
+                        "color": "#00ff88"
+                    }
+                },
+                {
+                    "_comment": "TX-B on same channel 'remote-1' (remote)",
+                    "type": "transceiver",
+                    "x": 15,
+                    "y": 8,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "transceiver",
+                        "receiverType": "transceiver",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "channel": "remote-1",
+                        "color": "#00ff88"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 16,
+                    "y": 8,
                     "layer": 1,
                     "data": {
                         "conductiveType": "floor",
@@ -79,31 +127,153 @@
                 },
                 {
                     "type": "bollard-closed",
-                    "x": 7,
-                    "y": 10,
+                    "x": 17,
+                    "y": 8,
                     "layer": 5,
                     "data": {
                         "receiverType": "bollard",
                         "receivedSignal": false,
-                        "color": "#ff0000"
+                        "color": "#ff4400"
                     }
                 },
                 {
+                    "_comment": "=== SECTION 3: Cascading Bollards (transceiver chain) ===",
                     "type": "oscillator",
                     "x": 5,
-                    "y": 15,
+                    "y": 14,
                     "layer": 4,
                     "data": {
                         "signalType": "oscillator",
-                        "signalState": true,
-                        "oscillatorPeriod": 40,
+                        "signalState": false,
+                        "oscillatorPeriod": 80,
                         "color": "#ffff00"
                     }
                 },
                 {
                     "type": "conductive-floor",
                     "x": 6,
-                    "y": 15,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "transceiver",
+                    "x": 7,
+                    "y": 14,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "transceiver",
+                        "receiverType": "transceiver",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "channel": "cascade-1",
+                        "color": "#88ff00"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 8,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "type": "transceiver",
+                    "x": 10,
+                    "y": 14,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "transceiver",
+                        "receiverType": "transceiver",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "channel": "cascade-1",
+                        "color": "#88ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 11,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 12,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "type": "transceiver",
+                    "x": 14,
+                    "y": 14,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "transceiver",
+                        "receiverType": "transceiver",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "channel": "cascade-1",
+                        "color": "#88ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 15,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 16,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 4: Inverter Demo ===",
+                    "type": "oscillator",
+                    "x": 5,
+                    "y": 20,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 60,
+                        "color": "#ffff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 20,
                     "layer": 1,
                     "data": {
                         "conductiveType": "floor",
@@ -114,7 +284,7 @@
                 {
                     "type": "inverter",
                     "x": 7,
-                    "y": 15,
+                    "y": 20,
                     "layer": 4,
                     "data": {
                         "signalType": "inverter",
@@ -127,7 +297,7 @@
                 {
                     "type": "conductive-floor",
                     "x": 8,
-                    "y": 15,
+                    "y": 20,
                     "layer": 1,
                     "data": {
                         "conductiveType": "floor",
@@ -138,12 +308,12 @@
                 {
                     "type": "bollard-closed",
                     "x": 9,
-                    "y": 15,
+                    "y": 20,
                     "layer": 5,
                     "data": {
                         "receiverType": "bollard",
                         "receivedSignal": false,
-                        "color": "#ff0000"
+                        "color": "#ff4400"
                     }
                 }
             ]

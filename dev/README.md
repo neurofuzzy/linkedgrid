@@ -23,7 +23,7 @@ npm run dev
 
 1. **Select a Scene** - Use the dropdown to switch between example scenes
 2. **Control the Player** - Press `W`/`A`/`S`/`D` or arrow keys to move
-3. **Edit Scenes** - Modify JSON files in `dev/scenes/` and see instant updates
+3. **Edit Scenes** - Modify JSON files in `dev/games/` and see instant updates
 4. **Test Systems** - Add game systems to see how they interact with the runtime
 
 ## Scene Format
@@ -85,13 +85,13 @@ Two connected rooms with teleporter pads. Test scene transitions.
 
 ## Creating Custom Scenes
 
-1. Create a new JSON file in `dev/scenes/`
+1. Create a new JSON file in `dev/games/`
 2. Define scenes, entities, and systems
 3. Add to the dropdown in `playground.tsx`:
 
 ```typescript
 const AVAILABLE_SCENES = [
-  { id: 'my-scene', name: 'My Scene', path: '/dev/scenes/my-scene.json' },
+  { id: 'my-scene', name: 'My Scene', path: '/dev/games/my-scene.json' },
 ];
 ```
 

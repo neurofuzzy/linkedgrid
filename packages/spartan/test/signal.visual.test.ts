@@ -1,7 +1,7 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../config/layers.config';
-import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnBollard } from '../entities/spawn-helpers';
-import { hasSignalEmitter, hasSignalReceiver, isBollard } from '../traits/trait-guards';
+import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnBollard, spawnTransceiver } from '../entities/spawn-helpers';
+import { hasSignalEmitter, hasSignalReceiver, isBollard, hasConductive } from '../traits/trait-guards';
 import { SignalSystem } from '../systems/signal.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
@@ -150,7 +150,9 @@ visual('conductive floor carries signal from oscillator to bollard', {
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
 
-    // Tick to propagate signal
+    // Tick 1: Signal propagates, bollard receives and becomes pending
+    gameLoop.tick();
+    // Tick 2: Bollard acts on pending signal (1-tick delay for receivers)
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -315,6 +317,91 @@ visual('inverter outputs opposite of input signal', {
   },
 });
 
+visual('inverter emits when not receiving signal', {
+  arrange: ({ spatial }) => {
+    // Setup: [O OFF] - [=] - [I] - [=] - [B]
+    // Oscillator OFF → Inverter NOT receiving → outputs ON → Bollard opens
+
+    // Oscillator OFF
+    spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
+      signalState: false, // OFF - inverter should emit
+      oscillatorPeriod: 1000, // Long period so it stays off
+      color: '#ffff00',
+    });
+
+    spawnConductiveFloor(spatial, 6, 5, { color: '#808080' });
+
+    // Inverter (should emit since not receiving)
+    spawnInverter(spatial, 7, 5, GameLayers.COLLECTIBLES, {
+      signalState: false,
+      receivedSignal: false,
+      color: '#ff00ff',
+    });
+
+    spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
+
+    // Bollard (closed on WALLS)
+    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#ff0000',
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const signalSystem = new SignalSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(signalSystem);
+
+    // Tick 1: Inverter emits (no input), downstream conductor powered, bollard pending
+    gameLoop.tick();
+    // Tick 2: Bollard acts on pending signal
+    gameLoop.tick();
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Inverter NOT receiving signal', () => {
+      const inverterId = spatial.getEntityIdAt(7, 5, GameLayers.COLLECTIBLES);
+      const data = spatial.getEntityData(inverterId!);
+      if (data && hasSignalReceiver(data) && data.receivedSignal) {
+        throw new Error('Inverter should NOT have received signal');
+      }
+    });
+
+    expect('Inverter emitting ON signal (inverted from OFF input)', () => {
+      const inverterId = spatial.getEntityIdAt(7, 5, GameLayers.COLLECTIBLES);
+      const data = spatial.getEntityData(inverterId!);
+
+      if (!data || !hasSignalEmitter(data)) {
+        throw new Error('Inverter missing signal emitter trait');
+      }
+
+      if (!data.signalState) {
+        throw new Error(`Expected inverter signalState=true (inverted), got ${data.signalState}`);
+      }
+    });
+
+    expect('Downstream conductor is powered', () => {
+      const conductorId = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR);
+      const data = spatial.getEntityData(conductorId!);
+      if (!data || !hasConductive(data)) {
+        throw new Error('Conductor not found');
+      }
+      if (!data.receivedSignal) {
+        throw new Error('Conductor did not receive signal from inverter');
+      }
+    });
+
+    expect('Bollard opened (inverter output is ON)', () => {
+      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
+      if (!bollardId) {
+        throw new Error('Bollard not on FLOOR layer (should be open)');
+      }
+    });
+  },
+});
+
 visual('signal does not propagate without conductive path', {
   arrange: ({ spatial }) => {
     // Setup: [O ON] at (5,5), gap at (6,5), [B] at (7,5)
@@ -462,6 +549,145 @@ visual('pressure switch toggles off when stepped on again', {
 
       if (data.signalState) {
         throw new Error(`Expected signalState=false (toggled off), got ${data.signalState}`);
+      }
+    });
+  },
+});
+
+// Transceiver Tests
+
+visual('transceiver broadcasts signal to same channel', {
+  arrange: ({ spatial }) => {
+    // Setup: [OSC ON] - [TX-A:ch1] ... gap ... [TX-B:ch1] - [BOLLARD]
+    // Signal should hop wirelessly from TX-A to TX-B
+    spawnOscillator(spatial, 2, 5, GameLayers.COLLECTIBLES, {
+      signalState: true,
+      oscillatorPeriod: 40,
+      color: '#ffff00',
+    });
+
+    spawnConductiveFloor(spatial, 3, 5, { color: '#808080' });
+
+    // Transceiver A on channel 'test-1'
+    spawnTransceiver(spatial, 4, 5, GameLayers.COLLECTIBLES, 'test-1', {
+      signalState: false,
+      color: '#00ff88',
+    });
+
+    // Gap - no conductive path
+
+    // Transceiver B on same channel 'test-1'
+    spawnTransceiver(spatial, 7, 5, GameLayers.COLLECTIBLES, 'test-1', {
+      signalState: false,
+      color: '#00ff88',
+    });
+
+    spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
+
+    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#ff0000',
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const signalSystem = new SignalSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(signalSystem);
+
+    // Tick 1: Signal propagates to TX-A, TX-A broadcasts to channel
+    gameLoop.tick();
+    // Tick 2: TX-B receives channel broadcast, propagates to bollard
+    gameLoop.tick();
+    // Tick 3: Bollard acts on pending signal
+    gameLoop.tick();
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Remote transceiver received channel signal', () => {
+      const txBId = spatial.getEntityIdAt(7, 5, GameLayers.COLLECTIBLES);
+      if (!txBId) {
+        throw new Error('Transceiver B not found');
+      }
+
+      const data = spatial.getEntityData(txBId);
+      if (!data || !hasSignalReceiver(data)) {
+        throw new Error('Transceiver B missing signal receiver trait');
+      }
+
+      if (!data.receivedSignal) {
+        throw new Error('Transceiver B did not receive channel broadcast');
+      }
+    });
+
+    expect('Bollard opened via transceiver relay', () => {
+      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
+      if (!bollardId) {
+        throw new Error('Bollard not found on FLOOR layer (should be open)');
+      }
+    });
+  },
+});
+
+visual('transceivers on different channels do not interfere', {
+  arrange: ({ spatial }) => {
+    // TX-A on channel 'alpha', TX-B on channel 'beta' - no cross-talk
+    spawnOscillator(spatial, 2, 5, GameLayers.COLLECTIBLES, {
+      signalState: true,
+      oscillatorPeriod: 40,
+      color: '#ffff00',
+    });
+
+    spawnConductiveFloor(spatial, 3, 5, { color: '#808080' });
+
+    // Transceiver A on channel 'alpha'
+    spawnTransceiver(spatial, 4, 5, GameLayers.COLLECTIBLES, 'alpha', {
+      signalState: false,
+      color: '#00ff88',
+    });
+
+    // Transceiver B on DIFFERENT channel 'beta'
+    spawnTransceiver(spatial, 7, 5, GameLayers.COLLECTIBLES, 'beta', {
+      signalState: false,
+      color: '#ff8800',
+    });
+
+    spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
+
+    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#ff0000',
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const signalSystem = new SignalSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(signalSystem);
+
+    // Multiple ticks to ensure no delayed propagation
+    gameLoop.tick();
+    gameLoop.tick();
+    gameLoop.tick();
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Transceiver B did not receive signal (different channel)', () => {
+      const txBId = spatial.getEntityIdAt(7, 5, GameLayers.COLLECTIBLES);
+      const data = spatial.getEntityData(txBId!);
+      if (data && hasSignalReceiver(data) && data.receivedSignal) {
+        throw new Error('Transceiver B incorrectly received signal from different channel');
+      }
+    });
+
+    expect('Bollard stayed closed (no signal path)', () => {
+      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.WALLS);
+      if (!bollardId) {
+        throw new Error('Bollard not on WALLS layer (should be closed)');
       }
     });
   },

@@ -436,3 +436,50 @@ export function spawnBollard(
   });
 }
 
+/**
+ * Spawn a transceiver entity.
+ *
+ * Transceivers are wireless signal relays that broadcast to all
+ * transceivers on the same channel. They introduce a 1-tick delay
+ * as active components.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param channel - Channel identifier for wireless linking
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned transceiver
+ *
+ * @example
+ * ```typescript
+ * // Spawn transceiver on channel 'door-1'
+ * spawnTransceiver(spatial, 5, 5, GameLayers.COLLECTIBLES, 'door-1', {
+ *   signalState: false,
+ *   color: '#00ff88'
+ * });
+ * ```
+ */
+export function spawnTransceiver(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  channel: string,
+  overrides?: Partial<{
+    signalState: boolean;
+    receivedSignal: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('transceiver', x, y, layer, {
+    signalType: 'transceiver',
+    receiverType: 'transceiver',
+    signalState: false,
+    receivedSignal: false,
+    channel,
+    color: '#00ff88',
+    ...overrides,
+  });
+}

@@ -112,3 +112,34 @@ export type BollardData = BaseEntityData & HasSignalReceiver & HasColor & {
   type: 'bollard' | 'bollard-open' | 'bollard-closed';
   receiverType: 'bollard';
 };
+
+/**
+ * Transceiver - Wireless signal relay that broadcasts to all transceivers on same channel.
+ * 
+ * Behavior:
+ * - Receives signal via wired connection (conductive floor)
+ * - Broadcasts to ALL transceivers on same channel
+ * - Introduces 1-tick delay (active component)
+ * 
+ * Use cases:
+ * - Remote pressure plate to distant door
+ * - One oscillator powering multiple isolated areas
+ * - Cross-room signaling without conductive path
+ * 
+ * @example
+ * ```typescript
+ * spatial.spawn('transceiver', 5, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: false,
+ *   receivedSignal: false,
+ *   channel: 'door-1',
+ *   color: '#00ff88'
+ * });
+ * ```
+ */
+export type TransceiverData = BaseEntityData & HasSignalEmitter & HasSignalReceiver & HasColor & {
+  type: 'transceiver';
+  signalType: 'transceiver';
+  receiverType: 'transceiver';
+  /** Channel identifier - transceivers on same channel are linked */
+  channel: string;
+};

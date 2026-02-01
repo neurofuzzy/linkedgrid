@@ -55,6 +55,7 @@ import type {
   PressureSwitchData,
   InverterData,
   ConductiveFloorData,
+  TransceiverData,
   BollardData,
 } from '../entities';
 
@@ -653,11 +654,11 @@ export function isTeleporterWithTarget(
  */
 export function hasSignalEmitter(
   entity: EntityData
-): entity is OscillatorData | PressureSwitchData | InverterData {
+): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData {
   if (!('signalType' in entity)) return false;
   const signalType = entity.signalType;
   return (
-    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter') &&
+    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver') &&
     'signalState' in entity && typeof entity.signalState === 'boolean'
   );
 }
@@ -673,11 +674,11 @@ export function hasSignalEmitter(
  */
 export function hasSignalReceiver(
   entity: EntityData
-): entity is BollardData | InverterData | ConductiveFloorData {
+): entity is BollardData | InverterData | ConductiveFloorData | TransceiverData {
   if (!('receiverType' in entity)) return false;
   const receiverType = entity.receiverType;
   return (
-    (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor') &&
+    (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor' || receiverType === 'transceiver') &&
     'receivedSignal' in entity && typeof entity.receivedSignal === 'boolean'
   );
 }
@@ -753,5 +754,15 @@ export function isConductiveFloor(entity: EntityData): entity is ConductiveFloor
  */
 export function isBollard(entity: EntityData): entity is BollardData {
   return entity.type === 'bollard' || entity.type === 'bollard-open' || entity.type === 'bollard-closed';
+}
+
+/**
+ * Check if entity is a transceiver.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'transceiver'
+ */
+export function isTransceiver(entity: EntityData): entity is TransceiverData {
+  return entity.type === 'transceiver';
 }
 

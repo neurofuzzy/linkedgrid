@@ -2,405 +2,247 @@
 
 ## Overview
 
-The Signal System enables on/off signal propagation through conductive networks, allowing switches to control receivers (like bollards) across distances via conductive paths.
+The Signal System provides logic circuit simulation for puzzle mechanics. Signals propagate through conductive networks to control receivers like bollards (barriers) and inverters (NOT gates).
 
-**Status**: Implemented (v1.0)  
-**Date**: 2026-01-31
+**Key Design Principle**: Conductors propagate instantly. Active components introduce 1-tick delay.
 
-## Core Concepts
+---
 
-### Signal Propagation Model
+## Timing Model
 
-Signals flow through a network of conductive entities:
-- **Switches** generate signals (on/off states)
-- **Conductive tiles** carry signals horizontally (4-directional)
-- **Signal receivers** react to signals (bollards open/close)
-- Signals propagate vertically through layers (FLOOR → WALLS/ACTORS)
+### Entity Classification
 
-### Signal Types
+| Category | Entities | Timing | Mental Model |
+|----------|----------|--------|--------------|
+| **Conductor** | Conductive Floor | Instant | Wire (zero resistance) |
+| **Source** | Oscillator, Pressure Switch | Instant emit | Signal generator |
+| **Active Component** | Inverter, Transceiver | 1-tick delay | Logic gate (processing time) |
+| **Receiver** | Bollard | 1-tick delay | Actuator (mechanical delay) |
 
-1. **Oscillator**: Automatically toggles on/off every 20 ticks (configurable period)
-2. **Pressure Switch**: Toggles when an entity steps on it (edge-triggered)
-3. **Inverter**: Receives signal and emits opposite state (NOT gate)
+### Tick-by-Tick Behavior
 
-### Signal Recipients
-
-1. **Conductive Floor**: Carries signals in 4 directions (UP/DOWN/LEFT/RIGHT)
-2. **Bollard**: Retractable wall - closed when OFF, open when ON
-
-## Architecture
-
-### Traits
-
-Located in `packages/spartan/traits/signal.trait.ts`:
-
-```typescript
-// Signal emitter - can broadcast on/off state
-interface HasSignalEmitter {
-  signalType: 'oscillator' | 'pressure' | 'inverter';
-  signalState: boolean; // Current on/off state
-  oscillatorPeriod?: number; // Ticks per full cycle (default 40)
-}
-
-// Signal receiver - can accept and respond to signals
-interface HasSignalReceiver {
-  receiverType: 'bollard' | 'inverter';
-  receivedSignal: boolean; // Current received state
-}
-
-// Conductive - can carry signals
-interface HasConductive {
-  conductiveType: 'floor';
-}
+```
+Tick 0: Oscillator turns ON
+        → Conductors light up instantly
+        → Bollard receives signal, becomes "pending"
+        
+Tick 1: Bollard acts on pending signal
+        → Opens (moves from WALLS to FLOOR layer)
 ```
 
-### Entity Types
+**Result**: A chain of bollards connected through conductors opens simultaneously. A chain connected through transceivers opens sequentially (cascading effect).
 
-Located in `packages/spartan/entities/signal.entity.ts`:
+---
 
-- **OscillatorData**: `BaseEntityData & HasSignalEmitter & HasVisual`
-- **PressureSwitchData**: `BaseEntityData & HasSignalEmitter & HasVisual`
-- **InverterData**: `BaseEntityData & HasSignalEmitter & HasSignalReceiver & HasVisual`
-- **ConductiveFloorData**: `BaseEntityData & HasConductive & HasVisual`
-- **BollardData**: `BaseEntityData & HasSignalReceiver & HasVisual`
+## Entity Types
 
-### SignalSystem
+### Signal Sources
 
-Located in `packages/spartan/systems/signal.system.ts`:
+#### Oscillator
+Auto-toggles ON/OFF based on period.
 
-A reactive system (`BaseReactiveSystem`) that runs every tick with three processing phases:
+| Property | Type | Description |
+|----------|------|-------------|
+| `signalType` | `'oscillator'` | Discriminator |
+| `signalState` | `boolean` | Current output state |
+| `oscillatorPeriod` | `number` | Full cycle in ticks (toggles at half-period) |
 
-#### Phase 1: Update Signal Sources
+#### Pressure Switch
+Toggles when an actor steps on it.
 
-**Oscillators**:
-- Track tick count per oscillator
-- Toggle state every half-period (default: 20 ticks ON, 20 ticks OFF)
-- Configurable via `oscillatorPeriod` property
+| Property | Type | Description |
+|----------|------|-------------|
+| `signalType` | `'pressure'` | Discriminator |
+| `signalState` | `boolean` | Current output state |
 
-**Pressure Switches**:
-- Detect entities on same cell (ACTORS layer)
-- Edge-triggered: toggles only on entry, not while standing
-- State persists across ticks
+### Wire / Conductive Elements
 
-#### Phase 2: Propagate Signals
+#### Conductive Floor
+Carries signal between adjacent cells.
 
-**Flood-fill algorithm**:
-1. Clear all receiver signals
-2. Find all active emitters (signalState = true)
-3. For each active emitter, flood-fill through conductive network
-4. Signals propagate in 4 directions (UP, DOWN, LEFT, RIGHT)
-5. Signals propagate vertically through layers at each cell
+| Property | Type | Description |
+|----------|------|-------------|
+| `conductiveType` | `'floor'` | Discriminator |
+| `receivedSignal` | `boolean` | Visual powered state |
 
-**Conductivity Rules**:
+### Active Components
 
-A cell is conductive if it contains:
-- A conductive entity (`HasConductive` trait)
-- A signal emitter (`HasSignalEmitter` trait)
-- A signal receiver (`HasSignalReceiver` trait)
+#### Inverter (NOT Gate)
+Emits opposite of input. Receives instantly, emits with 1-tick delay.
 
-**Layers Checked**: FLOOR, COLLECTIBLES, WALLS
+| Property | Type | Description |
+|----------|------|-------------|
+| `signalType` | `'inverter'` | Emitter discriminator |
+| `receiverType` | `'inverter'` | Receiver discriminator |
+| `signalState` | `boolean` | Output state (inverted) |
+| `receivedSignal` | `boolean` | Input state |
 
-#### Phase 3: Apply to Receivers
+#### Transceiver
+Wireless signal relay. All transceivers on same channel share state.
 
-**Bollards**:
-- Signal ON → Open (move to FLOOR layer, non-blocking)
-- Signal OFF → Close (move to WALLS layer, blocking)
-- Uses `remove()` + `spawn()` to switch layers
+| Property | Type | Description |
+|----------|------|-------------|
+| `signalType` | `'transceiver'` | Emitter discriminator |
+| `receiverType` | `'transceiver'` | Receiver discriminator |
+| `channel` | `string` | Channel identifier for wireless linking |
+| `signalState` | `boolean` | Current broadcast state |
+| `receivedSignal` | `boolean` | Input from wired network |
 
-**Inverters**:
-- Set `signalState` to opposite of `receivedSignal`
-- One tick delay between input change and output effect
-- Can be chained with other switches
+**Use Cases:**
+- Remote pressure plate to distant door
+- One oscillator powering multiple isolated areas
+- Cross-room signaling without conductive path
+
+### Receivers
+
+#### Bollard
+Movable barrier. Opens when powered, closes when unpowered.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | `'bollard' \| 'bollard-open' \| 'bollard-closed'` | State variants |
+| `receiverType` | `'bollard'` | Discriminator |
+| `receivedSignal` | `boolean` | Current power state |
+
+**Layer Behavior:**
+- `bollard-closed` → WALLS layer (blocks movement)
+- `bollard-open` → FLOOR layer (passable)
+
+---
+
+## System Phases
+
+The SignalSystem executes in phases each tick:
+
+```
+1. processPendingSignals()    // Move lastTick pending → active
+2. updateOscillators()        // Toggle oscillators at period
+3. updatePressureSwitches()   // Detect actor step-on
+4. resolveCircuit()           // Multi-pass flood-fill
+   a. Pass 1: Propagate from primary sources
+   b. Pass 2: Process inverters (NOT gates)
+   c. Pass 3: Resolve transceiver channels
+5. applyToReceivers()         // Update bollards (with delay)
+```
+
+### Flood-Fill Algorithm
+
+Signal propagation uses 4-directional flood-fill:
+1. Start from active sources
+2. Mark conductive cells as powered
+3. Propagate to neighbors that are conductive
+4. Stop at non-conductive cells
+
+**Active components block pass-through**: Inverters and transceivers receive signal but don't pass it through. They act as circuit terminators.
+
+---
 
 ## Layer Usage
 
-| Entity Type | Layer | Blocking | Purpose |
-|-------------|-------|----------|---------|
-| Conductive Floor | FLOOR (1) | No | Carry signals |
-| Pressure Switch | COLLECTIBLES (4) | No | Floor-based toggle |
-| Oscillator | COLLECTIBLES (4) | No | Auto-toggle |
-| Inverter | COLLECTIBLES (4) | No | NOT gate |
-| Bollard (closed) | WALLS (5) | Yes | Block movement |
-| Bollard (open) | FLOOR (1) | No | Allow movement |
+| Entity | Layer | Notes |
+|--------|-------|-------|
+| Oscillator | COLLECTIBLES | On top of floor |
+| Pressure Switch | COLLECTIBLES | On top of floor |
+| Conductive Floor | FLOOR | Base layer |
+| Inverter | COLLECTIBLES | On top of floor |
+| Transceiver | COLLECTIBLES | On top of floor |
+| Bollard (closed) | WALLS | Blocks movement |
+| Bollard (open) | FLOOR | Passable terrain |
 
-## System State
-
-The SignalSystem maintains private state for timing and edge detection:
-
-```typescript
-class SignalSystem {
-  // Oscillator tick counts
-  private oscillatorTicks = new Map<number, number>();
-  
-  // Pressure switch previous states (for edge detection)
-  private pressureSwitchStates = new Map<number, boolean>();
-}
-```
-
-State is cleared via `resetState()` for testing/scene transitions.
-
-## Visual Tests
-
-Located in `packages/spartan/test/signal.visual.test.ts`:
-
-Eight comprehensive tests covering:
-1. Oscillator auto-toggle timing
-2. Pressure switch edge triggering
-3. Signal propagation through conductive floors
-4. Bollard opening/closing
-5. Inverter NOT gate behavior
-6. Signal isolation (no conductive path)
-7. Oscillator full cycle
-8. Pressure switch toggle-off
-
-## Usage Examples
-
-### Basic Circuit: Oscillator → Conductive Floor → Bollard
-
-```typescript
-// Spawn oscillator (starts OFF, toggles every 20 ticks)
-spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
-  signalState: false,
-  oscillatorPeriod: 40,
-  color: '#ffff00'
-});
-
-// Create conductive path
-spawnConductiveFloor(spatial, 6, 5);
-spawnConductiveFloor(spatial, 7, 5);
-
-// Spawn bollard (starts closed)
-spawnBollard(spatial, 8, 5, GameLayers.WALLS, {
-  receivedSignal: false,
-  color: '#ff0000'
-});
-
-// Result: Bollard opens/closes every 20 ticks
-```
-
-### Pressure Plate Door
-
-```typescript
-// Pressure switch on floor
-spawnPressureSwitch(spatial, 10, 10, GameLayers.COLLECTIBLES, {
-  signalState: false,
-  color: '#00ffff'
-});
-
-// Conductive path to bollard
-spawnConductiveFloor(spatial, 11, 10);
-
-// Door controlled by pressure plate
-spawnBollard(spatial, 12, 10, GameLayers.WALLS, {
-  color: '#ff0000'
-});
-
-// Result: Step on switch → toggles door open
-```
-
-### NOT Gate Circuit
-
-```typescript
-// Oscillator
-spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
-  signalState: true,
-  color: '#ffff00'
-});
-
-// Conductive to inverter
-spawnConductiveFloor(spatial, 6, 5);
-
-// Inverter
-spawnInverter(spatial, 7, 5, GameLayers.COLLECTIBLES, {
-  signalState: false,
-  receivedSignal: false,
-  color: '#ff00ff'
-});
-
-// Conductive to bollard
-spawnConductiveFloor(spatial, 8, 5);
-
-// Bollard
-spawnBollard(spatial, 9, 5, GameLayers.WALLS);
-
-// Result: Oscillator ON → Inverter outputs OFF → Bollard closed
-//         Oscillator OFF → Inverter outputs ON → Bollard open
-```
-
-## Implementation Notes
-
-### Signal Propagation Is Instantaneous
-
-- Signals propagate fully each tick via flood-fill
-- No delay between emitter and receiver (within same tick)
-- Deterministic and easy to reason about
-
-### Oscillator Timing
-
-- Default period: 40 ticks (20 ON, 20 OFF)
-- At 10 TPS runtime = 2 seconds ON, 2 seconds OFF
-- Configurable via `oscillatorPeriod` property
-
-### Pressure Switch Behavior
-
-- **Toggle mode** (not momentary): stays in state after step
-- **Edge-triggered**: only toggles on entry, not while standing
-- State persists across ticks
-
-### Bollard Layer Switching
-
-- Uses `remove()` + `spawn()` to change layers
-- Creates new entity with same properties
-- Entity ID changes but signal state is recalculated each tick
-- WALLS layer = closed (blocks movement)
-- FLOOR layer = open (walkable)
-
-### Inverter Signal Flow
-
-- Receives signal in propagation phase
-- Outputs inverted signal as an emitter
-- Can be chained with other inverters/switches
-- One tick delay between input change and output effect
-
-## Edge Cases
-
-1. **Circular signal paths**: Flood-fill visited tracking prevents infinite loops
-2. **Orphaned inverters**: Inverters with no input default to OFF output
-3. **Multiple signals to same receiver**: Last signal wins (OR behavior)
-4. **Bollard destruction**: Removing bollard entity clears receiver state
-5. **Conductive island isolation**: Signal doesn't jump gaps in conductive network
-6. **Entity on pressure switch**: Entities on ACTORS layer trigger switches on COLLECTIBLES layer
-
-## Files
-
-### New Files
-- `packages/spartan/traits/signal.trait.ts` - Signal traits
-- `packages/spartan/entities/signal.entity.ts` - Signal entity types
-- `packages/spartan/systems/signal.system.ts` - Signal propagation system
-- `packages/spartan/test/signal.visual.test.ts` - Visual tests
-
-### Modified Files
-- `packages/spartan/traits/index.ts` - Export signal traits
-- `packages/spartan/traits/trait-guards.ts` - Signal type guards
-- `packages/spartan/entities/entity.types.ts` - Signal entities in union
-- `packages/spartan/entities/index.ts` - Export signal entities
-- `packages/spartan/systems/index.ts` - Export SignalSystem
-- `packages/spartan/entities/spawn-helpers.ts` - Signal spawn helpers
-
-## Future Enhancements
-
-Potential additions (not implemented):
-
-1. **Color-coded signals**: Different signal frequencies/colors
-2. **AND/OR gates**: More logic gate types
-3. **Signal delay**: Entities that delay signal propagation
-4. **Wireless transmitters**: Emit signals without conductive path
-5. **Signal strength**: Signals that weaken over distance
-6. **Multi-state switches**: More than binary on/off
-7. **Timed switches**: Auto-reset after duration
-
-## Testing
-
-Run visual tests:
-```bash
-npm test -- signal.visual.test.ts
-```
-
-Current test results: 5/8 passing (90% complete)
-
-Passing tests verify:
-- Oscillator timing
-- Signal propagation through conductive networks
-- Bollard opening/closing
-- Signal isolation
-- Multi-tick oscillator cycles
+---
 
 ## API Reference
 
 ### Spawn Helpers
 
 ```typescript
-// Oscillator
-spawnOscillator(
-  spatial: SpatialSystem,
-  x: number,
-  y: number,
-  layer: number,
-  overrides?: Partial<{
-    signalState: boolean;
-    oscillatorPeriod: number;
-    color: string;
-    sceneId: string;
-  }>
-): number
-
-// Pressure Switch
-spawnPressureSwitch(
-  spatial: SpatialSystem,
-  x: number,
-  y: number,
-  layer: number,
-  overrides?: Partial<{
-    signalState: boolean;
-    color: string;
-    sceneId: string;
-  }>
-): number
-
-// Inverter
-spawnInverter(
-  spatial: SpatialSystem,
-  x: number,
-  y: number,
-  layer: number,
-  overrides?: Partial<{
-    signalState: boolean;
-    receivedSignal: boolean;
-    color: string;
-    sceneId: string;
-  }>
-): number
-
-// Conductive Floor
-spawnConductiveFloor(
-  spatial: SpatialSystem,
-  x: number,
-  y: number,
-  overrides?: Partial<{
-    color: string;
-    sceneId: string;
-  }>
-): number
-
-// Bollard
-spawnBollard(
-  spatial: SpatialSystem,
-  x: number,
-  y: number,
-  layer: number,
-  overrides?: Partial<{
-    receivedSignal: boolean;
-    color: string;
-    sceneId: string;
-  }>
-): number
+spawnOscillator(spatial, x, y, layer, { oscillatorPeriod, signalState, color });
+spawnPressureSwitch(spatial, x, y, layer, { signalState, color });
+spawnConductiveFloor(spatial, x, y, { color });
+spawnInverter(spatial, x, y, layer, { signalState, receivedSignal, color });
+spawnTransceiver(spatial, x, y, layer, channel, { signalState, color });
+spawnBollard(spatial, x, y, layer, { receivedSignal, color });
 ```
 
 ### Type Guards
 
 ```typescript
-hasSignalEmitter(entity: EntityData): entity is OscillatorData | PressureSwitchData | InverterData
-hasSignalReceiver(entity: EntityData): entity is BollardData | InverterData
-hasConductive(entity: EntityData): entity is ConductiveFloorData
-isOscillator(entity: EntityData): entity is OscillatorData
-isPressureSwitch(entity: EntityData): entity is PressureSwitchData
-isInverter(entity: EntityData): entity is InverterData
-isConductiveFloor(entity: EntityData): entity is ConductiveFloorData
-isBollard(entity: EntityData): entity is BollardData
+hasSignalEmitter(entity)   // Oscillator, PressureSwitch, Inverter, Transceiver
+hasSignalReceiver(entity)  // Bollard, Inverter, ConductiveFloor, Transceiver
+hasConductive(entity)      // ConductiveFloor
+isTransceiver(entity)      // Transceiver
+isBollard(entity)          // Bollard variants
 ```
 
 ---
 
-**Version**: 1.0  
-**Last Updated**: 2026-01-31  
-**Implementation Status**: Complete with minor test failures (pressure switches)
+## Future Work
+
+### Sleep/Wake Cells for NPC Regions
+
+**Concept**: Signal-controlled zones that activate/deactivate NPCs to optimize performance and create dramatic reveals.
+
+```
+[PRESSURE PLATE] → [CONDUCTOR] → [WAKE ZONE]
+                                     ↓
+                               [NPC becomes active]
+```
+
+**Proposed Entities:**
+- `wake-zone`: Marker entity on AI layer that activates NPCs in radius
+- `sleep-zone`: Puts NPCs back to sleep when powered
+
+**Behavior:**
+- Sleeping NPCs skip AI updates (performance)
+- Wake signal cascades through transceivers for room reveals
+- Allows scripted "ambush" triggers
+
+### NPC Paths as Conductors
+
+**Concept**: NPC patrol paths double as conductive wires, enabling AI-layer signal networks.
+
+```
+[OSC] → [NPC PATH] → [NPC PATH] → [BOLLARD ON AI LAYER]
+```
+
+**Benefits:**
+- Reuse path data for circuit layout
+- AI layer remains invisible to player
+- Enables "behind the scenes" automation
+
+**Implementation Notes:**
+- Path nodes get `HasConductive` trait
+- SignalSystem queries AI layer during flood-fill
+
+### Pressure Switch Modes
+
+**Concept**: Support multiple activation behaviors for pressure switches.
+
+| Mode | Initial State | Behavior |
+|------|---------------|----------|
+| `toggle` | OFF | Toggles on each step (current) |
+| `hold` | OFF | ON only while pressed |
+| `latch` | OFF | Stays ON once triggered |
+| `inverted-latch` | ON | Stays OFF once triggered |
+
+**Proposed Properties:**
+```typescript
+interface PressureSwitchData {
+  switchMode: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
+  initialState: boolean;  // Starting signalState
+}
+```
+
+**Use Cases:**
+- `hold`: Requires player to stand on switch (co-op puzzle)
+- `latch`: One-way door, checkpoint triggers
+- `inverted-latch`: Trap doors that close permanently
+
+---
+
+## Changelog
+
+| Version | Changes |
+|---------|---------|
+| 2.0 | Added tick-delay model, transceiver entity, future work section |
+| 1.0 | Initial spec with oscillators, pressure switches, inverters, bollards |

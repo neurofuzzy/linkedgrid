@@ -10,7 +10,9 @@ import {
   hasSignalEmitter,
   hasSignalReceiver,
   hasConductive,
+  isTransceiver,
 } from '../traits/trait-guards';
+import { SignalGrid, type Signal } from '../traits/signal.trait';
 
 /**
  * SignalSystem - Manages signal propagation through conductive networks.
@@ -51,9 +53,14 @@ export class SignalSystem extends BaseReactiveSystem {
   // When an Inverter emits, it will NOT emit back towards this direction.
   private inputLatches = new Map<number, string>();
 
-  // Transient set of powered entities for the current tick
-  // Used to ensure instantaneous propagation without flicker
-  private currentTickSignals = new Set<number>();
+  // Signal grid for tracking propagation with origin metadata
+  private signalGrid = new SignalGrid();
+
+  // Track current tick number
+  private tickCount = 0;
+
+  // Transceiver channel states: Map<channel, powered>
+  private channelStates = new Map<string, boolean>();
 
   constructor(private gameManager: GameManager) {
     super();
@@ -63,7 +70,11 @@ export class SignalSystem extends BaseReactiveSystem {
    * Main update loop - called every tick.
    */
   update(context: GameContext): void {
-    this.currentTickSignals.clear();
+    // Increment tick and clear signals for new tick
+    this.tickCount++;
+    this.signalGrid.currentTick = this.tickCount;
+    this.signalGrid.clear();
+    this.channelStates.clear();
 
     // Phase 1: Update signal sources (Oscillators, Pressure Switches)
     this.updateOscillators(context);
@@ -74,7 +85,6 @@ export class SignalSystem extends BaseReactiveSystem {
     this.resolveCircuit(context);
 
     // Phase 3: Apply final states to receivers
-    // Updates visual state and physical objects (bollards)
     this.applyToReceivers(context);
   }
 
@@ -100,13 +110,13 @@ export class SignalSystem extends BaseReactiveSystem {
       }
 
       // Inverter Logic:
-      // If it received a signal in Pass 1, it turns OFF.
-      // If it received NO signal, it turns ON and becomes a source.
-      const receivedSignal = this.currentTickSignals.has(entityId);
+      // Use isReceiving() to check if signal came FROM another entity (not self)
+      const receivedSignal = this.signalGrid.isReceiving(entityId);
 
       // Update persistent state for next frame/visuals
       this.gameManager.gameState.entityStore.setData(entityId, {
-        signalState: !receivedSignal
+        signalState: !receivedSignal,
+        receivedSignal: receivedSignal
       });
 
       if (!receivedSignal) {
@@ -117,6 +127,70 @@ export class SignalSystem extends BaseReactiveSystem {
     // Propagate from active Inverters
     // CRITICAL: Prevent back-feed using Input Latching logic
     this.floodFill(context, activeInverters, false);
+
+    // PASS 3: Resolve Transceiver Channels
+    // After all wired propagation, check transceiver states
+    this.resolveTransceiverChannels(context);
+  }
+
+  /**
+   * Resolve transceiver channel states.
+   * All transceivers on a powered channel become powered.
+   */
+  private resolveTransceiverChannels(context: GameContext): void {
+    // Group transceivers by channel
+    const channelGroups = new Map<string, number[]>();
+
+    for (const [entityId, _pos] of context.spatial.getAllPositions()) {
+      const data = context.spatial.getEntityData(entityId);
+      if (!data || !isTransceiver(data)) continue;
+
+      const channel = data.channel;
+      if (!channelGroups.has(channel)) {
+        channelGroups.set(channel, []);
+      }
+      channelGroups.get(channel)!.push(entityId);
+    }
+
+    // For each channel: if ANY transceiver is receiving signal via wired connection,
+    // ALL transceivers on that channel become powered
+    for (const [channel, ids] of channelGroups) {
+      // Check if any transceiver on this channel is receiving via wired connection
+      const anyPowered = ids.some(id => this.signalGrid.isReceiving(id));
+
+      this.channelStates.set(channel, anyPowered);
+
+      if (anyPowered) {
+        // All transceivers on this channel become sources
+        for (const id of ids) {
+          // Mark as having signal (they're now emitting)
+          const signal: Signal = {
+            originTick: this.tickCount,
+            sourceId: id, // Each transceiver is now a source
+            power: true,
+            channel
+          };
+          this.signalGrid.markEntity(id, signal);
+
+          // Update visual state
+          this.gameManager.gameState.entityStore.setData(id, {
+            signalState: true,
+            receivedSignal: true
+          });
+        }
+
+        // Also flood-fill from all powered transceivers INTO their local networks
+        this.floodFill(context, ids, false);
+      } else {
+        // Turn off transceivers on this channel
+        for (const id of ids) {
+          this.gameManager.gameState.entityStore.setData(id, {
+            signalState: false,
+            receivedSignal: false
+          });
+        }
+      }
+    }
   }
 
   /**
@@ -124,21 +198,29 @@ export class SignalSystem extends BaseReactiveSystem {
    * @param updateLatches - If true, updates input latches (Pass 1). If false, respects latches (Pass 2).
    */
   private floodFill(context: GameContext, starts: number[], updateLatches: boolean): void {
-    const queue: Array<{ x: number; y: number; fromDir?: string }> = [];
+    const queue: Array<{ x: number; y: number; fromDir?: string; signal: Signal }> = [];
     const visited = new Set<string>();
     const startCoords = new Set<string>();
+    const startIds = new Set<number>(starts);
 
+    // Create initial signals from starting entities
     for (const id of starts) {
       const pos = context.spatial.getEntityPosition(id);
       if (pos) {
-        queue.push({ x: pos.x, y: pos.y });
-        this.currentTickSignals.add(id);
+        const signal: Signal = {
+          originTick: this.tickCount,
+          sourceId: id,
+          power: true
+        };
+        // Mark the source entity
+        this.signalGrid.markEntity(id, signal);
+        queue.push({ x: pos.x, y: pos.y, signal });
         startCoords.add(`${pos.x}:${pos.y}`);
       }
     }
 
     while (queue.length > 0) {
-      const { x, y, fromDir } = queue.shift()!;
+      const { x, y, fromDir, signal } = queue.shift()!;
       const key = `${x}:${y}`;
 
       if (visited.has(key)) continue;
@@ -148,7 +230,7 @@ export class SignalSystem extends BaseReactiveSystem {
       if (!cell) continue;
 
       // Mark conductive entities at this location as powered
-      this.markCellAsPowered(context, cell, fromDir, updateLatches);
+      this.markCellAsPowered(context, cell, fromDir, updateLatches, startIds, signal);
 
       // Check Conductivity
       // Primary sources propagate through everything (except blocking walls, etc)
@@ -202,7 +284,7 @@ export class SignalSystem extends BaseReactiveSystem {
         if (n.dir === 'up') nextFromDir = 'down';
         if (n.dir === 'down') nextFromDir = 'up';
 
-        queue.push({ x: n.x, y: n.y, fromDir: nextFromDir });
+        queue.push({ x: n.x, y: n.y, fromDir: nextFromDir, signal });
       }
     }
   }
@@ -211,7 +293,9 @@ export class SignalSystem extends BaseReactiveSystem {
     context: GameContext,
     cell: LinkedCell,
     fromDir: string | undefined,
-    updateLatches: boolean
+    updateLatches: boolean,
+    startIds: Set<number>,
+    signal: Signal
   ): void {
     const layers = [GameLayers.FLOOR, GameLayers.COLLECTIBLES, GameLayers.WALLS];
 
@@ -222,9 +306,12 @@ export class SignalSystem extends BaseReactiveSystem {
       const data = context.spatial.getEntityData(id);
       if (!data) continue;
 
+      // Don't mark starting emitters as "receiving" their own signal
+      if (startIds.has(id)) continue;
+
       // Mark as powered for this tick (if receiver or conductive)
       if (hasSignalReceiver(data) || hasConductive(data)) {
-        this.currentTickSignals.add(id);
+        this.signalGrid.markEntity(id, signal);
 
         // Update Input Latch if applicable
         // Only Receivers latch input.
@@ -342,9 +429,9 @@ export class SignalSystem extends BaseReactiveSystem {
       const data = context.spatial.getEntityData(entityId);
       if (!data) continue;
 
-      // Inverters block pass-through conduction (they are logic gates, not wires)
-      // Visually nodes connect to them, but signals don't pass THROUGH them.
-      if (hasSignalReceiver(data) && data.receiverType === 'inverter') {
+      // Inverters and transceivers block pass-through conduction (active components)
+      // Signals don't pass THROUGH them - they receive, delay, then emit.
+      if (hasSignalReceiver(data) && (data.receiverType === 'inverter' || data.receiverType === 'transceiver')) {
         return false;
       }
 
@@ -364,9 +451,12 @@ export class SignalSystem extends BaseReactiveSystem {
 
   /**
    * Phase 3: Apply signals to receivers.
+   * 
+   * Tick-delay model:
+   * - Conductors: instant update (visual feedback)
+   * - Active components/receivers: pending for next tick
    */
   private applyToReceivers(context: GameContext): void {
-    // Apply visual/logical state from currentTickSignals
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(entityId);
 
@@ -375,13 +465,31 @@ export class SignalSystem extends BaseReactiveSystem {
         continue;
       }
 
-      const hasSignal = this.currentTickSignals.has(entityId);
-      // Update receivedSignal for all valid receivers/conductors
-      // This ensures visuals match the resolved state
-      this.gameManager.gameState.entityStore.setData(entityId, {
-        receivedSignal: hasSignal
-      });
+      const hasSignal = this.signalGrid.hasSignal(entityId);
+
+      // Conductors update immediately (visual feedback)
+      if (hasConductive(data)) {
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          receivedSignal: hasSignal
+        });
+        continue;
+      }
+
+      // Active components and receivers
       if (hasSignalReceiver(data)) {
+        // Inverters already have their receivedSignal set in resolveCircuit Pass 2
+        if (data.receiverType === 'inverter') continue;
+
+        // Transceivers already have their receivedSignal set in resolveTransceiverChannels
+        if (data.receiverType === 'transceiver') continue;
+
+        // Update visual receivedSignal state
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          receivedSignal: hasSignal
+        });
+
+        // Bollards: act on signal (no complex tick-delay, just use current state)
+        // Since signals propagate instantly within the tick, bollards react same tick
         if (data.receiverType === 'bollard') {
           this.applyToBollard(context, entityId, pos, { ...data, receivedSignal: hasSignal });
         }
@@ -457,7 +565,9 @@ export class SignalSystem extends BaseReactiveSystem {
     this.oscillatorTicks.clear();
     this.pressureSwitchStates.clear();
     this.inputLatches.clear();
-    this.currentTickSignals.clear();
+    this.signalGrid.clear();
+    this.tickCount = 0;
+    this.channelStates.clear();
   }
 
   /**
@@ -468,7 +578,8 @@ export class SignalSystem extends BaseReactiveSystem {
       systemType: 'SignalSystem',
       oscillatorCount: this.oscillatorTicks.size,
       pressureSwitchCount: this.pressureSwitchStates.size,
-      activeSignals: this.currentTickSignals.size,
+      activeSignals: this.signalGrid.getAllSignaledEntities().length,
+      currentTick: this.tickCount,
       inputLatches: Array.from(this.inputLatches.entries()).map(([id, dir]) => ({
         id, dir
       }))
