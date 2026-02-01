@@ -1084,8 +1084,8 @@ export class InputManager {
   // Convenience Getters
   // ========================================================================
 
-  get directionBuffer(): readonly Direction[] {
-    return [...this.directionBufferInternal];
+  get directionBuffer(): Direction[] {
+    return this.directionBufferInternal;
   }
 
   get keysHeld(): Set<string> {
