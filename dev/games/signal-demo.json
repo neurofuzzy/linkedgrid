@@ -1,0 +1,162 @@
+{
+    "scenes": [
+        {
+            "id": "signal-lab",
+            "name": "Signal System Lab",
+            "width": 20,
+            "height": 20,
+            "entities": [
+                {
+                    "type": "player",
+                    "x": 3,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "hp": 100
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 0,
+                    "y": 0,
+                    "layer": 5
+                },
+                {
+                    "type": "oscillator",
+                    "x": 5,
+                    "y": 5,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": false,
+                        "oscillatorPeriod": 40,
+                        "color": "#ffff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 5,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 7,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff0000"
+                    }
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 5,
+                    "y": 10,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "color": "#00ffff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 10,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 7,
+                    "y": 10,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff0000"
+                    }
+                },
+                {
+                    "type": "oscillator",
+                    "x": 5,
+                    "y": 15,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 40,
+                        "color": "#ffff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 15,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "inverter",
+                    "x": 7,
+                    "y": 15,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "inverter",
+                        "receiverType": "inverter",
+                        "signalState": false,
+                        "receivedSignal": false,
+                        "color": "#ff00ff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 8,
+                    "y": 15,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "bollard-closed",
+                    "x": 9,
+                    "y": 15,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "bollard",
+                        "receivedSignal": false,
+                        "color": "#ff0000"
+                    }
+                }
+            ]
+        }
+    ],
+    "initialScene": "signal-lab",
+    "systems": [
+        "SignalSystem"
+    ],
+    "input": {
+        "type": "keyboard",
+        "options": {
+            "directionMode": "continuous"
+        }
+    }
+}

@@ -99,6 +99,14 @@ export interface GameContext {
       layer: number,
       data?: Record<string, unknown>
     ) => number;
+    spawnWithId: (
+      entityId: number,
+      type: string,
+      x: number,
+      y: number,
+      layer: number,
+      data?: Record<string, unknown>
+    ) => boolean;
     move: (entityId: number, x: number, y: number) => void;
     remove: (entityId: number) => void;
     removeAt: (x: number, y: number, layer: number) => boolean;

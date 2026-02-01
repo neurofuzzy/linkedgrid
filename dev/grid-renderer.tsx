@@ -3,7 +3,14 @@ import type { Scene } from '../packages/spartan/core/scene';
 import { GameRuntime } from '../packages/spartan/core/game-runtime';
 import { InputManager } from '../packages/spartan/input/input-manager';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
-import { hasColor, hasDensity, hasLiquid, hasHealth } from '../packages/spartan/traits/trait-guards';
+import {
+  hasColor,
+  hasDensity,
+  hasLiquid,
+  hasHealth,
+  hasSignalEmitter,
+  hasSignalReceiver,
+} from '../packages/spartan/traits/trait-guards';
 
 interface Props {
   scene: Scene | null;
@@ -78,11 +85,11 @@ export function GridRenderer({ scene }: Props) {
 
   // Build grid data structure
   const gridData: Array<
-    Array<{ char: string; className: string; color?: string }>
+    Array<{ char: string; className: string; color?: string; opacity?: number }>
   > = [];
 
   for (let y = 0; y < height; y++) {
-    const row: Array<{ char: string; className: string; color?: string }> = [];
+    const row: Array<{ char: string; className: string; color?: string; opacity?: number }> = [];
 
     for (let x = 0; x < width; x++) {
       const cell = grid.cell(x, y);
@@ -151,7 +158,34 @@ export function GridRenderer({ scene }: Props) {
           }
         }
 
-        row.push({ char, className, color });
+        // Signal System Visualization
+        // Dim "OFF" signal entities to 50% opacity
+        let opacity = 1.0;
+
+        if (entityData) {
+          if (hasSignalEmitter(entityData)) {
+            // Priority: If it's an emitter (Oscillator, Switch, Inverter), show output state.
+            if (!entityData.signalState) {
+              opacity = 0.5;
+            }
+          } else if (hasSignalReceiver(entityData)) {
+            // Only check receiver state if it wasn't handled as an emitter.
+            // This prevents Inverters (ON output, OFF input) from being dimmed by this block.
+            if (!entityData.receivedSignal) {
+              opacity = 0.5;
+            }
+          }
+        }
+
+        // Apply density/liquid opacity to the element itself as well?
+        // Previously we mixed it into color.
+        // Let's adhere to the new strategy: Opacity property.
+        // But wait, density/liquid logic above MODIFIED the color string.
+        // To be safe and preserve previous behavior for fluids (which might want transparent color but opaque text? No, usually transparency),
+        // I will leave the fluid logic modifying 'color' alone for now as it seemed specific.
+        // I will only apply the signal dimming via the opacity prop.
+
+        row.push({ char, className, color, opacity });
       }
     }
 
@@ -176,7 +210,10 @@ export function GridRenderer({ scene }: Props) {
             key={`${x}-${y}`}
             className={`cell ${cell.className}`}
             title={`(${x}, ${y})`}
-            style={cell.color ? { color: cell.color } : undefined}
+            style={{
+              color: cell.color,
+              opacity: cell.opacity !== undefined ? cell.opacity : 1.0
+            }}
           >
             {cell.char}
           </div>

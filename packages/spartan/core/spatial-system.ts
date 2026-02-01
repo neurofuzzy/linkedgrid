@@ -43,7 +43,7 @@ export class SpatialSystem {
   constructor(
     private grid: LinkedGrid,
     private store: SparseEntityStore
-  ) {}
+  ) { }
 
   /**
    * Enable debug logging for commit operations.
@@ -118,6 +118,7 @@ export class SpatialSystem {
    * @param y - Y coordinate
    * @param layer - Layer index
    * @param props - Optional additional entity properties
+   * @returns boolean
    *
    * @example
    * ```typescript
@@ -133,9 +134,13 @@ export class SpatialSystem {
     y: number,
     layer: Layer,
     props?: Record<string, unknown>
-  ): void {
+  ): boolean {
     // Create entity in store with specific ID
-    this.store.createWithId(entityId, type, props);
+    const success = this.store.createWithId(entityId, type, props);
+    if (!success) {
+      console.warn(`[SpatialSystem] spawnWithId: Entity ${entityId} already exists, skipping spawn.`);
+      return false;
+    }
 
     // Stage the spawn operation
     this.pendingOps.push({
@@ -147,6 +152,8 @@ export class SpatialSystem {
       typeStr: type,
       props,
     });
+
+    return true;
   }
 
   /**
@@ -269,6 +276,13 @@ export class SpatialSystem {
 
     // Phase 1: Process removals first
     const removals = this.pendingOps.filter((op) => op.type === 'remove');
+    // Identify entities being respawned (transformed) in this frame
+    const respawningIds = new Set(
+      this.pendingOps
+        .filter((op) => op.type === 'spawn')
+        .map((op) => op.entityId!)
+    );
+
     for (const op of removals) {
       const cell = this.grid.cell(op.x!, op.y!);
       if (cell) {
@@ -276,7 +290,12 @@ export class SpatialSystem {
         // Update cell masks after removal
         this.updateCellMasks(cell);
       }
-      this.store.remove(op.entityId!);
+
+      // Only remove from store if NOT being respawned immediately
+      if (!respawningIds.has(op.entityId!)) {
+        this.store.remove(op.entityId!);
+      }
+
       this.positions.delete(op.entityId!);
     }
 

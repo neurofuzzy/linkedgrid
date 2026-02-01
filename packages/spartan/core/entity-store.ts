@@ -138,8 +138,8 @@ export class SparseEntityStore {
     id: number,
     type: string,
     props?: Record<string, unknown>
-  ): void {
-    if (this.data.has(id)) return;
+  ): boolean {
+    if (this.data.has(id)) return false;
 
     const entityData = {
       id,
@@ -153,6 +153,8 @@ export class SparseEntityStore {
     if (!this.idGenerator && id >= this.nextId) {
       this.nextId = id + 1;
     }
+
+    return true;
   }
 
   /**

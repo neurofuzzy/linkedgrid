@@ -217,3 +217,222 @@ export function spawnPlayerWithId(
 ): void {
   spatial.spawnWithId(entityId, 'player', x, y, GameLayers.ACTORS, props);
 }
+
+/**
+ * Signal System Spawn Helpers
+ *
+ * Helper functions for spawning signal-related entities (oscillators,
+ * pressure switches, inverters, conductive floors, and bollards).
+ */
+
+/**
+ * Spawn an oscillator entity.
+ *
+ * Oscillators automatically toggle on/off at a fixed period.
+ * Default: 40 ticks (20 on, 20 off) = 4 seconds total at 10 TPS.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned oscillator
+ *
+ * @example
+ * ```typescript
+ * // Spawn oscillator on COLLECTIBLES layer
+ * spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: true,
+ *   oscillatorPeriod: 40,
+ *   color: '#ffff00'
+ * });
+ * ```
+ */
+export function spawnOscillator(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  overrides?: Partial<{
+    signalState: boolean;
+    oscillatorPeriod: number;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('oscillator', x, y, layer, {
+    signalType: 'oscillator',
+    signalState: false,
+    oscillatorPeriod: 40,
+    color: '#ffff00',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn a pressure switch entity.
+ *
+ * Pressure switches toggle when an entity steps on them.
+ * Edge-triggered: only toggles on entry, not while standing.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned pressure switch
+ *
+ * @example
+ * ```typescript
+ * // Spawn pressure switch on COLLECTIBLES layer
+ * spawnPressureSwitch(spatial, 7, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: false,
+ *   color: '#00ffff'
+ * });
+ * ```
+ */
+export function spawnPressureSwitch(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  overrides?: Partial<{
+    signalState: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('pressure-switch', x, y, layer, {
+    signalType: 'pressure',
+    signalState: false,
+    color: '#00ffff',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn an inverter entity.
+ *
+ * Inverters receive signals and emit the opposite state (NOT gate).
+ * One tick delay between input change and output effect.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned inverter
+ *
+ * @example
+ * ```typescript
+ * // Spawn inverter on COLLECTIBLES layer
+ * spawnInverter(spatial, 9, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: false,
+ *   receivedSignal: false,
+ *   color: '#ff00ff'
+ * });
+ * ```
+ */
+export function spawnInverter(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  overrides?: Partial<{
+    signalState: boolean;
+    receivedSignal: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('inverter', x, y, layer, {
+    signalType: 'inverter',
+    receiverType: 'inverter',
+    signalState: false,
+    receivedSignal: false,
+    color: '#ff00ff',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn a conductive floor entity.
+ *
+ * Conductive floors carry signals in 4 directions (up, down, left, right).
+ * Used to connect switches and receivers in a signal network.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned conductive floor
+ *
+ * @example
+ * ```typescript
+ * // Spawn conductive floor tile on FLOOR layer
+ * spawnConductiveFloor(spatial, 6, 5, {
+ *   color: '#808080'
+ * });
+ * ```
+ */
+export function spawnConductiveFloor(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('conductive-floor', x, y, GameLayers.FLOOR, {
+    conductiveType: 'floor',
+    receiverType: 'floor',
+    receivedSignal: false,
+    color: overrides?.color || '#808080',
+    sceneId: overrides?.sceneId || 'default',
+  });
+}
+
+/**
+ * Spawn a bollard entity.
+ *
+ * Bollards are retractable walls controlled by signals:
+ * - Signal ON → Open (FLOOR layer, non-blocking)
+ * - Signal OFF → Closed (WALLS layer, blocking)
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (WALLS for closed, FLOOR for open)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned bollard
+ *
+ * @example
+ * ```typescript
+ * // Spawn closed bollard on WALLS layer (starts blocking)
+ * spawnBollard(spatial, 10, 5, GameLayers.WALLS, {
+ *   receivedSignal: false,
+ *   color: '#ff0000'
+ * });
+ * ```
+ */
+export function spawnBollard(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  overrides?: Partial<{
+    receivedSignal: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  const type = layer === GameLayers.WALLS ? 'bollard-closed' : 'bollard-open';
+  return spatial.spawn(type, x, y, layer, {
+    receiverType: 'bollard',
+    receivedSignal: false,
+    color: '#ff0000',
+    ...overrides,
+  });
+}
+
