@@ -9,3 +9,4 @@ export * from './scene';
 export * from './spatial-system';
 export * from './types';
 export * from './base-system';
+export * from './input-provider';

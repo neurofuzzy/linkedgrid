@@ -26,8 +26,11 @@ import {
   hasPropagation,
   hasTemperature,
 } from '../packages/spartan/traits/trait-guards';
-import { InputManager } from '../packages/spartan/input/input-manager';
-import { HeadlessInputManager } from '../packages/spartan/input/headless-input-manager';
+import {
+  InputManager,
+  HeadlessInputManager,
+  WebInputProvider,
+} from '../packages/spartan-web/input';
 
 /**
  * Entity definition in JSON scene.
@@ -178,10 +181,22 @@ export class SceneLoader {
         this.container
       );
 
+      // Create InputProvider - use WebInputProvider for DOM-based input, simple adapter for headless
+      const inputProvider = manager instanceof InputManager
+        ? new WebInputProvider(manager)
+        : {
+          // Headless mode: simple adapter
+          getDirection: () => manager.getState().direction,
+          getAction: () => manager.getState().action,
+          getSecondary: () => manager.getState().secondary,
+          getStart: () => manager.getState().start,
+          getRestart: () => manager.getState().restart,
+          destroy: cleanup,
+        };
+
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
-      // Cast to InputManager - HeadlessInputManager has compatible interface for PlayerInputSystem
-      const playerInputSystem = new PlayerInputSystem(runtime.game, manager as InputManager);
+      const playerInputSystem = new PlayerInputSystem(runtime.game, inputProvider);
       runtime.addSystem(playerInputSystem);
 
       // Store references for external access

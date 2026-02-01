@@ -3,36 +3,38 @@
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
-import { InputManager } from '../input/input-manager';
+import { InputProvider } from '../core/input-provider';
 import { Direction } from '../core/grid/direction';
 import type { GameManager } from '../core/game-manager';
 
 /**
  * PlayerInputSystem - Translates player input into movement intents.
  *
- * Processes input buffer and held keys to determine player movement direction.
+ * Processes input from InputProvider to determine player movement direction.
  * Stages movement intents for the player entity each tick.
  *
  * @system
- * @reactsTo InputManager buffer and held keys
+ * @reactsTo InputProvider state
  * @modifies PlayerEntity position (via spatial.move intent)
  *
  * Behavior:
- * - Drains input buffer to get most recent direction
- * - Falls back to currently held keys if buffer empty
+ * - Gets current direction from InputProvider
  * - Validates grid bounds before staging move
  * - Tracks debug stats for input diagnostics
  *
+ * Architecture Note:
+ * Device-specific input handling (buffering, debouncing, tap vs continuous modes, etc.)
+ * is handled at the InputProvider/InputManager layer (e.g., KeyboardInputManager).
+ * This system remains platform-agnostic and simply reads from the InputProvider interface.
+ *
  * @example
  * ```typescript
- * const inputSystem = new PlayerInputSystem(gameManager, inputManager);
+ * const inputSystem = new PlayerInputSystem(gameManager, inputProvider);
  * gameLoop.addSystem(inputSystem);
  * ```
  */
 export class PlayerInputSystem extends BaseReactiveSystem {
   public debugStats = {
-    bufferSize: 0,
-    keysHeld: 0,
     lastDirection: Direction.NONE,
     movesThisTick: 0,
     blockedMoves: 0,
@@ -40,7 +42,7 @@ export class PlayerInputSystem extends BaseReactiveSystem {
 
   constructor(
     private gameManager: GameManager,
-    private inputManager: InputManager
+    private inputProvider: InputProvider
   ) {
     super();
   }
@@ -48,32 +50,13 @@ export class PlayerInputSystem extends BaseReactiveSystem {
   update(context: GameContext): void {
     this.debugStats.movesThisTick = 0;
 
-    const bufferState = this.inputManager.directionBuffer;
-    const keysHeld = this.inputManager.keysHeld;
-
-    this.inputManager.getState();
-    this.debugStats.bufferSize = bufferState.length;
-    this.debugStats.keysHeld = keysHeld.size;
-
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId || playerId === 0) return;
 
     const pos = context.spatial.getEntityPosition(playerId);
     if (!pos) return;
 
-    let lastDirection = Direction.NONE;
-
-    while (bufferState.length > 0) {
-      const input = this.inputManager.getState();
-      if (input.direction !== Direction.NONE) {
-        lastDirection = input.direction;
-      }
-    }
-
-    if (lastDirection === Direction.NONE) {
-      const input = this.inputManager.getState();
-      lastDirection = input.direction;
-    }
+    const lastDirection = this.inputProvider.getDirection();
 
     this.debugStats.lastDirection = lastDirection;
 

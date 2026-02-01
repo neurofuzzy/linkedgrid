@@ -5,24 +5,20 @@
  * Each manager is focused on a single input device with no cross-dependencies.
  */
 
-// Re-export all named exports without duplicates
-export {
-  KeyboardInputManager,
-  KeyboardState,
-  DirectionMode
-} from './keyboard-input-manager';
-export {
-  MouseManager,
-  MouseState
-} from './mouse-manager';
-export {
-  GamepadManager,
-  GamepadState,
-  StickMode
-} from './gamepad-manager';
+// Runtime exports (classes only)
+export { KeyboardInputManager } from './keyboard-input-manager';
+export { MouseManager } from './mouse-manager';
+export { GamepadManager } from './gamepad-manager';
 export { HeadlessInputManager } from './headless-input-manager';
 export { InputManager } from './input-manager';
+export { WebInputProvider } from './web-input-provider';
 
+// Type-only exports (interfaces and type aliases)
+export type { KeyboardState, DirectionMode } from './keyboard-input-manager';
+export type { MouseState } from './mouse-manager';
+export type { GamepadState, StickMode } from './gamepad-manager';
+
+// Import types for local use
 import type { KeyboardState } from './keyboard-input-manager';
 import type { MouseState } from './mouse-manager';
 import type { GamepadState } from './gamepad-manager';

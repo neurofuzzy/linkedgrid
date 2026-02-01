@@ -34,7 +34,7 @@
  * ```
  */
 
-import { Direction } from '../core/grid/direction';
+import { Direction } from '../../spartan/core/grid/direction';
 
 /**
  * Headless input state for a single frame.
