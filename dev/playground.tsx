@@ -57,12 +57,20 @@ const AVAILABLE_GAMES = [
     name: 'Chain Reaction (Dominos)',
     path: '/dev/games/chain-reaction.json',
   },
+  {
+    id: 'signal',
+    name: 'Signal System Lab',
+    path: '/dev/games/signal-demo.json',
+  },
 ];
 
 /**
  * Get the game ID from a file path (e.g., '/dev/games/doors-keys.json' -> 'doors-keys')
  */
 function getGameIdFromPath(path: string): string {
+  const game = AVAILABLE_GAMES.find((g) => g.path === path);
+  if (game) return game.id;
+
   const filename = path.split('/').pop() || '';
   return filename.replace('.json', '');
 }

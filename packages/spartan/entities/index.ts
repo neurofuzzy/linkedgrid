@@ -6,5 +6,6 @@ export * from './structure.entity';
 export * from './hazard.entity';
 export * from './elemental.entity';
 export * from './logic.entity';
+export * from './signal.entity';
 export * from './entity.types';
 export * from './spawn-helpers';

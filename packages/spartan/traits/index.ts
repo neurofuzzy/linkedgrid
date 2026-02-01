@@ -6,4 +6,5 @@ export * from './visual.trait';
 export * from './spatial.trait';
 export * from './thermal.trait';
 export * from './ai.trait';
+export * from './signal.trait';
 export * from './trait-guards';

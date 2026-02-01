@@ -13,6 +13,7 @@ import { PoisonSystem } from '../packages/spartan/systems/poison.system';
 import { FireSystem } from '../packages/spartan/systems/fire.system';
 import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
 import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
+import { SignalSystem } from '../packages/spartan/systems/signal.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -90,6 +91,7 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   FireSystem: () => new FireSystem(),
   LiquidSystem: () => new LiquidSystem(),
   ChainReactionSystem: () => new ChainReactionSystem(),
+  SignalSystem: (gameManager) => new SignalSystem(gameManager),
 };
 
 /**

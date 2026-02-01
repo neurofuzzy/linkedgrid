@@ -18,3 +18,4 @@ export { LiquidSystem } from './liquid.system';
 export { PlayerInputSystem } from './player-input.system';
 export { PoisonSystem } from './poison.system';
 export { TeleporterSystem } from './teleporter.system';
+export { SignalSystem } from './signal.system';

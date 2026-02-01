@@ -51,6 +51,11 @@ import type {
   DestructibleWallData,
   ChainLinkData,
   FireVisualData,
+  OscillatorData,
+  PressureSwitchData,
+  InverterData,
+  ConductiveFloorData,
+  BollardData,
 } from '../entities';
 
 /**
@@ -630,3 +635,123 @@ export function isTeleporterWithTarget(
 ): entity is TeleporterData {
   return isTeleporter(entity) && hasTeleportTarget(entity);
 }
+
+/**
+ * Signal System Trait Guards
+ *
+ * These check for signal-related traits used by the signal propagation system.
+ */
+
+/**
+ * Check if entity has signal emitter trait.
+ *
+ * Entities with signal emitter trait can generate and broadcast on/off signals.
+ * Used by oscillators, pressure switches, and inverters.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses signal emitter trait
+ */
+export function hasSignalEmitter(
+  entity: EntityData
+): entity is OscillatorData | PressureSwitchData | InverterData {
+  if (!('signalType' in entity)) return false;
+  const signalType = entity.signalType;
+  return (
+    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter') &&
+    'signalState' in entity && typeof entity.signalState === 'boolean'
+  );
+}
+
+/**
+ * Check if entity has signal receiver trait.
+ *
+ * Entities with signal receiver trait can accept signals and respond to them.
+ * Used by bollards and inverters.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses signal receiver trait
+ */
+export function hasSignalReceiver(
+  entity: EntityData
+): entity is BollardData | InverterData | ConductiveFloorData {
+  if (!('receiverType' in entity)) return false;
+  const receiverType = entity.receiverType;
+  return (
+    (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor') &&
+    (!('receivedSignal' in entity) || typeof entity.receivedSignal === 'boolean')
+  );
+}
+
+/**
+ * Check if entity has conductive trait.
+ *
+ * Entities with conductive trait can carry signals between cells.
+ * Used by conductive floors.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses conductive trait
+ */
+export function hasConductive(
+  entity: EntityData
+): entity is ConductiveFloorData {
+  if (!('conductiveType' in entity)) return false;
+  const conductiveType = entity.conductiveType;
+  return conductiveType === 'floor';
+}
+
+/**
+ * Signal Entity Type Guards
+ *
+ * These check for specific signal entity types.
+ */
+
+/**
+ * Check if entity is an oscillator.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'oscillator'
+ */
+export function isOscillator(entity: EntityData): entity is OscillatorData {
+  return entity.type === 'oscillator';
+}
+
+/**
+ * Check if entity is a pressure switch.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'pressure-switch'
+ */
+export function isPressureSwitch(entity: EntityData): entity is PressureSwitchData {
+  return entity.type === 'pressure-switch';
+}
+
+/**
+ * Check if entity is an inverter.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'inverter'
+ */
+export function isInverter(entity: EntityData): entity is InverterData {
+  return entity.type === 'inverter';
+}
+
+/**
+ * Check if entity is a conductive floor.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'conductive-floor'
+ */
+export function isConductiveFloor(entity: EntityData): entity is ConductiveFloorData {
+  return entity.type === 'conductive-floor';
+}
+
+/**
+ * Check if entity is a bollard (any state).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'bollard', 'bollard-open', or 'bollard-closed'
+ */
+export function isBollard(entity: EntityData): entity is BollardData {
+  return entity.type === 'bollard' || entity.type === 'bollard-open' || entity.type === 'bollard-closed';
+}
+
