@@ -16,7 +16,7 @@
                     }
                 },
                 {
-                    "_comment": "=== SECTION 1: Basic Oscillator + Bollard (tick delay demo) ===",
+                    "_comment": "=== SECTION 1: Basic Oscillator + Gate (tick delay demo) ===",
                     "type": "oscillator",
                     "x": 5,
                     "y": 3,
@@ -51,12 +51,12 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 8,
                     "y": 3,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
@@ -126,18 +126,18 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 17,
                     "y": 8,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
                 },
                 {
-                    "_comment": "=== SECTION 3: Cascading Bollards (transceiver chain) ===",
+                    "_comment": "=== SECTION 3: Cascading Gates (transceiver chain) ===",
                     "type": "oscillator",
                     "x": 5,
                     "y": 14,
@@ -175,12 +175,12 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 8,
                     "y": 14,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
@@ -211,12 +211,12 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 12,
                     "y": 14,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
@@ -247,12 +247,12 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 16,
                     "y": 14,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
@@ -306,12 +306,12 @@
                     }
                 },
                 {
-                    "type": "bollard-closed",
+                    "type": "gate-closed",
                     "x": 9,
                     "y": 20,
                     "layer": 5,
                     "data": {
-                        "receiverType": "bollard",
+                        "receiverType": "gate",
                         "receivedSignal": false,
                         "color": "#ff4400"
                     }
@@ -322,7 +322,7 @@
     "initialScene": "signal-lab",
     "systems": [
         "SignalSystem",
-        "BollardSystem"
+        "GateSystem"
     ],
     "input": {
         "type": "keyboard",

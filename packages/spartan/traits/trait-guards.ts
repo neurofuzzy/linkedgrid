@@ -56,7 +56,7 @@ import type {
   InverterData,
   ConductiveFloorData,
   TransceiverData,
-  BollardData,
+  GateData,
 } from '../entities';
 
 /**
@@ -667,18 +667,18 @@ export function hasSignalEmitter(
  * Check if entity has signal receiver trait.
  *
  * Entities with signal receiver trait can accept signals and respond to them.
- * Used by bollards and inverters.
+ * Used by gates and inverters.
  *
  * @param entity - Entity to check
  * @returns true if entity possesses signal receiver trait
  */
 export function hasSignalReceiver(
   entity: EntityData
-): entity is BollardData | InverterData | ConductiveFloorData | TransceiverData {
+): entity is GateData | InverterData | ConductiveFloorData | TransceiverData {
   if (!('receiverType' in entity)) return false;
   const receiverType = entity.receiverType;
   return (
-    (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor' || receiverType === 'transceiver') &&
+    (receiverType === 'gate' || receiverType === 'inverter' || receiverType === 'floor' || receiverType === 'transceiver') &&
     'receivedSignal' in entity && typeof entity.receivedSignal === 'boolean'
   );
 }
@@ -747,13 +747,13 @@ export function isConductiveFloor(entity: EntityData): entity is ConductiveFloor
 }
 
 /**
- * Check if entity is a bollard (any state).
+ * Check if entity is a gate (any state).
  *
  * @param entity - Entity to check
- * @returns true if entity type is 'bollard', 'bollard-open', or 'bollard-closed'
+ * @returns true if entity type is 'gate', 'gate-open', or 'gate-closed'
  */
-export function isBollard(entity: EntityData): entity is BollardData {
-  return entity.type === 'bollard' || entity.type === 'bollard-open' || entity.type === 'bollard-closed';
+export function isGate(entity: EntityData): entity is GateData {
+  return entity.type === 'gate' || entity.type === 'gate-open' || entity.type === 'gate-closed';
 }
 
 /**

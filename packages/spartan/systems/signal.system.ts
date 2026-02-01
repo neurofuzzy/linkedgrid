@@ -18,16 +18,16 @@ import { SignalGrid, type Signal } from '../traits/signal.trait';
  * SignalSystem - Manages signal propagation through conductive networks.
  *
  * Implements a signal broadcasting system where switches generate on/off signals
- * that propagate through conductive paths to receivers (bollards, inverters).
+ * that propagate through conductive paths to receivers (gates, inverters).
  *
  * @system
  * @reactsTo Signal emitters (oscillators, pressure switches), entity overlaps
- * @modifies Signal states, bollard layers (WALLS ↔ FLOOR)
+ * @modifies Signal states, gate layers (WALLS ↔ FLOOR)
  *
  * Processing Phases:
  * 1. Update signal sources (oscillators auto-toggle, pressure switches detect steps)
  * 2. Propagate signals through conductive network (flood-fill from active emitters)
- * 3. Apply signals to receivers (bollards open/close, inverters invert)
+ * 3. Apply signals to receivers (gates open/close, inverters invert)
  *
  * Signal Propagation Rules:
  * - Signals flow through conductive entities (conductive floors, switches, receivers)
@@ -329,8 +329,9 @@ export class SignalSystem extends BaseReactiveSystem {
       const data = context.spatial.getEntityData(id);
       if (data && hasSignalEmitter(data)) {
         // Inverters are sources, but handled in Pass 2.
-        // We only want Primary sources here.
-        if (data.signalType === 'inverter') continue;
+        // Transceivers are handled in Pass 3.
+        // We only want Primary sources here (Oscillators, Pressure Switches).
+        if (data.signalType === 'inverter' || data.signalType === 'transceiver') continue;
 
         if (data.signalState) {
           sources.push(id);
@@ -484,8 +485,8 @@ export class SignalSystem extends BaseReactiveSystem {
         // Transceivers already have their state set in resolveTransceiverChannels
         if (data.receiverType === 'transceiver') continue;
 
-        // All other receivers (bollards, etc) get their receivedSignal updated
-        // Behavior based on this state is handled by other systems (e.g. BollardSystem)
+        // All other receivers (gates, etc) get their receivedSignal updated
+        // Behavior based on this state is handled by other systems (e.g. GateSystem)
         this.gameManager.gameState.entityStore.setData(entityId, {
           receivedSignal: hasSignal
         });

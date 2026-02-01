@@ -1,9 +1,9 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../config/layers.config';
-import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnBollard, spawnTransceiver } from '../entities/spawn-helpers';
-import { hasSignalEmitter, hasSignalReceiver, isBollard, hasConductive } from '../traits/trait-guards';
+import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnGate, spawnTransceiver } from '../entities/spawn-helpers';
+import { hasSignalEmitter, hasSignalReceiver, isGate, hasConductive } from '../traits/trait-guards';
 import { SignalSystem } from '../systems/signal.system';
-import { BollardSystem } from '../systems/bollard.system';
+import { GateSystem } from '../systems/gate.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
 
@@ -15,7 +15,7 @@ import { GameLoop } from '../core/game-loop';
  * - Pressure switches toggle on step
  * - Inverters output opposite of input
  * - Conductive floors carry signals
- * - Bollards open/close based on signals
+ * - Gates open/close based on signals
  */
 
 visual('oscillator toggles on/off every 20 ticks', {
@@ -35,7 +35,7 @@ visual('oscillator toggles on/off every 20 ticks', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Tick 20 times (should toggle once at tick 20)
     for (let i = 0; i < 20; i++) {
@@ -92,7 +92,7 @@ visual('pressure switch toggles when player steps on it', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Find player
     const playerId = spatial.getEntityIdAt(4, 5, GameLayers.ACTORS);
@@ -122,10 +122,10 @@ visual('pressure switch toggles when player steps on it', {
   },
 });
 
-visual('conductive floor carries signal from oscillator to bollard', {
+visual('conductive floor carries signal from oscillator to gate', {
   arrange: ({ spatial }) => {
     // Setup: [O] - [=] - [=] - [B]
-    // Oscillator at (5,5), conductive floors at (6,5) and (7,5), bollard at (8,5)
+    // Oscillator at (5,5), conductive floors at (6,5) and (7,5), gate at (8,5)
 
     // Spawn oscillator (starts ON)
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
@@ -138,8 +138,8 @@ visual('conductive floor carries signal from oscillator to bollard', {
     spawnConductiveFloor(spatial, 6, 5, { color: '#808080' });
     spawnConductiveFloor(spatial, 7, 5, { color: '#808080' });
 
-    // Spawn closed bollard on WALLS layer
-    spawnBollard(spatial, 8, 5, GameLayers.WALLS, {
+    // Spawn closed gate on WALLS layer
+    spawnGate(spatial, 8, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -152,43 +152,43 @@ visual('conductive floor carries signal from oscillator to bollard', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
-    // Tick 1: Signal propagates, bollard receives and becomes pending
+    // Tick 1: Signal propagates, gate receives and becomes pending
     gameLoop.tick();
-    // Tick 2: Bollard acts on pending signal (1-tick delay for receivers)
+    // Tick 2: Gate acts on pending signal (1-tick delay for receivers)
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
-    expect('Bollard opened due to signal', () => {
-      // Bollard should have moved to FLOOR layer (open)
-      const bollardId = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR);
-      if (!bollardId) {
-        throw new Error('Bollard not found on FLOOR layer (should be open)');
+    expect('Gate opened due to signal', () => {
+      // Gate should have moved to FLOOR layer (open)
+      const gateId = spatial.getEntityIdAt(8, 5, GameLayers.FLOOR);
+      if (!gateId) {
+        throw new Error('Gate not found on FLOOR layer (should be open)');
       }
 
-      const data = spatial.getEntityData(bollardId);
+      const data = spatial.getEntityData(gateId);
       if (!data || !hasSignalReceiver(data)) {
-        throw new Error('Bollard missing signal receiver trait');
+        throw new Error('Gate missing signal receiver trait');
       }
 
       if (!data.receivedSignal) {
-        throw new Error('Bollard did not receive signal');
+        throw new Error('Gate did not receive signal');
       }
     });
 
-    expect('Bollard not on WALLS layer', () => {
-      const wallsBollard = spatial.getEntityIdAt(8, 5, GameLayers.WALLS);
-      if (wallsBollard) {
-        throw new Error('Bollard still on WALLS layer (should be open on FLOOR)');
+    expect('Gate not on WALLS layer', () => {
+      const wallsGate = spatial.getEntityIdAt(8, 5, GameLayers.WALLS);
+      if (wallsGate) {
+        throw new Error('Gate still on WALLS layer (should be open on FLOOR)');
       }
     });
   },
 });
 
-visual('bollard closes when signal turns off', {
+visual('gate closes when signal turns off', {
   arrange: ({ spatial }) => {
-    // Oscillator (OFF), conductive floor, open bollard
+    // Oscillator (OFF), conductive floor, open gate
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
       signalState: false, // OFF
       oscillatorPeriod: 40,
@@ -197,8 +197,8 @@ visual('bollard closes when signal turns off', {
 
     spawnConductiveFloor(spatial, 6, 5, { color: '#808080' });
 
-    // Spawn open bollard on FLOOR layer
-    spawnBollard(spatial, 7, 5, GameLayers.FLOOR, {
+    // Spawn open gate on FLOOR layer
+    spawnGate(spatial, 7, 5, GameLayers.FLOOR, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -211,32 +211,32 @@ visual('bollard closes when signal turns off', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
-    // Tick to propagate (no signal, bollard should close)
+    // Tick to propagate (no signal, gate should close)
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
-    expect('Bollard closed (moved to WALLS layer)', () => {
-      const bollardId = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
-      if (!bollardId) {
-        throw new Error('Bollard not found on WALLS layer (should be closed)');
+    expect('Gate closed (moved to WALLS layer)', () => {
+      const gateId = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
+      if (!gateId) {
+        throw new Error('Gate not found on WALLS layer (should be closed)');
       }
 
-      const data = spatial.getEntityData(bollardId);
+      const data = spatial.getEntityData(gateId);
       if (!data || !hasSignalReceiver(data)) {
-        throw new Error('Bollard missing signal receiver trait');
+        throw new Error('Gate missing signal receiver trait');
       }
 
       if (data.receivedSignal) {
-        throw new Error('Bollard incorrectly received signal');
+        throw new Error('Gate incorrectly received signal');
       }
     });
 
-    expect('Bollard not on FLOOR layer', () => {
-      const floorBollard = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR);
-      if (floorBollard) {
-        throw new Error('Bollard still on FLOOR layer (should be closed on WALLS)');
+    expect('Gate not on FLOOR layer', () => {
+      const floorGate = spatial.getEntityIdAt(7, 5, GameLayers.FLOOR);
+      if (floorGate) {
+        throw new Error('Gate still on FLOOR layer (should be closed on WALLS)');
       }
     });
   },
@@ -245,7 +245,7 @@ visual('bollard closes when signal turns off', {
 visual('inverter outputs opposite of input signal', {
   arrange: ({ spatial }) => {
     // Setup: [O ON] - [=] - [I] - [=] - [B]
-    // Oscillator ON → Inverter receives ON → outputs OFF → Bollard closed
+    // Oscillator ON → Inverter receives ON → outputs OFF → Gate closed
 
     // Oscillator ON
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
@@ -265,8 +265,8 @@ visual('inverter outputs opposite of input signal', {
 
     spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
 
-    // Bollard (closed on WALLS)
-    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+    // Gate (closed on WALLS)
+    spawnGate(spatial, 9, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -279,7 +279,7 @@ visual('inverter outputs opposite of input signal', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Tick to propagate signals
     gameLoop.tick();
@@ -314,10 +314,10 @@ visual('inverter outputs opposite of input signal', {
       }
     });
 
-    expect('Bollard stayed closed (inverter output is OFF)', () => {
-      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.WALLS);
-      if (!bollardId) {
-        throw new Error('Bollard not on WALLS layer (should be closed)');
+    expect('Gate stayed closed (inverter output is OFF)', () => {
+      const gateId = spatial.getEntityIdAt(9, 5, GameLayers.WALLS);
+      if (!gateId) {
+        throw new Error('Gate not on WALLS layer (should be closed)');
       }
     });
   },
@@ -326,7 +326,7 @@ visual('inverter outputs opposite of input signal', {
 visual('inverter emits when not receiving signal', {
   arrange: ({ spatial }) => {
     // Setup: [O OFF] - [=] - [I] - [=] - [B]
-    // Oscillator OFF → Inverter NOT receiving → outputs ON → Bollard opens
+    // Oscillator OFF → Inverter NOT receiving → outputs ON → Gate opens
 
     // Oscillator OFF
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
@@ -346,8 +346,8 @@ visual('inverter emits when not receiving signal', {
 
     spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
 
-    // Bollard (closed on WALLS)
-    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+    // Gate (closed on WALLS)
+    spawnGate(spatial, 9, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -360,11 +360,11 @@ visual('inverter emits when not receiving signal', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
-    // Tick 1: Inverter emits (no input), downstream conductor powered, bollard pending
+    // Tick 1: Inverter emits (no input), downstream conductor powered, gate pending
     gameLoop.tick();
-    // Tick 2: Bollard acts on pending signal
+    // Tick 2: Gate acts on pending signal
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -400,10 +400,10 @@ visual('inverter emits when not receiving signal', {
       }
     });
 
-    expect('Bollard opened (inverter output is ON)', () => {
-      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
-      if (!bollardId) {
-        throw new Error('Bollard not on FLOOR layer (should be open)');
+    expect('Gate opened (inverter output is ON)', () => {
+      const gateId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
+      if (!gateId) {
+        throw new Error('Gate not on FLOOR layer (should be open)');
       }
     });
   },
@@ -412,7 +412,7 @@ visual('inverter emits when not receiving signal', {
 visual('signal does not propagate without conductive path', {
   arrange: ({ spatial }) => {
     // Setup: [O ON] at (5,5), gap at (6,5), [B] at (7,5)
-    // No conductive path → bollard should not receive signal
+    // No conductive path → gate should not receive signal
 
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
       signalState: true,
@@ -422,7 +422,7 @@ visual('signal does not propagate without conductive path', {
 
     // NO conductive floor at (6, 5) - gap in network
 
-    spawnBollard(spatial, 7, 5, GameLayers.WALLS, {
+    spawnGate(spatial, 7, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -435,31 +435,31 @@ visual('signal does not propagate without conductive path', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
-    expect('Bollard did not receive signal (no conductive path)', () => {
-      const bollardId = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
-      if (!bollardId) {
-        throw new Error('Bollard not found');
+    expect('Gate did not receive signal (no conductive path)', () => {
+      const gateId = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
+      if (!gateId) {
+        throw new Error('Gate not found');
       }
 
-      const data = spatial.getEntityData(bollardId);
+      const data = spatial.getEntityData(gateId);
       if (!data || !hasSignalReceiver(data)) {
-        throw new Error('Bollard missing signal receiver trait');
+        throw new Error('Gate missing signal receiver trait');
       }
 
       if (data.receivedSignal) {
-        throw new Error('Bollard incorrectly received signal despite gap');
+        throw new Error('Gate incorrectly received signal despite gap');
       }
     });
 
-    expect('Bollard stayed closed', () => {
-      const wallsBollard = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
-      if (!wallsBollard) {
-        throw new Error('Bollard moved off WALLS layer (should stay closed)');
+    expect('Gate stayed closed', () => {
+      const wallsGate = spatial.getEntityIdAt(7, 5, GameLayers.WALLS);
+      if (!wallsGate) {
+        throw new Error('Gate moved off WALLS layer (should stay closed)');
       }
     });
   },
@@ -481,7 +481,7 @@ visual('oscillator cycles on and off over time', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Tick 41 times to see full cycle
     for (let i = 0; i < 41; i++) {
@@ -534,7 +534,7 @@ visual('pressure switch toggles off when stepped on again', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Find player at (4, 5)
     const playerId = spatial.getEntityIdAt(4, 5, GameLayers.ACTORS);
@@ -594,7 +594,7 @@ visual('transceiver broadcasts signal to same channel', {
 
     spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
 
-    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+    spawnGate(spatial, 9, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -607,13 +607,13 @@ visual('transceiver broadcasts signal to same channel', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Tick 1: Signal propagates to TX-A, TX-A broadcasts to channel
     gameLoop.tick();
-    // Tick 2: TX-B receives channel broadcast, propagates to bollard
+    // Tick 2: TX-B receives channel broadcast, propagates to gate
     gameLoop.tick();
-    // Tick 3: Bollard acts on pending signal
+    // Tick 3: Gate acts on pending signal
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -633,10 +633,10 @@ visual('transceiver broadcasts signal to same channel', {
       }
     });
 
-    expect('Bollard opened via transceiver relay', () => {
-      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
-      if (!bollardId) {
-        throw new Error('Bollard not found on FLOOR layer (should be open)');
+    expect('Gate opened via transceiver relay', () => {
+      const gateId = spatial.getEntityIdAt(9, 5, GameLayers.FLOOR);
+      if (!gateId) {
+        throw new Error('Gate not found on FLOOR layer (should be open)');
       }
     });
   },
@@ -667,7 +667,7 @@ visual('transceivers on different channels do not interfere', {
 
     spawnConductiveFloor(spatial, 8, 5, { color: '#808080' });
 
-    spawnBollard(spatial, 9, 5, GameLayers.WALLS, {
+    spawnGate(spatial, 9, 5, GameLayers.WALLS, {
       receivedSignal: false,
       color: '#ff0000',
     });
@@ -680,7 +680,7 @@ visual('transceivers on different channels do not interfere', {
     const signalSystem = new SignalSystem(gameManager);
     const gameLoop = new GameLoop(spatial);
     gameLoop.addSystem(signalSystem);
-    gameLoop.addSystem(new BollardSystem(gameManager));
+    gameLoop.addSystem(new GateSystem(gameManager));
 
     // Multiple ticks to ensure no delayed propagation
     gameLoop.tick();
@@ -696,10 +696,10 @@ visual('transceivers on different channels do not interfere', {
       }
     });
 
-    expect('Bollard stayed closed (no signal path)', () => {
-      const bollardId = spatial.getEntityIdAt(9, 5, GameLayers.WALLS);
-      if (!bollardId) {
-        throw new Error('Bollard not on WALLS layer (should be closed)');
+    expect('Gate stayed closed (no signal path)', () => {
+      const gateId = spatial.getEntityIdAt(9, 5, GameLayers.WALLS);
+      if (!gateId) {
+        throw new Error('Gate not on WALLS layer (should be closed)');
       }
     });
   },

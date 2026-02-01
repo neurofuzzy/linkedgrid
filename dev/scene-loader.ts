@@ -14,7 +14,7 @@ import { FireSystem } from '../packages/spartan/systems/fire.system';
 import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
 import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
 import { SignalSystem } from '../packages/spartan/systems/signal.system';
-import { BollardSystem } from '../packages/spartan/systems/bollard.system';
+import { GateSystem } from '../packages/spartan/systems/gate.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -96,7 +96,7 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   LiquidSystem: () => new LiquidSystem(),
   ChainReactionSystem: () => new ChainReactionSystem(),
   SignalSystem: (gameManager) => new SignalSystem(gameManager),
-  BollardSystem: (gameManager) => new BollardSystem(gameManager),
+  GateSystem: (gameManager) => new GateSystem(gameManager),
 };
 
 /**

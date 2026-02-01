@@ -1,48 +1,48 @@
 /**
- * @brief Bollard state management system.
+ * @brief Gate state management system.
  * 
- * Reacts to signal changes on bollard entities (receivedSignal trait).
- * Opens bollards when receiving ON signal, closes when OFF.
+ * Reacts to signal changes on gate entities (receivedSignal trait).
+ * Opens gates when receiving ON signal, closes when OFF.
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import { GameLayers } from '../config/layers.config';
-import { isBollard, hasSignalReceiver } from '../traits/trait-guards';
+import { isGate } from '../traits/trait-guards';
 
 /**
- * BollardSystem - Manages bollard open/close behavior based on signal state.
+ * GateSystem - Manages gate open/close behavior based on signal state.
  * 
  * This system is separate from SignalSystem to maintain proper separation of concerns:
  * - SignalSystem: propagates signals, sets receivedSignal on entities
- * - BollardSystem: reacts to receivedSignal changes, moves entities between layers
+ * - GateSystem: reacts to receivedSignal changes, moves entities between layers
  */
-export class BollardSystem extends BaseReactiveSystem {
+export class GateSystem extends BaseReactiveSystem {
     constructor(private gameManager: GameManager) {
         super();
     }
 
     /**
-     * Update bollard states based on their receivedSignal.
+     * Update gate states based on their receivedSignal.
      */
     update(context: GameContext): void {
-        // Process all bollards
+        // Process all gates
         for (const [entityId, pos] of context.spatial.getAllPositions()) {
             const data = context.spatial.getEntityData(entityId);
-            if (!data || !isBollard(data)) continue;
+            if (!data || !isGate(data)) continue;
 
             const shouldBeOpen = data.receivedSignal === true;
-            const isOpen = pos.layer !== GameLayers.WALLS;
+            const isOpen = pos.layer !== GameLayers.WALLS; // Open = NOT on WALLS layer
 
             if (shouldBeOpen && !isOpen) {
-                this.openBollard(context, entityId, pos, data);
+                this.openGate(context, entityId, pos, data);
             } else if (!shouldBeOpen && isOpen) {
-                this.closeBollard(context, entityId, pos, data);
+                this.closeGate(context, entityId, pos, data);
             }
         }
     }
 
-    private openBollard(
+    private openGate(
         context: GameContext,
         entityId: number,
         pos: { x: number; y: number; layer: number },
@@ -52,22 +52,28 @@ export class BollardSystem extends BaseReactiveSystem {
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
+        // Make semi-opaque when open
+        let color = data.color || '#ff0000';
+        if (color.startsWith('#') && color.length === 7) {
+            color += '80'; // 50% opacity
+        }
+
         context.spatial.spawnWithId(
             entityId,
-            'bollard-open',
+            'gate-open',
             pos.x,
             pos.y,
             GameLayers.FLOOR,
             {
-                receiverType: 'bollard',
+                receiverType: 'gate',
                 receivedSignal: true,
-                color: data.color || '#ff0000',
+                color,
                 sceneId: data.sceneId,
             }
         );
     }
 
-    private closeBollard(
+    private closeGate(
         context: GameContext,
         entityId: number,
         pos: { x: number; y: number; layer: number },
@@ -77,16 +83,22 @@ export class BollardSystem extends BaseReactiveSystem {
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
+        // Restore opacity when closed
+        let color = data.color || '#ff0000';
+        if (color.startsWith('#') && color.length === 9) {
+            color = color.substring(0, 7);
+        }
+
         context.spatial.spawnWithId(
             entityId,
-            'bollard-closed',
+            'gate-closed',
             pos.x,
             pos.y,
             GameLayers.WALLS,
             {
-                receiverType: 'bollard',
+                receiverType: 'gate',
                 receivedSignal: false,
-                color: data.color || '#ff0000',
+                color,
                 sceneId: data.sceneId,
             }
         );

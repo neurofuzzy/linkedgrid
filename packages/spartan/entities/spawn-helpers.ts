@@ -222,7 +222,7 @@ export function spawnPlayerWithId(
  * Signal System Spawn Helpers
  *
  * Helper functions for spawning signal-related entities (oscillators,
- * pressure switches, inverters, conductive floors, and bollards).
+ * pressure switches, inverters, conductive floors, and gates).
  */
 
 /**
@@ -394,9 +394,13 @@ export function spawnConductiveFloor(
 }
 
 /**
- * Spawn a bollard entity.
+ * Spawn a gate entity.
  *
- * Bollards are retractable walls controlled by signals:
+ * Gates are retractable walls controlled by signals:
+/**
+ * Spawn a gate entity.
+ *
+ * Behavior:
  * - Signal ON → Open (FLOOR layer, non-blocking)
  * - Signal OFF → Closed (WALLS layer, blocking)
  *
@@ -405,18 +409,18 @@ export function spawnConductiveFloor(
  * @param y - Y coordinate
  * @param layer - Layer to spawn on (WALLS for closed, FLOOR for open)
  * @param overrides - Optional property overrides
- * @returns Entity ID of spawned bollard
+ * @returns Entity ID of spawned gate
  *
  * @example
  * ```typescript
- * // Spawn closed bollard on WALLS layer (starts blocking)
- * spawnBollard(spatial, 10, 5, GameLayers.WALLS, {
+ * // Spawn closed gate on WALLS layer (starts blocking)
+ * spawnGate(spatial, 10, 5, GameLayers.WALLS, {
  *   receivedSignal: false,
  *   color: '#ff0000'
  * });
  * ```
  */
-export function spawnBollard(
+export function spawnGate(
   spatial: SpatialSystem,
   x: number,
   y: number,
@@ -427,9 +431,9 @@ export function spawnBollard(
     sceneId: string;
   }>
 ): number {
-  const type = layer === GameLayers.WALLS ? 'bollard-closed' : 'bollard-open';
+  const type = layer === GameLayers.WALLS ? 'gate-closed' : 'gate-open';
   return spatial.spawn(type, x, y, layer, {
-    receiverType: 'bollard',
+    receiverType: 'gate',
     receivedSignal: false,
     color: '#ff0000',
     ...overrides,

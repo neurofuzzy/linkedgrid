@@ -4,7 +4,7 @@
  * These traits enable signal propagation through conductive networks:
  * - Emitters generate on/off signals (oscillators, pressure switches, inverters)
  * - Conductors carry signals between cells (conductive floors)
- * - Receivers respond to signals (bollards, inverters)
+ * - Receivers respond to signals (gates, inverters)
  */
 
 /**
@@ -30,12 +30,12 @@ export interface HasSignalEmitter {
  * HasSignalReceiver - Entity can receive and respond to signals.
  * 
  * Used by:
- * - Bollards: Open when receiving ON signal, close when OFF
+ * - Gates: Open when receiving ON signal, close when OFF
  * - Inverters: Invert received signal and emit it
  */
 export interface HasSignalReceiver {
   /** Type of receiver */
-  receiverType: 'bollard' | 'inverter' | 'floor' | 'transceiver';
+  receiverType: 'gate' | 'inverter' | 'floor' | 'transceiver';
 
   /** Current received signal state */
   receivedSignal: boolean;

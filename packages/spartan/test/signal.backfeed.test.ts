@@ -8,7 +8,7 @@ import {
     spawnOscillator,
     spawnConductiveFloor,
     spawnInverter,
-    spawnBollard
+    spawnGate
 } from '../entities/spawn-helpers';
 
 describe('Signal Back-feed Investigation', () => {
@@ -61,8 +61,8 @@ describe('Signal Back-feed Investigation', () => {
             sceneId: 'test'
         });
 
-        // 5. Bollard
-        const bollardId = spawnBollard(spatial, 4, 0, 5, {
+        // 5. Gate
+        const gateId = spawnGate(spatial, 4, 0, 5, {
             receivedSignal: false
         });
 
@@ -112,14 +112,14 @@ describe('Signal Back-feed Investigation', () => {
 
         const wireIn = spatial.getEntityData(wireInId) as any;
         const wireOut = spatial.getEntityData(wireOutId) as any;
-        const bollard = spatial.getEntityData(bollardId) as any;
+        const gate = spatial.getEntityData(gateId) as any;
 
         console.log('WireIn Signal:', wireIn.receivedSignal);
         console.log('WireOut Signal:', wireOut.receivedSignal);
-        console.log('Bollard Signal:', bollard.receivedSignal);
+        console.log('Gate Signal:', gate.receivedSignal);
 
         expect(wireOut.receivedSignal).toBe(true); // Output should definitely be ON
-        expect(bollard.receivedSignal).toBe(true); // Bollard should be ON
+        expect(gate.receivedSignal).toBe(true); // Gate should be ON
 
         // The "Bug": WireIn is ON because of back-feed
         expect(wireIn.receivedSignal).toBe(false); // This will FAIL if back-feed exists

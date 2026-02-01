@@ -4,7 +4,7 @@
  * These entities form signal propagation networks:
  * - Oscillators and pressure switches generate signals
  * - Conductive floors carry signals between cells
- * - Bollards and inverters respond to signals
+ * - Gates and inverters respond to signals
  */
 
 import type { BaseEntityData } from './base.entity';
@@ -92,25 +92,33 @@ export type ConductiveFloorData = BaseEntityData & HasConductive & HasSignalRece
 };
 
 /**
- * Bollard - Retractable wall controlled by signal.
+ * Gate - Retractable wall controlled by signal.
  * 
- * Signal ON → Bollard opens (moves to FLOOR, non-blocking)
- * Signal OFF → Bollard closes (moves to WALLS, blocking)
+ * Signal ON → Gate opens (moves to FLOOR, non-blocking)
+ * Signal OFF → Gate closes (moves to WALLS, blocking)
  * 
  * Initial state: Closed (WALLS layer)
  * 
  * @example
  * ```typescript
- * // Spawn closed bollard
- * spatial.spawn('bollard', 8, 5, GameLayers.WALLS, {
+ * // Spawn closed gate
+ * spatial.spawn('gate', 8, 5, GameLayers.WALLS, {
  *   receivedSignal: false,
  *   color: '#ff0000'
  * });
  * ```
  */
-export type BollardData = BaseEntityData & HasSignalReceiver & HasColor & {
-  type: 'bollard' | 'bollard-open' | 'bollard-closed';
-  receiverType: 'bollard';
+/**
+ * Gate - Blocks movement when closed (on WALLS layer), allows movement when open (on FLOOR layer).
+ * 
+ * Behavior:
+ * - Default: Closed (blocks path)
+ * - Signal ON: Opens (allows path)
+ * - Tick-delay: Immediate (within same tick)
+ */
+export type GateData = BaseEntityData & HasSignalReceiver & HasColor & {
+  type: 'gate' | 'gate-open' | 'gate-closed';
+  receiverType: 'gate';
 };
 
 /**
