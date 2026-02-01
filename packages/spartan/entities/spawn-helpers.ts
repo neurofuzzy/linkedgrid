@@ -387,6 +387,7 @@ export function spawnConductiveFloor(
   return spatial.spawn('conductive-floor', x, y, GameLayers.FLOOR, {
     conductiveType: 'floor',
     receiverType: 'floor',
+    receivedSignal: false,
     color: overrides?.color || '#808080',
     sceneId: overrides?.sceneId || 'default',
   });

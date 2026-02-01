@@ -216,7 +216,6 @@ visual('bollard closes when signal turns off', {
         throw new Error('Bollard not found on WALLS layer (should be closed)');
       }
 
-      const data = spatial.getEntityData(bollardId);
       if (!data || !hasSignalReceiver(data)) {
         throw new Error('Bollard missing signal receiver trait');
       }

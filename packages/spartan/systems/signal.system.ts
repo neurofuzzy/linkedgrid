@@ -365,26 +365,20 @@ export class SignalSystem extends BaseReactiveSystem {
   private applyToReceivers(context: GameContext): void {
     // Apply visual/logical state from currentTickSignals
     for (const [entityId, pos] of context.spatial.getAllPositions()) {
-      const hasSignal = this.currentTickSignals.has(entityId);
-
-      // Update 'receivedSignal' property on entity for Renderer
-      // This ensures visuals match the resolved state
       const data = context.spatial.getEntityData(entityId);
-      if (data && (hasSignalReceiver(data) || hasConductive(data))) {
-        // Skip writing if not changed? 
-        // For simple sync, just write it.
-        // Avoid overwriting Inverter 'signalState' which was set in resolveCircuit
-        if (data.receiverType !== 'inverter' || !('signalState' in data)) {
-          // Only update strictly receiver props
-        }
 
-        // Actually, we must update receivedSignal for EVERYONE who cares
-        this.gameManager.gameState.entityStore.setData(entityId, {
-          receivedSignal: hasSignal
-        });
+      // Optimization: Skip entities that are not signal components
+      if (!data || (!hasSignalReceiver(data) && !hasConductive(data))) {
+        continue;
       }
 
-      if (data && hasSignalReceiver(data)) {
+      const hasSignal = this.currentTickSignals.has(entityId);
+      // Update receivedSignal for all valid receivers/conductors
+      // This ensures visuals match the resolved state
+      this.gameManager.gameState.entityStore.setData(entityId, {
+        receivedSignal: hasSignal
+      });
+      if (hasSignalReceiver(data)) {
         if (data.receiverType === 'bollard') {
           this.applyToBollard(context, entityId, pos, { ...data, receivedSignal: hasSignal });
         }
@@ -405,9 +399,13 @@ export class SignalSystem extends BaseReactiveSystem {
     const isOpen = pos.layer !== GameLayers.WALLS;
 
     if (shouldBeOpen && !isOpen) {
-      // Open: move to FLOOR layer (spawn new entity)
-      context.spatial.remove(entityId);
-      context.spatial.spawn(
+      // Open: move to FLOOR layer (spawn new entity with same ID)
+      // Must remove from store immediately to allow spawnWithId to reuse ID
+      this.gameManager.gameState.entityStore.remove(entityId);
+      context.spatial.remove(entityId); // Stages grid cleanup
+
+      context.spatial.spawnWithId(
+        entityId,
         'bollard-open',
         pos.x,
         pos.y,
@@ -420,9 +418,13 @@ export class SignalSystem extends BaseReactiveSystem {
         }
       );
     } else if (!shouldBeOpen && isOpen) {
-      // Close: move to WALLS layer (spawn new entity)
-      context.spatial.remove(entityId);
-      context.spatial.spawn(
+      // Close: move to WALLS layer (spawn new entity with same ID)
+      // Must remove from store immediately to allow spawnWithId to reuse ID
+      this.gameManager.gameState.entityStore.remove(entityId);
+      context.spatial.remove(entityId); // Stages grid cleanup
+
+      context.spatial.spawnWithId(
+        entityId,
         'bollard-closed',
         pos.x,
         pos.y,

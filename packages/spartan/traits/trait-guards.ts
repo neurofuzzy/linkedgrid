@@ -678,7 +678,7 @@ export function hasSignalReceiver(
   const receiverType = entity.receiverType;
   return (
     (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor') &&
-    (!('receivedSignal' in entity) || typeof entity.receivedSignal === 'boolean')
+    'receivedSignal' in entity && typeof entity.receivedSignal === 'boolean'
   );
 }
 
