@@ -1,83 +1,65 @@
-# Spartan Systems Reference
+# Game Systems
 
-This document describes the behavior and configuration of all core game systems.
+Systems implement game logic by processing the `GameContext` every tick.
 
----
+## System Base Classes
 
-## PlayerInputSystem
-**Purpose**: Translates player input into movement intents.  
-**Execution Phase**: `input`  
-**Tick Rate**: 1  
-**Dependencies**: None  
+| Class | Frequency | Method to Override | Use Case |
+| :--- | :--- | :--- | :--- |
+| `BaseReactiveSystem` | Every tick | `update(context)` | Input, immediate reactions, overlaps |
+| `BaseTickedSystem` | Every N ticks | `onTick(context)` | AI, physics, environmental effects |
+| `BaseSystem` | Manual | `update(context)` | Custom timing requirements |
 
----
+## Core Concepts
 
-## DoorSystem
-**Purpose**: Unlocks doors when player has matching key.  
-**Execution Phase**: `pre-commit`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+### GameContext
+- **`spatial`**: Main API for the world. Spawn, move, remove entities; query positions; access entity data.
+- **`overlaps`**: List of all cells containing multiple entities (optimized for collision logic).
+- **`gameManager`**: Global state access and scene transition triggers.
 
----
+### Trait Guards
+Always use trait guards for type-safe property access:
+```typescript
+if (hasHealth(entity)) entity.hp -= 10; // TypeScript now knows entity has .hp
+```
 
-## CollectionSystem
-**Purpose**: Handles picking up collectible items.  
-**Execution Phase**: `post-commit`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+### Lifecycle & State
+Systems persist across scenes. **Always** override `resetState()` to clear internal collections (Maps, Arrays, etc.) to prevent memory leaks or cross-scene bugs.
 
----
+```typescript
+public override resetState(): void {
+  super.resetState(); // Resets tick counters
+  this.internalMap.clear();
+}
+```
 
-## FireSystem
-**Purpose**: Spreads fire, applies temperature logic, and consumes fuel.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+## Best Practices
 
----
+1. **Two-Phase Updates**: Calculate all changes first, then apply them. This prevents "order-of-execution" bugs where the first processed entity has an unfair advantage.
+2. **Prefer Ticked Systems**: Use `BaseTickedSystem` with a `tickRate > 1` for performance-heavy logic like AI or spread mechanics.
+3. **Statelessness**: Try to store state in Entity traits rather than private System variables when possible.
+4. **Debug Visibility**: Override `getDebugState()` to expose internal system counters to the visual runner.
 
-## LiquidSystem
-**Purpose**: Simulates volumetric liquid flow and depth diffusion.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+## Example: Reactive Collection System
 
----
+```typescript
+import { BaseReactiveSystem, GameContext, isPlayer, isCollectible } from '../core';
 
-## PoisonSystem
-**Purpose**: Handles density-based gas dispersion and damage application.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+export class CollectionSystem extends BaseReactiveSystem {
+  update({ overlaps, spatial }: GameContext): void {
+    for (const { entityIds } of overlaps) {
+      const player = entityIds.find(id => isPlayer(spatial.getEntityData(id)));
+      const item = entityIds.find(id => isCollectible(spatial.getEntityData(id)));
 
----
+      if (player && item) {
+        // Logic: Add to inventory (via traits) and remove from world
+        spatial.remove(item);
+      }
+    }
+  }
+}
+```
 
-## ExplosionSystem
-**Purpose**: Processes chain explosions and destructive force.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
-
----
-
-## FloorEffectSystem
-**Purpose**: Applies generic floor effects (damage/healing) based on presence.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
-
----
-
-## TeleporterSystem
-**Purpose**: Handles player teleportation between scenes.  
-**Execution Phase**: `post-commit`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
-
----
-
-## ChainReactionSystem
-**Purpose**: Handles domino-like chain reactions.  
-**Execution Phase**: `main`  
-**Tick Rate**: 1  
-**Dependencies**: `SpatialSystem`  
+## See Also
+- [System Registration](../../../specs/spartan-system-registration.md)
+- [Trait Guards](../traits/trait-guards.ts)
