@@ -52,10 +52,13 @@ export class GateSystem extends BaseReactiveSystem {
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
-        // Make semi-opaque when open
+        // Restore opacity when open
         let color = data.color || '#ff0000';
-        if (color.startsWith('#') && color.length === 7) {
-            color += '80'; // 50% opacity
+        if (color.startsWith('#')) {
+            // Strip alpha if present (anything longer than 7)
+            if (color.length > 7) {
+                color = color.substring(0, 7);
+            }
         }
 
         context.spatial.spawnWithId(
@@ -83,10 +86,15 @@ export class GateSystem extends BaseReactiveSystem {
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
-        // Restore opacity when closed
+        // Make semi-opaque when closed
         let color = data.color || '#ff0000';
-        if (color.startsWith('#') && color.length === 9) {
-            color = color.substring(0, 7);
+        if (color.startsWith('#')) {
+            // If already has alpha (length 9), keep it? 
+            // Or ensure specific opacity?
+            // If standard hex (7), add alpha
+            if (color.length === 7) {
+                color += '80'; // 50% opacity
+            }
         }
 
         context.spatial.spawnWithId(
