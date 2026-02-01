@@ -181,21 +181,18 @@ export class SceneLoader {
         this.container
       );
 
-      // Create WebInputProvider adapter
-      // Note: We need a way to adapt the existing manager to InputProvider.
-      // Since WebInputProvider currently creates its own manager, we should probably
-      // instantiate WebInputProvider directly if we want to use it, OR create a simple adapter here.
-      
-      // Let's create a simple adapter object that matches InputProvider interface
-      // and delegates to our created manager.
-      // This avoids refactoring WebInputProvider to accept an existing manager for now.
-      const inputProvider = {
-        getDirection: () => manager.getState().direction,
-        getAction: () => manager.getState().action,
-        getSecondary: () => manager.getState().secondary,
-        getStart: () => manager.getState().start,
-        getRestart: () => manager.getState().restart,
-      };
+      // Create InputProvider - use WebInputProvider for DOM-based input, simple adapter for headless
+      const inputProvider = manager instanceof InputManager
+        ? new WebInputProvider(manager)
+        : {
+          // Headless mode: simple adapter
+          getDirection: () => manager.getState().direction,
+          getAction: () => manager.getState().action,
+          getSecondary: () => manager.getState().secondary,
+          getStart: () => manager.getState().start,
+          getRestart: () => manager.getState().restart,
+          destroy: cleanup,
+        };
 
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems

@@ -22,6 +22,11 @@ import type { GameManager } from '../core/game-manager';
  * - Validates grid bounds before staging move
  * - Tracks debug stats for input diagnostics
  *
+ * Architecture Note:
+ * Device-specific input handling (buffering, debouncing, tap vs continuous modes, etc.)
+ * is handled at the InputProvider/InputManager layer (e.g., KeyboardInputManager).
+ * This system remains platform-agnostic and simply reads from the InputProvider interface.
+ *
  * @example
  * ```typescript
  * const inputSystem = new PlayerInputSystem(gameManager, inputProvider);
