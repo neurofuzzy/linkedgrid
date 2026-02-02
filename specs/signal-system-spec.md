@@ -1,282 +1,199 @@
 # Signal System Specification
 
-## Overview
+## Core Concept
 
-The Signal System provides logic circuit simulation for puzzle mechanics. Signals propagate through conductive networks to control receivers like gates (barriers) and inverters (NOT gates).
+**Signals are ephemeral events that bubble through conductive networks, not persistent state.**
 
-**Core Principle**: A signal is a signal. It carries a value (ON or OFF), and the propagation logic is identical regardless of the value. When a source turns OFF, the OFF propagates through the network just like ON did.
-
-**Key Design Principle**: Conductors propagate instantly. Active components (gates, inverters) introduce 1-tick delay.
-
----
-
-## Timing Model
-
-### Entity Classification
-
-| Category | Entities | Timing | Mental Model |
-|----------|----------|--------|--------------|
-| **Conductor** | Conductive Floor | Instant | Wire (zero resistance) |
-| **Source** | Oscillator, Pressure Switch | Instant emit | Signal generator |
-| **Active Component** | Inverter, Transceiver | 1-tick delay | Logic gate (processing time) |
-| **Receiver** | Gate | 1-tick delay | Actuator (mechanical delay) |
-
-### Tick-by-Tick Behavior
-
-```
-Tick 0: Oscillator turns ON
-        → Conductors light up instantly
-        → Gate receives signal, becomes "pending"
-        
-Tick 1: Gate acts on pending signal
-        → Opens (moves from WALLS to FLOOR layer)
-```
-
-**Result**: A chain of gates connected through conductors opens simultaneously. A chain connected through transceivers opens sequentially (cascading effect).
-
-### Delay Model for Non-Conductive Receivers
-
-Non-conductive signal-receiving entities (gates, inverters, transceivers) implement a 1-tick delay between receiving and acting:
-
-| Phase | Action |
-|-------|--------|
-| **Tick N** | Entity receives signal → stored in `pendingSignal` |
-| **Tick N+1** | `pendingSignal` moves to `receivedSignal` → entity acts |
-
-This creates cascading effects for chains of gates:
-
-```
-Tick 1: Switch pressed → Signal propagates through conductors → Gate 1 receives (pending)
-Tick 2: Gate 1 opens (pending→received), propagation done
-Tick 3: Signal propagates through open Gate 1 → Gate 2 receives (pending)
-Tick 4: Gate 2 opens
-Tick 5: Signal propagates through open Gate 2 → Gate 3 receives (pending)
-...
-```
-
-**Key Principle**: Conductors propagate instantly within a tick. Active components and receivers delay their **output/action** by 1 tick. Each closed gate adds 2 ticks to the cascade (1 to receive, 1 to open before next propagation).
-
----
+- **Events** bubble instantly through conductors in a single tick
+- **State** (receivedSignal, pendingSignal) persists on entities between ticks
+- **Generators** create new events when their state changes
+- **Conductors** propagate events instantly (no delay)
+- **Receivers** introduce 1-tick delay, then become new event sources
 
 ## Entity Types
 
-### Signal Sources
+### Generators (Signal Sources)
+Create new signal events when their state changes:
+- **Oscillators**: Auto-toggle every N ticks
+- **Pressure Switches**: Toggle based on actor presence
+- **Inverters**: Emit inverted input signal
 
-#### Oscillator
-Auto-toggles ON/OFF based on period.
+### Conductors (Instant Propagation)
+Allow signals to bubble through instantly:
+- **Conductive Floors**: Pure conductors (no delay)
+- **Conductive Receivers**: Floors with receiver trait (still instant)
+- **Emitters on Floors**: Oscillators/switches act as conductors
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `signalType` | `'oscillator'` | Discriminator |
-| `signalState` | `boolean` | Current output state |
-| `oscillatorPeriod` | `number` | Full cycle in ticks (toggles at half-period) |
+### Receivers (1-Tick Delay)
+Stop propagation, then re-emit next tick:
+- **Gates**: Block/allow movement based on signal
+- **Inverters**: Both receiver and emitter
+- **Transceivers**: Wireless relay with 1-tick delay
 
-#### Pressure Switch
-Toggles when an actor steps on it.
+## Signal Flow
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `signalType` | `'pressure'` | Discriminator |
-| `signalState` | `boolean` | Current output state |
+### Single Tick Cycle
 
-### Wire / Conductive Elements
+```
+Phase 1: Apply Pending
+  ├─ Receivers with pendingSignal become powered
+  ├─ Inverters flip their output state
+  └─ If state changed, create new event and propagate
 
-#### Conductive Floor
-Carries signal between adjacent cells.
+Phase 2: Update Generators
+  ├─ Oscillators: Increment counters, toggle if period elapsed
+  └─ Pressure Switches: Check actor presence, update based on mode
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `conductiveType` | `'floor'` | Discriminator |
-| `receivedSignal` | `boolean` | Visual powered state |
+Phase 3: Create Events
+  └─ Generators that changed state create new SignalEvent objects
 
-### Active Components
+Phase 4: Bubble Events
+  ├─ BFS from event source through conductive network
+  ├─ Pure conductors: Update receivedSignal instantly
+  ├─ Receivers: Set pendingSignal (applied next tick)
+  └─ Stop at receivers (they don't propagate further)
 
-#### Inverter (NOT Gate)
-Emits opposite of input. Receives instantly, emits with 1-tick delay.
+Phase 5: Transceivers
+  ├─ Check which wireless channels are active
+  ├─ Create events for powered transceivers
+  └─ Propagate like regular events
+```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `signalType` | `'inverter'` | Emitter discriminator |
-| `receiverType` | `'inverter'` | Receiver discriminator |
-| `signalState` | `boolean` | Output state (inverted) |
-| `receivedSignal` | `boolean` | Input state |
-
-#### Transceiver
-Wireless signal relay. All transceivers on same channel share state.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `signalType` | `'transceiver'` | Emitter discriminator |
-| `receiverType` | `'transceiver'` | Receiver discriminator |
-| `channel` | `string` | Channel identifier for wireless linking |
-| `signalState` | `boolean` | Current broadcast state |
-| `receivedSignal` | `boolean` | Input from wired network |
-
-**Use Cases:**
-- Remote pressure plate to distant door
-- One oscillator powering multiple isolated areas
-- Cross-room signaling without conductive path
-
-### Receivers
-
-#### Gate
-Movable barrier. Opens when powered, closes when unpowered.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `type` | `'gate' \| 'gate-open' \| 'gate-closed'` | State variants |
-| `receiverType` | `'gate'` | Discriminator |
-| `receivedSignal` | `boolean` | Current power state |
-
-**Layer Behavior:**
-- `gate-closed` → WALLS layer (blocks movement)
-- `gate-open` → FLOOR layer (passable)
-
----
-
-## System Phases
- 
- The SignalSystem executes in 4 simplified phases each tick:
- 
- ```
- 1. Phase 1: Apply Pending State
-    - Move pendingSignal (calc'd last tick) → receivedSignal for all receivers
-    - Gates open/close based on new receivedSignal
-    - Inverters update their internal state based on new receivedSignal
- 
- 2. Phase 2: Collect Signal Sources
-    - Identify all active emitters for THIS tick:
-      - Oscillators (if ON)
-      - Pressure Switches (if ON)
-      - Active Inverters (if output state is ON)
-      - Open Gates (act as relays: if receivedSignal is TRUE)
- 
- 3. Phase 3: Propagation (Flood-Fill)
-    - Flood-fill signal from all active sources through conductors
-    - RULE: Conductors allow pass-through
-    - RULE: Active Components (Gates, Inverters) BLOCK pass-through (they are relays)
- 
- 4. Phase 4: Calculate Next State
-    - Check all receivers against the SignalGrid (is their position powered?)
-    - Set pendingSignal for NEXT tick
- ```
- 
- ### Flood-Fill Algorithm
- 
- Signal propagation uses 4-directional flood-fill:
- 1. Start from all active sources
- 2. Mark conductive cells as powered
- 3. Propagate to neighbors that are conductive
- 4. **Stop at Active Components**: Gates and Inverters receive the signal (get marked as powered) but do NOT propagate it further in the same tick. They act as Relay Sources in the *next* tick.
-
----
-
-## Layer Usage
-
-| Entity | Layer | Notes |
-|--------|-------|-------|
-| Oscillator | COLLECTIBLES | On top of floor |
-| Pressure Switch | COLLECTIBLES | On top of floor |
-| Conductive Floor | FLOOR | Base layer |
-| Inverter | COLLECTIBLES | On top of floor |
-| Transceiver | COLLECTIBLES | On top of floor |
-| Gate (closed) | WALLS | Blocks movement |
-| Gate (open) | FLOOR | Passable terrain |
-
----
-
-## API Reference
-
-### Spawn Helpers
+## Signal Event Object
 
 ```typescript
-spawnOscillator(spatial, x, y, layer, { oscillatorPeriod, signalState, color });
-spawnPressureSwitch(spatial, x, y, layer, { signalState, color });
-spawnConductiveFloor(spatial, x, y, { color });
-spawnInverter(spatial, x, y, layer, { signalState, receivedSignal, color });
-spawnTransceiver(spatial, x, y, layer, channel, { signalState, color });
-spawnGate(spatial, x, y, layer, { receivedSignal, color });
-```
-
-### Type Guards
-
-```typescript
-hasSignalEmitter(entity)   // Oscillator, PressureSwitch, Inverter, Transceiver
-hasSignalReceiver(entity)  // Gate, Inverter, ConductiveFloor, Transceiver
-hasConductive(entity)      // ConductiveFloor
-isTransceiver(entity)      // Transceiver
-isGate(entity)          // Gate variants
-```
-
----
-
-## Future Work
-
-### Sleep/Wake Cells for NPC Regions
-
-**Concept**: Signal-controlled zones that activate/deactivate NPCs to optimize performance and create dramatic reveals.
-
-```
-[PRESSURE PLATE] → [CONDUCTOR] → [WAKE ZONE]
-                                     ↓
-                               [NPC becomes active]
-```
-
-**Proposed Entities:**
-- `wake-zone`: Marker entity on AI layer that activates NPCs in radius
-- `sleep-zone`: Puts NPCs back to sleep when powered
-
-**Behavior:**
-- Sleeping NPCs skip AI updates (performance)
-- Wake signal cascades through transceivers for room reveals
-- Allows scripted "ambush" triggers
-
-### NPC Paths as Conductors
-
-**Concept**: NPC patrol paths double as conductive wires, enabling AI-layer signal networks.
-
-```
-[OSC] → [NPC PATH] → [NPC PATH] → [BOLLARD ON AI LAYER]
-```
-
-**Benefits:**
-- Reuse path data for circuit layout
-- AI layer remains invisible to player
-- Enables "behind the scenes" automation
-
-**Implementation Notes:**
-- Path nodes get `HasConductive` trait
-- SignalSystem queries AI layer during flood-fill
-
-### Pressure Switch Modes
-
-**Concept**: Support multiple activation behaviors for pressure switches.
-
-| Mode | Initial State | Behavior |
-|------|---------------|----------|
-| `toggle` | OFF | Toggles on each step (current) |
-| `hold` | OFF | ON only while pressed |
-| `latch` | OFF | Stays ON once triggered |
-| `inverted-latch` | ON | Stays OFF once triggered |
-
-**Proposed Properties:**
-```typescript
-interface PressureSwitchData {
-  switchMode: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
-  initialState: boolean;  // Starting signalState
+class SignalEvent {
+  readonly id: string;              // `${sourceId}-${tick}`
+  readonly sourceId: number;        // Entity that created this event
+  readonly tick: number;            // Tick when event was created
+  readonly value: boolean;          // ON (true) or OFF (false)
+  readonly visitedCells: Set<string>; // Cells this event has touched
 }
 ```
 
-**Use Cases:**
-- `hold`: Requires player to stand on switch (co-op puzzle)
-- `latch`: One-way door, checkpoint triggers
-- `inverted-latch`: Trap doors that close permanently
+**Properties:**
+- Immutable (readonly fields)
+- Unique per source per tick
+- Each cell visited only once (prevents loops)
+- Garbage collected when propagation completes
 
----
+## Propagation Rules
 
-## Changelog
+### Pure Conductors (Instant)
+```
+hasConductive && !hasSignalReceiver  →  receivedSignal updated instantly
+hasConductive && hasSignalReceiver   →  receivedSignal updated instantly
+hasSignalEmitter (oscillator/pressure) →  signal flows through instantly
+```
 
-| Version | Changes |
-|---------|---------|
-| 2.0 | Added tick-delay model, transceiver entity, future work section |
-| 1.0 | Initial spec with oscillators, pressure switches, inverters, gates |
+### Receivers (1-Tick Delay)
+```
+Tick N:   Signal arrives → pendingSignal = true
+Tick N+1: pendingSignal applied → receivedSignal = true → new event created
+```
+
+### Blocking (No Propagation)
+```
+Gates, Inverters, Transceivers → Stop event propagation
+Signal must wait for next tick to continue
+```
+
+## Example: Pressure Switch → Conductive Floor → Gate → Gate
+
+```
+Tick 0: Player steps on switch
+  └─ Switch: signalState: false → true
+  └─ Event created: SignalEvent(switch, 0, true)
+  └─ Bubbles instantly through conductive floor
+  └─ Gate A: pendingSignal = true (stops here)
+
+Tick 1: Gate A applies pending
+  └─ Gate A: receivedSignal = true
+  └─ Event created: SignalEvent(gateA, 1, true)
+  └─ Gate B: pendingSignal = true (stops here)
+
+Tick 2: Gate B applies pending
+  └─ Gate B: receivedSignal = true
+  └─ Event created: SignalEvent(gateB, 2, true)
+  └─ (continues to next receiver...)
+```
+
+## Key Design Decisions
+
+### ✅ Why Events Are Ephemeral
+- Prevents memory leaks (auto-GC'd after propagation)
+- Clear ownership (one event per source per tick)
+- Simplifies debugging (trace event back to source)
+
+### ✅ Why Receivers Create New Events
+- Natural 1-tick delay without complex state tracking
+- Allows signal to propagate through chains of receivers
+- Each receiver acts as a repeater with delay
+
+### ✅ Why visitedCells Uses Set
+- O(1) lookup to prevent revisiting cells
+- Prevents infinite loops in complex networks
+- Works with any network topology
+
+### ✅ Why Conductors Update Instantly
+- Visual feedback is immediate
+- Matches player expectation (wires light up instantly)
+- Only active components (gates, inverters) have delay
+
+## State Management
+
+### Entity State Fields
+```typescript
+// Generators
+signalState: boolean           // Current output state
+
+// Receivers  
+receivedSignal: boolean        // Current input state (visual)
+pendingSignal?: boolean        // Next tick's state (1-tick delay)
+
+// Oscillators
+oscillatorPeriod?: number      // Ticks per full cycle
+
+// Pressure Switches
+switchMode?: 'toggle' | 'hold' | 'latch' | 'inverted-latch'
+
+// Transceivers
+channel: string                // Wireless channel identifier
+```
+
+### System State
+```typescript
+oscillatorTicks: Map<number, number>          // Tick counters
+pressureSwitchStates: Map<number, boolean>    // Was pressed last tick?
+previousGeneratorStates: Map<number, boolean> // For change detection
+channelStates: Map<string, boolean>           // Wireless channels
+tickCount: number                              // Current tick
+```
+
+## Requirements Met
+
+✅ **Signal is unique by source + tick**: `id = ${sourceId}-${tick}`
+
+✅ **Signal affects each cell once**: `visitedCells: Set<string>`
+
+✅ **Natural garbage collection**: Events dereferenced after propagation
+
+✅ **Simple ON/OFF values**: `value: boolean`
+
+✅ **Conductors propagate instantly**: BFS completes in single tick
+
+## Testing Checklist
+
+- [ ] Oscillator toggles gate every N ticks
+- [ ] Pressure switch (toggle mode) flips on each press
+- [ ] Pressure switch (hold mode) stays ON while pressed
+- [ ] Pressure switch (latch mode) stays ON after first press
+- [ ] Pressure switch (inverted-latch) stays OFF after first press
+- [ ] Signal propagates through 10+ conductive floors instantly
+- [ ] Signal propagates through chain of 5 gates with 1-tick delay each
+- [ ] Inverter outputs opposite of input with 1-tick delay
+- [ ] Transceiver relays signal wirelessly with 1-tick delay
+- [ ] Multiple oscillators on same network don't interfere
+- [ ] Circular networks don't cause infinite loops
+- [ ] Gate opens when receiving ON signal (WALLS → FLOOR)
+- [ ] Gate closes when receiving OFF signal (FLOOR → WALLS)
