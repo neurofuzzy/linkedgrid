@@ -246,6 +246,11 @@ visual('inverter outputs opposite of input signal', {
   arrange: ({ spatial }) => {
     // Setup: [O ON] - [=] - [I] - [=] - [B]
     // Oscillator ON → Inverter receives ON → outputs OFF → Gate closed
+    //
+    // With 1-tick delay for inverters:
+    // Tick 1: Signal propagates, inverter gets pendingSignal=true
+    // Tick 2: Inverter applies pending, receivedSignal=true, signalState=false, emits
+    // Gate receives pendingSignal=false from inverter output
 
     // Oscillator ON
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
@@ -281,7 +286,9 @@ visual('inverter outputs opposite of input signal', {
     gameLoop.addSystem(signalSystem);
     gameLoop.addSystem(new GateSystem(gameManager));
 
-    // Tick to propagate signals
+    // Tick 1: Signal propagates, inverter gets pendingSignal
+    gameLoop.tick();
+    // Tick 2: Inverter applies pending, emits inverted signal
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -327,6 +334,11 @@ visual('inverter emits when not receiving signal', {
   arrange: ({ spatial }) => {
     // Setup: [O OFF] - [=] - [I] - [=] - [B]
     // Oscillator OFF → Inverter NOT receiving → outputs ON → Gate opens
+    //
+    // With 1-tick delay and state correction:
+    // Tick 1: Oscillator OFF (no change), inverter state mismatch detected, queues emission
+    // Tick 2: Inverter emits ON, conductor powered, gate gets pendingSignal
+    // Tick 3: Gate applies pending, opens
 
     // Oscillator OFF
     spawnOscillator(spatial, 5, 5, GameLayers.COLLECTIBLES, {
@@ -362,9 +374,11 @@ visual('inverter emits when not receiving signal', {
     gameLoop.addSystem(signalSystem);
     gameLoop.addSystem(new GateSystem(gameManager));
 
-    // Tick 1: Inverter emits (no input), downstream conductor powered, gate pending
+    // Tick 1: Inverter detects state mismatch, corrects, queues emission
     gameLoop.tick();
-    // Tick 2: Gate acts on pending signal
+    // Tick 2: Inverter emits ON, gate gets pendingSignal
+    gameLoop.tick();
+    // Tick 3: Gate applies pending signal and opens
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
