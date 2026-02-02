@@ -62,6 +62,11 @@ const AVAILABLE_GAMES = [
     name: 'Signal System Lab',
     path: '/dev/games/signal-demo.json',
   },
+  {
+    id: 'signal-advanced',
+    name: 'Advanced Signals (Switch Modes, Paths, Sleep-Wake)',
+    path: '/dev/games/signal-advanced.json',
+  },
 ];
 
 /**

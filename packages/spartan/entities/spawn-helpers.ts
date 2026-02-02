@@ -272,8 +272,11 @@ export function spawnOscillator(
 /**
  * Spawn a pressure switch entity.
  *
- * Pressure switches toggle when an entity steps on them.
- * Edge-triggered: only toggles on entry, not while standing.
+ * Pressure switches support 4 activation modes:
+ * - toggle: Flips state on each step (default)
+ * - hold: ON while pressed, OFF when released
+ * - latch: OFF → ON on first press, stays ON forever
+ * - inverted-latch: ON → OFF on first press, stays OFF forever
  *
  * @param spatial - SpatialSystem to spawn in
  * @param x - X coordinate
@@ -287,6 +290,7 @@ export function spawnOscillator(
  * // Spawn pressure switch on COLLECTIBLES layer
  * spawnPressureSwitch(spatial, 7, 5, GameLayers.COLLECTIBLES, {
  *   signalState: false,
+ *   switchMode: 'hold',
  *   color: '#00ffff'
  * });
  * ```
@@ -298,15 +302,24 @@ export function spawnPressureSwitch(
   layer: number,
   overrides?: Partial<{
     signalState: boolean;
+    switchMode: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
+    initialState: boolean;
     color: string;
     sceneId: string;
   }>
 ): number {
+  const switchMode = overrides?.switchMode || 'toggle';
+  const defaultState = switchMode === 'inverted-latch' ? true : false;
+  
+  // Remove initialState from overrides to avoid passing it to spawn
+  const { initialState, signalState, ...restOverrides } = overrides || {};
+  
   return spatial.spawn('pressure-switch', x, y, layer, {
     signalType: 'pressure',
-    signalState: false,
+    signalState: initialState ?? signalState ?? defaultState,
+    switchMode,
     color: '#00ffff',
-    ...overrides,
+    ...restOverrides,
   });
 }
 
@@ -484,6 +497,93 @@ export function spawnTransceiver(
     receivedSignal: false,
     channel,
     color: '#00ff88',
+    ...overrides,
+  });
+}
+
+/**
+ * Logic System Spawn Helpers
+ *
+ * Helper functions for spawning logic-layer entities (path nodes, sleep-wake zones).
+ */
+
+/**
+ * Spawn a path node entity.
+ *
+ * Path nodes serve dual purpose:
+ * - Define NPC patrol paths (for AI systems)
+ * - Conduct signals on LOGIC layer (invisible signal network)
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned path node
+ *
+ * @example
+ * ```typescript
+ * // Spawn path node on LOGIC layer
+ * spawnPathNode(spatial, 5, 5, {
+ *   color: '#888888'
+ * });
+ * ```
+ */
+export function spawnPathNode(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('path-node', x, y, GameLayers.LOGIC, {
+    conductiveType: 'path',
+    receiverType: 'path',
+    receivedSignal: false,
+    color: '#888888',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn a sleep-wake entity.
+ *
+ * Sleep-wake entities toggle NPC active state based on signal:
+ * - Signal ON → NPCs on this cell become active (awake)
+ * - Signal OFF → NPCs on this cell become inactive (asleep)
+ *
+ * Signals propagate to adjacent sleep-wake entities, allowing
+ * users to paint contiguous zones in the editor.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned sleep-wake entity
+ *
+ * @example
+ * ```typescript
+ * // Spawn sleep-wake entity on LOGIC layer
+ * spawnSleepWake(spatial, 5, 5, {
+ *   color: '#9900ff'
+ * });
+ * ```
+ */
+export function spawnSleepWake(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('sleep-wake', x, y, GameLayers.LOGIC, {
+    receiverType: 'sleep-wake',
+    conductiveType: 'sleep-wake',
+    receivedSignal: false,
+    color: '#9900ff',
     ...overrides,
   });
 }

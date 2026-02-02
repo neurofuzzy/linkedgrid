@@ -288,6 +288,11 @@ export class SceneLoader {
 
     // Spawn all entities
     for (const entityDef of entities) {
+      // Skip comment/section objects (used for documentation in JSON files)
+      if (!entityDef.type || entityDef.x === undefined || entityDef.y === undefined || entityDef.layer === undefined) {
+        continue;
+      }
+
       // Validate schema: Check for common mistake of using 'props' instead of 'data'
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((entityDef as any).props && !entityDef.data) {

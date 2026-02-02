@@ -11,6 +11,7 @@ import {
   hasSignalReceiver,
   hasConductive,
   isTransceiver,
+  hasAI,
 } from '../traits/trait-guards';
 import { SignalGrid, type Signal } from '../traits/signal.trait';
 
@@ -297,7 +298,7 @@ export class SignalSystem extends BaseReactiveSystem {
     startIds: Set<number>,
     signal: Signal
   ): void {
-    const layers = [GameLayers.FLOOR, GameLayers.COLLECTIBLES, GameLayers.WALLS];
+    const layers = [GameLayers.FLOOR, GameLayers.COLLECTIBLES, GameLayers.WALLS, GameLayers.LOGIC];
 
     for (const layer of layers) {
       const id = cell.getValue(layer);
@@ -382,7 +383,13 @@ export class SignalSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Phase 1b: Update pressure switches - toggle on entity entry.
+   * Phase 1b: Update pressure switches - support multiple activation modes.
+   * 
+   * Modes:
+   * - toggle: Flips state on each entry (default)
+   * - hold: ON while pressed, OFF when released
+   * - latch: OFF → ON on first press, stays ON forever
+   * - inverted-latch: ON → OFF on first press, stays OFF forever
    */
   private updatePressureSwitches(context: GameContext): void {
     for (const [switchId, pos] of context.spatial.getAllPositions()) {
@@ -401,12 +408,46 @@ export class SignalSystem extends BaseReactiveSystem {
       const wasPressed = this.pressureSwitchStates.get(switchId) === true;
       const isPressed = actorId !== undefined;
 
-      // Toggle on entry (edge detection: transition from not-pressed to pressed)
-      if (isPressed && !wasPressed) {
-        const newState = !data.signalState;
-        this.gameManager.gameState.entityStore.setData(switchId, {
-          signalState: newState,
-        });
+      const switchMode = data.switchMode || 'toggle';
+
+      // Apply mode-specific behavior
+      switch (switchMode) {
+        case 'toggle':
+          // Toggle on entry (edge detection: transition from not-pressed to pressed)
+          if (isPressed && !wasPressed) {
+            const newState = !data.signalState;
+            this.gameManager.gameState.entityStore.setData(switchId, {
+              signalState: newState,
+            });
+          }
+          break;
+
+        case 'hold':
+          // ON while pressed, OFF when released
+          if (isPressed !== data.signalState) {
+            this.gameManager.gameState.entityStore.setData(switchId, {
+              signalState: isPressed,
+            });
+          }
+          break;
+
+        case 'latch':
+          // OFF → ON on first press, stays ON forever
+          if (isPressed && !wasPressed && !data.signalState) {
+            this.gameManager.gameState.entityStore.setData(switchId, {
+              signalState: true,
+            });
+          }
+          break;
+
+        case 'inverted-latch':
+          // ON → OFF on first press, stays OFF forever
+          if (isPressed && !wasPressed && data.signalState) {
+            this.gameManager.gameState.entityStore.setData(switchId, {
+              signalState: false,
+            });
+          }
+          break;
       }
 
       // Update pressed state
@@ -421,6 +462,7 @@ export class SignalSystem extends BaseReactiveSystem {
       GameLayers.FLOOR,
       GameLayers.COLLECTIBLES,
       GameLayers.WALLS,
+      GameLayers.LOGIC, // Check LOGIC layer for path nodes and sleep-wake entities
     ];
 
     for (const layer of layers) {
@@ -473,6 +515,23 @@ export class SignalSystem extends BaseReactiveSystem {
         this.gameManager.gameState.entityStore.setData(entityId, {
           receivedSignal: hasSignal
         });
+        
+        // Sleep-wake entities also control NPC activation on their cell
+        if (data.conductiveType === 'sleep-wake') {
+          const cell = context.spatial.grid.cell(pos.x, pos.y);
+          if (cell) {
+            const actorId = cell.getValue(GameLayers.ACTORS);
+            if (actorId) {
+              const actorData = context.spatial.getEntityData(actorId);
+              if (actorData && hasAI(actorData)) {
+                // Signal ON → NPC awake (active), Signal OFF → NPC asleep (inactive)
+                this.gameManager.gameState.entityStore.setData(actorId, {
+                  aiActive: hasSignal
+                });
+              }
+            }
+          }
+        }
         continue;
       }
 
@@ -485,6 +544,8 @@ export class SignalSystem extends BaseReactiveSystem {
         // Transceivers already have their state set in resolveTransceiverChannels
         if (data.receiverType === 'transceiver') continue;
 
+        // Path nodes on LOGIC layer get their receivedSignal updated (for visual feedback)
+        // Sleep-wake entities are handled above in the conductive block
         // All other receivers (gates, etc) get their receivedSignal updated
         // Behavior based on this state is handled by other systems (e.g. GateSystem)
         this.gameManager.gameState.entityStore.setData(entityId, {

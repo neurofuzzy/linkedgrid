@@ -1,0 +1,912 @@
+{
+    "scenes": [
+        {
+            "id": "advanced-signals",
+            "name": "Advanced Signal Features Demo",
+            "width": 30,
+            "height": 30,
+            "entities": [
+                {
+                    "type": "player",
+                    "x": 2,
+                    "y": 15,
+                    "layer": 6,
+                    "data": {
+                        "hp": 100,
+                        "maxHp": 100,
+                        "damage": 10,
+                        "inventory": [],
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 1: Pressure Switch Modes ===",
+                    "_section": "Row 3: Toggle Mode (default)"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 5,
+                    "y": 3,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "toggle",
+                        "color": "#00ffff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 3,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 3,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "_section": "Row 6: Hold Mode"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 5,
+                    "y": 6,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "hold",
+                        "color": "#00ff88"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 6,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 6,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#44ff88"
+                    }
+                },
+                {
+                    "_section": "Row 9: Latch Mode"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 5,
+                    "y": 9,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "latch",
+                        "color": "#ffaa00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 9,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 9,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ffaa44"
+                    }
+                },
+                {
+                    "_section": "Row 12: Inverted Latch Mode"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 5,
+                    "y": 12,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": true,
+                        "switchMode": "inverted-latch",
+                        "color": "#ff4444"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 12,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-open",
+                    "x": 7,
+                    "y": 12,
+                    "layer": 1,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": true,
+                        "color": "#ff8888"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 2: Path Nodes as Conductors (Invisible Network) ===",
+                    "_section": "Invisible signal network on LOGIC layer bridging visible areas"
+                },
+                {
+                    "type": "oscillator",
+                    "x": 12,
+                    "y": 3,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": false,
+                        "oscillatorPeriod": 60,
+                        "color": "#ffff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 13,
+                    "y": 3,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "_section": "Path nodes on LOGIC layer create invisible bridge"
+                },
+                {
+                    "type": "path-node",
+                    "x": 14,
+                    "y": 3,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "type": "path-node",
+                    "x": 15,
+                    "y": 3,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "type": "path-node",
+                    "x": 16,
+                    "y": 3,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "type": "path-node",
+                    "x": 17,
+                    "y": 3,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "_section": "Signal emerges on visible layer again"
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 18,
+                    "y": 3,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 19,
+                    "y": 3,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#aa44ff"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 3: Sleep-Wake Zones ===",
+                    "_section": "Sleep-wake zone controlled by pressure switch"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 12,
+                    "y": 9,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "toggle",
+                        "color": "#00ffff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 13,
+                    "y": 9,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "_section": "Sleep-wake zone (3x3 painted area)"
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 14,
+                    "y": 8,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 15,
+                    "y": 8,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 16,
+                    "y": 8,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 14,
+                    "y": 9,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 15,
+                    "y": 9,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 16,
+                    "y": 9,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 14,
+                    "y": 10,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 15,
+                    "y": 10,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 16,
+                    "y": 10,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "_section": "Enemies in the zone (start asleep)"
+                },
+                {
+                    "type": "enemy",
+                    "x": 14,
+                    "y": 8,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "enemy",
+                    "x": 15,
+                    "y": 9,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "enemy",
+                    "x": 16,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 4: Combined Demo - All Features Working Together ===",
+                    "_section": "Latch switch triggers invisible path network to wake zone"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 12,
+                    "y": 15,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "latch",
+                        "color": "#ffaa00"
+                    }
+                },
+                {
+                    "_section": "Path nodes create invisible bridge"
+                },
+                {
+                    "type": "path-node",
+                    "x": 13,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "type": "path-node",
+                    "x": 14,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "type": "path-node",
+                    "x": 15,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "conductiveType": "path",
+                        "receiverType": "path",
+                        "receivedSignal": false,
+                        "color": "#666666"
+                    }
+                },
+                {
+                    "_section": "Sleep-wake zone (5 cell line)"
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 16,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 17,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 18,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 19,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "type": "sleep-wake",
+                    "x": 20,
+                    "y": 15,
+                    "layer": 3,
+                    "data": {
+                        "receiverType": "sleep-wake",
+                        "conductiveType": "sleep-wake",
+                        "receivedSignal": false,
+                        "color": "#9900ff"
+                    }
+                },
+                {
+                    "_section": "Enemies that wake when triggered (ambush!)"
+                },
+                {
+                    "type": "enemy",
+                    "x": 17,
+                    "y": 15,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "enemy",
+                    "x": 18,
+                    "y": 15,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "enemy",
+                    "x": 19,
+                    "y": 15,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "enemy",
+                    "x": 20,
+                    "y": 15,
+                    "layer": 6,
+                    "data": {
+                        "hp": 30,
+                        "maxHp": 30,
+                        "damage": 5,
+                        "aiState": "idle",
+                        "aiActive": false,
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 5: Hold Switch Puzzle ===",
+                    "_section": "Two hold switches that must both be pressed to open door"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 12,
+                    "y": 21,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "hold",
+                        "color": "#00ff88"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 13,
+                    "y": 21,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 14,
+                    "y": 21,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 15,
+                    "y": 21,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 16,
+                    "y": 21,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#44ff88"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 17,
+                    "y": 21,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 18,
+                    "y": 21,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 19,
+                    "y": 21,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "hold",
+                        "color": "#00ff88"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 6: Propagation Delay Demo ===",
+                    "_section": "Pressure switch + 5 gates showing tick-by-tick propagation"
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 12,
+                    "y": 27,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "toggle",
+                        "color": "#00ffff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 13,
+                    "y": 27,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "color": "#808080",
+                        "receivedSignal": false
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 14,
+                    "y": 27,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 15,
+                    "y": 27,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 16,
+                    "y": 27,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 17,
+                    "y": 27,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 18,
+                    "y": 27,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#4444ff"
+                    }
+                },
+                {
+                    "_comment": "Add some walls for context"
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 0,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 1,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 2,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 3,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 4,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 6,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                },
+                {
+                    "type": "wall",
+                    "x": 10,
+                    "y": 7,
+                    "layer": 5,
+                    "data": {
+                        "sceneId": "advanced-signals"
+                    }
+                }
+            ]
+        }
+    ],
+    "initialScene": "advanced-signals",
+    "systems": [
+        "SignalSystem",
+        "GateSystem"
+    ],
+    "input": {
+        "type": "keyboard",
+        "options": {
+            "directionMode": "continuous"
+        }
+    }
+}

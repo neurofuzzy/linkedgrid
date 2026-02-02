@@ -33,13 +33,17 @@ export type OscillatorData = BaseEntityData & HasSignalEmitter & HasColor & {
 /**
  * Pressure Switch - Toggles signal when an entity steps on it.
  * 
- * Toggle behavior: Steps on → switches state (on→off or off→on)
- * Edge-triggered: Only toggles on entry, not while standing
+ * Supports 4 activation modes:
+ * - toggle: Flips state on each step (default)
+ * - hold: ON while pressed, OFF when released
+ * - latch: OFF → ON on first press, stays ON forever
+ * - inverted-latch: ON → OFF on first press, stays OFF forever
  * 
  * @example
  * ```typescript
  * spatial.spawn('pressure-switch', 5, 5, GameLayers.COLLECTIBLES, {
  *   signalState: false,
+ *   switchMode: 'toggle',
  *   color: '#00ffff'
  * });
  * ```
@@ -47,6 +51,7 @@ export type OscillatorData = BaseEntityData & HasSignalEmitter & HasColor & {
 export type PressureSwitchData = BaseEntityData & HasSignalEmitter & HasColor & {
   type: 'pressure-switch';
   signalType: 'pressure';
+  switchMode?: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
 };
 
 /**

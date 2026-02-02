@@ -32,10 +32,12 @@ export interface HasSignalEmitter {
  * Used by:
  * - Gates: Open when receiving ON signal, close when OFF
  * - Inverters: Invert received signal and emit it
+ * - Path nodes: Visual feedback for signal state on LOGIC layer
+ * - Sleep-wake entities: Toggle NPC active state on LOGIC layer
  */
 export interface HasSignalReceiver {
   /** Type of receiver */
-  receiverType: 'gate' | 'inverter' | 'floor' | 'transceiver';
+  receiverType: 'gate' | 'inverter' | 'floor' | 'transceiver' | 'path' | 'sleep-wake';
 
   /** Current received signal state */
   receivedSignal: boolean;
@@ -45,14 +47,16 @@ export interface HasSignalReceiver {
  * HasConductive - Entity can carry signals to adjacent cells.
  * 
  * Used by:
- * - Conductive floors: Carry signals in 4 directions
+ * - Conductive floors: Carry signals in 4 directions on FLOOR layer
+ * - Path nodes: Carry signals on LOGIC layer (invisible signal network)
+ * - Sleep-wake entities: Carry signals on LOGIC layer (propagate through zones)
  * 
  * Note: Signal emitters and receivers are also implicitly conductive
  * (signals can propagate through them).
  */
 export interface HasConductive {
   /** Type of conductor */
-  conductiveType: 'floor';
+  conductiveType: 'floor' | 'path' | 'sleep-wake';
 }
 
 // ============================================================================
