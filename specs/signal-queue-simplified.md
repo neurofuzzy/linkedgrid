@@ -7,6 +7,7 @@
 2. A signal is uniquely identified by the signal generator entity ID + the tick time in which it originated.
 3. A signal propagates from cell-to-cell based on rules. It can only act on a single cell once in its lifecycle.
 4. Once a signal can no longer propagate any further, it is dereferenced.
+5. An signal value can be either true or false, both values propagate in the same way
 
 ## Propagation
 

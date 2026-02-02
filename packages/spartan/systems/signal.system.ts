@@ -76,7 +76,9 @@ export class SignalSystem extends BaseReactiveSystem {
   // Track pending emissions for next tick (for backfeed prevention)
   private pendingEmissions: PendingEmission[] = [];
 
-  // Transceiver channel tracking
+  // Transceiver state tracking
+  // Tracks whether each transceiver is powered via WIRED network (not via channel)
+  private wiredTransceiverStates = new Map<number, boolean>();
   private channelStates = new Map<string, boolean>();
 
   // Tick counter
@@ -92,6 +94,18 @@ export class SignalSystem extends BaseReactiveSystem {
     // Phase 1: Apply pending signals to STEs (gates, inverters, transceivers)
     // This is where pendingSignal becomes receivedSignal
     const emissions = this.applyPendingSignals(context);
+
+    // Update wired transceiver states from applied pending signals
+    for (const emission of emissions) {
+      const data = context.spatial.getEntityData(emission.entityId);
+      if (data && isTransceiver(data) && hasSignalReceiver(data)) {
+        // Track wired power state based on the applied signal
+        this.wiredTransceiverStates.set(
+          emission.entityId,
+          data.receivedSignal === true
+        );
+      }
+    }
 
     // Phase 2: Update generators (oscillators, pressure switches)
     this.updateOscillators(context);
@@ -482,6 +496,7 @@ export class SignalSystem extends BaseReactiveSystem {
 
   /**
    * Phase 5: Process transceivers for wireless signal broadcast.
+   * Uses wiredTransceiverStates to determine which transceivers power the channel.
    */
   private processTransceivers(context: GameContext): void {
     // Collect all transceivers
@@ -504,11 +519,12 @@ export class SignalSystem extends BaseReactiveSystem {
       }
     }
 
-    // Determine which channels are active
+    // Determine which channels are active based on WIRED-powered transceivers only
+    // This prevents feedback loops where channel-powered transceivers keep the channel active
     this.channelStates.clear();
     for (const tx of transceivers) {
-      const data = context.spatial.getEntityData(tx.id);
-      if (data && hasSignalReceiver(data) && data.receivedSignal === true) {
+      // Only count transceivers that are powered via wired network
+      if (this.wiredTransceiverStates.get(tx.id) === true) {
         this.channelStates.set(tx.channel, true);
       }
     }
@@ -522,7 +538,7 @@ export class SignalSystem extends BaseReactiveSystem {
       const previousState = this.previousGeneratorStates.get(tx.id);
 
       if (isChannelActive) {
-        // Mark transceiver as powered
+        // Mark transceiver as powered (via channel)
         if (hasSignalReceiver(data) && !data.receivedSignal) {
           this.gameManager.gameState.entityStore.setData(tx.id, {
             receivedSignal: true,
@@ -538,7 +554,7 @@ export class SignalSystem extends BaseReactiveSystem {
           this.propagateSignal(context, signal);
         }
       } else {
-        // Channel not active
+        // Channel not active - turn off transceivers that were channel-powered
         if (hasSignalReceiver(data) && data.receivedSignal) {
           this.gameManager.gameState.entityStore.setData(tx.id, {
             receivedSignal: false,
@@ -606,6 +622,7 @@ export class SignalSystem extends BaseReactiveSystem {
     this.pressureSwitchStates.clear();
     this.previousGeneratorStates.clear();
     this.pendingEmissions = [];
+    this.wiredTransceiverStates.clear();
     this.channelStates.clear();
     this.tickCount = 0;
   }
