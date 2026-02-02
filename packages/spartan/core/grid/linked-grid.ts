@@ -181,6 +181,18 @@ export class LinkedGrid {
   }
 
   /**
+   * Check if coordinates are valid within the grid.
+   *
+   * @param x - Column index
+   * @param y - Row index
+   * @returns true if coordinates are within bounds
+   */
+  isValid(x: number, y: number): boolean {
+    return x >= 0 && y >= 0 && x < this._width && y < this._height;
+  }
+
+
+  /**
    * Get coordinates for a cell.
    *
    * Cells created by LinkedGrid always have valid x,y coordinates.

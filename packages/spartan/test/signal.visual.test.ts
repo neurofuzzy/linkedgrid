@@ -704,3 +704,86 @@ visual('transceivers on different channels do not interfere', {
     });
   },
 });
+
+visual('gates in series open with 1-tick delay each (cascading)', {
+  arrange: ({ spatial }) => {
+    // Setup: [OSC ON] - [=] - [GATE1] - [=] - [GATE2] - [=] - [GATE3]
+    // Gates should open sequentially, one per tick after the signal reaches them
+
+    spawnOscillator(spatial, 0, 5, GameLayers.COLLECTIBLES, {
+      signalState: true,
+      oscillatorPeriod: 1000, // Long period so it stays on
+      color: '#ffff00',
+    });
+
+    spawnConductiveFloor(spatial, 1, 5, { color: '#808080' });
+
+    // Gate 1
+    spawnGate(spatial, 2, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#ff0000',
+    });
+
+    spawnConductiveFloor(spatial, 3, 5, { color: '#808080' });
+
+    // Gate 2
+    spawnGate(spatial, 4, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#00ff00',
+    });
+
+    spawnConductiveFloor(spatial, 5, 5, { color: '#808080' });
+
+    // Gate 3
+    spawnGate(spatial, 6, 5, GameLayers.WALLS, {
+      receivedSignal: false,
+      color: '#0000ff',
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const signalSystem = new SignalSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(signalSystem);
+    gameLoop.addSystem(new GateSystem(gameManager));
+
+    // Tick 1: Signal propagates to Gate1 (pending)
+    gameLoop.tick();
+    // Tick 2: Gate1 opens (but signal propagation already done for this tick)
+    gameLoop.tick();
+    // Tick 3: Signal propagates through open Gate1 to Gate2 (receives) -> Gate2 Opens!
+    // AND Gate2 acts as source -> propagates to Gate3 (pending)
+    gameLoop.tick();
+
+    // Total 3 ticks:
+    // T1: G1 Pending
+    // T2: G1 Open, G2 Pending
+    // T3: G2 Open, G3 Pending
+    // Stop here - Gate3 should have pendingSignal but not be open yet
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Gate1 opened (after tick 2)', () => {
+      const gateId = spatial.getEntityIdAt(2, 5, GameLayers.FLOOR);
+      if (!gateId) {
+        throw new Error('Gate1 not on FLOOR layer (should be open)');
+      }
+    });
+
+    expect('Gate2 opened (after tick 4)', () => {
+      const gateId = spatial.getEntityIdAt(4, 5, GameLayers.FLOOR);
+      if (!gateId) {
+        throw new Error('Gate2 not on FLOOR layer (should be open)');
+      }
+    });
+
+    expect('Gate3 still closed (needs tick 6)', () => {
+      const gateId = spatial.getEntityIdAt(6, 5, GameLayers.WALLS);
+      if (!gateId) {
+        throw new Error('Gate3 should still be on WALLS layer (closed)');
+      }
+    });
+  },
+});

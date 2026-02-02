@@ -13,9 +13,11 @@ import { isGate } from '../traits/trait-guards';
 /**
  * GateSystem - Manages gate open/close behavior based on signal state.
  * 
- * This system is separate from SignalSystem to maintain proper separation of concerns:
- * - SignalSystem: propagates signals, sets receivedSignal on entities
- * - GateSystem: reacts to receivedSignal changes, moves entities between layers
+ * Logic simplified:
+ * - SignalSystem sets `receivedSignal` on gate entities.
+ * - GateSystem reacts to `receivedSignal` by moving gates to correct layer.
+ *   - receivedSignal=TRUE  -> FLOOR layer (Open)
+ *   - receivedSignal=FALSE -> WALLS layer (Closed)
  */
 export class GateSystem extends BaseReactiveSystem {
     constructor(private gameManager: GameManager) {
@@ -72,6 +74,7 @@ export class GateSystem extends BaseReactiveSystem {
                 receivedSignal: true,
                 color,
                 sceneId: data.sceneId,
+                // Preserve pendingSignal if it existed (though it shouldn't for this tick)
             }
         );
     }
@@ -89,8 +92,6 @@ export class GateSystem extends BaseReactiveSystem {
         // Make semi-opaque when closed
         let color = data.color || '#ff0000';
         if (color.startsWith('#')) {
-            // If already has alpha (length 9), keep it? 
-            // Or ensure specific opacity?
             // If standard hex (7), add alpha
             if (color.length === 7) {
                 color += '80'; // 50% opacity

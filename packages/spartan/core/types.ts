@@ -91,7 +91,12 @@ export interface PendingOperation {
 export interface GameContext {
   overlaps: Overlap[];
   spatial: {
-    grid: { width: number; height: number; cell: (x: number, y: number) => LinkedCell | null };
+    grid: {
+      width: number;
+      height: number;
+      cell: (x: number, y: number) => LinkedCell | null;
+      isValid: (x: number, y: number) => boolean;
+    };
     spawn: (
       type: string,
       x: number,

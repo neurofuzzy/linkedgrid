@@ -119,7 +119,8 @@ describe('Signal Back-feed Investigation', () => {
         console.log('Gate Signal:', gate.receivedSignal);
 
         expect(wireOut.receivedSignal).toBe(true); // Output should definitely be ON
-        expect(gate.receivedSignal).toBe(true); // Gate should be ON
+        // Gate uses 1-tick delay: pendingSignal is set this tick, receivedSignal updates next tick
+        expect(gate.pendingSignal).toBe(true); // Gate should have pending signal
 
         // The "Bug": WireIn is ON because of back-feed
         expect(wireIn.receivedSignal).toBe(false); // This will FAIL if back-feed exists

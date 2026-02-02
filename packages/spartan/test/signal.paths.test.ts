@@ -47,7 +47,8 @@ visual('path nodes conduct signals on LOGIC layer', {
     gameLoop.addSystem(signalSystem);
     gameLoop.addSystem(gateSystem);
 
-    // Run one tick to propagate signal
+    // Run two ticks: tick 1 sets pendingSignal, tick 2 opens gate
+    gameLoop.tick();
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -135,7 +136,8 @@ visual('mixed FLOOR and LOGIC layer signal propagation', {
     gameLoop.addSystem(signalSystem);
     gameLoop.addSystem(gateSystem);
 
-    // Run one tick to propagate signal
+    // Run two ticks: tick 1 sets pendingSignal, tick 2 opens gate
+    gameLoop.tick();
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {
@@ -220,7 +222,8 @@ visual('path nodes enable invisible signal networks', {
     gameLoop.addSystem(signalSystem);
     gameLoop.addSystem(gateSystem);
 
-    // Run one tick to propagate signal
+    // Run two ticks: tick 1 sets pendingSignal, tick 2 opens gate
+    gameLoop.tick();
     gameLoop.tick();
   },
   assert: ({ spatial, expect }) => {

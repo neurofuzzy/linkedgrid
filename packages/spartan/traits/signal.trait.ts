@@ -41,6 +41,9 @@ export interface HasSignalReceiver {
 
   /** Current received signal state */
   receivedSignal: boolean;
+
+  /** Pending signal for 1-tick delay (set this tick, act next tick) */
+  pendingSignal?: boolean;
 }
 
 /**
@@ -63,90 +66,37 @@ export interface HasConductive {
 // Signal Propagation System
 // ============================================================================
 
-/**
- * Signal - Represents a propagating signal with origin tracking.
- * 
- * Signals are created by emitters and propagate through the grid.
- * Each signal tracks its origin tick and source for proper delay handling.
- */
-export interface Signal {
-  /** Tick when this signal was created */
-  originTick: number;
-
-  /** Entity ID that originally emitted this signal */
-  sourceId: number;
-
-  /** Signal power state */
-  power: boolean;
-
-  /** Optional channel for transceiver broadcast */
-  channel?: string;
-}
+// ============================================================================
+// Signal Propagation System
+// ============================================================================
 
 /**
- * SignalGrid - Manages per-cell signal state for the current tick.
+ * SignalGrid - Manages powered state of entities for the current tick.
  * 
- * Key features:
- * - Tracks signals per cell coordinate
- * - Distinguishes receiving vs emitting via sourceId
- * - Enables tick-delay by comparing originTick
+ * Simplified to just track presence of signal (ON value).
+ * The logic system handles delays and propagation rules.
  */
 export class SignalGrid {
-  private cellSignals = new Map<string, Signal[]>();
-  private entitySignals = new Map<number, Signal>();
-
-  /** Current game tick for signal creation */
-  public currentTick = 0;
+  private poweredEntities = new Set<number>();
 
   /** Clear all signals (call at start of each tick) */
   clear(): void {
-    this.cellSignals.clear();
-    this.entitySignals.clear();
+    this.poweredEntities.clear();
   }
 
-  /** Add a signal at a cell coordinate */
-  addSignal(x: number, y: number, signal: Signal): void {
-    const key = `${x}:${y}`;
-    const existing = this.cellSignals.get(key) || [];
-    existing.push(signal);
-    this.cellSignals.set(key, existing);
+  /** Mark an entity as powered */
+  set(entityId: number): void {
+    this.poweredEntities.add(entityId);
   }
 
-  /** Mark an entity as having signal (for quick lookup) */
-  markEntity(entityId: number, signal: Signal): void {
-    this.entitySignals.set(entityId, signal);
-  }
-
-  /** Check if entity has any signal this tick */
-  hasSignal(entityId: number): boolean {
-    return this.entitySignals.has(entityId);
-  }
-
-  /** Get the signal for an entity (if any) */
-  getSignal(entityId: number): Signal | undefined {
-    return this.entitySignals.get(entityId);
-  }
-
-  /** 
-   * Check if entity received signal (not from itself).
-   * Returns true if entity has signal AND was not the source.
-   */
-  isReceiving(entityId: number): boolean {
-    const signal = this.entitySignals.get(entityId);
-    return signal !== undefined && signal.sourceId !== entityId;
-  }
-
-  /**
-   * Check if signal is from previous tick (for tick-delay).
-   * Returns true if entity has signal from originTick < currentTick.
-   */
-  hasDelayedSignal(entityId: number): boolean {
-    const signal = this.entitySignals.get(entityId);
-    return signal !== undefined && signal.originTick < this.currentTick;
+  /** Check if entity is powered */
+  has(entityId: number): boolean {
+    return this.poweredEntities.has(entityId);
   }
 
   /** Get all entity IDs that have signals */
   getAllSignaledEntities(): number[] {
-    return Array.from(this.entitySignals.keys());
+    return Array.from(this.poweredEntities);
   }
 }
+

@@ -4,7 +4,9 @@
 
 The Signal System provides logic circuit simulation for puzzle mechanics. Signals propagate through conductive networks to control receivers like gates (barriers) and inverters (NOT gates).
 
-**Key Design Principle**: Conductors propagate instantly. Active components introduce 1-tick delay.
+**Core Principle**: A signal is a signal. It carries a value (ON or OFF), and the propagation logic is identical regardless of the value. When a source turns OFF, the OFF propagates through the network just like ON did.
+
+**Key Design Principle**: Conductors propagate instantly. Active components (gates, inverters) introduce 1-tick delay.
 
 ---
 
@@ -31,6 +33,28 @@ Tick 1: Gate acts on pending signal
 ```
 
 **Result**: A chain of gates connected through conductors opens simultaneously. A chain connected through transceivers opens sequentially (cascading effect).
+
+### Delay Model for Non-Conductive Receivers
+
+Non-conductive signal-receiving entities (gates, inverters, transceivers) implement a 1-tick delay between receiving and acting:
+
+| Phase | Action |
+|-------|--------|
+| **Tick N** | Entity receives signal → stored in `pendingSignal` |
+| **Tick N+1** | `pendingSignal` moves to `receivedSignal` → entity acts |
+
+This creates cascading effects for chains of gates:
+
+```
+Tick 1: Switch pressed → Signal propagates through conductors → Gate 1 receives (pending)
+Tick 2: Gate 1 opens (pending→received), propagation done
+Tick 3: Signal propagates through open Gate 1 → Gate 2 receives (pending)
+Tick 4: Gate 2 opens
+Tick 5: Signal propagates through open Gate 2 → Gate 3 receives (pending)
+...
+```
+
+**Key Principle**: Conductors propagate instantly within a tick. Active components and receivers delay their **output/action** by 1 tick. Each closed gate adds 2 ticks to the cascade (1 to receive, 1 to open before next propagation).
 
 ---
 
@@ -111,29 +135,39 @@ Movable barrier. Opens when powered, closes when unpowered.
 ---
 
 ## System Phases
-
-The SignalSystem executes in phases each tick:
-
-```
-1. processPendingSignals()    // Move lastTick pending → active
-2. updateOscillators()        // Toggle oscillators at period
-3. updatePressureSwitches()   // Detect actor step-on
-4. resolveCircuit()           // Multi-pass flood-fill
-   a. Pass 1: Propagate from primary sources
-   b. Pass 2: Process inverters (NOT gates)
-   c. Pass 3: Resolve transceiver channels
-5. applyToReceivers()         // Update gates (with delay)
-```
-
-### Flood-Fill Algorithm
-
-Signal propagation uses 4-directional flood-fill:
-1. Start from active sources
-2. Mark conductive cells as powered
-3. Propagate to neighbors that are conductive
-4. Stop at non-conductive cells
-
-**Active components block pass-through**: Inverters and transceivers receive signal but don't pass it through. They act as circuit terminators.
+ 
+ The SignalSystem executes in 4 simplified phases each tick:
+ 
+ ```
+ 1. Phase 1: Apply Pending State
+    - Move pendingSignal (calc'd last tick) → receivedSignal for all receivers
+    - Gates open/close based on new receivedSignal
+    - Inverters update their internal state based on new receivedSignal
+ 
+ 2. Phase 2: Collect Signal Sources
+    - Identify all active emitters for THIS tick:
+      - Oscillators (if ON)
+      - Pressure Switches (if ON)
+      - Active Inverters (if output state is ON)
+      - Open Gates (act as relays: if receivedSignal is TRUE)
+ 
+ 3. Phase 3: Propagation (Flood-Fill)
+    - Flood-fill signal from all active sources through conductors
+    - RULE: Conductors allow pass-through
+    - RULE: Active Components (Gates, Inverters) BLOCK pass-through (they are relays)
+ 
+ 4. Phase 4: Calculate Next State
+    - Check all receivers against the SignalGrid (is their position powered?)
+    - Set pendingSignal for NEXT tick
+ ```
+ 
+ ### Flood-Fill Algorithm
+ 
+ Signal propagation uses 4-directional flood-fill:
+ 1. Start from all active sources
+ 2. Mark conductive cells as powered
+ 3. Propagate to neighbors that are conductive
+ 4. **Stop at Active Components**: Gates and Inverters receive the signal (get marked as powered) but do NOT propagate it further in the same tick. They act as Relay Sources in the *next* tick.
 
 ---
 

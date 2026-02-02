@@ -108,10 +108,8 @@ export class SignalSystem extends BaseReactiveSystem {
   /**
    * Phase 3: Detect changes and create ephemeral events
    *
-   * Create events when ANY entity's signal state changes, including:
-   * - Primary emitters (oscillators, pressure switches)
-   * - Receivers that got powered/unpowered (they re-transmit)
-   * - Inverters (both receive and emit)
+   * CRITICAL: We only create events for PRIMARY SOURCES that changed state.
+   * Conductors and receivers don't generate new events - they relay existing ones.
    */
   private phase3_detectChanges(context: GameContext): SignalEvent[] {
     const events: SignalEvent[] = [];
@@ -120,40 +118,40 @@ export class SignalSystem extends BaseReactiveSystem {
       const data = context.spatial.getEntityData(entityId);
       if (!data) continue;
 
-      let currentState: boolean | null = null;
+      // Only check PRIMARY signal emitters
+      if (!hasSignalEmitter(data)) continue;
+
+      let currentState: boolean;
       let shouldEmit = false;
 
-      // PRIMARY EMITTERS: oscillators and pressure switches
-      if (hasSignalEmitter(data)) {
-        if (data.signalType === 'oscillator' || data.signalType === 'pressure') {
-          currentState = data.signalState;
-          shouldEmit = true;
-        }
-        // Inverters emit based on their output state
-        else if (data.signalType === 'inverter') {
-          currentState = data.signalState;
-          shouldEmit = true;
-        }
-        // Transceivers handled separately
-        else if (data.signalType === 'transceiver') {
-          // Skip, handled in phase 5
-          continue;
-        }
-      }
-      // RECEIVERS/CONDUCTORS: Re-transmit their received signal state
-      else if (hasSignalReceiver(data) || hasConductive(data)) {
-        currentState = data.receivedSignal ?? false;
-        shouldEmit = true;
-      }
-
-      if (shouldEmit && currentState !== null) {
+      // Primary sources: oscillators and pressure switches
+      if (data.signalType === 'oscillator' || data.signalType === 'pressure') {
+        currentState = data.signalState;
         const previousState = this.previousEmitterStates.get(entityId);
 
         // Emit signal if state changed OR it's first time
         if (previousState === undefined || previousState !== currentState) {
-          events.push(new SignalEvent(entityId, this.tickCount, currentState));
+          shouldEmit = true;
           this.previousEmitterStates.set(entityId, currentState);
         }
+      }
+      // Inverters emit based on their output state
+      else if (data.signalType === 'inverter') {
+        currentState = data.signalState;
+        const previousState = this.previousEmitterStates.get(entityId);
+
+        if (previousState === undefined || previousState !== currentState) {
+          shouldEmit = true;
+          this.previousEmitterStates.set(entityId, currentState);
+        }
+      }
+      // Transceivers are handled separately
+      else {
+        continue;
+      }
+
+      if (shouldEmit) {
+        events.push(new SignalEvent(entityId, this.tickCount, currentState!));
       }
     }
 

@@ -247,13 +247,16 @@ visual('pressure switch mode: inverted-latch', {
     const playerId = spatial.getEntityIdAt(4, 5, GameLayers.ACTORS);
     if (playerId === undefined) throw new Error('Player not found');
 
-    // Initial tick to propagate signal
+    // Initial tick to propagate signal, gate gets pendingSignal
+    gameLoop.tick();
+    // Tick 2: gate opens (pending → received)
     gameLoop.tick();
 
-    // Step 1: Move player onto switch
+    // Step 1: Move player onto switch (switch turns OFF)
     spatial.move(playerId, 5, 5);
     spatial.commit();
-    gameLoop.tick();
+    gameLoop.tick(); // Gate gets pendingSignal=false
+    gameLoop.tick(); // Gate closes (pending → received)
 
     // Step 2: Move player off switch
     spatial.move(playerId, 4, 5);
