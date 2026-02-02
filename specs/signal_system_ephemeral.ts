@@ -1,15 +1,11 @@
 /**
- * @brief Signal System - Ephemeral Event Architecture (FIXED)
+ * @brief Signal System - Event Bubbling Architecture
  *
- * Signals are transient events that propagate and disappear.
- * Entity state (receivedSignal) persists, but signals themselves don't.
- *
- * Key principles:
- * 1. A signal is unique by source Entity ID + tick (immutable)
- * 2. A signal can only affect a cell once (via visitedCells)
- * 3. Signals are naturally GC'd when propagation completes
- * 4. Signal values are simply ON/OFF booleans
- * 5. Conductors propagate instantly (within same tick)
+ * CORE CONCEPT: Signals are EVENTS, not STATE.
+ * - Events bubble instantly from generators through conductors
+ * - State (receivedSignal) is what entities have after events pass through
+ * - Only GENERATORS create events when their state changes
+ * - Conductors/receivers just update their state when events bubble through
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
@@ -24,8 +20,7 @@ import {
 } from '../traits/trait-guards';
 
 /**
- * SignalEvent - Ephemeral pulse that propagates once then disappears
- * Unique by sourceId + current tick
+ * SignalEvent - Ephemeral event that bubbles once then disappears
  */
 class SignalEvent {
   readonly id: string;
@@ -36,7 +31,6 @@ class SignalEvent {
     public readonly tick: number,
     public readonly value: boolean
   ) {
-    // Unique identifier ensures one signal per source per tick
     this.id = `${sourceId}-${tick}`;
   }
 }
@@ -47,8 +41,8 @@ export class SignalSystem extends BaseReactiveSystem {
   private channelStates = new Map<string, boolean>();
   private tickCount = 0;
 
-  // Track previous emitter states to detect changes (only for PRIMARY sources)
-  private previousEmitterStates = new Map<number, boolean>();
+  // Track generator states to detect changes
+  private previousGeneratorStates = new Map<number, boolean>();
 
   constructor(private gameManager: GameManager) {
     super();
@@ -57,101 +51,52 @@ export class SignalSystem extends BaseReactiveSystem {
   update(context: GameContext): void {
     this.tickCount++;
 
-    // Phase 1: Apply pending states from previous tick
-    this.phase1_applyPending(context);
+    // Phase 1: Apply pending states (1-tick delay for active components)
+    this.applyPending(context);
 
-    // Phase 2: Update generators (oscillators, pressure switches)
+    // Phase 2: Update generators
     this.updateOscillators(context);
     this.updatePressureSwitches(context);
 
-    // Phase 3: Detect state changes and create ephemeral events
-    const events = this.phase3_detectChanges(context);
+    // Phase 3: Create events from generators that changed
+    const events = this.createEvents(context);
 
-    // Phase 4: Propagate events (instant, within same tick)
+    // Phase 4: Bubble events through network
     for (const event of events) {
-      this.phase4_propagateEvent(context, event);
+      this.bubbleEvent(context, event);
     }
-    // Events are now dereferenced and GC'd
 
-    // Phase 5: Handle transceivers (wireless relay)
+    // Phase 5: Transceivers
     this.propagateTransceivers(context);
-
-    // Phase 6: Calculate next states for receivers (1-tick delay)
-    this.phase6_calculateNext(context);
   }
 
   /**
-   * Phase 1: Apply pending signals from previous tick
-   * This is where the 1-tick delay happens for receivers
+   * Create signal events ONLY from generators when they change state
    */
-  private phase1_applyPending(context: GameContext): void {
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      const data = context.spatial.getEntityData(entityId);
-      if (!data || !hasSignalReceiver(data)) continue;
-
-      if (data.pendingSignal !== undefined) {
-        const updates: any = {
-          receivedSignal: data.pendingSignal,
-          pendingSignal: undefined
-        };
-
-        // Inverters flip their output when input changes
-        if (data.receiverType === 'inverter') {
-          updates.signalState = !data.pendingSignal;
-        }
-
-        this.gameManager.gameState.entityStore.setData(entityId, updates);
-      }
-    }
-  }
-
-  /**
-   * Phase 3: Detect changes and create ephemeral events
-   *
-   * CRITICAL: We only create events for PRIMARY SOURCES that changed state.
-   * Conductors and receivers don't generate new events - they relay existing ones.
-   */
-  private phase3_detectChanges(context: GameContext): SignalEvent[] {
+  private createEvents(context: GameContext): SignalEvent[] {
     const events: SignalEvent[] = [];
 
     for (const [entityId] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(entityId);
-      if (!data) continue;
+      if (!data || !hasSignalEmitter(data)) continue;
 
-      // Only check PRIMARY signal emitters
-      if (!hasSignalEmitter(data)) continue;
+      let currentState: boolean | undefined;
 
-      let currentState: boolean;
-      let shouldEmit = false;
-
-      // Primary sources: oscillators and pressure switches
       if (data.signalType === 'oscillator' || data.signalType === 'pressure') {
         currentState = data.signalState;
-        const previousState = this.previousEmitterStates.get(entityId);
-
-        // Emit signal if state changed OR it's first time
-        if (previousState === undefined || previousState !== currentState) {
-          shouldEmit = true;
-          this.previousEmitterStates.set(entityId, currentState);
-        }
-      }
-      // Inverters emit based on their output state
-      else if (data.signalType === 'inverter') {
+      } else if (data.signalType === 'inverter') {
         currentState = data.signalState;
-        const previousState = this.previousEmitterStates.get(entityId);
+      } else if (data.signalType === 'transceiver') {
+        continue; // Handled separately
+      }
 
-        if (previousState === undefined || previousState !== currentState) {
-          shouldEmit = true;
-          this.previousEmitterStates.set(entityId, currentState);
+      if (currentState !== undefined) {
+        const previousState = this.previousGeneratorStates.get(entityId);
+
+        if (previousState !== currentState) {
+          events.push(new SignalEvent(entityId, this.tickCount, currentState));
+          this.previousGeneratorStates.set(entityId, currentState);
         }
-      }
-      // Transceivers are handled separately
-      else {
-        continue;
-      }
-
-      if (shouldEmit) {
-        events.push(new SignalEvent(entityId, this.tickCount, currentState!));
       }
     }
 
@@ -159,15 +104,13 @@ export class SignalSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Phase 4: Propagate ephemeral event through conductive network
-   *
-   * Event updates entity state along its path, then is garbage collected.
-   * Propagation is INSTANT - all conductors update in same tick.
+   * Bubble event through conductive network
+   * - Pure conductors update instantly (receivedSignal)
+   * - Receivers with delay set pending (applied next tick)
    */
-  private phase4_propagateEvent(context: GameContext, event: SignalEvent): void {
+  private bubbleEvent(context: GameContext, event: SignalEvent): void {
     const queue: number[] = [event.sourceId];
 
-    // Mark source position as visited
     const sourcePos = context.spatial.getPosition(event.sourceId);
     if (sourcePos) {
       event.visitedCells.add(`${sourcePos.x}:${sourcePos.y}`);
@@ -178,7 +121,24 @@ export class SignalSystem extends BaseReactiveSystem {
       const pos = context.spatial.getPosition(entityId);
       if (!pos) continue;
 
-      // Check 4 neighbors (cardinal directions)
+      // Update this entity's state as event passes through
+      const data = context.spatial.getEntityData(entityId);
+      if (data) {
+        // Pure conductors: instant update (no delay)
+        if (hasConductive(data) && !hasSignalReceiver(data)) {
+          this.gameManager.gameState.entityStore.setData(entityId, {
+            receivedSignal: event.value
+          });
+        }
+        // Receivers: 1-tick delay (set pending, will apply next tick)
+        else if (hasSignalReceiver(data)) {
+          this.gameManager.gameState.entityStore.setData(entityId, {
+            pendingSignal: event.value
+          });
+        }
+      }
+
+      // Check neighbors
       const neighbors = [
         { x: pos.x - 1, y: pos.y },
         { x: pos.x + 1, y: pos.y },
@@ -188,8 +148,6 @@ export class SignalSystem extends BaseReactiveSystem {
 
       for (const neighbor of neighbors) {
         const key = `${neighbor.x}:${neighbor.y}`;
-
-        // Each cell can only be affected once per signal
         if (event.visitedCells.has(key)) continue;
         if (!context.spatial.grid.isValid(neighbor.x, neighbor.y)) continue;
 
@@ -198,55 +156,44 @@ export class SignalSystem extends BaseReactiveSystem {
 
         const entities = this.getEntitiesAtCell(context, cell);
 
-        // Check if this cell has any conductive/receiver entities
         const hasConnection = entities.some(id => {
-          const data = context.spatial.getEntityData(id);
-          if (!data) return false;
-          return hasConductive(data) || hasSignalReceiver(data) || hasSignalEmitter(data);
+          const d = context.spatial.getEntityData(id);
+          return d && (hasConductive(d) || hasSignalReceiver(d) || hasSignalEmitter(d));
         });
 
         if (!hasConnection) continue;
 
-        // Mark cell as visited
         event.visitedCells.add(key);
 
         // Update all entities at this cell
         for (const id of entities) {
-          const data = context.spatial.getEntityData(id);
-          if (!data) continue;
+          const d = context.spatial.getEntityData(id);
+          if (!d) continue;
 
-          // Pure conductors get instant visual update
-          if (hasConductive(data) && !hasSignalReceiver(data)) {
+          // Pure conductors: instant update
+          if (hasConductive(d) && !hasSignalReceiver(d)) {
             this.gameManager.gameState.entityStore.setData(id, {
               receivedSignal: event.value
             });
           }
-          // Conductive receivers (e.g., conductive floor) also get instant visual
-          else if (hasConductive(data) && hasSignalReceiver(data)) {
+          // Receivers: set pending (1-tick delay)
+          else if (hasSignalReceiver(d)) {
             this.gameManager.gameState.entityStore.setData(id, {
-              receivedSignal: event.value
-            });
-          }
-          // Pure receivers (gates, inverters) just mark that they received signal
-          // Their reaction happens in phase6 with 1-tick delay
-          else if (hasSignalReceiver(data)) {
-            this.gameManager.gameState.entityStore.setData(id, {
-              receivedSignal: event.value
+              pendingSignal: event.value
             });
           }
         }
 
-        // Check if signal can propagate through this cell
+        // Continue bubbling through pure conductors
         const canPropagate = entities.some(id => {
-          const data = context.spatial.getEntityData(id);
-          return data && this.isPureConductor(data);
+          const d = context.spatial.getEntityData(id);
+          return d && this.isPureConductor(d);
         });
 
         if (canPropagate) {
-          // Find any conductor to continue propagation
           const conductorId = entities.find(id => {
-            const data = context.spatial.getEntityData(id);
-            return data && this.isPureConductor(data);
+            const d = context.spatial.getEntityData(id);
+            return d && this.isPureConductor(d);
           });
 
           if (conductorId !== undefined) {
@@ -255,41 +202,46 @@ export class SignalSystem extends BaseReactiveSystem {
         }
       }
     }
-
-    // Event is now complete and will be garbage collected
   }
 
-  /**
-   * Phase 6: Calculate next states for receivers
-   *
-   * Receivers have 1-tick delay: signal arrives this tick, effect happens next tick.
-   * Pure conductors already updated in phase4, so we skip them here.
-   */
-  private phase6_calculateNext(context: GameContext): void {
+  private applyPending(context: GameContext): void {
+    const newEvents: SignalEvent[] = [];
+
     for (const [entityId] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(entityId);
-      if (!data) continue;
+      if (!data || !hasSignalReceiver(data)) continue;
 
-      // Only process receivers with delay (gates, inverters, etc.)
-      if (hasSignalReceiver(data)) {
-        const isPowered = data.receivedSignal === true;
+      if (data.pendingSignal !== undefined) {
+        const previousState = data.receivedSignal;
 
-        // Set pending for next tick
-        this.gameManager.gameState.entityStore.setData(entityId, {
-          pendingSignal: isPowered
-        });
+        const updates: any = {
+          receivedSignal: data.pendingSignal,
+          pendingSignal: undefined
+        };
+
+        if (data.receiverType === 'inverter') {
+          updates.signalState = !data.pendingSignal;
+        }
+
+        this.gameManager.gameState.entityStore.setData(entityId, updates);
+
+        // If state changed, this entity becomes a new event source
+        if (previousState !== data.pendingSignal) {
+          newEvents.push(new SignalEvent(entityId, this.tickCount, data.pendingSignal));
+        }
       }
+    }
+
+    // Propagate events created from receivers
+    for (const event of newEvents) {
+      this.bubbleEvent(context, event);
     }
   }
 
-  /**
-   * Phase 5: Wireless signal relay via transceivers
-   */
   private propagateTransceivers(context: GameContext): void {
     const transceivers = this.getTransceivers(context);
     this.channelStates.clear();
 
-    // Determine which channels are active
     for (const tx of transceivers) {
       const data = context.spatial.getEntityData(tx.id);
       if (data && hasSignalReceiver(data) && data.receivedSignal === true) {
@@ -297,70 +249,54 @@ export class SignalSystem extends BaseReactiveSystem {
       }
     }
 
-    // Create wireless events for active channels
     const wirelessEvents: SignalEvent[] = [];
     for (const tx of transceivers) {
       if (this.channelStates.get(tx.channel) === true) {
-        // Check if this transceiver changed state
         const data = context.spatial.getEntityData(tx.id);
         if (data && hasSignalEmitter(data)) {
-          const previousState = this.previousEmitterStates.get(tx.id);
+          const previousState = this.previousGeneratorStates.get(tx.id);
           if (previousState !== true) {
             wirelessEvents.push(new SignalEvent(tx.id, this.tickCount, true));
-            this.previousEmitterStates.set(tx.id, true);
+            this.previousGeneratorStates.set(tx.id, true);
           }
         }
       } else {
-        // Channel is off
         const data = context.spatial.getEntityData(tx.id);
         if (data && hasSignalEmitter(data)) {
-          const previousState = this.previousEmitterStates.get(tx.id);
+          const previousState = this.previousGeneratorStates.get(tx.id);
           if (previousState !== false) {
-            this.previousEmitterStates.set(tx.id, false);
+            this.previousGeneratorStates.set(tx.id, false);
           }
         }
       }
     }
 
-    // Propagate wireless events
     for (const event of wirelessEvents) {
-      this.phase4_propagateEvent(context, event);
+      this.bubbleEvent(context, event);
     }
   }
 
-  // ============================================================================
-  // Helper Methods
-  // ============================================================================
-
-  /**
-   * Check if entity is a pure conductor (allows signal propagation)
-   */
   private isPureConductor(data: any): boolean {
-    // Receivers that block propagation
-    if (hasSignalReceiver(data)) {
-      const blockingTypes = ['gate', 'inverter', 'transceiver'];
-      if (blockingTypes.includes(data.receiverType)) {
-        return false;
-      }
+    // Pure conductive entities always propagate
+    if (hasConductive(data) && !hasSignalReceiver(data)) {
+      return true;
     }
 
-    // Pure conductive entities
-    if (hasConductive(data)) return true;
+    // Conductive receivers (conductive-floor with receiver trait) always propagate
+    if (hasConductive(data) && hasSignalReceiver(data)) {
+      return true;
+    }
 
-    // Emitters on conductive floors
+    // Emitters (oscillators, pressure switches) on conductive floors
     if (hasSignalEmitter(data)) {
       const conductiveEmitters = ['oscillator', 'pressure'];
-      if (conductiveEmitters.includes(data.signalType)) {
-        return true;
-      }
+      return conductiveEmitters.includes(data.signalType);
     }
 
+    // Gates, inverters, transceivers BLOCK (1-tick delay)
     return false;
   }
 
-  /**
-   * Get all entities at a cell across relevant layers
-   */
   private getEntitiesAtCell(context: GameContext, cell: LinkedCell): number[] {
     const ids: number[] = [];
     const layers = [GameLayers.FLOOR, GameLayers.COLLECTIBLES, GameLayers.WALLS, GameLayers.LOGIC];
@@ -373,9 +309,6 @@ export class SignalSystem extends BaseReactiveSystem {
     return ids;
   }
 
-  /**
-   * Get all transceiver entities
-   */
   private getTransceivers(context: GameContext): Array<{ id: number; channel: string }> {
     const transceivers: Array<{ id: number; channel: string }> = [];
 
@@ -389,9 +322,6 @@ export class SignalSystem extends BaseReactiveSystem {
     return transceivers;
   }
 
-  /**
-   * Update oscillator state based on elapsed ticks
-   */
   private updateOscillators(context: GameContext): void {
     for (const [entityId] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(entityId);
@@ -406,7 +336,6 @@ export class SignalSystem extends BaseReactiveSystem {
       elapsed++;
       this.oscillatorTicks.set(entityId, elapsed);
 
-      // Toggle state every half-period
       if (elapsed % halfPeriod === 0) {
         this.gameManager.gameState.entityStore.setData(entityId, {
           signalState: !data.signalState
@@ -415,9 +344,6 @@ export class SignalSystem extends BaseReactiveSystem {
     }
   }
 
-  /**
-   * Update pressure switch state based on actor presence
-   */
   private updatePressureSwitches(context: GameContext): void {
     for (const [switchId, pos] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(switchId);
@@ -471,14 +397,10 @@ export class SignalSystem extends BaseReactiveSystem {
     }
   }
 
-  // ============================================================================
-  // System Lifecycle
-  // ============================================================================
-
   public override resetState(): void {
     this.oscillatorTicks.clear();
     this.pressureSwitchStates.clear();
-    this.previousEmitterStates.clear();
+    this.previousGeneratorStates.clear();
     this.channelStates.clear();
     this.tickCount = 0;
   }
@@ -489,7 +411,7 @@ export class SignalSystem extends BaseReactiveSystem {
       tickCount: this.tickCount,
       oscillatorCount: this.oscillatorTicks.size,
       switchCount: this.pressureSwitchStates.size,
-      trackedEmitters: this.previousEmitterStates.size,
+      trackedGenerators: this.previousGeneratorStates.size,
       activeChannels: this.channelStates.size
     };
   }
