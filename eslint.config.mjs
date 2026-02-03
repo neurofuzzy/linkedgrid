@@ -14,6 +14,8 @@ export default tseslint.config(
       'apps/games-lab-v1-archive/**',
       'examples/legacy/**',
       'packages/gameplay/v1-legacy/**',
+      'etc/**',
+      'ai-temp/**',
     ],
   },
   {
