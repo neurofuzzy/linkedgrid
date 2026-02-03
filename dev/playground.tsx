@@ -67,6 +67,16 @@ const AVAILABLE_GAMES = [
     name: 'Advanced Signals (Switch Modes, Paths, Sleep-Wake)',
     path: '/dev/games/signal-advanced.json',
   },
+  {
+    id: 'npc-movement',
+    name: 'NPC Movement (Follow, Flee, Pursue, Wander)',
+    path: '/dev/games/npc-movement.json',
+  },
+  {
+    id: 'projectile-demo',
+    name: 'Projectiles & Turrets',
+    path: '/dev/games/projectile-demo.json',
+  },
 ];
 
 /**
@@ -121,6 +131,7 @@ function Playground() {
   const [selectedGame, setSelectedGame] = useState(getInitialGame());
   const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
   const [, forceUpdate] = useState({}); // For forcing re-renders without corrupting tick
+  const [gameDescription, setGameDescription] = useState<string | null>(null);
 
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
@@ -195,6 +206,7 @@ function Playground() {
           setRuntime(loadedRuntime);
           setInputManager(loadedInputManager);
           setPlayerInputSystem(loadedPlayerInputSystem);
+          setGameDescription(config.description || null);
           setTick(0);
           setLoading(false);
         }
@@ -426,6 +438,16 @@ function Playground() {
             playerInputSystem={playerInputSystem}
           />
 
+          {gameDescription && (
+            <div className="debug-panel" style={{ marginBottom: '15px' }}>
+              <h3>Instructions</h3>
+              {gameDescription.split('\n').map((line, index) => (
+                <div key={index}>{line}</div>
+              ))}
+            </div>
+
+          )}
+
           <div className="debug-panel">
             <h3>Active Scene</h3>
             {runtime?.activeScene && (
@@ -463,7 +485,7 @@ function Playground() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 

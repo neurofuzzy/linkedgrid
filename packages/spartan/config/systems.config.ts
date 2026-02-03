@@ -75,6 +75,34 @@ export const SYSTEM_CONFIG = {
     dependencies: ['SpatialSystem'] as const,
     description: 'Handles domino-like chain reactions',
   },
+
+  NPCMovement: {
+    tickRate: 2,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Handles NPC movement behaviors (follow, flee, pursue, wander)',
+  },
+
+  Health: {
+    tickRate: 1,
+    executionPhase: 'post-commit' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Processes damage/heal intents, manages death states, removes dead entities',
+  },
+
+  Projectile: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem', 'HealthSystem'] as const,
+    description: 'Moves projectiles along Bresenham paths, handles collision and damage',
+  },
+
+  Turret: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem', 'HealthSystem', 'ProjectileSystem'] as const,
+    description: 'Handles turret targeting, fires projectiles or rays',
+  },
 } as const;
 
 // Timing constants extracted from config

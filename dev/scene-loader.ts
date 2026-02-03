@@ -9,12 +9,16 @@ import { DoorSystem } from '../packages/spartan/systems/door.system';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
 import { FloorEffectSystem } from '../packages/spartan/systems/floor-effect.system';
 import { ExplosionSystem } from '../packages/spartan/systems/explosion.system';
+import { HealthSystem } from '../packages/spartan/systems/health.system';
 import { PoisonSystem } from '../packages/spartan/systems/poison.system';
 import { FireSystem } from '../packages/spartan/systems/fire.system';
 import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
 import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
 import { SignalSystem } from '../packages/spartan/systems/signal.system';
 import { GateSystem } from '../packages/spartan/systems/gate.system';
+import { NPCMovementSystem } from '../packages/spartan/systems/npc-movement.system';
+import { ProjectileSystem } from '../packages/spartan/systems/projectile.system';
+import { TurretSystem } from '../packages/spartan/systems/turret.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -65,6 +69,8 @@ export interface SceneConfig {
   initialScene: string;
   systems?: string[];
   tickRate?: number;
+  /** Game description/instructions shown in playground */
+  description?: string;
   input?: {
     type: 'keyboard' | 'headless' | 'none';
     options?: {
@@ -78,12 +84,19 @@ export interface SceneConfig {
 
 /**
  * System factory function type.
+ * Now accepts optional system instances for dependency injection.
  */
-type SystemFactory = (gameManager: GameManager) => GameSystem;
+type SystemFactory = (
+  gameManager: GameManager,
+  systems: Map<string, GameSystem>
+) => GameSystem;
 
 /**
  * System registry for mapping string names to system constructors.
  * Add new systems here as they're implemented.
+ *
+ * The systems map allows dependent systems to access already-created systems.
+ * Order matters: HealthSystem must be created before ProjectileSystem/TurretSystem.
  */
 const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
@@ -91,12 +104,35 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   DoorSystem: (gameManager) => new DoorSystem(gameManager),
   FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
   ExplosionSystem: () => new ExplosionSystem(),
+  HealthSystem: () => new HealthSystem(),
   PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
   FireSystem: () => new FireSystem(),
   LiquidSystem: () => new LiquidSystem(),
   ChainReactionSystem: () => new ChainReactionSystem(),
   SignalSystem: (gameManager) => new SignalSystem(gameManager),
   GateSystem: (gameManager) => new GateSystem(gameManager),
+  NPCMovementSystem: () => new NPCMovementSystem(),
+  ProjectileSystem: (_gameManager, systems) => {
+    let healthSystem = systems.get('HealthSystem') as HealthSystem | undefined;
+    if (!healthSystem) {
+      healthSystem = new HealthSystem();
+      systems.set('HealthSystem', healthSystem);
+    }
+    return new ProjectileSystem(healthSystem);
+  },
+  TurretSystem: (_gameManager, systems) => {
+    let healthSystem = systems.get('HealthSystem') as HealthSystem | undefined;
+    if (!healthSystem) {
+      healthSystem = new HealthSystem();
+      systems.set('HealthSystem', healthSystem);
+    }
+    let projectileSystem = systems.get('ProjectileSystem') as ProjectileSystem | undefined;
+    if (!projectileSystem) {
+      projectileSystem = new ProjectileSystem(healthSystem);
+      systems.set('ProjectileSystem', projectileSystem);
+    }
+    return new TurretSystem(healthSystem, projectileSystem);
+  },
 };
 
 /**
@@ -208,17 +244,33 @@ export class SceneLoader {
 
     // Register other systems AFTER PlayerInputSystem
     // This allows systems like DoorSystem to react to staged move intents
+    // Track created systems for dependency injection
+    const createdSystems = new Map<string, GameSystem>();
+
     if (config.systems && config.systems.length > 0) {
       for (const systemName of config.systems) {
+        // Skip if already created as a dependency
+        if (createdSystems.has(systemName)) {
+          continue;
+        }
+
         const systemFactory = SYSTEM_REGISTRY[systemName];
         if (!systemFactory) {
           console.warn(`Unknown system: ${systemName}`);
           continue;
         }
 
-        const system = systemFactory(runtime.game);
+        const system = systemFactory(runtime.game, createdSystems);
+        createdSystems.set(systemName, system);
         // Add to both systems array (persists across scene transitions) and gameLoop
         runtime.addSystem(system);
+      }
+
+      // Add any systems that were created as dependencies but not in the config list
+      for (const [systemName, system] of createdSystems) {
+        if (!config.systems.includes(systemName)) {
+          runtime.addSystem(system);
+        }
       }
     }
 

@@ -6,5 +6,5 @@
 4. NO emojis.
 5. Avoid normalizing bad patterns. Each solution should meet high standards regardless of what came before it.
 6. Always question the status quo when we encounter ambiguity. Don't be afraid to refactor.
-7. All summary documents should go in an `ai-temp` folder.
-8. There is NO rule number eight!
+7. ALWAYS create a demo game in dev/games and add it to `dev/playground.tsx`
+8. All summary documents should go in an `ai-temp` folder.

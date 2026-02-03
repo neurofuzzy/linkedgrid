@@ -83,7 +83,7 @@ export class GameRuntime {
     if (!activeScene) {
       throw new Error('No active scene');
     }
-    this.gameLoop = new GameLoop(activeScene.spatial);
+    this.gameLoop = new GameLoop(activeScene.spatial, game);
     this.registerSystems();
   }
 
@@ -323,7 +323,7 @@ export class GameRuntime {
     // Reinitialize loop
     const activeScene = this.game.sceneManager.getActiveScene();
     if (activeScene) {
-      this.gameLoop = new GameLoop(activeScene.spatial);
+      this.gameLoop = new GameLoop(activeScene.spatial, this.game);
       this.registerSystems();
     }
 
@@ -430,7 +430,7 @@ export class GameRuntime {
    */
   private onSceneTransition(newScene: Scene): void {
     // Recreate game loop for new scene
-    this.gameLoop = new GameLoop(newScene.spatial);
+    this.gameLoop = new GameLoop(newScene.spatial, this.game);
     this.registerSystems();
   }
 
