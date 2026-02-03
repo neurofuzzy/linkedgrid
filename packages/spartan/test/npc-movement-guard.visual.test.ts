@@ -75,7 +75,7 @@ visual('guard: NPC intercepts player when close', {
         spawnPathNode(spatial, 7, 12);
 
         // Spawn player near the right side of the U
-        spawnPlayer(spatial, 9, 11, {
+        const playerId = spawnPlayer(spatial, 9, 11, {
             hp: 100,
             maxHp: 100,
             damage: 10,
@@ -91,6 +91,7 @@ visual('guard: NPC intercepts player when close', {
             triggerRange: 8,
             giveUpRange: 15,
             pathfindingRange: 20,
+            targetEntityId: playerId, // Explicitly target player to avoid GameManager discovery issues
         });
 
         spatial.commit();
@@ -110,6 +111,7 @@ visual('guard: NPC intercepts player when close', {
         }
 
         // Run ticks - guard should detect player, find closest node (7,11), and move there
+
         // Path: (5,10)->(6,10)->(7,10)->(7,11) = 3 moves
         // We allow extra ticks to ensure pathfinding and movement complete robustly
         for (let i = 0; i < 30; i++) {
