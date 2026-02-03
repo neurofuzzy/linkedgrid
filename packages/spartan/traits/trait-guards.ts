@@ -813,7 +813,28 @@ export function hasNPCMovement(
 ): entity is EntityData & HasNPCMovement {
   if (!('movementMode' in entity)) return false;
   const mode = entity.movementMode;
-  return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander';
+  return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander' || mode === 'patrol';
+}
+
+/**
+ * Check if entity has path-following capability.
+ *
+ * Entities with path-following have homePathCell set and are in patrol mode.
+ * Used to check if NPC can return to their home path after interrupts.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has path-following traits
+ */
+export function hasPathFollowing(
+  entity: EntityData
+): entity is EntityData & HasNPCMovement & { homePathCell: { x: number; y: number } } {
+  if (!hasNPCMovement(entity)) return false;
+  return (
+    'homePathCell' in entity &&
+    entity.homePathCell !== undefined &&
+    typeof (entity.homePathCell as { x: number; y: number }).x === 'number' &&
+    typeof (entity.homePathCell as { x: number; y: number }).y === 'number'
+  );
 }
 
 /**
