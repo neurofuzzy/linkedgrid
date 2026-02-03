@@ -135,6 +135,20 @@ export class TurretSystem extends BaseTickedSystem {
     const distance = this.manhattanDistance(turretPos.x, turretPos.y, playerPos.x, playerPos.y);
     if (distance > turret.range) return null;
 
+    // Check line of sight
+    const startCell = context.spatial.grid.cell(turretPos.x, turretPos.y);
+    const targetCell = context.spatial.grid.cell(playerPos.x, playerPos.y);
+    if (!startCell || !targetCell) return null;
+
+    const line = LinkedCellUtils.getLine(startCell, targetCell);
+
+    // Skip first cell (turret itself)
+    for (let i = 1; i < line.length; i++) {
+      if (context.spatial.isBlocked(line[i])) {
+        return null; // Blocked by wall
+      }
+    }
+
     return { x: playerPos.x, y: playerPos.y, entityId: playerEntityId };
   }
 

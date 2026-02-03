@@ -560,4 +560,56 @@ describe('TurretSystem', () => {
     const targetData = spatial.getEntityData(targetId);
     expect(targetData?.hp).toBe(100); // Not damaged
   });
+  it('turret targeting player does not fire through walls', () => {
+    // Spawn player behind wall
+    const playerId = spatial.spawn('player', 15, 10, GameLayers.ACTORS, {
+      hp: 100,
+      maxHp: 100,
+      healthState: 'alive',
+    });
+
+    // Spawn wall in between
+    spatial.spawn('wall', 10, 10, GameLayers.WALLS, {});
+
+    // Spawn turret targeting player
+    spatial.spawn('turret', 5, 10, GameLayers.ACTORS, {
+      weaponType: 'ray',
+      targeting: 'player',
+      cooldown: 1,
+      range: 15,
+      rayDamage: 30,
+    });
+    spatial.commit();
+    spatial.syncMasks(); // Ensure wall blocks visibility
+
+    // Mock game manager with player ID for the context (needed for player targeting)
+    // We need to set up the context essentially.
+    // In these tests, we usually rely on spatial... but findTarget accesses context.gameManager.gameState.playerEntityId
+    // We need to ensure the GameLoop allows providing this context or mock it.
+    // The current test setup instantiates GameLoop(spatial), and context.gameManager is missing.
+    // We need to provide a gameManager or mock it to GameLoop.
+
+    // However, looking at GameLoop.tick():
+    // const context: GameContext = { ..., gameManager: this.gameManager ... }
+    // If gameManager is undefined, context.gameManager is undefined.
+    // TurretSystem.onTick calls context.gameManager?.gameState?.playerEntityId.
+
+    // We must rebuild the game loop with a mock manager for this test.
+    const mockManager = {
+      gameState: {
+        playerEntityId: playerId,
+        entityStore: store
+      }
+    } as any;
+
+    const testLoop = new GameLoop(spatial, mockManager);
+    testLoop.addSystem(turretSystem);
+    testLoop.addSystem(projectileSystem);
+    testLoop.addSystem(healthSystem);
+
+    testLoop.tick();
+
+    const playerData = spatial.getEntityData(playerId);
+    expect(playerData?.hp).toBe(100); // Not damaged
+  });
 });
