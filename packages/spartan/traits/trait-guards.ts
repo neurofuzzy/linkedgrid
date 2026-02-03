@@ -26,6 +26,8 @@
 
 import type { EntityData } from '../entities/entity.types';
 import type { HasNPCMovement } from './npc-movement.trait';
+import type { HasPlayerRole, HasTeam, Team } from './role.trait';
+import type { HealthState } from './health.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -809,5 +811,109 @@ export function hasNPCMovement(
   if (!('movementMode' in entity)) return false;
   const mode = entity.movementMode;
   return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander';
+}
+
+/**
+ * Role & Team Trait Guards
+ *
+ * These check for player role and team affiliation traits.
+ */
+
+/**
+ * Check if entity is the player.
+ *
+ * Entities with player role trait are player-controlled.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has player role
+ */
+export function hasPlayerRole(
+  entity: EntityData
+): entity is EntityData & HasPlayerRole {
+  return 'isPlayer' in entity && entity.isPlayer === true;
+}
+
+/**
+ * Check if entity has team affiliation.
+ *
+ * Entities with team trait belong to a faction (player, enemy, neutral).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has team trait
+ */
+export function hasTeam(
+  entity: EntityData
+): entity is EntityData & HasTeam {
+  if (!('team' in entity)) return false;
+  const team = entity.team as Team;
+  return team === 'player' || team === 'enemy' || team === 'neutral';
+}
+
+/**
+ * Check if entity is on the player's team.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity team is 'player'
+ */
+export function isPlayerTeam(entity: EntityData): boolean {
+  return hasTeam(entity) && entity.team === 'player';
+}
+
+/**
+ * Check if entity is on the enemy team.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity team is 'enemy'
+ */
+export function isEnemyTeam(entity: EntityData): boolean {
+  return hasTeam(entity) && entity.team === 'enemy';
+}
+
+/**
+ * Check if entity has health state trait.
+ *
+ * Entities with health state can be in 'alive', 'dying', or 'dead' states.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has health state
+ */
+export function hasHealthState(
+  entity: EntityData
+): entity is EntityData & { healthState: HealthState } {
+  if (!('healthState' in entity)) return false;
+  const state = entity.healthState as HealthState;
+  return state === 'alive' || state === 'dying' || state === 'dead';
+}
+
+/**
+ * Check if entity is alive (not dying or dead).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is alive
+ */
+export function isEntityAlive(entity: EntityData): boolean {
+  // If no health state, assume alive
+  if (!('healthState' in entity)) return true;
+  return entity.healthState === 'alive';
+}
+
+/**
+ * Check if entity is dying (death animation playing).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is in dying state
+ */
+export function isEntityDying(entity: EntityData): boolean {
+  return 'healthState' in entity && entity.healthState === 'dying';
+}
+
+/**
+ * Check if entity is dead (marked for removal).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is dead
+ */
+export function isEntityDead(entity: EntityData): boolean {
+  return 'healthState' in entity && entity.healthState === 'dead';
 }
 

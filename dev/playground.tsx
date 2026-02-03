@@ -126,6 +126,7 @@ function Playground() {
   const [selectedGame, setSelectedGame] = useState(getInitialGame());
   const [gameKey, setGameKey] = useState(0); // For forcing remount on hot reload
   const [, forceUpdate] = useState({}); // For forcing re-renders without corrupting tick
+  const [gameDescription, setGameDescription] = useState<string | null>(null);
 
   const renderIntervalRef = useRef<number | null>(null);
   const runtimeRef = useRef<GameRuntime | null>(null);
@@ -200,6 +201,7 @@ function Playground() {
           setRuntime(loadedRuntime);
           setInputManager(loadedInputManager);
           setPlayerInputSystem(loadedPlayerInputSystem);
+          setGameDescription(config.description || null);
           setTick(0);
           setLoading(false);
         }
@@ -430,6 +432,20 @@ function Playground() {
             inputManager={inputManager as any}
             playerInputSystem={playerInputSystem}
           />
+
+          {gameDescription && (
+            <div className="debug-panel" style={{ marginBottom: '15px' }}>
+              <h3>Instructions</h3>
+              <p style={{ 
+                whiteSpace: 'pre-line', 
+                color: '#b0b0b0', 
+                lineHeight: '1.5',
+                fontSize: '13px'
+              }}>
+                {gameDescription}
+              </p>
+            </div>
+          )}
 
           <div className="debug-panel">
             <h3>Active Scene</h3>

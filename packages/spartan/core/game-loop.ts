@@ -2,6 +2,7 @@
  * @brief Main game loop orchestrating systems and frame ticks.
  */
 import { SpatialSystem } from './spatial-system';
+import type { GameManager } from './game-manager';
 import type { GameSystem, GameContext } from './types';
 
 /**
@@ -14,7 +15,7 @@ import type { GameSystem, GameContext } from './types';
  *
  * @example
  * ```typescript
- * const gameLoop = new GameLoop(scene.spatial);
+ * const gameLoop = new GameLoop(scene.spatial, gameManager);
  * gameLoop.addSystem(new TeleporterSystem());
  * gameLoop.addSystem(new EnemyAISystem());
  *
@@ -25,7 +26,10 @@ import type { GameSystem, GameContext } from './types';
 export class GameLoop {
   private systems: GameSystem[] = [];
 
-  constructor(private spatial: SpatialSystem) { }
+  constructor(
+    private spatial: SpatialSystem,
+    private gameManager?: GameManager
+  ) { }
 
   /**
    * Register systems in execution order.
@@ -83,6 +87,7 @@ export class GameLoop {
     const context: GameContext = {
       overlaps,
       spatial: this.spatial as unknown as GameContext['spatial'],
+      gameManager: this.gameManager as unknown as GameContext['gameManager'],
     };
 
     for (const system of this.systems) {

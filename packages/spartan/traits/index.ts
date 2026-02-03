@@ -8,4 +8,5 @@ export * from './thermal.trait';
 export * from './ai.trait';
 export * from './signal.trait';
 export * from './npc-movement.trait';
+export * from './role.trait';
 export * from './trait-guards';

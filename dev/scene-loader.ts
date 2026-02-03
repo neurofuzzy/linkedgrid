@@ -66,6 +66,8 @@ export interface SceneConfig {
   initialScene: string;
   systems?: string[];
   tickRate?: number;
+  /** Game description/instructions shown in playground */
+  description?: string;
   input?: {
     type: 'keyboard' | 'headless' | 'none';
     options?: {
