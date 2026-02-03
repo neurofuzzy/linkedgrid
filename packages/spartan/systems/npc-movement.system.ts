@@ -9,6 +9,7 @@ import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { LinkedCell } from '../core/grid/linked-cell';
 import { Direction } from '../core/grid/direction';
 import { GameLayers } from '../config/layers.config';
+import type { HasNPCMovement } from '../traits/npc-movement.trait';
 
 /**
  * NPCMovementSystem - Manages autonomous NPC movement behaviors.
@@ -93,7 +94,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processFollow(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; minDistance?: number; maxDistance?: number; pathfindingRange?: number },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
     if (targetEntityId === undefined) return false;
@@ -133,7 +134,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processFlee(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; panicDistance?: number; safeDistance?: number; aiMovementState?: 'idle' | 'active' },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
     if (targetEntityId === undefined) return false;
@@ -180,16 +181,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processPursue(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & {
-      targetEntityId?: number;
-      triggerRange?: number;
-      giveUpRange?: number;
-      pathfindingRange?: number;
-      aiMovementState?: 'idle' | 'active' | 'returning';
-      baseMovementMode?: string;
-      homePathCell?: { x: number; y: number };
-      lastPathCell?: { x: number; y: number };
-    },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
     const npcPos = context.spatial.getEntityPosition(entityId);
@@ -205,7 +197,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
           // Reached a path node, switch to patrol mode
           entityData.movementMode = 'patrol';
           entityData.aiMovementState = 'idle';
-          entityData.lastPathCell = undefined; // Reset to allow any direction
+          entityData.lastPathCell = { x: npcPos.x, y: npcPos.y }; // Set to current pos to prevent immediate backtracking
           return false;
         }
       }
@@ -275,7 +267,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
       // Chasing state
       if (distance > giveUpRange) {
         // Target too far, give up
-        
+
         // If NPC has a base patrol mode, start returning to path
         if (entityData.baseMovementMode === 'patrol' && entityData.homePathCell) {
           // Check if already on a path node
@@ -286,11 +278,11 @@ export class NPCMovementSystem extends BaseTickedSystem {
               // Already on path, switch to patrol mode
               entityData.movementMode = 'patrol';
               entityData.aiMovementState = 'idle';
-              entityData.lastPathCell = undefined; // Reset to allow any direction
+              entityData.lastPathCell = { x: npcPos.x, y: npcPos.y }; // Set to current pos to prevent immediate backtracking
               return false;
             }
           }
-          
+
           // Not on path, start returning
           entityData.aiMovementState = 'returning';
           const nextStep = this.findNextStepToward(
@@ -363,14 +355,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processPatrol(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & {
-      homePathCell?: { x: number; y: number };
-      lastPathCell?: { x: number; y: number };
-      patrolDirection?: 1 | -1;
-      triggerRange?: number;
-      targetEntityId?: number;
-      baseMovementMode?: string;
-    }
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement
   ): boolean {
     const npcPos = context.spatial.getEntityPosition(entityId);
     if (!npcPos) return false;
@@ -414,17 +399,28 @@ export class NPCMovementSystem extends BaseTickedSystem {
     if (pathNeighbors.length === 0) return false;
 
     // Filter out lastPathCell to prevent backtracking (unless dead-end)
+    // Filter out lastPathCell to prevent backtracking, but check for blockages
     let validNeighbors = pathNeighbors;
     if (entityData.lastPathCell && pathNeighbors.length > 1) {
-      validNeighbors = pathNeighbors.filter(
+      const potentialNeighbors = pathNeighbors.filter(
         (n) => n.x !== entityData.lastPathCell!.x || n.y !== entityData.lastPathCell!.y
       );
+
+      // Check if potential neighbors are unblocked
+      const unblockedNeighbors = potentialNeighbors.filter((n) => {
+        const cell = context.spatial.grid.cell(n.x, n.y);
+        return cell && !context.spatial.isBlocked(cell);
+      });
+
+      if (unblockedNeighbors.length > 0) {
+        validNeighbors = unblockedNeighbors;
+      }
+      // Else: all forward paths blocked, fall back to pathNeighbors (allowing backtrack)
     }
 
-    // Dead-end: only one neighbor (which is lastPathCell), reverse direction
+    // Dead-end: only one neighbor (which is lastPathCell), reverse by allowing backtrack
     if (validNeighbors.length === 0) {
       validNeighbors = pathNeighbors;
-      entityData.patrolDirection = entityData.patrolDirection === 1 ? -1 : 1;
     }
 
     // Select next cell

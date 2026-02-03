@@ -1,8 +1,8 @@
 ```
 # Auto-generated project map
-# Last updated: 2026-02-03 17:59:07
+# Last updated: 2026-02-03 21:07:45
 # Files: 102
-# Lines of code: ~22362
+# Lines of code: ~22996
 ```
 - **/config**
   - [entities.config.ts](../packages/spartan/config/entities.config.ts) - Default entity configuration values and propert...
@@ -175,7 +175,7 @@
   - [liquid.system.ts](../packages/spartan/systems/liquid.system.ts) - Simulates liquid flow physics.
     - Class: `LiquidSystem` (Methods: onTick, isBlocked, manhattanDistance, resetState) - LiquidSystem - Handles volumetric liquid flow. ...
   - [npc-movement.system.ts](../packages/spartan/systems/npc-movement.system.ts) - NPC Movement System - Handles autonomous moveme...
-    - Class: `NPCMovementSystem` (Methods: onTick, processFollow, processFlee, processPursue, processWander, manhattanDistance, findNextStepToward, findDirectionAwayFrom, resetState, getDebugState) - NPCMovementSystem - Manages autonomous NPC move...
+    - Class: `NPCMovementSystem` (Methods: onTick, processFollow, processFlee, processPursue, processWander, processPatrol, getPathNeighbors, manhattanDistance, findNextStepToward, findDirectionAwayFrom, resetState, getDebugState) - NPCMovementSystem - Manages autonomous NPC move...
   - [player-input.system.ts](../packages/spartan/systems/player-input.system.ts) - Translates raw input to player intentions.
     - Class: `PlayerInputSystem` (Methods: update, directionToDelta, getDebugState) - PlayerInputSystem - Translates player input int...
   - [poison.system.ts](../packages/spartan/systems/poison.system.ts) - Handles poison gas spread and effects.
