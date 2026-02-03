@@ -25,11 +25,17 @@ import type { GameSystem, GameContext } from './types';
  */
 export class GameLoop {
   private systems: GameSystem[] = [];
+  private _tickCount = 0;
 
   constructor(
     private spatial: SpatialSystem,
     private gameManager?: GameManager
   ) { }
+
+  /** Current tick count */
+  get tickCount(): number {
+    return this._tickCount;
+  }
 
   /**
    * Register systems in execution order.
@@ -80,11 +86,14 @@ export class GameLoop {
    * ```
    */
   tick(): void {
+    this._tickCount++;
+
     // 1. Detect overlaps
     const overlaps = this.spatial.detectOverlaps();
 
     // 2. Run systems
     const context: GameContext = {
+      tick: this._tickCount,
       overlaps,
       spatial: this.spatial as unknown as GameContext['spatial'],
       gameManager: this.gameManager as unknown as GameContext['gameManager'],
@@ -96,5 +105,10 @@ export class GameLoop {
 
     // 3. Commit intents
     this.spatial.commit();
+  }
+
+  /** Reset tick counter (for testing or scene transitions) */
+  resetTicks(): void {
+    this._tickCount = 0;
   }
 }

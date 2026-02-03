@@ -72,6 +72,11 @@ const AVAILABLE_GAMES = [
     name: 'NPC Movement (Follow, Flee, Pursue, Wander)',
     path: '/dev/games/npc-movement.json',
   },
+  {
+    id: 'projectile-demo',
+    name: 'Projectiles & Turrets',
+    path: '/dev/games/projectile-demo.json',
+  },
 ];
 
 /**

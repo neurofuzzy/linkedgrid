@@ -89,6 +89,8 @@ export interface PendingOperation {
  * Optional references for cross-scene operations.
  */
 export interface GameContext {
+  /** Current tick count (increments each game loop iteration) */
+  tick?: number;
   overlaps: Overlap[];
   spatial: {
     grid: {

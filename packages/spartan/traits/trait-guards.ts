@@ -28,6 +28,9 @@ import type { EntityData } from '../entities/entity.types';
 import type { HasNPCMovement } from './npc-movement.trait';
 import type { HasPlayerRole, HasTeam, Team } from './role.trait';
 import type { HealthState } from './health.trait';
+import type { HasArmor, HasShield, HasResistance } from './defense.trait';
+import type { HasProjectile } from './projectile.trait';
+import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -915,5 +918,94 @@ export function isEntityDying(entity: EntityData): boolean {
  */
 export function isEntityDead(entity: EntityData): boolean {
   return 'healthState' in entity && entity.healthState === 'dead';
+}
+
+/**
+ * Defense Trait Guards
+ *
+ * These check for armor, shields, and resistance traits.
+ */
+
+/**
+ * Check if entity has armor.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has armor trait
+ */
+export function hasArmor(
+  entity: EntityData
+): entity is EntityData & HasArmor {
+  return 'armor' in entity && typeof entity.armor === 'number';
+}
+
+/**
+ * Check if entity has shields.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has shield trait
+ */
+export function hasShield(
+  entity: EntityData
+): entity is EntityData & HasShield {
+  return (
+    'shield' in entity &&
+    typeof entity.shield === 'number' &&
+    'maxShield' in entity &&
+    typeof entity.maxShield === 'number'
+  );
+}
+
+/**
+ * Check if entity has resistance.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has resistance trait
+ */
+export function hasResistance(
+  entity: EntityData
+): entity is EntityData & HasResistance {
+  return 'resistance' in entity && typeof entity.resistance === 'number';
+}
+
+/**
+ * Projectile & Turret Trait Guards
+ *
+ * These check for projectile and turret combat traits.
+ */
+
+/**
+ * Check if entity is a projectile.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has projectile trait
+ */
+export function hasProjectile(
+  entity: EntityData
+): entity is EntityData & HasProjectile {
+  return (
+    'targetX' in entity &&
+    typeof entity.targetX === 'number' &&
+    'targetY' in entity &&
+    typeof entity.targetY === 'number' &&
+    'damage' in entity &&
+    typeof entity.damage === 'number'
+  );
+}
+
+/**
+ * Check if entity is a turret.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has turret trait
+ */
+export function hasTurret(
+  entity: EntityData
+): entity is EntityData & HasTurret {
+  if (!('weaponType' in entity) || !('targeting' in entity)) return false;
+  const weaponType = entity.weaponType as TurretWeaponType;
+  const targeting = entity.targeting as TurretTargeting;
+  const validWeapon = weaponType === 'projectile' || weaponType === 'ray';
+  const validTargeting = targeting === 'nearest' || targeting === 'player' || targeting === 'fixed' || targeting === 'cardinal';
+  return validWeapon && validTargeting && 'cooldown' in entity && 'range' in entity;
 }
 

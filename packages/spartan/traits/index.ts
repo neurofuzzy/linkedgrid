@@ -9,4 +9,7 @@ export * from './ai.trait';
 export * from './signal.trait';
 export * from './npc-movement.trait';
 export * from './role.trait';
+export * from './defense.trait';
+export * from './projectile.trait';
+export * from './turret.trait';
 export * from './trait-guards';

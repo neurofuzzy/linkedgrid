@@ -38,6 +38,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   protected onTick(context: GameContext): void {
     // Get player entity ID from game state for NPCs that target player
     const playerEntityId = context.gameManager?.gameState?.playerEntityId;
+    const currentTick = context.tick ?? 0;
 
     for (const [entityId] of context.spatial.getAllPositions()) {
       if (!context.spatial.isAlive(entityId)) continue;
@@ -45,22 +46,35 @@ export class NPCMovementSystem extends BaseTickedSystem {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasNPCMovement(entityData)) continue;
 
+      // Check speed-based cooldown
+      const speed = entityData.speed ?? 1;
+      const lastMoveTick = entityData.lastMoveTick ?? 0;
+      if (currentTick - lastMoveTick < speed) {
+        continue; // Still on cooldown
+      }
+
       // Resolve target: use explicit targetEntityId or fall back to player
       const resolvedTargetId = entityData.targetEntityId ?? playerEntityId;
 
+      let moved = false;
       switch (entityData.movementMode) {
         case 'follow':
-          this.processFollow(context, entityId, entityData, resolvedTargetId);
+          moved = this.processFollow(context, entityId, entityData, resolvedTargetId);
           break;
         case 'flee':
-          this.processFlee(context, entityId, entityData, resolvedTargetId);
+          moved = this.processFlee(context, entityId, entityData, resolvedTargetId);
           break;
         case 'pursue':
-          this.processPursue(context, entityId, entityData, resolvedTargetId);
+          moved = this.processPursue(context, entityId, entityData, resolvedTargetId);
           break;
         case 'wander':
-          this.processWander(context, entityId);
+          moved = this.processWander(context, entityId);
           break;
+      }
+
+      // Update lastMoveTick if the entity moved
+      if (moved) {
+        entityData.lastMoveTick = currentTick;
       }
     }
   }
@@ -68,18 +82,19 @@ export class NPCMovementSystem extends BaseTickedSystem {
   /**
    * Follow mode: maintain distance range from target.
    * Approach when too far (> maxDistance), retreat when too close (< minDistance).
+   * @returns true if a movement was issued
    */
   private processFollow(
     context: GameContext,
     entityId: number,
     entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; minDistance?: number; maxDistance?: number; pathfindingRange?: number },
     targetEntityId: number | undefined
-  ): void {
-    if (targetEntityId === undefined) return;
+  ): boolean {
+    if (targetEntityId === undefined) return false;
 
     const npcPos = context.spatial.getEntityPosition(entityId);
     const targetPos = context.spatial.getEntityPosition(targetEntityId);
-    if (!npcPos || !targetPos) return;
+    if (!npcPos || !targetPos) return false;
 
     const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
     const minDistance = entityData.minDistance ?? 1;
@@ -90,32 +105,36 @@ export class NPCMovementSystem extends BaseTickedSystem {
       const awayPos = this.findDirectionAwayFrom(context, npcPos.x, npcPos.y, targetPos.x, targetPos.y);
       if (awayPos) {
         context.spatial.move(entityId, awayPos.x, awayPos.y);
+        return true;
       }
     } else if (distance > maxDistance) {
       // Too far - move toward using pathfinding
       const nextStep = this.findNextStepToward(context, npcPos, targetPos, entityData.pathfindingRange ?? 20);
       if (nextStep) {
         context.spatial.move(entityId, nextStep.x, nextStep.y);
+        return true;
       }
     }
     // else: in range, don't move
+    return false;
   }
 
   /**
    * Flee mode: run away from target when too close.
    * State machine: idle (calm) when far, active (fleeing) when close.
+   * @returns true if a movement was issued
    */
   private processFlee(
     context: GameContext,
     entityId: number,
     entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; panicDistance?: number; safeDistance?: number; aiMovementState?: 'idle' | 'active' },
     targetEntityId: number | undefined
-  ): void {
-    if (targetEntityId === undefined) return;
+  ): boolean {
+    if (targetEntityId === undefined) return false;
 
     const npcPos = context.spatial.getEntityPosition(entityId);
     const targetPos = context.spatial.getEntityPosition(targetEntityId);
-    if (!npcPos || !targetPos) return;
+    if (!npcPos || !targetPos) return false;
 
     const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
     const panicDistance = entityData.panicDistance ?? 3;
@@ -139,26 +158,29 @@ export class NPCMovementSystem extends BaseTickedSystem {
         const awayPos = this.findDirectionAwayFrom(context, npcPos.x, npcPos.y, targetPos.x, targetPos.y);
         if (awayPos) {
           context.spatial.move(entityId, awayPos.x, awayPos.y);
+          return true;
         }
       }
     }
+    return false;
   }
 
   /**
    * Pursue mode: chase target when in range, give up when too far.
    * State machine: idle when out of range, active when chasing.
+   * @returns true if a movement was issued
    */
   private processPursue(
     context: GameContext,
     entityId: number,
     entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; triggerRange?: number; giveUpRange?: number; pathfindingRange?: number; aiMovementState?: 'idle' | 'active' },
     targetEntityId: number | undefined
-  ): void {
-    if (targetEntityId === undefined) return;
+  ): boolean {
+    if (targetEntityId === undefined) return false;
 
     const npcPos = context.spatial.getEntityPosition(entityId);
     const targetPos = context.spatial.getEntityPosition(targetEntityId);
-    if (!npcPos || !targetPos) return;
+    if (!npcPos || !targetPos) return false;
 
     const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
     const triggerRange = entityData.triggerRange ?? 8;
@@ -185,20 +207,23 @@ export class NPCMovementSystem extends BaseTickedSystem {
         const nextStep = this.findNextStepToward(context, npcPos, targetPos, entityData.pathfindingRange ?? 20);
         if (nextStep) {
           context.spatial.move(entityId, nextStep.x, nextStep.y);
+          return true;
         }
       }
     }
+    return false;
   }
 
   /**
    * Wander mode: move randomly to adjacent walkable cells.
+   * @returns true if a movement was issued
    */
-  private processWander(context: GameContext, entityId: number): void {
+  private processWander(context: GameContext, entityId: number): boolean {
     const npcPos = context.spatial.getEntityPosition(entityId);
-    if (!npcPos) return;
+    if (!npcPos) return false;
 
     const cell = context.spatial.grid.cell(npcPos.x, npcPos.y);
-    if (!cell) return;
+    if (!cell) return false;
 
     // Get all walkable neighbors (not blocked)
     const walkableNeighbors: LinkedCell[] = [];
@@ -209,12 +234,13 @@ export class NPCMovementSystem extends BaseTickedSystem {
       }
     }
 
-    if (walkableNeighbors.length === 0) return;
+    if (walkableNeighbors.length === 0) return false;
 
     // Pick a random neighbor
     const randomIndex = Math.floor(Math.random() * walkableNeighbors.length);
     const target = walkableNeighbors[randomIndex];
     context.spatial.move(entityId, target.x, target.y);
+    return true;
   }
 
   // ========== Helper Functions ==========

@@ -16,22 +16,29 @@ export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander';
  * - **pursue**: Chase target when within trigger range, give up when too far
  * - **wander**: Move randomly to adjacent walkable cells
  *
+ * Speed affects movement frequency:
+ * - speed 1 = moves every tick (fast)
+ * - speed 2 = moves every 2 ticks (medium)
+ * - speed 4 = moves every 4 ticks (slow)
+ *
  * @example
  * ```typescript
- * // Follower NPC that stays 2-4 cells from player
+ * // Fast follower NPC that stays 2-4 cells from player
  * const follower: HasNPCMovement = {
  *   movementMode: 'follow',
  *   targetEntityId: playerId,
  *   minDistance: 2,
  *   maxDistance: 4,
+ *   speed: 1, // moves every tick
  * };
  *
- * // Fleeing NPC that runs when player gets within 3 cells
+ * // Slow fleeing NPC that runs when player gets within 3 cells
  * const prey: HasNPCMovement = {
  *   movementMode: 'flee',
  *   targetEntityId: playerId,
  *   panicDistance: 3,
  *   safeDistance: 7,
+ *   speed: 3, // moves every 3 ticks
  * };
  *
  * // Pursuing NPC that chases player when in range
@@ -40,11 +47,13 @@ export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander';
  *   targetEntityId: playerId,
  *   triggerRange: 8,
  *   giveUpRange: 15,
+ *   speed: 2,
  * };
  *
  * // Wandering NPC that moves randomly
  * const wanderer: HasNPCMovement = {
  *   movementMode: 'wander',
+ *   speed: 4, // slow wanderer
  * };
  * ```
  */
@@ -54,6 +63,10 @@ export interface HasNPCMovement {
 
   /** Target entity ID for follow/flee/pursue modes (not needed for wander) */
   targetEntityId?: number;
+
+  // Speed/cooldown parameters
+  /** Movement speed (ticks between moves). 1 = every tick, 2 = every 2 ticks, etc. (default: 1) */
+  speed?: number;
 
   // Follow mode parameters
   /** Minimum distance to maintain from target (default: 1) */
@@ -77,7 +90,9 @@ export interface HasNPCMovement {
   /** Maximum pathfinding search range (default: 20) */
   pathfindingRange?: number;
 
-  // Internal state
+  // Internal state (managed by system, do not set manually)
   /** Current movement state (managed by system) */
   aiMovementState?: 'idle' | 'active';
+  /** Tick when entity last moved (managed by system) */
+  lastMoveTick?: number;
 }
