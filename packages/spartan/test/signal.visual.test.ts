@@ -1,7 +1,7 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../config/layers.config';
 import { spawnPlayer, spawnOscillator, spawnPressureSwitch, spawnInverter, spawnConductiveFloor, spawnGate, spawnTransceiver } from '../entities/spawn-helpers';
-import { hasSignalEmitter, hasSignalReceiver, isGate, hasConductive } from '../traits/trait-guards';
+import { hasSignalEmitter, hasSignalReceiver, hasConductive } from '../traits/trait-guards';
 import { SignalSystem } from '../systems/signal.system';
 import { GateSystem } from '../systems/gate.system';
 import { GameManager } from '../core/game-manager';
@@ -70,7 +70,7 @@ visual('pressure switch toggles when player steps on it', {
     });
 
     // Spawn player next to switch
-    const playerId = spawnPlayer(spatial, 4, 5, {
+    spawnPlayer(spatial, 4, 5, {
       hp: 100,
       maxHp: 100,
       damage: 10,

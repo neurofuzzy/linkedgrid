@@ -186,6 +186,20 @@ export class TurretSystem extends BaseTickedSystem {
 
     if (nearestId === null || nearestPos === null) return null;
 
+    // Check line of sight
+    const startCell = context.spatial.grid.cell(turretPos.x, turretPos.y);
+    const targetCell = context.spatial.grid.cell(nearestPos.x, nearestPos.y);
+    if (!startCell || !targetCell) return null;
+
+    const line = LinkedCellUtils.getLine(startCell, targetCell);
+
+    // Skip first cell (turret itself)
+    for (let i = 1; i < line.length; i++) {
+      if (context.spatial.isBlocked(line[i])) {
+        return null; // Blocked by wall
+      }
+    }
+
     return { x: nearestPos.x, y: nearestPos.y, entityId: nearestId };
   }
 

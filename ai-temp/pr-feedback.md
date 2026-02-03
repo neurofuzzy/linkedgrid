@@ -1,159 +1,16 @@
 ## PR Code Suggestions ✨
 
-<!-- b6a82df -->
+<!-- b8eb76a -->
 
 Explore these optional code suggestions:
 
-<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=3>Possible issue</td>
-<td>
 
 
-
-<details><summary>Clear wired transceiver states each tick</summary>
+<details><summary>Refactor system dependency injection mechanism</summary>
 
 ___
 
-**Clear the <code>wiredTransceiverStates</code> map at the start of each <code>update</code> cycle to <br>prevent stale states from causing incorrect channel activations on subsequent <br>ticks.**
-
-[packages/spartan/systems/signal.system.ts [91-94]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R91-R94)
-
-```diff
- update(context: GameContext): void {
-+  this.wiredTransceiverStates.clear();
-   this.tickCount++;
-   // Phase 1: Apply pending signals to STEs (gates, inverters, transceivers)
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=0 -->
-
-
-<details><summary>Suggestion importance[1-10]: 9</summary>
-
-__
-
-Why: The suggestion correctly identifies a critical bug where stale `wiredTransceiverStates` persist across ticks, leading to incorrect channel state calculations and signal propagation.
-
-</details></details></td><td align=center>High
-
-</td></tr><tr><td>
-
-
-
-<details><summary>Fix transceiver signal propagation bug</summary>
-
-___
-
-**Fix a bug in <code>processTransceivers</code> by ensuring an 'off' signal is always <br>propagated when a transceiver's <code>receivedSignal</code> state changes to <code>false</code>, not just <br>when its <code>previousState</code> was <code>true</code>.**
-
-[packages/spartan/systems/signal.system.ts [557-570]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R557-R570)
-
-```diff
- // Channel not active - turn off transceivers that were channel-powered
- if (hasSignalReceiver(data) && data.receivedSignal) {
-   this.gameManager.gameState.entityStore.setData(tx.id, {
-     receivedSignal: false,
-   });
--}
- 
--if (previousState === true) {
-+  // Propagate the OFF signal if the state is changing.
-+  // This is critical for transceivers that might be wired-powered
-+  // but need to propagate an OFF signal when their channel deactivates.
-+  if (previousState !== false) {
-+    this.previousGeneratorStates.set(tx.id, false);
-+
-+    const signal = new Signal(tx.id, this.tickCount, false);
-+    signal.markVisited(tx.x, tx.y);
-+    this.propagateSignal(context, signal);
-+  }
-+} else if (previousState === true) {
-+  // This handles the case where a transceiver was ON but is now OFF
-+  // and its receivedSignal was already false (e.g. it was only channel-powered).
-   this.previousGeneratorStates.set(tx.id, false);
- 
-   const signal = new Signal(tx.id, this.tickCount, false);
-   signal.markVisited(tx.x, tx.y);
-   this.propagateSignal(context, signal);
- }
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: The suggestion correctly identifies a subtle bug where a transceiver's state change to 'off' is not always propagated, potentially leaving connected components in an incorrect state.
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td>
-
-
-
-<details><summary>Batch gate mutations outside loop</summary>
-
-___
-
-**Refactor the <code>update</code> method to avoid mutating the spatial store while iterating. <br>First, collect gates to be opened or closed, then perform the mutations in <br>separate loops.**
-
-[packages/spartan/systems/gate.system.ts [30-45]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR30-R45)
-
-```diff
- update(context: GameContext): void {
--    // Process all gates
-+    const toOpen: Array<[number, { x: number; y: number; layer: number }, any]> = [];
-+    const toClose: Array<[number, { x: number; y: number; layer: number }, any]> = [];
-     for (const [entityId, pos] of context.spatial.getAllPositions()) {
-         const data = context.spatial.getEntityData(entityId);
-         if (!data || !isGate(data)) continue;
--
-         const shouldBeOpen = data.receivedSignal === true;
-         const isOpen = pos.layer !== GameLayers.WALLS;
--
--        if (shouldBeOpen && !isOpen) {
--            this.openGate(context, entityId, pos, data);
--        } else if (!shouldBeOpen && isOpen) {
--            this.closeGate(context, entityId, pos, data);
--        }
-+        if (shouldBeOpen && !isOpen) toOpen.push([entityId, pos, data]);
-+        else if (!shouldBeOpen && isOpen) toClose.push([entityId, pos, data]);
-+    }
-+    for (const [id, pos, data] of toOpen) {
-+        this.openGate(context, id, pos, data);
-+    }
-+    for (const [id, pos, data] of toClose) {
-+        this.closeGate(context, id, pos, data);
-     }
- }
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: The suggestion correctly identifies a potential issue of modifying a collection while iterating over it and proposes a safer pattern, which improves the system's robustness.
-
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td rowspan=1>High-level</td>
-<td>
-
-
-
-<details><summary>Separate gate logic from signal system</summary>
-
-___
-
-**The suggestion praises the separation of <code>GateSystem</code> from <code>SignalSystem</code> and <br>recommends applying the same pattern to <code>SleepWake</code> zones. This would involve <br>creating a new system, like an <code>AISystem</code>, to manage NPC activation, thus removing <br>that responsibility from the <code>SignalSystem</code>.**
+**The current dependency injection in <code>scene-loader.ts</code> is brittle. It should be <br>refactored to use a more robust, declarative pattern or a simple IoC container <br>for managing system dependencies.**
 
 
 ### Examples:
@@ -162,24 +19,24 @@ ___
 
 <details>
 <summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R377-R495">packages/spartan/systems/signal.system.ts [377-495]</a>
+<a href="https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-950f0a4080831ca6034793672a2302efb2c0fe3af1f13faaa883e7fe9890b4b5R89-R136">dev/scene-loader.ts [89-136]</a>
 </summary>
 
 
 
 ```typescript
-            if (hasSignalReceiver(data) && data.receiverType === 'sleep-wake') {
-              this.handleSleepWake(context, pos.x, pos.y, signal.value);
-            }
-            break;
+type SystemFactory = (
+  gameManager: GameManager,
+  systems: Map<string, GameSystem>
+) => GameSystem;
 
-          case 'inverter':
-          case 'gate':
-          case 'transceiver':
-            // STEs: set pending, queue for next tick
-            if (hasSignalReceiver(data)) {
+/**
+ * System registry for mapping string names to system constructors.
+ * Add new systems here as they're implemented.
+ *
+ * The systems map allows dependent systems to access already-created systems.
 
- ... (clipped 109 lines)
+ ... (clipped 38 lines)
 ```
 </details>
 
@@ -192,32 +49,31 @@ ___
 
 #### Before:
 ```typescript
-// in packages/spartan/systems/signal.system.ts
-class SignalSystem {
+// dev/scene-loader.ts
+const SYSTEM_REGISTRY = {
   // ...
-  private propagateSignal(context, signal) {
-    // ...
-    for (const entityId of entities) {
-      const data = context.spatial.getEntityData(entityId);
-      // ...
-      if (this.classifyEntity(data) === 'conductor') {
-        // ...
-        if (data.receiverType === 'sleep-wake') {
-          // SignalSystem directly handles the effect of waking/sleeping NPCs
-          this.handleSleepWake(context, pos.x, pos.y, signal.value);
-        }
-      }
+  TurretSystem: (_gameManager, systems) => {
+    let healthSystem = systems.get('HealthSystem');
+    if (!healthSystem) {
+      healthSystem = new HealthSystem();
+      systems.set('HealthSystem', healthSystem);
     }
-  }
+    let projectileSystem = systems.get('ProjectileSystem');
+    if (!projectileSystem) {
+      projectileSystem = new ProjectileSystem(healthSystem);
+      systems.set('ProjectileSystem', projectileSystem);
+    }
+    return new TurretSystem(healthSystem, projectileSystem);
+  },
+};
 
-  private handleSleepWake(context, x, y, signalValue) {
-    const actorId = context.spatial.grid.cell(x, y).getValue(GameLayers.ACTORS);
-    if (actorId) {
-      this.gameManager.gameState.entityStore.setData(actorId, {
-        aiActive: signalValue,
-      });
-    }
-  }
+// ... in SceneLoader.load
+const createdSystems = new Map();
+for (const systemName of config.systems) {
+  const factory = SYSTEM_REGISTRY[systemName];
+  const system = factory(runtime.game, createdSystems);
+  createdSystems.set(systemName, system);
+  runtime.addSystem(system);
 }
 
 ```
@@ -226,41 +82,31 @@ class SignalSystem {
 
 #### After:
 ```typescript
-// in packages/spartan/systems/signal.system.ts
-class SignalSystem {
-  // ...
-  private propagateSignal(context, signal) {
-    // ...
-    for (const entityId of entities) {
-      // ...
-      if (this.classifyEntity(data) === 'conductor') {
-        // SignalSystem now only sets the signal state on the sleep-wake zone
-        if (hasSignalReceiver(data)) {
-           this.gameManager.gameState.entityStore.setData(entityId, {
-             receivedSignal: signal.value,
-           });
-        }
-      }
-    }
-  }
-  // The handleSleepWake method is removed.
-}
+// A declarative dependency definition
+const SYSTEM_DEFINITIONS = {
+  HealthSystem: { create: () => new HealthSystem(), deps: [] },
+  ProjectileSystem: { create: (health) => new ProjectileSystem(health), deps: ['HealthSystem'] },
+  TurretSystem: { create: (health, proj) => new TurretSystem(health, proj), deps: ['HealthSystem', 'ProjectileSystem'] },
+  // ... other systems
+};
 
-// in a new file, e.g., packages/spartan/systems/ai.system.ts
-class AISystem {
-  update(context) {
-    // Iterate over all sleep-wake zones
-    for (const [zoneId, pos] of allSleepWakeZones) {
-      const zoneData = context.spatial.getEntityData(zoneId);
-      const actorId = context.spatial.getEntityIdAt(pos.x, pos.y, GameLayers.ACTORS);
-      if (actorId) {
-        // A dedicated system reads the signal state and applies the effect
-        this.gameManager.gameState.entityStore.setData(actorId, {
-          aiActive: zoneData.receivedSignal,
-        });
-      }
-    }
+// A resolver function that builds the dependency graph
+function resolveAndCreateSystems(systemNames: string[]) {
+  const created = new Map();
+  
+  function createSystem(name) {
+    if (created.has(name)) return created.get(name);
+    
+    const definition = SYSTEM_DEFINITIONS[name];
+    const dependencies = definition.deps.map(depName => createSystem(depName));
+    
+    const system = definition.create(...dependencies);
+    created.set(name, system);
+    return system;
   }
+
+  systemNames.forEach(name => createSystem(name));
+  return created;
 }
 
 ```
@@ -272,53 +118,46 @@ class AISystem {
 
 __
 
-Why: The suggestion correctly identifies a good design pattern (separating `GateSystem` from `SignalSystem`) and proposes extending it to `SleepWake` zones, which would improve modularity by moving AI state management out of the already complex `SignalSystem`.
+Why: The suggestion correctly identifies a significant architectural weakness in the new dependency injection mechanism, which is brittle and not scalable, making it a high-impact improvement for maintainability.
 
 
 </details></details></td><td align=center>Medium
 
-</td></tr><tr><td rowspan=2>General</td>
+</td></tr><tr><td rowspan=2>Possible issue</td>
 <td>
 
 
 
-<details><summary>Preserve pending signal field</summary>
+<details><summary>Add LOS check before firing</summary>
 
 ___
 
-**Preserve the <code>pendingSignal</code> state when a gate is re-spawned by explicitly <br>including <code>pendingSignal: data.pendingSignal</code> in the new entity data.**
+**Add a line-of-sight check to the <code>findNearestTarget</code> method to ensure turrets do <br>not target enemies through walls.**
 
-[packages/spartan/systems/gate.system.ts [66-79]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR66-R79)
+[packages/spartan/systems/turret.system.ts [187-189]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-1bdd597f60fd1d12fe2b1d023eadc2fd4b1f501372262be04906ca1b102947deR187-R189)
 
 ```diff
- context.spatial.spawnWithId(
-     entityId,
-     'gate-open',
-     pos.x,
-     pos.y,
-     GameLayers.FLOOR,
-     {
-         receiverType: 'gate',
-         receivedSignal: true,
-+        pendingSignal: data.pendingSignal,
-         color,
--        sceneId: data.sceneId,
--        // Preserve pendingSignal if it existed (though it shouldn't for this tick)
-+        sceneId: data.sceneId
-     }
- );
+ if (nearestId === null || nearestPos === null) return null;
++
++// Check line of sight
++const startCell = context.spatial.grid.cell(turretPos.x, turretPos.y);
++const targetCell = context.spatial.grid.cell(nearestPos.x, nearestPos.y);
++if (!startCell || !targetCell) return null;
++const line = LinkedCellUtils.getLine(startCell, targetCell);
++if (line.some(cell => context.spatial.isBlocked(cell))) return null;
+ 
+ return { x: nearestPos.x, y: nearestPos.y, entityId: nearestId };
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
 
 
 <details><summary>Suggestion importance[1-10]: 8</summary>
 
 __
 
-Why: The suggestion correctly implements the behavior described in the code comment, fixing a bug where the `pendingSignal` state would be lost when a gate opens.
-
+Why: This is a critical improvement to prevent turrets from firing at targets through walls, which fixes a significant flaw in the targeting logic.
 
 </details></details></td><td align=center>Medium
 
@@ -326,42 +165,109 @@ Why: The suggestion correctly implements the behavior described in the code comm
 
 
 
-<details><summary>Correctly apply opacity to colors</summary>
+<details><summary>Make game manager a required parameter</summary>
 
 ___
 
-**Fix the opacity logic for closed gates to correctly handle colors that already <br>have an alpha channel by first stripping any existing alpha before applying the <br>new one.**
+**Make the <code>gameManager</code> parameter required in the <code>GameLoop</code> constructor to enforce <br>its presence at compile time, as it is always provided and used without a null <br>check.**
 
-[packages/spartan/systems/gate.system.ts [92-99]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR92-R99)
+[packages/spartan/core/game-loop.ts [30-33]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-3042bf78b8729c8df0b47cc175b03f7484b0289bcb4dc4f8f2ff1bf9a4b778dbR30-R33)
 
 ```diff
- // Make semi-opaque when closed
- let color = data.color || '#ff0000';
- if (color.startsWith('#')) {
--    // If standard hex (7), add alpha
--    if (color.length === 7) {
--        color += '80'; // 50% opacity
-+    // Strip any existing alpha
-+    if (color.length > 7) {
-+        color = color.substring(0, 7);
-     }
-+    // Add 50% opacity alpha
-+    color += '80';
- }
+ constructor(
+   private spatial: SpatialSystem,
+-  private gameManager?: GameManager
++  private gameManager: GameManager
+ ) { }
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
 
 
 <details><summary>Suggestion importance[1-10]: 7</summary>
 
 __
 
-Why: The suggestion correctly identifies a bug in opacity handling for colors that already have an alpha channel and provides a robust fix, improving visual consistency.
+Why: This suggestion correctly identifies that `gameManager` is always provided and improves type safety by making it a required parameter, preventing potential runtime errors and simplifying code.
 
 
 </details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=1>Security</td>
+<td>
+
+
+
+<details><summary>Prevent potential XSS in game description</summary>
+
+___
+
+**To prevent a potential Cross-Site Scripting (XSS) vulnerability, render the <br><code>gameDescription</code> by splitting it into lines and creating a separate element for <br>each, ensuring content is treated as text.**
+
+[dev/playground.tsx [444-451]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-8b5cc67c6f801fec5a9635a2b22cd8721d47f6c6e0c7f3f09c8f0380783847f7R444-R451)
+
+```diff
+-<p style={{ 
+-  whiteSpace: 'pre-line', 
++<div style={{ 
+   color: '#b0b0b0', 
+   lineHeight: '1.5',
+   fontSize: '13px'
+ }}>
+-  {gameDescription}
+-</p>
++  {gameDescription.split('\\n').map((line, index) => (
++    <div key={index}>{line}</div>
++  ))}
++</div>
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This suggestion correctly identifies a potential XSS vulnerability from rendering user-provided content as HTML and proposes a valid mitigation, which is a critical security improvement.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=1>General</td>
+<td>
+
+
+
+<details><summary>Allow armor to fully block damage</summary>
+
+___
+
+**Change the armor calculation to allow damage to be fully negated, by setting the <br>minimum damage to 0 instead of 1.**
+
+[packages/spartan/systems/health.system.ts [190-193]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-7c3ff98821bcb4d02d1a5ad79c7109cda4acb787009ce81828a16f4c9e5dd01fR190-R193)
+
+```diff
+ // Apply armor (flat reduction)
+ if ('armor' in entityData && typeof entityData.armor === 'number') {
+-  damage = Math.max(1, damage - entityData.armor); // Minimum 1 damage
++  damage = Math.max(0, damage - entityData.armor);
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+
+
+<details><summary>Suggestion importance[1-10]: 5</summary>
+
+__
+
+Why: This is a valid suggestion for a gameplay logic change, allowing armor to fully negate damage, which could be a desirable behavior.
+
+</details></details></td><td align=center>Low
 
 </td></tr>
 <tr><td align="center" colspan="2">
@@ -369,3 +275,4 @@ Why: The suggestion correctly identifies a bug in opacity handling for colors th
 - [ ] More <!-- /improve --more_suggestions=true -->
 
 </td><td></td></tr></tbody></table>
+

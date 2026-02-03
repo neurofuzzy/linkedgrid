@@ -498,7 +498,7 @@ describe('TurretSystem', () => {
     const leftData = spatial.getEntityData(targetLeft);
     const rightData = spatial.getEntityData(targetRight);
 
-    const totalDamage = 
+    const totalDamage =
       (100 - (upData?.hp ?? 100)) +
       (100 - (downData?.hp ?? 100)) +
       (100 - (leftData?.hp ?? 100)) +
@@ -532,5 +532,32 @@ describe('TurretSystem', () => {
     }
 
     expect(rayEffectCount).toBeGreaterThan(0);
+  });
+  it('turret does not fire through walls', () => {
+    // Spawn target behind wall
+    const targetId = spatial.spawn('enemy', 15, 10, GameLayers.ACTORS, {
+      hp: 100,
+      maxHp: 100,
+      healthState: 'alive',
+    });
+
+    // Spawn wall in between
+    spatial.spawn('wall', 10, 10, GameLayers.WALLS, {});
+
+    // Spawn turret
+    spatial.spawn('turret', 5, 10, GameLayers.ACTORS, {
+      weaponType: 'ray',
+      targeting: 'nearest',
+      cooldown: 1,
+      range: 15,
+      rayDamage: 30,
+    });
+    spatial.commit();
+    spatial.syncMasks(); // Ensure wall blocks visibility
+
+    gameLoop.tick();
+
+    const targetData = spatial.getEntityData(targetId);
+    expect(targetData?.hp).toBe(100); // Not damaged
   });
 });

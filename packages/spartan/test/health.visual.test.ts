@@ -125,7 +125,7 @@ describe('HealthSystem', () => {
     gameLoop.tick();
 
     // Should be dying (dyingTicks was set to 2, then decremented to 1)
-    let data = spatial.getEntityData(entityId);
+    const data = spatial.getEntityData(entityId);
     expect(data?.healthState).toBe('dying');
     expect((data as { dyingTicks?: number }).dyingTicks).toBe(1);
     expect(spatial.isAlive(entityId)).toBe(true);
@@ -133,7 +133,7 @@ describe('HealthSystem', () => {
     // Tick 2 of dying → dead → removed (all in one tick)
     // When dyingTicks reaches 0, it transitions to dead and is removed
     gameLoop.tick();
-    
+
     // Entity should now be removed
     expect(spatial.isAlive(entityId)).toBe(false);
   });

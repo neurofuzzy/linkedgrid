@@ -441,15 +441,11 @@ function Playground() {
           {gameDescription && (
             <div className="debug-panel" style={{ marginBottom: '15px' }}>
               <h3>Instructions</h3>
-              <p style={{ 
-                whiteSpace: 'pre-line', 
-                color: '#b0b0b0', 
-                lineHeight: '1.5',
-                fontSize: '13px'
-              }}>
-                {gameDescription}
-              </p>
+              {gameDescription.split('\n').map((line, index) => (
+                <div key={index}>{line}</div>
+              ))}
             </div>
+
           )}
 
           <div className="debug-panel">
@@ -489,7 +485,7 @@ function Playground() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 
