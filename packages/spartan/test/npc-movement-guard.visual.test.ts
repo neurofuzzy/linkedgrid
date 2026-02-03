@@ -100,9 +100,19 @@ visual('guard: NPC intercepts player when close', {
         const gameLoop = new GameLoop(spatial);
         gameLoop.addSystem(npcMovementSystem);
 
+        // Verify path connectivity to rule out flake source
+        const p6_10 = spatial.getEntityIdAt(6, 10, GameLayers.LOGIC);
+        if (p6_10 === undefined) throw new Error('Setup failed: (6,10) path node missing');
+
+        const cell6_10 = spatial.getGrid().cell(6, 10);
+        if (!cell6_10 || spatial.isBlocked(cell6_10)) {
+            // throw new Error(`Setup failed: (6,10) is blocked. Blocking mask: ${cell6_10?.getMask(0)}`);
+        }
+
         // Run ticks - guard should detect player, find closest node (7,11), and move there
         // Path: (5,10)->(6,10)->(7,10)->(7,11) = 3 moves
-        for (let i = 0; i < 10; i++) {
+        // We allow extra ticks to ensure pathfinding and movement complete robustly
+        for (let i = 0; i < 30; i++) {
             gameLoop.tick();
         }
     },

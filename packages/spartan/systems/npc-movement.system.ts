@@ -495,7 +495,6 @@ export class NPCMovementSystem extends BaseTickedSystem {
     // --- Active Guard Logic ---
     // 1. Find all reachable path nodes from current position (BFS restricted to path nodes)
     const reachablePathNodes = this.findReachablePathNodes(context, npcPos, 20);
-
     if (reachablePathNodes.length === 0) return false;
 
     // 2. Find the path node closest to the player
