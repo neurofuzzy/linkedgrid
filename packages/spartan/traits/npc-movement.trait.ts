@@ -5,7 +5,7 @@
  * Used by NPCMovementSystem to control autonomous entity movement.
  */
 
-export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander' | 'patrol';
+export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander' | 'patrol' | 'guard';
 
 /**
  * HasNPCMovement - Trait for entities with autonomous movement behavior.

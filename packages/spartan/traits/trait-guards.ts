@@ -813,7 +813,7 @@ export function hasNPCMovement(
 ): entity is EntityData & HasNPCMovement {
   if (!('movementMode' in entity)) return false;
   const mode = entity.movementMode;
-  return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander' || mode === 'patrol';
+  return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander' || mode === 'patrol' || mode === 'guard';
 }
 
 // removed unused hasPathFollowing guard

@@ -77,6 +77,9 @@ export class NPCMovementSystem extends BaseTickedSystem {
         case 'patrol':
           moved = this.processPatrol(context, entityId, entityData);
           break;
+        case 'guard':
+          moved = this.processGuard(context, entityId, entityData);
+          break;
       }
 
       // Update lastMoveTick if the entity moved
@@ -446,6 +449,87 @@ export class NPCMovementSystem extends BaseTickedSystem {
   }
 
   /**
+   * Guard mode: patrols normally, but intercepts player when in range.
+   * - Idle: Acts exactly like Patrol mode.
+   * - Active: Finds path node closest to player and moves there (staying on path).
+   * - Giving Up: Resumes normal patrol.
+   */
+  private processGuard(
+    context: GameContext,
+    entityId: number,
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement
+  ): boolean {
+    const npcPos = context.spatial.getEntityPosition(entityId);
+    if (!npcPos) return false;
+
+    // Check for player target
+    const playerEntityId = context.gameManager?.gameState?.playerEntityId;
+    const targetId = entityData.targetEntityId ?? playerEntityId;
+
+    if (targetId === undefined) return this.processPatrol(context, entityId, entityData);
+
+    const targetPos = context.spatial.getEntityPosition(targetId);
+    if (!targetPos) return this.processPatrol(context, entityId, entityData);
+
+    const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
+    const triggerRange = entityData.triggerRange ?? 8;
+    const giveUpRange = entityData.giveUpRange ?? 15;
+
+    // State Machine
+    if (entityData.aiMovementState !== 'active') {
+      if (distance <= triggerRange) {
+        entityData.aiMovementState = 'active';
+      }
+    } else {
+      if (distance > giveUpRange) {
+        entityData.aiMovementState = 'idle';
+      }
+    }
+
+    // If idle, just patrol
+    if (entityData.aiMovementState !== 'active') {
+      return this.processPatrol(context, entityId, entityData);
+    }
+
+
+    // --- Active Guard Logic ---
+    // 1. Find all reachable path nodes from current position (BFS restricted to path nodes)
+    const reachablePathNodes = this.findReachablePathNodes(context, npcPos, 20);
+
+    if (reachablePathNodes.length === 0) return false;
+
+    // 2. Find the path node closest to the player
+    let closestNode: { x: number; y: number } | null = null;
+    let minDistToPlayer = Infinity;
+
+    for (const node of reachablePathNodes) {
+      const dist = this.manhattanDistance(node.x, node.y, targetPos.x, targetPos.y);
+      if (dist < minDistToPlayer) {
+        minDistToPlayer = dist;
+        closestNode = node;
+      }
+    }
+
+    if (!closestNode) return false;
+
+    // 3. If we are already at the closest node, stay there and face player
+    if (closestNode.x === npcPos.x && closestNode.y === npcPos.y) {
+      return false; // Stand guard
+    }
+
+    // 4. Move toward that node, staying strictly on path
+    const nextStep = this.findNextStepOnPath(context, npcPos, closestNode, 20);
+    if (nextStep) {
+      // Update lastPathCell to keep patrol state consistent
+      entityData.lastPathCell = { x: npcPos.x, y: npcPos.y };
+      context.spatial.move(entityId, nextStep.x, nextStep.y);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Get adjacent cells that have path-node entities on the LOGIC layer.
    * Used by patrol mode to follow paths.
    */
@@ -509,6 +593,89 @@ export class NPCMovementSystem extends BaseTickedSystem {
     }
 
     return null;
+  }
+
+  /**
+   * Find the next step toward a target, constrained to path nodes.
+   */
+  private findNextStepOnPath(
+    context: GameContext,
+    fromPos: { x: number; y: number },
+    toPos: { x: number; y: number },
+    maxRange: number
+  ): { x: number; y: number } | null {
+    const fromCell = context.spatial.grid.cell(fromPos.x, fromPos.y);
+    const toCell = context.spatial.grid.cell(toPos.x, toPos.y);
+    if (!fromCell || !toCell) return null;
+
+    const path = LinkedCellUtils.findPath(
+      fromCell,
+      (c) => {
+        if (!c || context.spatial.isBlocked(c)) return false;
+        // Must be a path node
+        const pathNodeId = context.spatial.getEntityIdAt(c.x, c.y, GameLayers.LOGIC);
+        if (pathNodeId === undefined) return false;
+        const data = context.spatial.getEntityData(pathNodeId);
+        return !!(data && isPathNode(data));
+      },
+      (c) => c === toCell,
+      maxRange
+    );
+
+    if (path.length > 0) {
+      return { x: path[0].x, y: path[0].y };
+    }
+
+    return null;
+  }
+
+  /**
+   * Find all reachable path nodes within a range.
+   * Used by Guard mode to identify candidate guard posts.
+   */
+  private findReachablePathNodes(
+    context: GameContext,
+    startPos: { x: number; y: number },
+    maxRange: number
+  ): Array<{ x: number; y: number }> {
+    const startCell = context.spatial.grid.cell(startPos.x, startPos.y);
+    if (!startCell) return [];
+
+    const reachableNodes: Array<{ x: number; y: number }> = [];
+    const visited = new Set<string>();
+    const queue: Array<{ cell: LinkedCell; dict: number }> = [{ cell: startCell, dict: 0 }];
+    visited.add(`${startCell.x},${startCell.y}`);
+
+    // Since we're already at start, add it
+    reachableNodes.push({ x: startCell.x, y: startCell.y });
+
+    while (queue.length > 0) {
+      const { cell, dict } = queue.shift()!;
+      if (dict >= maxRange) continue;
+
+      for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+        const neighbor = cell.neighbor(dir);
+        if (!neighbor) continue;
+
+        const key = `${neighbor.x},${neighbor.y}`;
+        if (visited.has(key)) continue;
+
+        if (context.spatial.isBlocked(neighbor)) continue;
+
+        // Check for path node
+        const pathNodeId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, GameLayers.LOGIC);
+        if (pathNodeId !== undefined) {
+          const data = context.spatial.getEntityData(pathNodeId);
+          if (data && isPathNode(data)) {
+            visited.add(key);
+            reachableNodes.push({ x: neighbor.x, y: neighbor.y });
+            queue.push({ cell: neighbor, dict: dict + 1 });
+          }
+        }
+      }
+    }
+
+    return reachableNodes;
   }
 
   /**
