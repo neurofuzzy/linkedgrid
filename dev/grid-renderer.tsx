@@ -35,6 +35,9 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   ice: 'entity-ice',
   mud: 'entity-mud',
   'chain-link': 'entity-chain-link',
+  gate: 'entity-gate',
+  'gate-open': 'entity-gate-open',
+  'gate-closed': 'entity-gate-closed',
 };
 
 /**
@@ -56,6 +59,9 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   ice: '❄',
   mud: '▒',
   'chain-link': '≡',
+  gate: '∏',
+  'gate-open': '␣',
+  'gate-closed': '∏',
 };
 
 /**
@@ -171,8 +177,11 @@ export function GridRenderer({ scene }: Props) {
           } else if (hasSignalReceiver(entityData)) {
             // Only check receiver state if it wasn't handled as an emitter.
             // This prevents Inverters (ON output, OFF input) from being dimmed by this block.
-            if (!entityData.receivedSignal) {
-              opacity = 0.5;
+            // GATES EXCEPTION: Gates handle opacity themselves (open=semi-opaque, closed=opaque)
+            if (entityData.receiverType !== 'gate') {
+              if (!entityData.receivedSignal) {
+                opacity = 0.5;
+              }
             }
           }
         }

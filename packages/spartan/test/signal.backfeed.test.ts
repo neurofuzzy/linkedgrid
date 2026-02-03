@@ -8,7 +8,7 @@ import {
     spawnOscillator,
     spawnConductiveFloor,
     spawnInverter,
-    spawnBollard
+    spawnGate
 } from '../entities/spawn-helpers';
 
 describe('Signal Back-feed Investigation', () => {
@@ -38,8 +38,16 @@ describe('Signal Back-feed Investigation', () => {
 
     it('O-C-I-C-B chain: Inverter should not back-feed input wire when Oscillator is OFF', () => {
         // Layout: O(0,0) - C(1,0) - I(2,0) - C(3,0) - B(4,0)
+        // 
+        // TIMING with 1-tick delay for inverters:
+        // Tick 1: Osc ON → event(true) → WireIn=true, Inverter pending=true
+        // Tick 2: Osc OFF, Inverter applies pending(true) → emits !true=false → WireOut=false
+        //         Osc creates event(false) → WireIn=false, Inverter pending=false
+        // Tick 3: Inverter applies pending(false) → emits !false=true → WireOut=true
+        //
+        // The key test: WireIn should NOT receive the inverter's signal (no backfeed)
 
-        // 1. Spawn Oscillator (Starts ON to prime latch)
+        // 1. Spawn Oscillator (Starts ON)
         const oscId = spawnOscillator(spatial, 0, 0, 4, {
             signalState: true,
             oscillatorPeriod: 40
@@ -61,67 +69,76 @@ describe('Signal Back-feed Investigation', () => {
             sceneId: 'test'
         });
 
-        // 5. Bollard
-        const bollardId = spawnBollard(spatial, 4, 0, 5, {
+        // 5. Gate
+        const gateId = spawnGate(spatial, 4, 0, 5, {
             receivedSignal: false
         });
 
-        spatial.commit(); // Ensure entities are on the grid!
+        spatial.commit();
 
         // --- Tick 1 ---
-        // Update Signal System
         signalSystem.update(context);
 
-        // Expectations:
-        // Oscillator is OFF.
-        // Inverter receives NO signal (wireIn is OFF).
-        // Inverter should logically be ON (NOT OFF).
-        // Inverter emits ON.
-
-        // Check Inverter State
-        const invData = spatial.getEntityData(invId) as any;
-        // Inverter state updates at END of tick based on received signal. 
-        // Initial receivedSignal was false, so it should flip to true?
-        // Wait, update sequence: 
-        // 1. updateOscillators (Oscillator -> OFF)
-        // 2. propagateSignals (Oscillator OFF, Inverter OFF -> No signal)
-        // 3. applyToReceivers (Inverter sees False -> sets signalState True for NEXT tick)
-
-        // So after tick 1:
-        // Inverter signalState should be true (prepared for next tick emission)
-        expect(invData.signalState).toBe(false);
-
-        // Initial Latch Check: The Inverter should have received signal in Pass 1.
-        // We can't access internal map, but we trust the logic.
+        // After tick 1:
+        // - Oscillator is ON, creates event(true)
+        // - WireIn receives true (instant)
+        // - Inverter has pendingSignal = true (1-tick delay)
+        const invData1 = spatial.getEntityData(invId) as any;
+        const wireIn1 = spatial.getEntityData(wireInId) as any;
+        
+        expect(wireIn1.receivedSignal).toBe(true); // WireIn receives oscillator's ON
+        expect(invData1.pendingSignal).toBe(true); // Inverter pending (not applied yet)
+        expect(invData1.signalState).toBe(false); // Inverter hasn't applied pending yet
 
         // --- Tick 2 ---
-        // Toggle Oscillator OFF manually.
-        // This simulates the Oscillator turning off after a period.
+        // Toggle Oscillator OFF before update
         context.gameManager!.gameState.entityStore.setData(oscId, { signalState: false });
-
-        // Inverter should now detect NO signal.
-        // Inverter signalState becomes true (ON) in this tick?
-        // Wait, 'signalState' updates in Pass 2 of Tick 2.
+        
         signalSystem.update(context);
 
-        // Propagation:
-        // Inverter (ON) floods neighbors.
-        // Expectation: 
-        // wireOut should be ON.
-        // wireIn should be... OFF? (If preventing back-feed) or ON (If bidirectional)?
+        // After tick 2:
+        // - applyPending: Inverter applies pending(true) → emits !true = false
+        // - createEvents: Oscillator changed to false → emits false
+        // - WireIn = false (from oscillator's OFF event)
+        // - WireOut = false (from inverter's FALSE emission)
+        // - Inverter now has pendingSignal = false (from oscillator's OFF)
+        //
+        // CRITICAL: WireIn should NOT receive the inverter's signal (no backfeed)
+        
+        const wireIn2 = spatial.getEntityData(wireInId) as any;
+        const wireOut2 = spatial.getEntityData(wireOutId) as any;
+        const invData2 = spatial.getEntityData(invId) as any;
+        const gate2 = spatial.getEntityData(gateId) as any;
 
-        const wireIn = spatial.getEntityData(wireInId) as any;
-        const wireOut = spatial.getEntityData(wireOutId) as any;
-        const bollard = spatial.getEntityData(bollardId) as any;
+        // NO BACKFEED: WireIn should be false (from oscillator OFF), not affected by inverter
+        expect(wireIn2.receivedSignal).toBe(false);
+        
+        // Inverter emits FALSE (inverted from receiving TRUE in tick 1)
+        expect(invData2.receivedSignal).toBe(true);  // Applied the pending TRUE
+        expect(invData2.signalState).toBe(false);    // Output is inverted: !true = false
+        expect(wireOut2.receivedSignal).toBe(false); // Receives inverter's FALSE
+        expect(gate2.pendingSignal).toBe(false);     // Gate receives FALSE too
 
-        console.log('WireIn Signal:', wireIn.receivedSignal);
-        console.log('WireOut Signal:', wireOut.receivedSignal);
-        console.log('Bollard Signal:', bollard.receivedSignal);
+        // --- Tick 3 ---
+        signalSystem.update(context);
 
-        expect(wireOut.receivedSignal).toBe(true); // Output should definitely be ON
-        expect(bollard.receivedSignal).toBe(true); // Bollard should be ON
+        // After tick 3:
+        // - applyPending: Inverter applies pending(false) → emits !false = true
+        // - WireOut = true (from inverter's TRUE emission)
+        // - WireIn should still be false (no backfeed)
+        
+        const wireIn3 = spatial.getEntityData(wireInId) as any;
+        const wireOut3 = spatial.getEntityData(wireOutId) as any;
+        const invData3 = spatial.getEntityData(invId) as any;
+        const gate3 = spatial.getEntityData(gateId) as any;
 
-        // The "Bug": WireIn is ON because of back-feed
-        expect(wireIn.receivedSignal).toBe(false); // This will FAIL if back-feed exists
+        // NO BACKFEED: WireIn should still be false
+        expect(wireIn3.receivedSignal).toBe(false);
+        
+        // Now inverter emits TRUE (inverted from receiving FALSE in tick 2)
+        expect(invData3.receivedSignal).toBe(false); // Applied pending FALSE
+        expect(invData3.signalState).toBe(true);     // Output is inverted: !false = true
+        expect(wireOut3.receivedSignal).toBe(true);  // Receives inverter's TRUE
+        expect(gate3.pendingSignal).toBe(true);      // Gate receives TRUE
     });
 });

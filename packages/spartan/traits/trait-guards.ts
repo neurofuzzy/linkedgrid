@@ -55,7 +55,10 @@ import type {
   PressureSwitchData,
   InverterData,
   ConductiveFloorData,
-  BollardData,
+  TransceiverData,
+  GateData,
+  PathNodeData,
+  SleepWakeData,
 } from '../entities';
 
 /**
@@ -653,11 +656,11 @@ export function isTeleporterWithTarget(
  */
 export function hasSignalEmitter(
   entity: EntityData
-): entity is OscillatorData | PressureSwitchData | InverterData {
+): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData {
   if (!('signalType' in entity)) return false;
   const signalType = entity.signalType;
   return (
-    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter') &&
+    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver') &&
     'signalState' in entity && typeof entity.signalState === 'boolean'
   );
 }
@@ -666,18 +669,18 @@ export function hasSignalEmitter(
  * Check if entity has signal receiver trait.
  *
  * Entities with signal receiver trait can accept signals and respond to them.
- * Used by bollards and inverters.
+ * Used by gates, inverters, path nodes, and sleep-wake entities.
  *
  * @param entity - Entity to check
  * @returns true if entity possesses signal receiver trait
  */
 export function hasSignalReceiver(
   entity: EntityData
-): entity is BollardData | InverterData | ConductiveFloorData {
+): entity is GateData | InverterData | ConductiveFloorData | TransceiverData | PathNodeData | SleepWakeData {
   if (!('receiverType' in entity)) return false;
   const receiverType = entity.receiverType;
   return (
-    (receiverType === 'bollard' || receiverType === 'inverter' || receiverType === 'floor') &&
+    (receiverType === 'gate' || receiverType === 'inverter' || receiverType === 'floor' || receiverType === 'transceiver' || receiverType === 'path' || receiverType === 'sleep-wake') &&
     'receivedSignal' in entity && typeof entity.receivedSignal === 'boolean'
   );
 }
@@ -686,17 +689,17 @@ export function hasSignalReceiver(
  * Check if entity has conductive trait.
  *
  * Entities with conductive trait can carry signals between cells.
- * Used by conductive floors.
+ * Used by conductive floors, path nodes, and sleep-wake entities.
  *
  * @param entity - Entity to check
  * @returns true if entity possesses conductive trait
  */
 export function hasConductive(
   entity: EntityData
-): entity is ConductiveFloorData {
+): entity is ConductiveFloorData | PathNodeData | SleepWakeData {
   if (!('conductiveType' in entity)) return false;
   const conductiveType = entity.conductiveType;
-  return conductiveType === 'floor';
+  return conductiveType === 'floor' || conductiveType === 'path' || conductiveType === 'sleep-wake';
 }
 
 /**
@@ -746,12 +749,42 @@ export function isConductiveFloor(entity: EntityData): entity is ConductiveFloor
 }
 
 /**
- * Check if entity is a bollard (any state).
+ * Check if entity is a gate (any state).
  *
  * @param entity - Entity to check
- * @returns true if entity type is 'bollard', 'bollard-open', or 'bollard-closed'
+ * @returns true if entity type is 'gate', 'gate-open', or 'gate-closed'
  */
-export function isBollard(entity: EntityData): entity is BollardData {
-  return entity.type === 'bollard' || entity.type === 'bollard-open' || entity.type === 'bollard-closed';
+export function isGate(entity: EntityData): entity is GateData {
+  return entity.type === 'gate' || entity.type === 'gate-open' || entity.type === 'gate-closed';
+}
+
+/**
+ * Check if entity is a transceiver.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'transceiver'
+ */
+export function isTransceiver(entity: EntityData): entity is TransceiverData {
+  return entity.type === 'transceiver';
+}
+
+/**
+ * Check if entity is a path node.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'path-node'
+ */
+export function isPathNode(entity: EntityData): entity is PathNodeData {
+  return entity.type === 'path-node';
+}
+
+/**
+ * Check if entity is a sleep-wake entity.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'sleep-wake'
+ */
+export function isSleepWake(entity: EntityData): entity is SleepWakeData {
+  return entity.type === 'sleep-wake';
 }
 

@@ -14,6 +14,7 @@ import { FireSystem } from '../packages/spartan/systems/fire.system';
 import { LiquidSystem } from '../packages/spartan/systems/liquid.system';
 import { ChainReactionSystem } from '../packages/spartan/systems/chain-reaction.system';
 import { SignalSystem } from '../packages/spartan/systems/signal.system';
+import { GateSystem } from '../packages/spartan/systems/gate.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -95,6 +96,7 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
   LiquidSystem: () => new LiquidSystem(),
   ChainReactionSystem: () => new ChainReactionSystem(),
   SignalSystem: (gameManager) => new SignalSystem(gameManager),
+  GateSystem: (gameManager) => new GateSystem(gameManager),
 };
 
 /**
@@ -286,6 +288,11 @@ export class SceneLoader {
 
     // Spawn all entities
     for (const entityDef of entities) {
+      // Skip comment/section objects (used for documentation in JSON files)
+      if (!entityDef.type || entityDef.x === undefined || entityDef.y === undefined || entityDef.layer === undefined) {
+        continue;
+      }
+
       // Validate schema: Check for common mistake of using 'props' instead of 'data'
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((entityDef as any).props && !entityDef.data) {

@@ -10,8 +10,8 @@ import { ItemData, KeyData, GasolineData, FuseData } from './collectible.entity'
 import { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData } from './structure.entity';
 import { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData } from './hazard.entity';
 import { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData } from './elemental.entity';
-import { ChainLinkData } from './logic.entity';
-import { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, BollardData } from './signal.entity';
+import { ChainLinkData, PathNodeData, SleepWakeData } from './logic.entity';
+import { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData } from './signal.entity';
 
 // Re-export commonly used types for external consumption
 export { BaseEntityData, TeleporterData, PlayerData, EnemyData };
@@ -19,8 +19,8 @@ export { ItemData, KeyData, GasolineData, FuseData };
 export { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData };
 export { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData };
 export { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData };
-export { ChainLinkData };
-export { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, BollardData };
+export { ChainLinkData, PathNodeData, SleepWakeData };
+export { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData };
 
 export type EntityData = PlayerData |
   EnemyData |
@@ -46,9 +46,12 @@ export type EntityData = PlayerData |
   ExplosionVisualData |
   DestructibleWallData |
   ChainLinkData |
+  PathNodeData |
+  SleepWakeData |
   FireVisualData |
   OscillatorData |
   PressureSwitchData |
   InverterData |
   ConductiveFloorData |
-  BollardData;
+  GateData |
+  TransceiverData;

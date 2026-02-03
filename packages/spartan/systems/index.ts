@@ -8,6 +8,7 @@
  * See docs/SYSTEMS.md for behavior documentation.
  */
 
+export { GateSystem } from './gate.system';
 export { ChainReactionSystem } from './chain-reaction.system';
 export { CollectionSystem } from './collection.system';
 export { DoorSystem } from './door.system';

@@ -4,7 +4,7 @@
  * These entities form signal propagation networks:
  * - Oscillators and pressure switches generate signals
  * - Conductive floors carry signals between cells
- * - Bollards and inverters respond to signals
+ * - Gates and inverters respond to signals
  */
 
 import type { BaseEntityData } from './base.entity';
@@ -33,13 +33,17 @@ export type OscillatorData = BaseEntityData & HasSignalEmitter & HasColor & {
 /**
  * Pressure Switch - Toggles signal when an entity steps on it.
  * 
- * Toggle behavior: Steps on → switches state (on→off or off→on)
- * Edge-triggered: Only toggles on entry, not while standing
+ * Supports 4 activation modes:
+ * - toggle: Flips state on each step (default)
+ * - hold: ON while pressed, OFF when released
+ * - latch: OFF → ON on first press, stays ON forever
+ * - inverted-latch: ON → OFF on first press, stays OFF forever
  * 
  * @example
  * ```typescript
  * spatial.spawn('pressure-switch', 5, 5, GameLayers.COLLECTIBLES, {
  *   signalState: false,
+ *   switchMode: 'toggle',
  *   color: '#00ffff'
  * });
  * ```
@@ -47,6 +51,7 @@ export type OscillatorData = BaseEntityData & HasSignalEmitter & HasColor & {
 export type PressureSwitchData = BaseEntityData & HasSignalEmitter & HasColor & {
   type: 'pressure-switch';
   signalType: 'pressure';
+  switchMode?: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
 };
 
 /**
@@ -92,23 +97,62 @@ export type ConductiveFloorData = BaseEntityData & HasConductive & HasSignalRece
 };
 
 /**
- * Bollard - Retractable wall controlled by signal.
+ * Gate - Retractable wall controlled by signal.
  * 
- * Signal ON → Bollard opens (moves to FLOOR, non-blocking)
- * Signal OFF → Bollard closes (moves to WALLS, blocking)
+ * Signal ON → Gate opens (moves to FLOOR, non-blocking)
+ * Signal OFF → Gate closes (moves to WALLS, blocking)
  * 
  * Initial state: Closed (WALLS layer)
  * 
  * @example
  * ```typescript
- * // Spawn closed bollard
- * spatial.spawn('bollard', 8, 5, GameLayers.WALLS, {
+ * // Spawn closed gate
+ * spatial.spawn('gate', 8, 5, GameLayers.WALLS, {
  *   receivedSignal: false,
  *   color: '#ff0000'
  * });
  * ```
  */
-export type BollardData = BaseEntityData & HasSignalReceiver & HasColor & {
-  type: 'bollard' | 'bollard-open' | 'bollard-closed';
-  receiverType: 'bollard';
+/**
+ * Gate - Blocks movement when closed (on WALLS layer), allows movement when open (on FLOOR layer).
+ * 
+ * Behavior:
+ * - Default: Closed (blocks path)
+ * - Signal ON: Opens (allows path)
+ * - Tick-delay: Immediate (within same tick)
+ */
+export type GateData = BaseEntityData & HasSignalReceiver & HasColor & {
+  type: 'gate' | 'gate-open' | 'gate-closed';
+  receiverType: 'gate';
+};
+
+/**
+ * Transceiver - Wireless signal relay that broadcasts to all transceivers on same channel.
+ * 
+ * Behavior:
+ * - Receives signal via wired connection (conductive floor)
+ * - Broadcasts to ALL transceivers on same channel
+ * - Introduces 1-tick delay (active component)
+ * 
+ * Use cases:
+ * - Remote pressure plate to distant door
+ * - One oscillator powering multiple isolated areas
+ * - Cross-room signaling without conductive path
+ * 
+ * @example
+ * ```typescript
+ * spatial.spawn('transceiver', 5, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: false,
+ *   receivedSignal: false,
+ *   channel: 'door-1',
+ *   color: '#00ff88'
+ * });
+ * ```
+ */
+export type TransceiverData = BaseEntityData & HasSignalEmitter & HasSignalReceiver & HasColor & {
+  type: 'transceiver';
+  signalType: 'transceiver';
+  receiverType: 'transceiver';
+  /** Channel identifier - transceivers on same channel are linked */
+  channel: string;
 };

@@ -222,7 +222,7 @@ export function spawnPlayerWithId(
  * Signal System Spawn Helpers
  *
  * Helper functions for spawning signal-related entities (oscillators,
- * pressure switches, inverters, conductive floors, and bollards).
+ * pressure switches, inverters, conductive floors, and gates).
  */
 
 /**
@@ -272,8 +272,11 @@ export function spawnOscillator(
 /**
  * Spawn a pressure switch entity.
  *
- * Pressure switches toggle when an entity steps on them.
- * Edge-triggered: only toggles on entry, not while standing.
+ * Pressure switches support 4 activation modes:
+ * - toggle: Flips state on each step (default)
+ * - hold: ON while pressed, OFF when released
+ * - latch: OFF → ON on first press, stays ON forever
+ * - inverted-latch: ON → OFF on first press, stays OFF forever
  *
  * @param spatial - SpatialSystem to spawn in
  * @param x - X coordinate
@@ -287,6 +290,7 @@ export function spawnOscillator(
  * // Spawn pressure switch on COLLECTIBLES layer
  * spawnPressureSwitch(spatial, 7, 5, GameLayers.COLLECTIBLES, {
  *   signalState: false,
+ *   switchMode: 'hold',
  *   color: '#00ffff'
  * });
  * ```
@@ -298,15 +302,24 @@ export function spawnPressureSwitch(
   layer: number,
   overrides?: Partial<{
     signalState: boolean;
+    switchMode: 'toggle' | 'hold' | 'latch' | 'inverted-latch';
+    initialState: boolean;
     color: string;
     sceneId: string;
   }>
 ): number {
+  const switchMode = overrides?.switchMode || 'toggle';
+  const defaultState = switchMode === 'inverted-latch' ? true : false;
+  
+  // Remove initialState from overrides to avoid passing it to spawn
+  const { initialState, signalState, ...restOverrides } = overrides || {};
+  
   return spatial.spawn('pressure-switch', x, y, layer, {
     signalType: 'pressure',
-    signalState: false,
+    signalState: initialState ?? signalState ?? defaultState,
+    switchMode,
     color: '#00ffff',
-    ...overrides,
+    ...restOverrides,
   });
 }
 
@@ -394,9 +407,13 @@ export function spawnConductiveFloor(
 }
 
 /**
- * Spawn a bollard entity.
+ * Spawn a gate entity.
  *
- * Bollards are retractable walls controlled by signals:
+ * Gates are retractable walls controlled by signals:
+/**
+ * Spawn a gate entity.
+ *
+ * Behavior:
  * - Signal ON → Open (FLOOR layer, non-blocking)
  * - Signal OFF → Closed (WALLS layer, blocking)
  *
@@ -405,18 +422,18 @@ export function spawnConductiveFloor(
  * @param y - Y coordinate
  * @param layer - Layer to spawn on (WALLS for closed, FLOOR for open)
  * @param overrides - Optional property overrides
- * @returns Entity ID of spawned bollard
+ * @returns Entity ID of spawned gate
  *
  * @example
  * ```typescript
- * // Spawn closed bollard on WALLS layer (starts blocking)
- * spawnBollard(spatial, 10, 5, GameLayers.WALLS, {
+ * // Spawn closed gate on WALLS layer (starts blocking)
+ * spawnGate(spatial, 10, 5, GameLayers.WALLS, {
  *   receivedSignal: false,
  *   color: '#ff0000'
  * });
  * ```
  */
-export function spawnBollard(
+export function spawnGate(
   spatial: SpatialSystem,
   x: number,
   y: number,
@@ -427,12 +444,146 @@ export function spawnBollard(
     sceneId: string;
   }>
 ): number {
-  const type = layer === GameLayers.WALLS ? 'bollard-closed' : 'bollard-open';
+  const type = layer === GameLayers.WALLS ? 'gate-closed' : 'gate-open';
   return spatial.spawn(type, x, y, layer, {
-    receiverType: 'bollard',
+    receiverType: 'gate',
     receivedSignal: false,
     color: '#ff0000',
     ...overrides,
   });
 }
 
+/**
+ * Spawn a transceiver entity.
+ *
+ * Transceivers are wireless signal relays that broadcast to all
+ * transceivers on the same channel. They introduce a 1-tick delay
+ * as active components.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param channel - Channel identifier for wireless linking
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned transceiver
+ *
+ * @example
+ * ```typescript
+ * // Spawn transceiver on channel 'door-1'
+ * spawnTransceiver(spatial, 5, 5, GameLayers.COLLECTIBLES, 'door-1', {
+ *   signalState: false,
+ *   color: '#00ff88'
+ * });
+ * ```
+ */
+export function spawnTransceiver(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  channel: string,
+  overrides?: Partial<{
+    signalState: boolean;
+    receivedSignal: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('transceiver', x, y, layer, {
+    signalType: 'transceiver',
+    receiverType: 'transceiver',
+    signalState: false,
+    receivedSignal: false,
+    channel,
+    color: '#00ff88',
+    ...overrides,
+  });
+}
+
+/**
+ * Logic System Spawn Helpers
+ *
+ * Helper functions for spawning logic-layer entities (path nodes, sleep-wake zones).
+ */
+
+/**
+ * Spawn a path node entity.
+ *
+ * Path nodes serve dual purpose:
+ * - Define NPC patrol paths (for AI systems)
+ * - Conduct signals on LOGIC layer (invisible signal network)
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned path node
+ *
+ * @example
+ * ```typescript
+ * // Spawn path node on LOGIC layer
+ * spawnPathNode(spatial, 5, 5, {
+ *   color: '#888888'
+ * });
+ * ```
+ */
+export function spawnPathNode(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('path-node', x, y, GameLayers.LOGIC, {
+    conductiveType: 'path',
+    receiverType: 'path',
+    receivedSignal: false,
+    color: '#888888',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn a sleep-wake entity.
+ *
+ * Sleep-wake entities toggle NPC active state based on signal:
+ * - Signal ON → NPCs on this cell become active (awake)
+ * - Signal OFF → NPCs on this cell become inactive (asleep)
+ *
+ * Signals propagate to adjacent sleep-wake entities, allowing
+ * users to paint contiguous zones in the editor.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned sleep-wake entity
+ *
+ * @example
+ * ```typescript
+ * // Spawn sleep-wake entity on LOGIC layer
+ * spawnSleepWake(spatial, 5, 5, {
+ *   color: '#9900ff'
+ * });
+ * ```
+ */
+export function spawnSleepWake(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('sleep-wake', x, y, GameLayers.LOGIC, {
+    receiverType: 'sleep-wake',
+    conductiveType: 'sleep-wake',
+    receivedSignal: false,
+    color: '#9900ff',
+    ...overrides,
+  });
+}

@@ -26,7 +26,7 @@ You'll see a 20×20 grid with:
 
 ## Step 3: Try Hot Reload
 
-1. Open `dev/scenes/basic.json` in your editor
+1. Open `dev/games/basic.json` in your editor
 2. Find the player entity:
 ```json
 {
@@ -53,7 +53,7 @@ You'll see a 20×20 grid with:
 
 You now have a working interactive game runtime. Check out:
 - `dev/README.md` - Full documentation
-- `dev/scenes/` - Edit JSON files to create new scenes
+- `dev/games/` - Edit JSON files to create new scenes
 - `dev/IMPLEMENTATION_SUMMARY.md` - Technical details
 
 ## Common Issues
@@ -79,10 +79,10 @@ Check browser console (F12) for JSON syntax errors
 **Create your own scene:**
 ```bash
 # Copy an example
-cp dev/scenes/basic.json dev/scenes/my-scene.json
+cp dev/games/basic.json dev/games/my-scene.json
 
 # Edit it
-code dev/scenes/my-scene.json
+code dev/games/my-scene.json
 
 # Add to dropdown in dev/playground.tsx
 ```
