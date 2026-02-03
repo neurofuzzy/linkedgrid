@@ -1,60 +1,27 @@
 ## PR Code Suggestions ✨
 
-<!-- 455ae1b -->
+<!-- b6a82df -->
 
 Explore these optional code suggestions:
 
-<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=1>Possible issue</td>
+<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=3>Possible issue</td>
 <td>
 
 
 
-<details><summary>Reintroduce input buffering for responsiveness</summary>
+<details><summary>Clear wired transceiver states each tick</summary>
 
 ___
 
-**Reintroduce an input buffer in <code>PlayerInputSystem</code> to prevent missed inputs and <br>ensure responsive controls, especially in low-frame-rate scenarios. This can be <br>done by extending <code>InputProvider</code> to support buffer draining.**
+**Clear the <code>wiredTransceiverStates</code> map at the start of each <code>update</code> cycle to <br>prevent stale states from causing incorrect channel activations on subsequent <br>ticks.**
 
-[packages/spartan/systems/player-input.system.ts [45-72]](https://github.com/neurofuzzy/linkedgrid/pull/20/files#diff-9d78b1dbf8f8122dfcb1dbcc39ee13d0c32d57545e5787c3931cd67acf3857aeR45-R72)
+[packages/spartan/systems/signal.system.ts [91-94]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R91-R94)
 
 ```diff
  update(context: GameContext): void {
-   this.debugStats.movesThisTick = 0;
- 
-   const playerId = this.gameManager.gameState.playerEntityId;
-   if (!playerId || playerId === 0) return;
- 
-   const pos = context.spatial.getEntityPosition(playerId);
-   if (!pos) return;
- 
--  const lastDirection = this.inputProvider.getDirection();
-+  // Assumes inputProvider is extended to have a buffer
-+  // e.g., `drainInputBuffer(): Direction[]`
-+  const inputs = this.inputProvider.drainInputBuffer?.() ?? [this.inputProvider.getDirection()];
-+  
-+  let lastDirection = Direction.NONE;
-+  for (const direction of inputs) {
-+    if (direction !== Direction.NONE) {
-+      lastDirection = direction;
-+    }
-+  }
- 
-   this.debugStats.lastDirection = lastDirection;
- 
-   if (lastDirection === Direction.NONE) return;
- 
-   const delta = this.directionToDelta(lastDirection);
-   const newX = pos.x + delta.x;
-   const newY = pos.y + delta.y;
- 
-   if (context.spatial.isOutOfBounds(newX, newY)) {
-     this.debugStats.blockedMoves++;
-     return;
-   }
- 
-   context.spatial.move(playerId, newX, newY);
-   this.debugStats.movesThisTick++;
- }
++  this.wiredTransceiverStates.clear();
+   this.tickCount++;
+   // Phase 1: Apply pending signals to STEs (gates, inverters, transceivers)
 ```
 
 
@@ -65,55 +32,61 @@ ___
 
 __
 
-Why: The suggestion correctly identifies a significant functional regression where removing the input buffer can lead to missed inputs and unresponsive controls, which is a critical issue for gameplay.
+Why: The suggestion correctly identifies a critical bug where stale `wiredTransceiverStates` persist across ticks, leading to incorrect channel state calculations and signal propagation.
 
 </details></details></td><td align=center>High
 
-</td></tr><tr><td rowspan=3>General</td>
-<td>
+</td></tr><tr><td>
 
 
 
-<details><summary>Use dependency injection for provider</summary>
+<details><summary>Fix transceiver signal propagation bug</summary>
 
 ___
 
-**Refactor <code>WebInputProvider</code> to accept an <code>InputManager</code> via its constructor. Then, <br>in <code>SceneLoader</code>, instantiate <code>WebInputProvider</code> with the manager instead of <br>creating an ad-hoc adapter object to improve code reuse and maintainability.**
+**Fix a bug in <code>processTransceivers</code> by ensuring an 'off' signal is always <br>propagated when a transceiver's <code>receivedSignal</code> state changes to <code>false</code>, not just <br>when its <code>previousState</code> was <code>true</code>.**
 
-[dev/scene-loader.ts [189-202]](https://github.com/neurofuzzy/linkedgrid/pull/20/files#diff-950f0a4080831ca6034793672a2302efb2c0fe3af1f13faaa883e7fe9890b4b5R189-R202)
+[packages/spartan/systems/signal.system.ts [557-570]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R557-R570)
 
 ```diff
--// Let's create a simple adapter object that matches InputProvider interface
--// and delegates to our created manager.
--// This avoids refactoring WebInputProvider to accept an existing manager for now.
--const inputProvider = {
--  getDirection: () => manager.getState().direction,
--  getAction: () => manager.getState().action,
--  getSecondary: () => manager.getState().secondary,
--  getStart: () => manager.getState().start,
--  getRestart: () => manager.getState().restart,
--};
-+// In `packages/spartan-web/input/web-input-provider.ts`, modify the constructor:
-+// constructor(private manager: InputManager) {}
-+// (and remove the internal `new InputManager` call)
-+
-+// Then, in `dev/scene-loader.ts`:
-+const inputProvider = new WebInputProvider(manager);
+ // Channel not active - turn off transceivers that were channel-powered
+ if (hasSignalReceiver(data) && data.receivedSignal) {
+   this.gameManager.gameState.entityStore.setData(tx.id, {
+     receivedSignal: false,
+   });
+-}
  
- // Create and register PlayerInputSystem
- // Runs FIRST to stage movement intents before reactive systems
- const playerInputSystem = new PlayerInputSystem(runtime.game, inputProvider);
+-if (previousState === true) {
++  // Propagate the OFF signal if the state is changing.
++  // This is critical for transceivers that might be wired-powered
++  // but need to propagate an OFF signal when their channel deactivates.
++  if (previousState !== false) {
++    this.previousGeneratorStates.set(tx.id, false);
++
++    const signal = new Signal(tx.id, this.tickCount, false);
++    signal.markVisited(tx.x, tx.y);
++    this.propagateSignal(context, signal);
++  }
++} else if (previousState === true) {
++  // This handles the case where a transceiver was ON but is now OFF
++  // and its receivedSignal was already false (e.g. it was only channel-powered).
+   this.previousGeneratorStates.set(tx.id, false);
+ 
+   const signal = new Signal(tx.id, this.tickCount, false);
+   signal.markVisited(tx.x, tx.y);
+   this.propagateSignal(context, signal);
+ }
 ```
 
 
 - [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
 
 
-<details><summary>Suggestion importance[1-10]: 7</summary>
+<details><summary>Suggestion importance[1-10]: 8</summary>
 
 __
 
-Why: This suggestion correctly points out that using an ad-hoc adapter is a temporary fix and proposes a cleaner, more maintainable design using dependency injection with the `WebInputProvider`, improving code quality.
+Why: The suggestion correctly identifies a subtle bug where a transceiver's state change to 'off' is not always propagated, potentially leaving connected components in an incorrect state.
 
 </details></details></td><td align=center>Medium
 
@@ -121,67 +94,274 @@ Why: This suggestion correctly points out that using an ad-hoc adapter is a temp
 
 
 
-<details><summary>Add adapter destroy method</summary>
+<details><summary>Batch gate mutations outside loop</summary>
 
 ___
 
-**Add a <code>destroy</code> method to the ad-hoc <code>inputProvider</code> adapter in <code>dev/scene-loader.ts</code> <br>that calls the <code>cleanup</code> function. This ensures proper teardown of event listeners <br>and prevents memory leaks.**
+**Refactor the <code>update</code> method to avoid mutating the spatial store while iterating. <br>First, collect gates to be opened or closed, then perform the mutations in <br>separate loops.**
 
-[dev/scene-loader.ts [192-198]](https://github.com/neurofuzzy/linkedgrid/pull/20/files#diff-950f0a4080831ca6034793672a2302efb2c0fe3af1f13faaa883e7fe9890b4b5R192-R198)
+[packages/spartan/systems/gate.system.ts [30-45]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR30-R45)
 
 ```diff
- const inputProvider = {
-   getDirection: () => manager.getState().direction,
-   getAction: () => manager.getState().action,
-   getSecondary: () => manager.getState().secondary,
-   getStart: () => manager.getState().start,
-   getRestart: () => manager.getState().restart,
-+  destroy: cleanup,
- };
+ update(context: GameContext): void {
+-    // Process all gates
++    const toOpen: Array<[number, { x: number; y: number; layer: number }, any]> = [];
++    const toClose: Array<[number, { x: number; y: number; layer: number }, any]> = [];
+     for (const [entityId, pos] of context.spatial.getAllPositions()) {
+         const data = context.spatial.getEntityData(entityId);
+         if (!data || !isGate(data)) continue;
+-
+         const shouldBeOpen = data.receivedSignal === true;
+         const isOpen = pos.layer !== GameLayers.WALLS;
+-
+-        if (shouldBeOpen && !isOpen) {
+-            this.openGate(context, entityId, pos, data);
+-        } else if (!shouldBeOpen && isOpen) {
+-            this.closeGate(context, entityId, pos, data);
+-        }
++        if (shouldBeOpen && !isOpen) toOpen.push([entityId, pos, data]);
++        else if (!shouldBeOpen && isOpen) toClose.push([entityId, pos, data]);
++    }
++    for (const [id, pos, data] of toOpen) {
++        this.openGate(context, id, pos, data);
++    }
++    for (const [id, pos, data] of toClose) {
++        this.closeGate(context, id, pos, data);
+     }
+ }
 ```
 
 
 - [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
 
 
-<details><summary>Suggestion importance[1-10]: 6</summary>
+<details><summary>Suggestion importance[1-10]: 8</summary>
 
 __
 
-Why: The suggestion correctly identifies a potential memory leak by pointing out the missing `destroy` method on the ad-hoc adapter, which is necessary for cleaning up event listeners.
+Why: The suggestion correctly identifies a potential issue of modifying a collection while iterating over it and proposes a safer pattern, which improves the system's robustness.
 
-</details></details></td><td align=center>Low
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=1>High-level</td>
+<td>
+
+
+
+<details><summary>Separate gate logic from signal system</summary>
+
+___
+
+**The suggestion praises the separation of <code>GateSystem</code> from <code>SignalSystem</code> and <br>recommends applying the same pattern to <code>SleepWake</code> zones. This would involve <br>creating a new system, like an <code>AISystem</code>, to manage NPC activation, thus removing <br>that responsibility from the <code>SignalSystem</code>.**
+
+
+### Examples:
+
+
+
+<details>
+<summary>
+<a href="https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-6d402037c24eacee3dfd84b69761b78e9f97a4737f2ffc2bf8f2fd561c1217a1R377-R495">packages/spartan/systems/signal.system.ts [377-495]</a>
+</summary>
+
+
+
+```typescript
+            if (hasSignalReceiver(data) && data.receiverType === 'sleep-wake') {
+              this.handleSleepWake(context, pos.x, pos.y, signal.value);
+            }
+            break;
+
+          case 'inverter':
+          case 'gate':
+          case 'transceiver':
+            // STEs: set pending, queue for next tick
+            if (hasSignalReceiver(data)) {
+
+ ... (clipped 109 lines)
+```
+</details>
+
+
+
+
+### Solution Walkthrough:
+
+
+
+#### Before:
+```typescript
+// in packages/spartan/systems/signal.system.ts
+class SignalSystem {
+  // ...
+  private propagateSignal(context, signal) {
+    // ...
+    for (const entityId of entities) {
+      const data = context.spatial.getEntityData(entityId);
+      // ...
+      if (this.classifyEntity(data) === 'conductor') {
+        // ...
+        if (data.receiverType === 'sleep-wake') {
+          // SignalSystem directly handles the effect of waking/sleeping NPCs
+          this.handleSleepWake(context, pos.x, pos.y, signal.value);
+        }
+      }
+    }
+  }
+
+  private handleSleepWake(context, x, y, signalValue) {
+    const actorId = context.spatial.grid.cell(x, y).getValue(GameLayers.ACTORS);
+    if (actorId) {
+      this.gameManager.gameState.entityStore.setData(actorId, {
+        aiActive: signalValue,
+      });
+    }
+  }
+}
+
+```
+
+
+
+#### After:
+```typescript
+// in packages/spartan/systems/signal.system.ts
+class SignalSystem {
+  // ...
+  private propagateSignal(context, signal) {
+    // ...
+    for (const entityId of entities) {
+      // ...
+      if (this.classifyEntity(data) === 'conductor') {
+        // SignalSystem now only sets the signal state on the sleep-wake zone
+        if (hasSignalReceiver(data)) {
+           this.gameManager.gameState.entityStore.setData(entityId, {
+             receivedSignal: signal.value,
+           });
+        }
+      }
+    }
+  }
+  // The handleSleepWake method is removed.
+}
+
+// in a new file, e.g., packages/spartan/systems/ai.system.ts
+class AISystem {
+  update(context) {
+    // Iterate over all sleep-wake zones
+    for (const [zoneId, pos] of allSleepWakeZones) {
+      const zoneData = context.spatial.getEntityData(zoneId);
+      const actorId = context.spatial.getEntityIdAt(pos.x, pos.y, GameLayers.ACTORS);
+      if (actorId) {
+        // A dedicated system reads the signal state and applies the effect
+        this.gameManager.gameState.entityStore.setData(actorId, {
+          aiActive: zoneData.receivedSignal,
+        });
+      }
+    }
+  }
+}
+
+```
+
+
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: The suggestion correctly identifies a good design pattern (separating `GateSystem` from `SignalSystem`) and proposes extending it to `SleepWake` zones, which would improve modularity by moving AI state management out of the already complex `SignalSystem`.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=2>General</td>
+<td>
+
+
+
+<details><summary>Preserve pending signal field</summary>
+
+___
+
+**Preserve the <code>pendingSignal</code> state when a gate is re-spawned by explicitly <br>including <code>pendingSignal: data.pendingSignal</code> in the new entity data.**
+
+[packages/spartan/systems/gate.system.ts [66-79]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR66-R79)
+
+```diff
+ context.spatial.spawnWithId(
+     entityId,
+     'gate-open',
+     pos.x,
+     pos.y,
+     GameLayers.FLOOR,
+     {
+         receiverType: 'gate',
+         receivedSignal: true,
++        pendingSignal: data.pendingSignal,
+         color,
+-        sceneId: data.sceneId,
+-        // Preserve pendingSignal if it existed (though it shouldn't for this tick)
++        sceneId: data.sceneId
+     }
+ );
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: The suggestion correctly implements the behavior described in the code comment, fixing a bug where the `pendingSignal` state would be lost when a gate opens.
+
+
+</details></details></td><td align=center>Medium
 
 </td></tr><tr><td>
 
 
 
-<details><summary>Initialize input listeners automatically</summary>
+<details><summary>Correctly apply opacity to colors</summary>
 
 ___
 
-**Automatically enable keyboard, mouse, and gamepad listeners within the <br><code>WebInputProvider</code> constructor to ensure it starts capturing input by default upon <br>instantiation.**
+**Fix the opacity logic for closed gates to correctly handle colors that already <br>have an alpha channel by first stripping any existing alpha before applying the <br>new one.**
 
-[packages/spartan-web/input/web-input-provider.ts [8-10]](https://github.com/neurofuzzy/linkedgrid/pull/20/files#diff-83628b4828cb94c5fd8a4f4b60d2c53fca64475366bc3555efa13222898211c1R8-R10)
+[packages/spartan/systems/gate.system.ts [92-99]](https://github.com/neurofuzzy/linkedgrid/pull/21/files#diff-ab6ada1323874c3f475fb792f9837714f1d10877d1a9cc502c857926490598dcR92-R99)
 
 ```diff
- constructor(container: HTMLElement | null, canvas: HTMLCanvasElement | null, config?: InputConfig) {
-   this.manager = new InputManager(container, canvas, config);
-+  this.manager.enableKeyboard().enableMouse().enableGamepad();
+ // Make semi-opaque when closed
+ let color = data.color || '#ff0000';
+ if (color.startsWith('#')) {
+-    // If standard hex (7), add alpha
+-    if (color.length === 7) {
+-        color += '80'; // 50% opacity
++    // Strip any existing alpha
++    if (color.length > 7) {
++        color = color.substring(0, 7);
+     }
++    // Add 50% opacity alpha
++    color += '80';
  }
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=5 -->
 
 
-<details><summary>Suggestion importance[1-10]: 5</summary>
+<details><summary>Suggestion importance[1-10]: 7</summary>
 
 __
 
-Why: The suggestion improves the usability of the new `WebInputProvider` by making it active by default, which simplifies its usage. However, this change might not be universally desirable if selective input enabling is needed.
+Why: The suggestion correctly identifies a bug in opacity handling for colors that already have an alpha channel and provides a robust fix, improving visual consistency.
 
-</details></details></td><td align=center>Low
+
+</details></details></td><td align=center>Medium
 
 </td></tr>
 <tr><td align="center" colspan="2">
@@ -189,4 +369,3 @@ Why: The suggestion improves the usability of the new `WebInputProvider` by maki
 - [ ] More <!-- /improve --more_suggestions=true -->
 
 </td><td></td></tr></tbody></table>
-

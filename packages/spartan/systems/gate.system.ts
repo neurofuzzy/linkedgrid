@@ -26,9 +26,14 @@ export class GateSystem extends BaseReactiveSystem {
 
     /**
      * Update gate states based on their receivedSignal.
+     * Collects gates to mutate first, then applies changes to avoid
+     * modifying the collection while iterating.
      */
     update(context: GameContext): void {
-        // Process all gates
+        // Collect gates that need to change state
+        const toOpen: Array<[number, { x: number; y: number; layer: number }, Record<string, unknown>]> = [];
+        const toClose: Array<[number, { x: number; y: number; layer: number }, Record<string, unknown>]> = [];
+
         for (const [entityId, pos] of context.spatial.getAllPositions()) {
             const data = context.spatial.getEntityData(entityId);
             if (!data || !isGate(data)) continue;
@@ -37,10 +42,18 @@ export class GateSystem extends BaseReactiveSystem {
             const isOpen = pos.layer !== GameLayers.WALLS; // Open = NOT on WALLS layer
 
             if (shouldBeOpen && !isOpen) {
-                this.openGate(context, entityId, pos, data);
+                toOpen.push([entityId, pos, data]);
             } else if (!shouldBeOpen && isOpen) {
-                this.closeGate(context, entityId, pos, data);
+                toClose.push([entityId, pos, data]);
             }
+        }
+
+        // Apply mutations outside the iteration loop
+        for (const [entityId, pos, data] of toOpen) {
+            this.openGate(context, entityId, pos, data);
+        }
+        for (const [entityId, pos, data] of toClose) {
+            this.closeGate(context, entityId, pos, data);
         }
     }
 
@@ -48,19 +61,16 @@ export class GateSystem extends BaseReactiveSystem {
         context: GameContext,
         entityId: number,
         pos: { x: number; y: number; layer: number },
-        data: any
+        data: Record<string, unknown>
     ): void {
         // Remove from store to allow spawnWithId to reuse ID
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
-        // Restore opacity when open
-        let color = data.color || '#ff0000';
-        if (color.startsWith('#')) {
-            // Strip alpha if present (anything longer than 7)
-            if (color.length > 7) {
-                color = color.substring(0, 7);
-            }
+        // Restore opacity when open - strip any existing alpha
+        let color = (data.color as string) || '#ff0000';
+        if (color.startsWith('#') && color.length > 7) {
+            color = color.substring(0, 7);
         }
 
         context.spatial.spawnWithId(
@@ -72,9 +82,9 @@ export class GateSystem extends BaseReactiveSystem {
             {
                 receiverType: 'gate',
                 receivedSignal: true,
+                pendingSignal: data.pendingSignal,
                 color,
                 sceneId: data.sceneId,
-                // Preserve pendingSignal if it existed (though it shouldn't for this tick)
             }
         );
     }
@@ -83,19 +93,20 @@ export class GateSystem extends BaseReactiveSystem {
         context: GameContext,
         entityId: number,
         pos: { x: number; y: number; layer: number },
-        data: any
+        data: Record<string, unknown>
     ): void {
         // Remove from store to allow spawnWithId to reuse ID
         this.gameManager.gameState.entityStore.remove(entityId);
         context.spatial.remove(entityId);
 
         // Make semi-opaque when closed
-        let color = data.color || '#ff0000';
+        // Strip any existing alpha before adding new one
+        let color = (data.color as string) || '#ff0000';
         if (color.startsWith('#')) {
-            // If standard hex (7), add alpha
-            if (color.length === 7) {
-                color += '80'; // 50% opacity
+            if (color.length > 7) {
+                color = color.substring(0, 7);
             }
+            color += '80'; // 50% opacity
         }
 
         context.spatial.spawnWithId(
@@ -107,6 +118,7 @@ export class GateSystem extends BaseReactiveSystem {
             {
                 receiverType: 'gate',
                 receivedSignal: false,
+                pendingSignal: data.pendingSignal,
                 color,
                 sceneId: data.sceneId,
             }
