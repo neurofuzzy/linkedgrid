@@ -7,4 +7,5 @@ export * from './spatial.trait';
 export * from './thermal.trait';
 export * from './ai.trait';
 export * from './signal.trait';
+export * from './npc-movement.trait';
 export * from './trait-guards';

@@ -16,6 +16,7 @@ export { ExplosionSystem } from './explosion.system';
 export { FireSystem } from './fire.system';
 export { FloorEffectSystem } from './floor-effect.system';
 export { LiquidSystem } from './liquid.system';
+export { NPCMovementSystem } from './npc-movement.system';
 export { PlayerInputSystem } from './player-input.system';
 export { PoisonSystem } from './poison.system';
 export { TeleporterSystem } from './teleporter.system';

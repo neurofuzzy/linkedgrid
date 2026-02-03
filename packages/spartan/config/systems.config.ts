@@ -75,6 +75,13 @@ export const SYSTEM_CONFIG = {
     dependencies: ['SpatialSystem'] as const,
     description: 'Handles domino-like chain reactions',
   },
+
+  NPCMovement: {
+    tickRate: 2,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Handles NPC movement behaviors (follow, flee, pursue, wander)',
+  },
 } as const;
 
 // Timing constants extracted from config

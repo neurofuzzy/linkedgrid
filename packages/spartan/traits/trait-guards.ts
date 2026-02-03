@@ -25,6 +25,7 @@
  */
 
 import type { EntityData } from '../entities/entity.types';
+import type { HasNPCMovement } from './npc-movement.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -786,5 +787,27 @@ export function isPathNode(entity: EntityData): entity is PathNodeData {
  */
 export function isSleepWake(entity: EntityData): entity is SleepWakeData {
   return entity.type === 'sleep-wake';
+}
+
+/**
+ * NPC Movement Trait Guard
+ *
+ * Checks if an entity has NPC movement behavior.
+ */
+
+/**
+ * Check if entity has NPC movement trait.
+ *
+ * Entities with NPC movement trait can be controlled by the NPCMovementSystem.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses NPC movement trait
+ */
+export function hasNPCMovement(
+  entity: EntityData
+): entity is EntityData & HasNPCMovement {
+  if (!('movementMode' in entity)) return false;
+  const mode = entity.movementMode;
+  return mode === 'follow' || mode === 'flee' || mode === 'pursue' || mode === 'wander';
 }
 

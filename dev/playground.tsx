@@ -67,6 +67,11 @@ const AVAILABLE_GAMES = [
     name: 'Advanced Signals (Switch Modes, Paths, Sleep-Wake)',
     path: '/dev/games/signal-advanced.json',
   },
+  {
+    id: 'npc-movement',
+    name: 'NPC Movement (Follow, Flee, Pursue, Wander)',
+    path: '/dev/games/npc-movement.json',
+  },
 ];
 
 /**
