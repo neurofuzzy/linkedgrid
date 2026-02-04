@@ -71,6 +71,14 @@ export class GameLoop {
   }
 
   /**
+   * Add a system to the beginning of the execution list.
+   * Useful for Input systems that must run before logic systems.
+   */
+  prependSystem(system: GameSystem): void {
+    this.systems.unshift(system);
+  }
+
+  /**
    * Execute one game tick synchronously.
    *
    * 1. Detect overlaps from committed state

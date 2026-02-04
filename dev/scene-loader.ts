@@ -180,7 +180,7 @@ const KNOWN_SYSTEMS = [
  * ```
  */
 export class SceneLoader {
-  constructor(private container?: HTMLElement | null) {}
+  constructor(private container?: HTMLElement | null) { }
 
   /**
    * Load scene configuration and create initialized GameRuntime.
@@ -212,14 +212,14 @@ export class SceneLoader {
         manager instanceof InputManager
           ? new WebInputProvider(manager)
           : {
-              // Headless mode: simple adapter
-              getDirection: () => manager.getState().direction,
-              getAction: () => manager.getState().action,
-              getSecondary: () => manager.getState().secondary,
-              getStart: () => manager.getState().start,
-              getRestart: () => manager.getState().restart,
-              destroy: cleanup,
-            };
+            // Headless mode: simple adapter
+            getDirection: () => manager.getState().direction,
+            getAction: () => manager.getState().action,
+            getSecondary: () => manager.getState().secondary,
+            getStart: () => manager.getState().start,
+            getRestart: () => manager.getState().restart,
+            destroy: cleanup,
+          };
 
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
@@ -227,7 +227,7 @@ export class SceneLoader {
         runtime.game,
         inputProvider
       );
-      runtime.addSystem(playerInputSystem);
+      runtime.prependSystem(playerInputSystem);
 
       // Store references for external access
       runtime.inputManager = manager;

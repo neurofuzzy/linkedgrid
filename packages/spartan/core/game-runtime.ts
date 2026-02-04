@@ -447,6 +447,16 @@ export class GameRuntime {
   }
 
   /**
+   * Add a system to the start of the execution list.
+   *
+   * @param system - Game system to add (e.g. PlayerInputSystem)
+   */
+  public prependSystem(system: GameSystem): void {
+    this.systems.unshift(system);
+    this.gameLoop.prependSystem(system);
+  }
+
+  /**
    * Start the game loop.
    *
    * Begins requestAnimationFrame loop with fixed timestep.
