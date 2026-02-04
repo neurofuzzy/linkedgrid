@@ -75,6 +75,8 @@ interface PoisonStatus {
  * Timing is tick-based (not ms-based) for deterministic behavior.
  */
 export class PoisonSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   // System-owned state per source entity (timing and origin position)
   private spreadState = new Map<number, SpreadState>();
 

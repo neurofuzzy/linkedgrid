@@ -65,6 +65,8 @@ type FloorEffectData = BaseEntityData & {
  * ```
  */
 export class FloorEffectSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   // System-owned timing state per entity (damage/heal cadence)
   private timingState = new Map<number, EntityTimingState>();
 

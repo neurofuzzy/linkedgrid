@@ -3,7 +3,7 @@ import { LinkedGrid } from '../core/grid/index';
 import { SparseEntityStore } from '../core/entity-store';
 import { SpatialSystem } from '../core/spatial-system';
 import { GameLoop } from '../core/game-loop';
-import type { GameSystem, GameContext } from '../core/types';
+import type { GameSystem, GameContext, ExecutionPhase } from '../core/types';
 
 describe('GameLoop', () => {
   it('should detect overlaps and run systems', () => {
@@ -113,5 +113,132 @@ describe('GameLoop', () => {
     gameLoop.tick();
 
     expect(detectedOverlaps).toBe(false);
+  });
+
+  describe('execution phase sorting', () => {
+    /**
+     * Helper to create a system with a specific execution phase.
+     */
+    function createPhasedSystem(
+      phase: ExecutionPhase,
+      name: string,
+      onUpdate: () => void
+    ): GameSystem {
+      return {
+        executionPhase: phase,
+        update: onUpdate,
+      };
+    }
+
+    it('should sort systems by execution phase', () => {
+      const grid = new LinkedGrid(10, 10);
+      const store = new SparseEntityStore();
+      const spatial = new SpatialSystem(grid, store);
+      const gameLoop = new GameLoop(spatial);
+
+      const executionOrder: string[] = [];
+
+      // Add systems in reverse order (post-commit first, input last)
+      gameLoop.addSystem(createPhasedSystem('post-commit', 'collection', () => {
+        executionOrder.push('post-commit');
+      }));
+      gameLoop.addSystem(createPhasedSystem('main', 'fire', () => {
+        executionOrder.push('main');
+      }));
+      gameLoop.addSystem(createPhasedSystem('pre-commit', 'door', () => {
+        executionOrder.push('pre-commit');
+      }));
+      gameLoop.addSystem(createPhasedSystem('input', 'playerInput', () => {
+        executionOrder.push('input');
+      }));
+
+      gameLoop.tick();
+
+      // Should run in phase order despite registration order
+      expect(executionOrder).toEqual(['input', 'pre-commit', 'main', 'post-commit']);
+    });
+
+    it('should preserve order within the same phase (stable sort)', () => {
+      const grid = new LinkedGrid(10, 10);
+      const store = new SparseEntityStore();
+      const spatial = new SpatialSystem(grid, store);
+      const gameLoop = new GameLoop(spatial);
+
+      const executionOrder: string[] = [];
+
+      // Add multiple systems in the same phase
+      gameLoop.addSystem(createPhasedSystem('main', 'fire', () => {
+        executionOrder.push('fire');
+      }));
+      gameLoop.addSystem(createPhasedSystem('main', 'explosion', () => {
+        executionOrder.push('explosion');
+      }));
+      gameLoop.addSystem(createPhasedSystem('main', 'poison', () => {
+        executionOrder.push('poison');
+      }));
+
+      gameLoop.tick();
+
+      // Should maintain registration order within phase
+      expect(executionOrder).toEqual(['fire', 'explosion', 'poison']);
+    });
+
+    it('should default systems without executionPhase to main', () => {
+      const grid = new LinkedGrid(10, 10);
+      const store = new SparseEntityStore();
+      const spatial = new SpatialSystem(grid, store);
+      const gameLoop = new GameLoop(spatial);
+
+      const executionOrder: string[] = [];
+
+      // System without executionPhase (legacy/anonymous)
+      const legacySystem: GameSystem = {
+        update: () => {
+          executionOrder.push('legacy');
+        },
+      };
+
+      gameLoop.addSystem(createPhasedSystem('input', 'input', () => {
+        executionOrder.push('input');
+      }));
+      gameLoop.addSystem(legacySystem);
+      gameLoop.addSystem(createPhasedSystem('post-commit', 'post', () => {
+        executionOrder.push('post-commit');
+      }));
+
+      gameLoop.tick();
+
+      // Legacy system should run in 'main' phase
+      expect(executionOrder).toEqual(['input', 'legacy', 'post-commit']);
+    });
+
+    it('should sort systems when using registerSystems()', () => {
+      const grid = new LinkedGrid(10, 10);
+      const store = new SparseEntityStore();
+      const spatial = new SpatialSystem(grid, store);
+      const gameLoop = new GameLoop(spatial);
+
+      const executionOrder: string[] = [];
+
+      // Register all systems at once in wrong order
+      gameLoop.registerSystems([
+        createPhasedSystem('post-commit', 'teleporter', () => {
+          executionOrder.push('post-commit');
+        }),
+        createPhasedSystem('input', 'playerInput', () => {
+          executionOrder.push('input');
+        }),
+        createPhasedSystem('pre-commit', 'push', () => {
+          executionOrder.push('pre-commit');
+        }),
+        createPhasedSystem('main', 'fire', () => {
+          executionOrder.push('main');
+        }),
+      ]);
+
+      gameLoop.tick();
+
+      expect(executionOrder).toEqual(['input', 'pre-commit', 'main', 'post-commit']);
+    });
   });
 });

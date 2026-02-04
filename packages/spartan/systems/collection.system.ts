@@ -29,6 +29,8 @@ import { isPlayer, isCollectible, hasInventory } from '../traits/trait-guards';
  * ```
  */
 export class CollectionSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'post-commit' as const;
+
   constructor(private gameManager: GameManager) {
     super();
   }

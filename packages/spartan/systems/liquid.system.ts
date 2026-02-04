@@ -41,6 +41,8 @@ type LiquidConfig = BaseEntityData & {
  * Simulates fluid dynamics using local equalization (cellular automata).
  */
 export class LiquidSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   private spreadState = new Map<number, SpreadState>();
   private propagatedEntities = new Map<number, PropagatedEntity>();
 

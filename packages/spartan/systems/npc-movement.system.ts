@@ -37,6 +37,8 @@ import type { HasNPCMovement } from '../traits/npc-movement.trait';
  * ```
  */
 export class NPCMovementSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   protected tickRate = SYSTEM_CONFIG.NPCMovement.tickRate;
 
   protected onTick(context: GameContext): void {

@@ -33,6 +33,7 @@ import type { HasArmor, HasShield, HasResistance } from './defense.trait';
 import type { HasProjectile } from './projectile.trait';
 import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
 import type { HasSpawner } from './spawner.trait';
+import type { HasSceneConnection } from './scene-connection.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -148,6 +149,21 @@ export function hasTeleportTarget(
   entity: EntityData
 ): entity is TeleporterData {
   return 'targetKey' in entity && typeof entity.targetKey === 'string';
+}
+
+/**
+ * Check if entity has scene connection trait.
+ *
+ * Entities with scene connection trait can be registered in GameState.connections
+ * for color-coded cross-scene portals.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity possesses scene connection trait (connectionKey)
+ */
+export function hasSceneConnection(
+  entity: EntityData
+): entity is EntityData & HasSceneConnection {
+  return 'connectionKey' in entity && typeof entity.connectionKey === 'string';
 }
 
 /**

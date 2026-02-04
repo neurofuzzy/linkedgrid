@@ -42,6 +42,8 @@ interface BurningEntity {
  * ```
  */
 export class FireSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   private burningEntities = new Map<number, BurningEntity>();
 
   protected tickRate = SYSTEM_CONFIG.Fire.tickRate;

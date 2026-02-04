@@ -1,7 +1,7 @@
 /**
  * @brief Abstract base classes and interfaces for game systems.
  */
-import type { GameSystem, GameContext, EntityLifecycleEvent } from './types';
+import type { GameSystem, GameContext, EntityLifecycleEvent, ExecutionPhase } from './types';
 
 /**
  * BaseSystem - Abstract base for all game systems
@@ -15,6 +15,12 @@ export abstract class BaseSystem implements GameSystem {
   get name(): string {
     return this.constructor.name;
   }
+
+  /**
+   * Execution phase for automatic ordering.
+   * Subclasses must declare their phase.
+   */
+  abstract readonly executionPhase: ExecutionPhase;
 
   /**
    * Main update method - implemented by subclasses

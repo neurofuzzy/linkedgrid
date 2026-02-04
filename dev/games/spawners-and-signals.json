@@ -152,12 +152,8 @@
                     "y": 18,
                     "layer": 1,
                     "data": {
-                        "destination": {
-                            "sceneId": "room2",
-                            "x": 2,
-                            "y": 10,
-                            "layer": 6
-                        }
+                        "connectionKey": "link-1",
+                        "targetKey": "link-1"
                     }
                 }
             ]
@@ -492,12 +488,8 @@
                     "y": 10,
                     "layer": 1,
                     "data": {
-                        "destination": {
-                            "sceneId": "room1",
-                            "x": 15,
-                            "y": 15,
-                            "layer": 6
-                        }
+                        "connectionKey": "link-1",
+                        "targetKey": "link-1"
                     }
                 }
             ]

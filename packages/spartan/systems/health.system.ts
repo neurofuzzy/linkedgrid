@@ -81,6 +81,8 @@ const DEFAULT_CONFIG: HealthSystemConfig = {
  * ```
  */
 export class HealthSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'post-commit' as const;
+
   private intents: HealthIntent[] = [];
   private config: HealthSystemConfig;
 

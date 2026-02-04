@@ -26,6 +26,8 @@ import { Direction } from '../core/grid/direction';
  * 5. SpatialSystem commit handles the atomic resolution (Pusher -> Crate -> Empty).
  */
 export class PushSystem extends BaseTickedSystem {
+    readonly executionPhase = 'pre-commit' as const;
+
     protected tickRate = 1;
 
     protected onTick(context: GameContext): void {

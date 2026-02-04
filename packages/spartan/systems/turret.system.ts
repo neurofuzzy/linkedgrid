@@ -40,6 +40,8 @@ import type { HasTurret } from '../traits/turret.trait';
  * ```
  */
 export class TurretSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   protected tickRate = 1; // Run every tick for cooldown tracking
 
   constructor(

@@ -6,7 +6,8 @@ import type { GameContext } from '../core/types';
 import type { TeleporterData } from '../entities/entity.types';
 import type { GameManager } from '../core/game-manager';
 import type { SpatialSystem } from '../core/spatial-system';
-import { isPlayer, isTeleporter } from '../traits/trait-guards';
+import { isPlayer, isTeleporter, hasSceneConnection } from '../traits/trait-guards';
+import { GameLayers } from '../config/layers.config';
 
 type TeleporterState = 'ready' | 'inactive';
 
@@ -33,6 +34,8 @@ type TeleporterState = 'ready' | 'inactive';
  * ```
  */
 export class TeleporterSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'post-commit' as const;
+
   constructor(private gameManager: GameManager) {
     super();
   }
@@ -77,41 +80,109 @@ export class TeleporterSystem extends BaseReactiveSystem {
   private handlePlayerTeleporterOverlap(
     teleporterId: number,
     teleporter: TeleporterData,
-    _spatial: SpatialSystem
+    spatial: SpatialSystem
   ): void {
     const state = (teleporter.teleporterState as TeleporterState) || 'ready';
     if (state !== 'ready') return;
 
+    // Get current scene and player position for connection key lookup
+    const currentScene = this.gameManager.sceneManager.getActiveScene();
+    const playerPos = spatial.getEntityPosition(
+      this.gameManager.gameState.playerEntityId
+    );
+
+    // === PRIORITY 1: Use connection key (new format) ===
+    if (hasSceneConnection(teleporter) && currentScene && playerPos) {
+      const endpoints = this.gameManager.gameState.getConnections(
+        teleporter.connectionKey
+      );
+
+      // Find destination (first endpoint that's not current location)
+      const destination = endpoints.find(
+        (ep) =>
+          ep.sceneId !== currentScene.id ||
+          ep.x !== playerPos.x ||
+          ep.y !== playerPos.y
+      );
+
+      if (destination) {
+        // Set source teleporter to inactive
+        this.gameManager.gameState.entityStore.setData(teleporterId, {
+          teleporterState: 'inactive',
+        });
+
+        // Use player's current layer for teleportation (more robust than hardcoding)
+        const playerEntity = spatial.getEntityData(
+          this.gameManager.gameState.playerEntityId
+        );
+        const targetLayer = playerEntity?.layer ?? GameLayers.ACTORS;
+
+        // Execute teleport
+        this.gameManager.movePlayerToScene(
+          destination.sceneId,
+          destination.x,
+          destination.y,
+          targetLayer
+        );
+
+        // Set destination teleporter to inactive
+        this.setDestinationTeleporterInactive(
+          destination.sceneId,
+          destination.x,
+          destination.y
+        );
+        return;
+      }
+
+      console.warn(
+        `[TeleporterSystem] No valid destination for connection key "${teleporter.connectionKey}"`
+      );
+      return;
+    }
+
+    // === PRIORITY 2: Fall back to direct destination (old format) ===
     const dest = teleporter.destination;
-    if (!dest) return;
+    if (!dest) {
+      console.warn(
+        `[TeleporterSystem] Teleporter has no connectionKey or destination`
+      );
+      return;
+    }
 
     this.gameManager.gameState.entityStore.setData(teleporterId, {
       teleporterState: 'inactive',
     });
 
-    this.gameManager.movePlayerToScene(
-      dest.sceneId,
-      dest.x,
-      dest.y,
-      dest.layer
-    );
+    this.gameManager.movePlayerToScene(dest.sceneId, dest.x, dest.y, dest.layer);
 
-    const destScene = this.gameManager.sceneManager.getScene(dest.sceneId);
-    if (destScene) {
-      const destCell = destScene.grid.cell(dest.x, dest.y);
-      if (destCell) {
-        for (let layer = 0; layer < 8; layer++) {
-          const entityId = destCell.values[layer];
-          if (entityId) {
-            const entityData =
-              this.gameManager.gameState.entityStore.getData(entityId);
-            if (entityData && isTeleporter(entityData)) {
-              this.gameManager.gameState.entityStore.setData(entityId, {
-                teleporterState: 'inactive',
-              });
-              break;
-            }
-          }
+    this.setDestinationTeleporterInactive(dest.sceneId, dest.x, dest.y);
+  }
+
+  /**
+   * Set the teleporter at the destination location to inactive.
+   * Prevents immediate re-teleportation when player arrives.
+   */
+  private setDestinationTeleporterInactive(
+    sceneId: string,
+    x: number,
+    y: number
+  ): void {
+    const destScene = this.gameManager.sceneManager.getScene(sceneId);
+    if (!destScene) return;
+
+    const destCell = destScene.grid.cell(x, y);
+    if (!destCell) return;
+
+    for (let layer = 0; layer < 8; layer++) {
+      const entityId = destCell.values[layer];
+      if (entityId) {
+        const entityData =
+          this.gameManager.gameState.entityStore.getData(entityId);
+        if (entityData && isTeleporter(entityData)) {
+          this.gameManager.gameState.entityStore.setData(entityId, {
+            teleporterState: 'inactive',
+          });
+          break;
         }
       }
     }

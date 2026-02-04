@@ -78,6 +78,8 @@ export type {
   HasDamageable,
 } from './traits/traits';
 
+export type { HasSceneConnection } from './traits/scene-connection.trait';
+
 // Entity archetypes (example patterns)
 export * from './entities/entity.types';
 
@@ -88,6 +90,7 @@ export {
   hasAI,
   hasSceneLocation,
   hasTeleportTarget,
+  hasSceneConnection,
   hasInventory,
   isLockable,
   isCollectible,
