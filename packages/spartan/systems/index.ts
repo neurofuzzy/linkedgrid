@@ -21,6 +21,7 @@ export { NPCMovementSystem } from './npc-movement.system';
 export { PlayerInputSystem } from './player-input.system';
 export { PoisonSystem } from './poison.system';
 export { ProjectileSystem } from './projectile.system';
+export { PushSystem } from './push.system';
 export { TeleporterSystem } from './teleporter.system';
 export { TurretSystem } from './turret.system';
 export { SignalSystem } from './signal.system';

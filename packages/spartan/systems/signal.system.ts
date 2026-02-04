@@ -81,6 +81,11 @@ export class SignalSystem extends BaseReactiveSystem {
   private wiredTransceiverStates = new Map<number, boolean>();
   private channelStates = new Map<string, boolean>();
 
+  // Topology change detection - tracks conductive entity positions
+  private conductivePositions = new Map<number, string>();
+  // Flag to skip topology reset on first tick (initialization)
+  private initialized = false;
+
   // Tick counter
   private tickCount = 0;
 
@@ -107,23 +112,80 @@ export class SignalSystem extends BaseReactiveSystem {
       }
     }
 
-    // Phase 2: Update generators (oscillators, pressure switches)
+    // Phase 2: Check if network topology changed (conductive entities moved)
+    const topologyChanged = this.checkTopologyChanged(context);
+
+    // Phase 3: Update generators (oscillators, pressure switches)
     this.updateOscillators(context);
     this.updatePressureSwitches(context);
 
-    // Phase 3: Create and propagate signals from generators that changed
-    this.propagateFromGenerators(context);
+    // Phase 4: Create and propagate signals from generators
+    // If topology changed, re-propagate from ALL active generators
+    this.propagateFromGenerators(context, topologyChanged);
 
-    // Phase 4: Propagate signals from STEs that just applied pending
+    // Phase 5: Propagate signals from STEs that just applied pending
     for (const emission of emissions) {
       this.propagateFromSTE(context, emission);
     }
 
-    // Phase 5: Process transceivers (wireless broadcast)
+    // Phase 6: Process transceivers (wireless broadcast)
     this.processTransceivers(context);
 
-    // Phase 6: Check inverters for state corrections (handles no-input case)
+    // Phase 7: Check inverters for state corrections (handles no-input case)
     this.correctInverterStates(context);
+  }
+
+  /**
+   * Phase 2: Check if network topology changed.
+   * Detects when conductive entities move, which requires re-propagation.
+   */
+  /**
+   * Phase 2: Check if network topology changed.
+   * Detects when conductive entities move, which requires re-propagation.
+   * Returns false on first tick (initialization) to avoid unnecessary resets.
+   */
+  private checkTopologyChanged(context: GameContext): boolean {
+    let changed = false;
+    const currentPositions = new Map<number, string>();
+
+    // Scan all entities for conductive ones
+    for (const [entityId, pos] of context.spatial.getAllPositions()) {
+      const data = context.spatial.getEntityData(entityId);
+      if (!data) continue;
+
+      // Check if entity is conductive (conductors, signal emitters/receivers)
+      if (hasConductive(data) || hasSignalEmitter(data) || hasSignalReceiver(data)) {
+        const posKey = `${pos.x}:${pos.y}`;
+        currentPositions.set(entityId, posKey);
+
+        // Only check for changes after initialization
+        if (this.initialized) {
+          const previousPos = this.conductivePositions.get(entityId);
+          if (previousPos !== posKey) {
+            changed = true;
+          }
+        }
+      }
+    }
+
+    // Check for removed entities (only after initialization)
+    if (this.initialized) {
+      for (const entityId of this.conductivePositions.keys()) {
+        if (!currentPositions.has(entityId)) {
+          changed = true;
+        }
+      }
+    }
+
+    // Update tracked positions
+    this.conductivePositions = currentPositions;
+
+    // Mark as initialized after first scan
+    if (!this.initialized) {
+      this.initialized = true;
+    }
+
+    return changed;
   }
 
   /**
@@ -254,7 +316,38 @@ export class SignalSystem extends BaseReactiveSystem {
   /**
    * Phase 3: Propagate from generators (oscillators, pressure switches).
    */
-  private propagateFromGenerators(context: GameContext): void {
+  /**
+   * Phase 4: Propagate from generators (oscillators, pressure switches).
+   * If topologyChanged is true, re-propagate from ALL active generators,
+   * not just those whose state changed. This ensures the network reflects
+   * the current topology after conductive entities move.
+   */
+  private propagateFromGenerators(context: GameContext, topologyChanged: boolean): void {
+    // If topology changed (after initialization), reset ALL receivers to OFF, 
+    // then re-propagate. This ensures broken circuits turn off.
+    if (topologyChanged) {
+      for (const [entityId] of context.spatial.getAllPositions()) {
+        const data = context.spatial.getEntityData(entityId);
+        if (!data || !hasSignalReceiver(data)) continue;
+
+        const receiverType = data.receiverType;
+
+        // Reset simple conductors immediately
+        if (receiverType === 'floor' || receiverType === 'path' || receiverType === 'sleep-wake') {
+          this.gameManager.gameState.entityStore.setData(entityId, {
+            receivedSignal: false,
+          });
+        }
+
+        // Reset STEs (gates, inverters, transceivers) via pending
+        if (receiverType === 'gate' || receiverType === 'inverter' || receiverType === 'transceiver') {
+          this.gameManager.gameState.entityStore.setData(entityId, {
+            pendingSignal: false,
+          });
+        }
+      }
+    }
+
     for (const [entityId] of context.spatial.getAllPositions()) {
       const data = context.spatial.getEntityData(entityId);
       if (!data || !hasSignalEmitter(data)) continue;
@@ -267,7 +360,11 @@ export class SignalSystem extends BaseReactiveSystem {
       const currentState = data.signalState;
       const previousState = this.previousGeneratorStates.get(entityId);
 
-      if (previousState !== currentState) {
+      // Propagate if state changed OR if topology changed and generator is active
+      const stateChanged = previousState !== currentState;
+      const shouldPropagate = stateChanged || (topologyChanged && currentState);
+
+      if (shouldPropagate) {
         this.previousGeneratorStates.set(entityId, currentState);
 
         const pos = context.spatial.getPosition(entityId);
@@ -586,6 +683,8 @@ export class SignalSystem extends BaseReactiveSystem {
 
   /**
    * Get all signal-relevant entities at a cell.
+   * Checks FLOOR, COLLECTIBLES, LOGIC, WALLS, and ACTORS layers.
+   * ACTORS layer is included to support conductive pushable entities.
    */
   private getSignalEntitiesAtCell(
     context: GameContext,
@@ -597,6 +696,7 @@ export class SignalSystem extends BaseReactiveSystem {
       GameLayers.COLLECTIBLES,
       GameLayers.LOGIC,
       GameLayers.WALLS,
+      GameLayers.ACTORS,
     ];
 
     for (const layer of layers) {
@@ -624,6 +724,8 @@ export class SignalSystem extends BaseReactiveSystem {
     this.pendingEmissions = [];
     this.wiredTransceiverStates.clear();
     this.channelStates.clear();
+    this.conductivePositions.clear();
+    this.initialized = false;
     this.tickCount = 0;
   }
 

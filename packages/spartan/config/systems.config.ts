@@ -13,6 +13,13 @@ export const SYSTEM_CONFIG = {
     description: 'Translates player input into movement intents',
   },
 
+  Push: {
+    tickRate: 1,
+    executionPhase: 'pre-commit' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Reacts to movement intents to push pushable entities',
+  },
+
   Door: {
     tickRate: 1,
     executionPhase: 'pre-commit' as const,

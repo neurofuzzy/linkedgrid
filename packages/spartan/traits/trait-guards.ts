@@ -26,6 +26,7 @@
 
 import type { EntityData } from '../entities/entity.types';
 import type { HasNPCMovement } from './npc-movement.trait';
+import type { HasPushable, HasPusher } from './pushable.trait';
 import type { HasPlayerRole, HasTeam, Team } from './role.trait';
 import type { HealthState } from './health.trait';
 import type { HasArmor, HasShield, HasResistance } from './defense.trait';
@@ -704,7 +705,8 @@ export function hasSignalReceiver(
  */
 export function hasConductive(
   entity: EntityData
-): entity is ConductiveFloorData | PathNodeData | SleepWakeData {
+): entity is EntityData & { isConductive?: boolean; conductiveType?: string } {
+  if ('isConductive' in entity && entity.isConductive === true) return true;
   if (!('conductiveType' in entity)) return false;
   const conductiveType = entity.conductiveType;
   return conductiveType === 'floor' || conductiveType === 'path' || conductiveType === 'sleep-wake';
@@ -1054,3 +1056,10 @@ export function isSpawner(entity: EntityData): entity is SpawnerData {
   return entity.type === 'spawner';
 }
 
+export function hasPushable(entity: EntityData): entity is EntityData & HasPushable {
+  return 'isPushable' in entity && typeof entity.isPushable === 'boolean';
+}
+
+export function hasPusher(entity: EntityData): entity is EntityData & HasPusher {
+  return 'pushStrength' in entity && typeof entity.pushStrength === 'number';
+}

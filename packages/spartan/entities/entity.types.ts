@@ -1,6 +1,7 @@
 /**
  * EntityData - Discriminated union of all entity types.
  */
+import { HasPushable, HasPusher } from '../traits/pushable.trait';
 
 import { BaseEntityData } from './base.entity';
 import { PlayerData } from './player.entity';

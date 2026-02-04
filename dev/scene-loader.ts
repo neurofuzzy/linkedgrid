@@ -20,6 +20,7 @@ import { NPCMovementSystem } from '../packages/spartan/systems/npc-movement.syst
 import { ProjectileSystem } from '../packages/spartan/systems/projectile.system';
 import { TurretSystem } from '../packages/spartan/systems/turret.system';
 import { SpawningSystem } from '../packages/spartan/systems/spawning.system';
+import { PushSystem } from '../packages/spartan/systems/push.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -100,6 +101,7 @@ type SystemFactory = (
  * Order matters: HealthSystem must be created before ProjectileSystem/TurretSystem.
  */
 const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
+  PushSystem: () => new PushSystem(),
   TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
   CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
   DoorSystem: (gameManager) => new DoorSystem(gameManager),

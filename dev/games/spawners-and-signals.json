@@ -1,0 +1,512 @@
+{
+    "description": "Combined demo: Scene 1 (Spawning) -> Scene 2 (Push Puzzle). Use Teleporter to travel between them.",
+    "initialScene": "room1",
+    "systems": [
+        "TeleporterSystem",
+        "SpawningSystem",
+        "HealthSystem",
+        "NPCMovementSystem",
+        "ProjectileSystem",
+        "PushSystem",
+        "SignalSystem",
+        "GateSystem"
+    ],
+    "tickRate": 10,
+    "scenes": [
+        {
+            "id": "room1",
+            "name": "Spawner Basics",
+            "width": 20,
+            "height": 20,
+            "entities": [
+                {
+                    "type": "player",
+                    "x": 10,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "hp": 100,
+                        "maxHp": 100,
+                        "damage": 10,
+                        "pushStrength": 10,
+                        "sceneId": "room1"
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 5,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 3,
+                        "cooldown": 20,
+                        "activationRange": 8,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": true,
+                        "color": "#ff00ff",
+                        "hp": 50,
+                        "maxHp": 50,
+                        "spawnProps": {
+                            "hp": 20,
+                            "maxHp": 20,
+                            "aiState": "chase"
+                        }
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 15,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 1,
+                        "cooldown": 5,
+                        "activationRange": 10,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": true,
+                        "color": "#00ff00",
+                        "hp": 30,
+                        "maxHp": 30,
+                        "spawnProps": {
+                            "hp": 10,
+                            "maxHp": 10,
+                            "aiState": "wander"
+                        }
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 3: Crate Already in Circuit - Push Off to Break ===",
+                    "type": "wall",
+                    "x": 1,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "color": "#444455"
+                    }
+                },
+                {
+                    "type": "oscillator",
+                    "x": 3,
+                    "y": 14,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 30,
+                        "color": "#00ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 4,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Crate already in the gap at (5,14)",
+                    "type": "metal-crate",
+                    "x": 5,
+                    "y": 14,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "isConductive": true,
+                        "color": "#88aacc"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "type": "teleporter",
+                    "x": 18,
+                    "y": 18,
+                    "layer": 1,
+                    "data": {
+                        "destination": {
+                            "sceneId": "room2",
+                            "x": 2,
+                            "y": 10,
+                            "layer": 6
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "room2",
+            "name": "Push Puzzle Lab",
+            "width": 20,
+            "height": 20,
+            "entities": [
+                {
+                    "_comment": "=== SECTION 1: Basic Push to Complete Circuit ===",
+                    "type": "wall",
+                    "x": 1,
+                    "y": 2,
+                    "layer": 5,
+                    "data": {
+                        "color": "#444455"
+                    }
+                },
+                {
+                    "type": "oscillator",
+                    "x": 3,
+                    "y": 2,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 30,
+                        "color": "#00ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 4,
+                    "y": 2,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Gap at (5,2) - needs conductive crate",
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 2,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 2,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "_comment": "Metal crate - conductive and pushable",
+                    "type": "metal-crate",
+                    "x": 5,
+                    "y": 4,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "isConductive": true,
+                        "color": "#88aacc"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 2: Two Gaps Need Two Crates ===",
+                    "type": "wall",
+                    "x": 1,
+                    "y": 8,
+                    "layer": 5,
+                    "data": {
+                        "color": "#444455"
+                    }
+                },
+                {
+                    "type": "pressure-switch",
+                    "x": 3,
+                    "y": 8,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "pressure",
+                        "signalState": false,
+                        "switchMode": "hold",
+                        "color": "#00ffff"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 4,
+                    "y": 8,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Gap at (5,8) - needs crate",
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 8,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Gap at (7,8) - needs crate",
+                    "type": "conductive-floor",
+                    "x": 8,
+                    "y": 8,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 9,
+                    "y": 8,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "type": "metal-crate",
+                    "x": 5,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "isConductive": true,
+                        "color": "#88aacc"
+                    }
+                },
+                {
+                    "type": "metal-crate",
+                    "x": 7,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "isConductive": true,
+                        "color": "#88aacc"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 3: Crate Already in Circuit - Push Off to Break ===",
+                    "type": "wall",
+                    "x": 1,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "color": "#444455"
+                    }
+                },
+                {
+                    "type": "oscillator",
+                    "x": 3,
+                    "y": 14,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 30,
+                        "color": "#00ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 4,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Crate already in the gap at (5,14)",
+                    "type": "metal-crate",
+                    "x": 5,
+                    "y": 14,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "isConductive": true,
+                        "color": "#88aacc"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 6,
+                    "y": 14,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 7,
+                    "y": 14,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "_comment": "=== SECTION 4: Weight-Based Push - Heavy Crate ===",
+                    "type": "wall",
+                    "x": 12,
+                    "y": 2,
+                    "layer": 5,
+                    "data": {
+                        "color": "#444455"
+                    }
+                },
+                {
+                    "type": "oscillator",
+                    "x": 13,
+                    "y": 2,
+                    "layer": 4,
+                    "data": {
+                        "signalType": "oscillator",
+                        "signalState": true,
+                        "oscillatorPeriod": 30,
+                        "color": "#00ff00"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 14,
+                    "y": 2,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "_comment": "Heavy crate - cannot be pushed (weight > pushStrength)",
+                    "type": "heavy-crate",
+                    "x": 15,
+                    "y": 2,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 100,
+                        "isConductive": true,
+                        "color": "#664422"
+                    }
+                },
+                {
+                    "type": "conductive-floor",
+                    "x": 16,
+                    "y": 2,
+                    "layer": 1,
+                    "data": {
+                        "conductiveType": "floor",
+                        "receiverType": "floor",
+                        "receivedSignal": false,
+                        "color": "#808080"
+                    }
+                },
+                {
+                    "type": "gate-closed",
+                    "x": 17,
+                    "y": 2,
+                    "layer": 5,
+                    "data": {
+                        "receiverType": "gate",
+                        "receivedSignal": false,
+                        "color": "#ff4400"
+                    }
+                },
+                {
+                    "_comment": "=== Non-conductive crate for comparison ===",
+                    "type": "wooden-crate",
+                    "x": 12,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "isPushable": true,
+                        "weight": 1,
+                        "color": "#aa7744"
+                    }
+                },
+                {
+                    "type": "teleporter",
+                    "x": 19,
+                    "y": 10,
+                    "layer": 1,
+                    "data": {
+                        "destination": {
+                            "sceneId": "room1",
+                            "x": 15,
+                            "y": 15,
+                            "layer": 6
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "input": {
+        "type": "keyboard",
+        "options": {
+            "directionMode": "continuous"
+        }
+    }
+}
