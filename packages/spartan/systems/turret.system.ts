@@ -409,6 +409,7 @@ export class TurretSystem extends BaseTickedSystem {
         spawnTick: currentTick,
         color: '#ff4444',
         rayVisual: true,
+        ephemeral: true,
       });
     }
   }

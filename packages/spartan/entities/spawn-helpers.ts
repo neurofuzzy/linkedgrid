@@ -654,6 +654,7 @@ export function spawnSpawner(
 ): number {
   return spatial.spawn('spawner', x, y, layer, {
     requiresLineOfSight: true,  // Default to requiring LOS
+    spawnProps: {},             // Default to empty to prevent undefined
     ...props,
   });
 }

@@ -6,7 +6,7 @@
  * Adjacent spawners are grouped and share limits/cooldowns.
  */
 import { BaseTickedSystem } from '../core/base-system';
-import type { GameContext, SpawnIntent } from '../core/types';
+import type { GameContext, SpawnIntent, EntityLifecycleEvent } from '../core/types';
 import { hasSpawner, hasSignalReceiver, isSleepWake } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
 import type { HasSpawner } from '../traits/spawner.trait';
@@ -90,23 +90,105 @@ export class SpawningSystem extends BaseTickedSystem {
   /** Track spawns this tick to prevent duplicates (cell key → layer → true) */
   private spawnsThisTick: Map<string, Set<number>> = new Map();
 
+  /** Flag indicating groups need rebuilding (set by lifecycle callbacks) */
+  private groupsDirty = true;
+
+  /** Unsubscribe functions for lifecycle callbacks */
+  private unsubscribers: Array<() => void> = [];
+
+  /** Reference to current spatial system (to detect scene changes) */
+  private currentSpatial: GameContext['spatial'] | null = null;
+
   constructor(private gameManager: GameManager) {
     super();
+  }
+
+  /**
+   * Register lifecycle handlers with SpatialSystem.
+   * Re-registers when spatial system changes (scene transition).
+   */
+  private registerLifecycleHandlers(context: GameContext): void {
+    // Detect scene change by checking if spatial system changed
+    if (this.currentSpatial !== context.spatial) {
+      // Unsubscribe from old spatial
+      for (const unsub of this.unsubscribers) {
+        unsub();
+      }
+      this.unsubscribers = [];
+      this.currentSpatial = context.spatial;
+      this.groupsDirty = true; // Rebuild groups for new scene
+    }
+
+    if (this.unsubscribers.length > 0) return; // Already registered
+
+    this.unsubscribers.push(
+      context.spatial.onSpawn((event) => this.handleEntitySpawn(event)),
+      context.spatial.onRemove((event) => this.handleEntityRemove(event))
+    );
+  }
+
+  /**
+   * Handle entity spawn events.
+   * Marks groups dirty if a spawner was added.
+   */
+  private handleEntitySpawn(event: EntityLifecycleEvent): void {
+    if (event.type === 'spawner') {
+      this.groupsDirty = true;
+    }
+  }
+
+  /**
+   * Handle entity remove events.
+   * Marks groups dirty if a spawner was removed.
+   * Removes dead entities from spawnedEntityIds.
+   */
+  private handleEntityRemove(event: EntityLifecycleEvent): void {
+    if (event.type === 'spawner') {
+      this.groupsDirty = true;
+    }
+
+    // Remove from spawnedEntityIds if present in any group
+    for (const group of this.groups.values()) {
+      const idx = group.spawnedEntityIds.indexOf(event.entityId);
+      if (idx !== -1) {
+        group.spawnedEntityIds.splice(idx, 1);
+      }
+    }
   }
 
   protected onTick(context: GameContext): void {
     const currentTick = context.tick ?? 0;
     this.spawnsThisTick.clear();
 
-    // Phase 1: Build/update spawner groups
-    this.buildGroups(context);
+    // Register lifecycle handlers (re-registers on scene change)
+    this.registerLifecycleHandlers(context);
 
-    // Phase 2: Clean up dead spawned entities from groups
+    // Phase 1: Rebuild groups only when dirty
+    if (this.groupsDirty) {
+      this.buildGroups(context);
+      this.groupsDirty = false;
+    }
+
+    // Phase 2: Clean up dead spawns (safety net for failed spawns + scene transitions)
+    // The onRemove callback handles most cases, but spawns that fail at commit
+    // (e.g., collision) never get placed, so onRemove never fires for them.
     this.cleanupDeadSpawns(context);
 
     // Phase 3: Process each group
     for (const [groupId, group] of this.groups) {
       this.processGroup(context, groupId, group, currentTick);
+    }
+  }
+
+  /**
+   * Clean up dead spawned entities from all groups.
+   * Acts as safety net for spawns that failed at commit time.
+   */
+  private cleanupDeadSpawns(context: GameContext): void {
+    for (const group of this.groups.values()) {
+      group.spawnedEntityIds = group.spawnedEntityIds.filter((id) =>
+        context.spatial.isAlive(id)
+      );
     }
   }
 
@@ -204,17 +286,6 @@ export class SpawningSystem extends BaseTickedSystem {
 
     this.groups = newGroups;
     this.spawnerToGroup = newSpawnerToGroup;
-  }
-
-  /**
-   * Clean up dead spawned entities from all groups.
-   */
-  private cleanupDeadSpawns(context: GameContext): void {
-    for (const group of this.groups.values()) {
-      group.spawnedEntityIds = group.spawnedEntityIds.filter((id) =>
-        context.spatial.isAlive(id)
-      );
-    }
   }
 
   /**
@@ -507,6 +578,14 @@ export class SpawningSystem extends BaseTickedSystem {
     this.spawnerToGroup.clear();
     this.spawnsThisTick.clear();
     this.nextGroupId = 1;
+    this.groupsDirty = true;
+    this.currentSpatial = null;
+
+    // Unsubscribe from lifecycle callbacks
+    for (const unsub of this.unsubscribers) {
+      unsub();
+    }
+    this.unsubscribers = [];
   }
 
   public override getDebugState(): Record<string, unknown> {

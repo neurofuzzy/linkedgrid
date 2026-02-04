@@ -3,7 +3,7 @@
  */
 import { LinkedCell, LinkedGrid } from './grid';
 import { SparseEntityStore } from './entity-store';
-import type { EntityData, Layer, PendingOperation } from './types';
+import type { EntityData, Layer, PendingOperation, EntityLifecycleEvent, LifecycleCallback } from './types';
 import { GameLayers, CellMasks } from '../config/layers.config';
 
 /**
@@ -30,6 +30,12 @@ export class SpatialSystem {
   /** Entity position tracking: entity ID → {x, y, layer} */
   private positions: Map<number, { x: number; y: number; layer: Layer }> =
     new Map();
+
+  /** Callbacks for entity spawn events (excludes ephemeral entities) */
+  private spawnCallbacks: LifecycleCallback[] = [];
+
+  /** Callbacks for entity remove events (excludes ephemeral entities) */
+  private removeCallbacks: LifecycleCallback[] = [];
 
   /**
    * Debug mode: Log rejected operations during commit with reasons.
@@ -63,6 +69,88 @@ export class SpatialSystem {
    */
   setDebugCommit(enabled: boolean): void {
     this.debugCommit = enabled;
+  }
+
+  /**
+   * Register a callback for entity spawn events.
+   *
+   * Callbacks are invoked during commit() after successful spawns.
+   * Ephemeral entities (with `ephemeral: true` in props) skip callbacks.
+   *
+   * @param callback - Function to call when entities are spawned
+   * @returns Unsubscribe function to remove the callback
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = spatial.onSpawn((event) => {
+   *   if (event.type === 'spawner') {
+   *     console.log(`Spawner added at (${event.x}, ${event.y})`);
+   *   }
+   * });
+   *
+   * // Later, to stop listening:
+   * unsubscribe();
+   * ```
+   */
+  onSpawn(callback: LifecycleCallback): () => void {
+    this.spawnCallbacks.push(callback);
+    return () => {
+      const index = this.spawnCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this.spawnCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Register a callback for entity remove events.
+   *
+   * Callbacks are invoked during commit() after successful removals.
+   * Ephemeral entities (with `ephemeral: true` in props) skip callbacks.
+   *
+   * @param callback - Function to call when entities are removed
+   * @returns Unsubscribe function to remove the callback
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = spatial.onRemove((event) => {
+   *   if (event.type === 'enemy') {
+   *     console.log(`Enemy removed from (${event.x}, ${event.y})`);
+   *   }
+   * });
+   *
+   * // Later, to stop listening:
+   * unsubscribe();
+   * ```
+   */
+  onRemove(callback: LifecycleCallback): () => void {
+    this.removeCallbacks.push(callback);
+    return () => {
+      const index = this.removeCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this.removeCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Notify spawn callbacks of a new entity.
+   * @private
+   */
+  private notifySpawn(event: EntityLifecycleEvent): void {
+    for (const callback of this.spawnCallbacks) {
+      callback(event);
+    }
+  }
+
+  /**
+   * Notify remove callbacks of a removed entity.
+   * @private
+   */
+  private notifyRemove(event: EntityLifecycleEvent): void {
+    for (const callback of this.removeCallbacks) {
+      callback(event);
+    }
   }
 
   /**
@@ -277,6 +365,10 @@ export class SpatialSystem {
       return;
     }
 
+    // Collect lifecycle events for callbacks (invoked at end)
+    const removeEvents: EntityLifecycleEvent[] = [];
+    const spawnEvents: EntityLifecycleEvent[] = [];
+
     // Phase 1: Process removals first
     const removals = this.pendingOps.filter((op) => op.type === 'remove');
     // Identify entities being respawned (transformed) in this frame
@@ -287,6 +379,10 @@ export class SpatialSystem {
     );
 
     for (const op of removals) {
+      // Capture entity data before removal for lifecycle callback
+      const entityData = this.store.getData(op.entityId!);
+      const isEphemeral = entityData && 'ephemeral' in entityData && entityData.ephemeral === true;
+
       const cell = this.grid.cell(op.x!, op.y!);
       if (cell) {
         cell.clearValue(op.layer);
@@ -300,6 +396,17 @@ export class SpatialSystem {
       }
 
       this.positions.delete(op.entityId!);
+
+      // Queue lifecycle callback (skip ephemeral entities)
+      if (!isEphemeral && entityData) {
+        removeEvents.push({
+          entityId: op.entityId!,
+          type: entityData.type,
+          x: op.x!,
+          y: op.y!,
+          layer: op.layer,
+        });
+      }
     }
 
     // Phase 2: Process moves (existing two-phase logic)
@@ -479,12 +586,32 @@ export class SpatialSystem {
       this.positions.set(op.entityId!, { x: op.x!, y: op.y!, layer: op.layer });
       // Update masks after spawn
       this.updateCellMasks(cell);
+
+      // Queue lifecycle callback (skip ephemeral entities)
+      const isEphemeral = op.props && 'ephemeral' in op.props && (op.props as { ephemeral?: boolean }).ephemeral === true;
+      if (!isEphemeral && op.typeStr) {
+        spawnEvents.push({
+          entityId: op.entityId!,
+          type: op.typeStr,
+          x: op.x!,
+          y: op.y!,
+          layer: op.layer,
+        });
+      }
     }
 
     // Phase 4: Clear all pending operations
     this.pendingOps = [];
     this.pendingMoves.clear();
     this.pendingRemovals.clear();
+
+    // Phase 5: Invoke lifecycle callbacks (after state is consistent)
+    for (const event of removeEvents) {
+      this.notifyRemove(event);
+    }
+    for (const event of spawnEvents) {
+      this.notifySpawn(event);
+    }
   }
 
   /**

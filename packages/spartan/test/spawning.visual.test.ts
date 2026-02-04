@@ -824,4 +824,166 @@ describe('SpawningSystem', () => {
       }
     });
   });
+
+  describe('Lifecycle-based spawn limit tracking', () => {
+    it('updates spawn limit when spawned entity is removed', () => {
+      // Spawn player in range
+      const playerId = spatial.spawn('player', 5, 10, GameLayers.ACTORS, {
+        hp: 100,
+        maxHp: 100,
+      });
+      mockManager.gameState.playerEntityId = playerId;
+
+      // Spawn spawner with limit 1, short cooldown
+      spatial.spawn('spawner', 10, 10, GameLayers.COLLECTIBLES, {
+        spawnType: 'enemy',
+        spawnLimit: 1,
+        cooldown: 2,
+        activationRange: 10,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff00ff',
+      });
+      spatial.commit();
+
+      // First tick - should spawn 1 enemy
+      gameLoop.tick();
+
+      let enemyId: number | undefined;
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') {
+          enemyId = entityId;
+          break;
+        }
+      }
+      expect(enemyId).toBeDefined();
+
+      // Remove the enemy
+      spatial.remove(enemyId!);
+      spatial.commit();
+
+      // Wait for cooldown (2 ticks)
+      gameLoop.tick();
+      gameLoop.tick();
+
+      // Now spawn limit should allow another spawn
+      gameLoop.tick();
+
+      // Should have a new enemy
+      let newEnemyCount = 0;
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') {
+          newEnemyCount++;
+        }
+      }
+      expect(newEnemyCount).toBe(1);
+    });
+
+    it('updates groups when spawner is added dynamically', () => {
+      // Spawn player in range
+      const playerId = spatial.spawn('player', 5, 10, GameLayers.ACTORS, {
+        hp: 100,
+        maxHp: 100,
+      });
+      mockManager.gameState.playerEntityId = playerId;
+
+      // Spawn first spawner
+      spatial.spawn('spawner', 10, 10, GameLayers.COLLECTIBLES, {
+        spawnType: 'enemy',
+        spawnLimit: 3,
+        cooldown: 100, // Long cooldown
+        activationRange: 10,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff00ff',
+      });
+      spatial.commit();
+
+      // First tick - first spawner creates 1 enemy
+      gameLoop.tick();
+
+      let enemyCount = 0;
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') enemyCount++;
+      }
+      expect(enemyCount).toBe(1);
+
+      // Now add an adjacent spawner (groups should rebuild)
+      spatial.spawn('spawner', 11, 10, GameLayers.COLLECTIBLES, {
+        spawnType: 'enemy',
+        spawnLimit: 3,
+        cooldown: 1, // Short cooldown, but group uses first member's
+        activationRange: 10,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff00ff',
+      });
+      spatial.commit();
+
+      // Tick - system should recognize the new spawner
+      // (Group will use first spawner's cooldown which is long,
+      // so no new spawn yet, but no errors should occur)
+      gameLoop.tick();
+      gameLoop.tick();
+
+      // Still only 1 enemy (cooldown not elapsed)
+      enemyCount = 0;
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') enemyCount++;
+      }
+      expect(enemyCount).toBe(1);
+    });
+
+    it('updates groups when spawner is removed dynamically', () => {
+      // Spawn player in range
+      const playerId = spatial.spawn('player', 5, 10, GameLayers.ACTORS, {
+        hp: 100,
+        maxHp: 100,
+      });
+      mockManager.gameState.playerEntityId = playerId;
+
+      // Spawn two adjacent spawners
+      const spawner1Id = spatial.spawn('spawner', 10, 10, GameLayers.COLLECTIBLES, {
+        spawnType: 'enemy',
+        spawnLimit: 5,
+        cooldown: 1,
+        activationRange: 10,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff00ff',
+      });
+      spatial.spawn('spawner', 11, 10, GameLayers.COLLECTIBLES, {
+        spawnType: 'enemy',
+        spawnLimit: 5,
+        cooldown: 1,
+        activationRange: 10,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff00ff',
+      });
+      spatial.commit();
+
+      // Tick - group spawns 1 enemy
+      gameLoop.tick();
+
+      // Remove the first spawner
+      spatial.remove(spawner1Id);
+      spatial.commit();
+
+      // Tick again - remaining spawner should still work
+      gameLoop.tick();
+
+      // Should now have 2 enemies
+      let enemyCount = 0;
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') enemyCount++;
+      }
+      expect(enemyCount).toBe(2);
+    });
+  });
 });

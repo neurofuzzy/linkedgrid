@@ -74,6 +74,7 @@ export class FireSystem extends BaseTickedSystem {
         if (entityData.flammable) {
           const visualId = context.spatial.spawn('fire-visual', pos.x, pos.y, GameLayers.EPHEMERALS, {
             color: '#ff4500',
+            ephemeral: true,
           });
           const burnState = this.burningEntities.get(entityId);
           if (burnState) {

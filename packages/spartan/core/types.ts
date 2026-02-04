@@ -103,6 +103,30 @@ export interface SpawnIntent {
 }
 
 /**
+ * EntityLifecycleEvent - Event emitted when entities are spawned or removed.
+ *
+ * Used by systems that need to react to entity lifecycle changes.
+ * Ephemeral entities (projectiles, visual effects) skip these events for performance.
+ */
+export interface EntityLifecycleEvent {
+  /** Entity ID that was spawned or removed */
+  entityId: number;
+  /** Entity type (e.g., 'enemy', 'spawner') */
+  type: string;
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Layer the entity was on */
+  layer: Layer;
+}
+
+/**
+ * LifecycleCallback - Function signature for lifecycle event handlers.
+ */
+export type LifecycleCallback = (event: EntityLifecycleEvent) => void;
+
+/**
  * GameContext - Context passed to systems each tick.
  *
  * Provides systems with overlap data and spatial access.
@@ -152,6 +176,8 @@ export interface GameContext {
     isAlive: (entityId: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
     cancelMove: (entityId: number) => void;
+    onSpawn: (callback: LifecycleCallback) => () => void;
+    onRemove: (callback: LifecycleCallback) => () => void;
   };
   sceneManager?: {
     getScene: (id: string) => unknown;
