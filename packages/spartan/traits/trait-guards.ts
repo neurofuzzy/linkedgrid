@@ -86,7 +86,7 @@ import type {
  */
 export function hasHealth(
   entity: EntityData
-): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData {
+): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData | SpawnerData {
   return (
     'hp' in entity && typeof entity.hp === 'number' &&
     'maxHp' in entity && typeof entity.maxHp === 'number'

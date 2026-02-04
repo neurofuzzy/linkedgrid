@@ -82,6 +82,11 @@ const AVAILABLE_GAMES = [
     name: 'Projectiles & Turrets',
     path: '/dev/games/projectile-demo.json',
   },
+  {
+    id: 'spawning-system',
+    name: 'Spawning System Demo',
+    path: '/dev/games/spawning-system.json',
+  },
 ];
 
 /**

@@ -609,6 +609,90 @@ describe('SpawningSystem', () => {
       // Total unique: 6 positions available
       expect(enemyPositions.size).toBeGreaterThan(2);
     });
+
+    it('L-shaped group never spawns on top of spawners', () => {
+      // Spawn player in range
+      const playerId = spatial.spawn('player', 5, 10, GameLayers.ACTORS, {
+        hp: 100,
+        maxHp: 100,
+      });
+      mockManager.gameState.playerEntityId = playerId;
+
+      // Create L-shaped group of 3 spawners:
+      // (10,10) - (11,10)
+      //    |
+      // (10,11)
+      const spawner1Id = spatial.spawn('spawner', 10, 10, GameLayers.WALLS, {
+        spawnType: 'enemy',
+        spawnLimit: 10,
+        cooldown: 1,
+        activationRange: 15,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff0000',
+      });
+      const spawner2Id = spatial.spawn('spawner', 11, 10, GameLayers.WALLS, {
+        spawnType: 'enemy',
+        spawnLimit: 10,
+        cooldown: 1,
+        activationRange: 15,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff0000',
+      });
+      const spawner3Id = spatial.spawn('spawner', 10, 11, GameLayers.WALLS, {
+        spawnType: 'enemy',
+        spawnLimit: 10,
+        cooldown: 1,
+        activationRange: 15,
+        spawnLayer: GameLayers.ACTORS,
+        requiresLineOfSight: false,
+        color: '#ff0000',
+      });
+      spatial.commit();
+      spatial.syncMasks();
+
+      const spawnerPositions = new Set(['10,10', '11,10', '10,11']);
+
+      // Run many ticks
+      for (let i = 0; i < 15; i++) {
+        gameLoop.tick();
+      }
+
+      // Collect enemy positions
+      const enemyPositions: Array<{ x: number; y: number }> = [];
+      for (const [entityId] of spatial.getAllPositions()) {
+        const data = spatial.getEntityData(entityId);
+        if (data?.type === 'enemy') {
+          const pos = spatial.getEntityPosition(entityId);
+          if (pos) {
+            enemyPositions.push({ x: pos.x, y: pos.y });
+          }
+        }
+      }
+
+      // No enemy should be on a spawner position
+      for (const pos of enemyPositions) {
+        const key = `${pos.x},${pos.y}`;
+        expect(spawnerPositions.has(key)).toBe(false);
+      }
+
+      // Should have spawned multiple enemies
+      expect(enemyPositions.length).toBeGreaterThan(0);
+
+      // All enemies should be adjacent to at least one spawner
+      // Valid positions: (10,9), (9,10), (11,9), (12,10), (11,11), (10,12), (9,11)
+      for (const pos of enemyPositions) {
+        const adjacentToSpawner = [
+          [10, 10], [11, 10], [10, 11]
+        ].some(([sx, sy]) => {
+          const dx = Math.abs(pos.x - sx);
+          const dy = Math.abs(pos.y - sy);
+          return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+        });
+        expect(adjacentToSpawner).toBe(true);
+      }
+    });
   });
 
   describe('Dead source rejection', () => {

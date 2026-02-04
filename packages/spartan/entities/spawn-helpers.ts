@@ -602,6 +602,9 @@ export function spawnSleepWake(
  * Activation occurs when player is within range (with optional LOS check)
  * or when the spawner is on an active sleep-wake zone.
  *
+ * Spawners should typically be placed on WALLS layer to block movement.
+ * Add hp/maxHp properties to make spawners damageable.
+ *
  * Adjacent spawners (cardinal) are automatically grouped and share:
  * - Spawn limit (total living spawned entities)
  * - Cooldown (single timer for the group)
@@ -610,24 +613,26 @@ export function spawnSleepWake(
  * @param spatial - SpatialSystem to spawn in
  * @param x - X coordinate
  * @param y - Y coordinate
- * @param layer - Layer to spawn spawner on (typically COLLECTIBLES or WALLS)
+ * @param layer - Layer to spawn spawner on (use WALLS to block movement)
  * @param props - Required spawner properties
  * @returns Entity ID of spawned spawner
  *
  * @example
  * ```typescript
- * // Spawn an enemy spawner that activates when player is within 8 cells
- * spawnSpawner(spatial, 5, 5, GameLayers.COLLECTIBLES, {
+ * // Spawn a blocking, damageable enemy spawner
+ * spawnSpawner(spatial, 5, 5, GameLayers.WALLS, {
  *   spawnType: 'enemy',
  *   spawnLimit: 3,
  *   cooldown: 20,
  *   activationRange: 8,
  *   spawnLayer: GameLayers.ACTORS,
  *   color: '#ff00ff',
+ *   hp: 50,
+ *   maxHp: 50,
  * });
  *
  * // Spawn a missile spawner with no proximity activation (sleep-wake only)
- * spawnSpawner(spatial, 10, 10, GameLayers.COLLECTIBLES, {
+ * spawnSpawner(spatial, 10, 10, GameLayers.WALLS, {
  *   spawnType: 'homing-missile',
  *   spawnLimit: 2,
  *   cooldown: 30,
@@ -635,6 +640,8 @@ export function spawnSleepWake(
  *   spawnLayer: GameLayers.EPHEMERALS,
  *   requiresLineOfSight: false,
  *   color: '#ff8800',
+ *   hp: 30,
+ *   maxHp: 30,
  * });
  * ```
  */

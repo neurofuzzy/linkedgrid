@@ -360,40 +360,62 @@ export class SpawningSystem extends BaseTickedSystem {
 
   /**
    * Find an open spawn cell from aggregated adjacent cells of all group members.
+   * 
+   * Cycles through each spawner's cardinal directions in order:
+   * - For each spawner, iterate UP, RIGHT, DOWN, LEFT
+   * - Skip cells that contain another spawner in the group
+   * - Skip blocked cells and cells with actors
+   * 
+   * This creates a "walk around" effect for grouped spawners.
    */
   private findGroupSpawnCell(
     context: GameContext,
     group: SpawnerGroup
   ): { x: number; y: number } | null {
-    // Collect all unique adjacent cells from all members
-    const adjacentCells: Array<{ x: number; y: number }> = [];
-    const seenCells = new Set<string>();
+    // Build set of spawner positions (to exclude from spawn candidates)
+    const spawnerPositions = new Set<string>();
+    const memberPositions: Array<{ id: number; x: number; y: number }> = [];
 
     for (const memberId of group.memberIds) {
       const memberPos = context.spatial.getEntityPosition(memberId);
       if (!memberPos) continue;
+      spawnerPositions.add(`${memberPos.x},${memberPos.y}`);
+      memberPositions.push({ id: memberId, x: memberPos.x, y: memberPos.y });
+    }
 
+    // Build ordered list of spawn candidates:
+    // For each spawner, add its 4 cardinal neighbors (excluding other spawners)
+    const spawnCandidates: Array<{ x: number; y: number }> = [];
+    const seenCandidates = new Set<string>();
+
+    for (const member of memberPositions) {
       for (const offset of CARDINAL_OFFSETS) {
-        const x = memberPos.x + offset.dx;
-        const y = memberPos.y + offset.dy;
+        const x = member.x + offset.dx;
+        const y = member.y + offset.dy;
         const key = `${x},${y}`;
 
-        if (seenCells.has(key)) continue;
-        seenCells.add(key);
+        // Skip if this cell contains another spawner
+        if (spawnerPositions.has(key)) continue;
 
-        adjacentCells.push({ x, y });
+        // Skip if we've already added this cell
+        if (seenCandidates.has(key)) continue;
+        seenCandidates.add(key);
+
+        spawnCandidates.push({ x, y });
       }
     }
 
+    if (spawnCandidates.length === 0) return null;
+
     // Start from current direction and cycle through
     const startDir = group.currentDirection;
-    const numCells = adjacentCells.length;
+    const numCells = spawnCandidates.length;
 
     for (let i = 0; i < numCells; i++) {
       const index = (startDir + i) % numCells;
-      const cell = adjacentCells[index];
+      const cell = spawnCandidates[index];
 
-      if (this.isCellOpenForSpawn(context, cell.x, cell.y)) {
+      if (this.isCellOpenForSpawn(context, cell.x, cell.y, spawnerPositions)) {
         // Advance direction for next spawn
         group.currentDirection = (index + 1) % numCells;
         return cell;
@@ -409,7 +431,8 @@ export class SpawningSystem extends BaseTickedSystem {
   private isCellOpenForSpawn(
     context: GameContext,
     x: number,
-    y: number
+    y: number,
+    spawnerPositions?: Set<string>
   ): boolean {
     const cell = context.spatial.grid.cell(x, y);
     if (!cell) return false;
@@ -420,6 +443,20 @@ export class SpawningSystem extends BaseTickedSystem {
     // Check if actor already present
     const actorId = context.spatial.getEntityIdAt(x, y, GameLayers.ACTORS);
     if (actorId !== undefined) return false;
+
+    // Check if spawner already present (on any layer)
+    if (spawnerPositions) {
+      if (spawnerPositions.has(`${x},${y}`)) return false;
+    } else {
+      // Check for spawner on common layers
+      for (const layer of [GameLayers.WALLS, GameLayers.COLLECTIBLES]) {
+        const entityId = context.spatial.getEntityIdAt(x, y, layer);
+        if (entityId !== undefined) {
+          const data = context.spatial.getEntityData(entityId);
+          if (data && hasSpawner(data)) return false;
+        }
+      }
+    }
 
     return true;
   }
