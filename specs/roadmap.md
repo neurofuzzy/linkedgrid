@@ -1,11 +1,19 @@
 HIGH-LEVEL ROADMAP:
 
-Phase 1: Core
+Phase 1: Core (Refined)
 
-1. Player Start, CheckPoint/Respawn Points with scene connection support (respawn on checkpoint if in a previous scene)
-2. Melee System for players and moving NPCs
-3. Player Weapons System with ammo, drops down to melee when out, option for unlimited ammo
-4. Pickups system / buffs for weapons, armor, temp shields, invincibility or health (not same as collection)
+1. Melee System 
+   - New `HasMelee` trait and `MeleeSystem`. 
+   - Fallback for weapons when out of ammo.
+2. Player Weapons System
+   - `HasWeapon` trait, `WeaponConfig`, `PlayerWeaponSystem`.
+   - Ammo tracking and projectile integration.
+3. Player Start / Respawn
+   - `PlayerStart` and `Checkpoint` entities.
+   - Cross-scene respawn support.
+4. Pickups / Buffs
+   - Health, Shield, Speed types.
+   - `PowerupSystem` for applying effects.
 
 Phase 1.5: Cleanup and Refactor
 
@@ -17,33 +25,34 @@ Phase 1.5: Cleanup and Refactor
 Phase 2: Core II
 
 1. Score System (score on kill, coin collection)
-2. Game Objectives System - Scene/Game completion using Flag pickup (like capture the flag) or when all enemies are killed
+   - Via `HealthSystem` death callback.
+2. Game Objectives System 
+   - Flag pickup, Kill-all, Reach-exit.
+   - Scene completion events.
 
 Phase 3: Gameplay Enhancements
 
 1. Range Sensors (like pressure plates but activates within range + LOS)
-2. Wave spawners (contiguous spawners than spawn multiple NPCs at a time)
+2. Wave spawners (contiguous groups spawning simultaneously)
 
-Phase 4: Visual - logic-only via Visual Traits enhancements with basic support in playground
+Phase 4: Visual System (New Subsystem)
 
-1. Visual System for dirty state tracking
-2. VisualStates and default states (up to 5 states supported)
-3. Facing Direction (mirror left/right or mirror left/right/up/down)
-4. Sprite animation (up to 5 frames with modes: play once, repeat, yoyo)
-5. Effects Manager (grid-based area effects and grid-aligned particle-systems)
+1. Phase 4a: Foundation (Dirty state tracking, Visual States)
+2. Phase 4b: Movement Visuals (Facing direction, Animation states)
+3. Phase 4c: Effects Manager (Particles, Area effects)
 
 Phase 4.5: Refactor Visual Interplay
 
 1. Audit Layers and Visual State types
 2. Normalize common states
 
-Phase 5: Gameplay Enhancements
+Phase 5: Gameplay Enhancements II
 
-1. Scene coordinates (grid-based adjacency)  and bounds-based scene-linking (walk between scenes)
+1. Scene coordinates and explicit edge-based linking
 2. Homing projectiles
-3. Freeze/stun weapon (for both players and NPCs)
-4. Flammable Walls
-5. Conjoined NPCS (Snakes/Centipedes/Convoys)
+3. Freeze/stun weapon
+4. Flammable Walls (Config change only)
+5. Conjoined NPCs (via "Chain Following" pattern)
 
 Phase 6: Finalize
 
