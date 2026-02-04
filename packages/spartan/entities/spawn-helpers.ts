@@ -43,6 +43,7 @@ import type {
   TeleporterData,
   ItemData,
   WallData,
+  SpawnerData,
 } from './index';
 
 /**
@@ -585,5 +586,67 @@ export function spawnSleepWake(
     receivedSignal: false,
     color: '#9900ff',
     ...overrides,
+  });
+}
+
+/**
+ * Spawner System Spawn Helpers
+ *
+ * Helper functions for spawning spawner entities.
+ */
+
+/**
+ * Spawn a spawner entity.
+ *
+ * Spawners spawn other entities in open adjacent cells when activated.
+ * Activation occurs when player is within range (with optional LOS check)
+ * or when the spawner is on an active sleep-wake zone.
+ *
+ * Adjacent spawners (cardinal) are automatically grouped and share:
+ * - Spawn limit (total living spawned entities)
+ * - Cooldown (single timer for the group)
+ * - Aggregated open cells for spawning
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn spawner on (typically COLLECTIBLES or WALLS)
+ * @param props - Required spawner properties
+ * @returns Entity ID of spawned spawner
+ *
+ * @example
+ * ```typescript
+ * // Spawn an enemy spawner that activates when player is within 8 cells
+ * spawnSpawner(spatial, 5, 5, GameLayers.COLLECTIBLES, {
+ *   spawnType: 'enemy',
+ *   spawnLimit: 3,
+ *   cooldown: 20,
+ *   activationRange: 8,
+ *   spawnLayer: GameLayers.ACTORS,
+ *   color: '#ff00ff',
+ * });
+ *
+ * // Spawn a missile spawner with no proximity activation (sleep-wake only)
+ * spawnSpawner(spatial, 10, 10, GameLayers.COLLECTIBLES, {
+ *   spawnType: 'homing-missile',
+ *   spawnLimit: 2,
+ *   cooldown: 30,
+ *   activationRange: 0,
+ *   spawnLayer: GameLayers.EPHEMERALS,
+ *   requiresLineOfSight: false,
+ *   color: '#ff8800',
+ * });
+ * ```
+ */
+export function spawnSpawner(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  props: Omit<SpawnerData, 'id' | 'type'>
+): number {
+  return spatial.spawn('spawner', x, y, layer, {
+    requiresLineOfSight: true,  // Default to requiring LOS
+    ...props,
   });
 }

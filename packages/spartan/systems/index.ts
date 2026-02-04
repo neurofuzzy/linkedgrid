@@ -24,3 +24,4 @@ export { ProjectileSystem } from './projectile.system';
 export { TeleporterSystem } from './teleporter.system';
 export { TurretSystem } from './turret.system';
 export { SignalSystem } from './signal.system';
+export { SpawningSystem } from './spawning.system';

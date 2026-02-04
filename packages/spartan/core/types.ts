@@ -83,6 +83,26 @@ export interface PendingOperation {
 }
 
 /**
+ * SpawnIntent - Request to spawn an entity from a source.
+ *
+ * Used by SpawningSystem to validate and process spawn requests.
+ * Prevents runaway spawning by tracking source, deduping by cell+layer+tick,
+ * and rejecting intents from dead sources.
+ */
+export interface SpawnIntent {
+  /** Entity ID requesting the spawn (must be alive) */
+  sourceId: number;
+  /** Type of entity to spawn (e.g., 'enemy', 'homing-missile') */
+  entityType: string;
+  /** Layer to spawn on */
+  layer: Layer;
+  /** Optional entity properties */
+  props?: Record<string, unknown>;
+  /** Optional preferred spawn location */
+  preferredCell?: { x: number; y: number };
+}
+
+/**
  * GameContext - Context passed to systems each tick.
  *
  * Provides systems with overlap data and spatial access.
