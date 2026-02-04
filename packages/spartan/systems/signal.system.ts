@@ -83,6 +83,8 @@ export class SignalSystem extends BaseReactiveSystem {
 
   // Topology change detection - tracks conductive entity positions
   private conductivePositions = new Map<number, string>();
+  // Flag to skip topology reset on first tick (initialization)
+  private initialized = false;
 
   // Tick counter
   private tickCount = 0;
@@ -137,6 +139,11 @@ export class SignalSystem extends BaseReactiveSystem {
    * Phase 2: Check if network topology changed.
    * Detects when conductive entities move, which requires re-propagation.
    */
+  /**
+   * Phase 2: Check if network topology changed.
+   * Detects when conductive entities move, which requires re-propagation.
+   * Returns false on first tick (initialization) to avoid unnecessary resets.
+   */
   private checkTopologyChanged(context: GameContext): boolean {
     let changed = false;
     const currentPositions = new Map<number, string>();
@@ -146,27 +153,37 @@ export class SignalSystem extends BaseReactiveSystem {
       const data = context.spatial.getEntityData(entityId);
       if (!data) continue;
 
-      // Check if entity is conductive (conductors, signal emitters/receivers on ACTORS layer)
+      // Check if entity is conductive (conductors, signal emitters/receivers)
       if (hasConductive(data) || hasSignalEmitter(data) || hasSignalReceiver(data)) {
         const posKey = `${pos.x}:${pos.y}`;
         currentPositions.set(entityId, posKey);
 
-        const previousPos = this.conductivePositions.get(entityId);
-        if (previousPos !== posKey) {
+        // Only check for changes after initialization
+        if (this.initialized) {
+          const previousPos = this.conductivePositions.get(entityId);
+          if (previousPos !== posKey) {
+            changed = true;
+          }
+        }
+      }
+    }
+
+    // Check for removed entities (only after initialization)
+    if (this.initialized) {
+      for (const entityId of this.conductivePositions.keys()) {
+        if (!currentPositions.has(entityId)) {
           changed = true;
         }
       }
     }
 
-    // Check for removed entities
-    for (const entityId of this.conductivePositions.keys()) {
-      if (!currentPositions.has(entityId)) {
-        changed = true;
-      }
-    }
-
     // Update tracked positions
     this.conductivePositions = currentPositions;
+
+    // Mark as initialized after first scan
+    if (!this.initialized) {
+      this.initialized = true;
+    }
 
     return changed;
   }
@@ -306,8 +323,8 @@ export class SignalSystem extends BaseReactiveSystem {
    * the current topology after conductive entities move.
    */
   private propagateFromGenerators(context: GameContext, topologyChanged: boolean): void {
-    // If topology changed, reset ALL receivers to OFF, then re-propagate
-    // This ensures broken circuits turn off and connected circuits update
+    // If topology changed (after initialization), reset ALL receivers to OFF, 
+    // then re-propagate. This ensures broken circuits turn off.
     if (topologyChanged) {
       for (const [entityId] of context.spatial.getAllPositions()) {
         const data = context.spatial.getEntityData(entityId);
@@ -323,7 +340,6 @@ export class SignalSystem extends BaseReactiveSystem {
         }
 
         // Reset STEs (gates, inverters, transceivers) via pending
-        // This gives them 1-tick delay to update
         if (receiverType === 'gate' || receiverType === 'inverter' || receiverType === 'transceiver') {
           this.gameManager.gameState.entityStore.setData(entityId, {
             pendingSignal: false,
@@ -709,6 +725,7 @@ export class SignalSystem extends BaseReactiveSystem {
     this.wiredTransceiverStates.clear();
     this.channelStates.clear();
     this.conductivePositions.clear();
+    this.initialized = false;
     this.tickCount = 0;
   }
 
