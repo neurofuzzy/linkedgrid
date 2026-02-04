@@ -241,7 +241,7 @@ export class GameRuntime {
         if (rawDef.props && !entityDef.data) {
           console.error(
             `[GameRuntime.fromConfig] SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
-              `  FIX: Change "props": {...} to "data": {...} in your JSON file.`
+            `  FIX: Change "props": {...} to "data": {...} in your JSON file.`
           );
           // Fallback to props for backward compatibility
           entityDef.data = rawDef.props;
@@ -319,7 +319,7 @@ export class GameRuntime {
         if (endpoints.length === 1) {
           console.warn(
             `[GameRuntime.fromConfig] Connection "${key}" has only 1 endpoint - ` +
-              `portal at ${endpoints[0].sceneId}(${endpoints[0].x},${endpoints[0].y}) has no destination!`
+            `portal at ${endpoints[0].sceneId}(${endpoints[0].x},${endpoints[0].y}) has no destination!`
           );
         }
       }

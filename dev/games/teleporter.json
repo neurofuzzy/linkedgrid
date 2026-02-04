@@ -477,12 +477,8 @@
           "y": 15,
           "layer": 1,
           "data": {
-            "destination": {
-              "sceneId": "room2",
-              "x": 5,
-              "y": 5,
-              "layer": 6
-            }
+            "connectionKey": "red",
+            "targetKey": "red"
           }
         }
       ]
@@ -955,12 +951,8 @@
           "y": 5,
           "layer": 1,
           "data": {
-            "destination": {
-              "sceneId": "room1",
-              "x": 15,
-              "y": 15,
-              "layer": 6
-            }
+            "connectionKey": "red",
+            "targetKey": "red"
           }
         },
         {
@@ -987,7 +979,9 @@
     }
   ],
   "initialScene": "room1",
-  "systems": ["TeleporterSystem"],
+  "systems": [
+    "TeleporterSystem"
+  ],
   "tickRate": 10,
   "input": {
     "type": "keyboard",
