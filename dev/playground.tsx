@@ -87,6 +87,11 @@ const AVAILABLE_GAMES = [
     name: 'Spawning System Demo',
     path: '/dev/games/spawning-system.json',
   },
+  {
+    id: 'push-puzzle',
+    name: 'Push Puzzle (Crates & Circuits)',
+    path: '/dev/games/push-puzzle.json',
+  },
 ];
 
 /**
