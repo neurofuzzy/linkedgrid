@@ -1,6 +1,9 @@
 import {
   GameRuntime,
-  GameRuntimeConfig,
+  GameConfig,
+  SceneDefinition,
+  EntityDefinition,
+  SystemFactory,
 } from '../packages/spartan/core/game-runtime';
 import { GameManager } from '../packages/spartan/core/game-manager';
 import { TeleporterSystem } from '../packages/spartan/systems/teleporter.system';
@@ -22,142 +25,162 @@ import { TurretSystem } from '../packages/spartan/systems/turret.system';
 import { SpawningSystem } from '../packages/spartan/systems/spawning.system';
 import { PushSystem } from '../packages/spartan/systems/push.system';
 import type { GameSystem } from '../packages/spartan/core/types';
-import type { EntityData } from '../packages/spartan/entities/entity.types';
-import {
-  isPlayer,
-  isEnemy,
-  isTeleporter,
-  hasHealth,
-  hasAI,
-  hasTeleportTarget,
-  hasPropagation,
-  hasTemperature,
-} from '../packages/spartan/traits/trait-guards';
 import {
   InputManager,
   HeadlessInputManager,
   WebInputProvider,
 } from '../packages/spartan-web/input';
 
-/**
- * Entity definition in JSON scene.
- */
-export interface EntityDefinition {
-  type: string;
-  x: number;
-  y: number;
-  layer: number;
-  data?: Record<string, unknown>;
-  props?: Record<string, unknown>; // DEPRECATED: Use 'data' instead
-}
+// Re-export types for backward compatibility
+export type { GameConfig, SceneDefinition, EntityDefinition };
 
 /**
- * Scene definition in JSON config.
+ * @deprecated Use GameConfig from game-runtime.ts instead
  */
-export interface SceneDefinition {
-  id: string;
-  name?: string;
-  width: number;
-  height: number;
-  entities?: EntityDefinition[];
-  metadata?: Record<string, unknown>;
-}
+export type SceneConfig = GameConfig;
 
 /**
- * Complete scene configuration file format.
- */
-export interface SceneConfig {
-  scenes: SceneDefinition[];
-  initialScene: string;
-  systems?: string[];
-  tickRate?: number;
-  /** Game description/instructions shown in playground */
-  description?: string;
-  input?: {
-    type: 'keyboard' | 'headless' | 'none';
-    options?: {
-      bufferInput?: boolean;
-      directionMode?: 'continuous' | 'tap';
-      cellSize?: number;
-      cellGap?: number;
-    };
-  };
-}
-
-/**
- * System factory function type.
- * Now accepts optional system instances for dependency injection.
- */
-type SystemFactory = (
-  gameManager: GameManager,
-  systems: Map<string, GameSystem>
-) => GameSystem;
-
-/**
- * System registry for mapping string names to system constructors.
- * Add new systems here as they're implemented.
+ * System factory for web playground.
+ * Maps system names to instances with dependency injection.
  *
- * The systems map allows dependent systems to access already-created systems.
- * Order matters: HealthSystem must be created before ProjectileSystem/TurretSystem.
+ * This is application-specific and should NOT be in the core package.
  */
-const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
-  PushSystem: () => new PushSystem(),
-  TeleporterSystem: (gameManager) => new TeleporterSystem(gameManager),
-  CollectionSystem: (gameManager) => new CollectionSystem(gameManager),
-  DoorSystem: (gameManager) => new DoorSystem(gameManager),
-  FloorEffectSystem: (gameManager) => new FloorEffectSystem(gameManager),
-  ExplosionSystem: () => new ExplosionSystem(),
-  HealthSystem: () => new HealthSystem(),
-  PoisonSystem: (gameManager) => new PoisonSystem(gameManager),
-  FireSystem: () => new FireSystem(),
-  LiquidSystem: () => new LiquidSystem(),
-  ChainReactionSystem: () => new ChainReactionSystem(),
-  SignalSystem: (gameManager) => new SignalSystem(gameManager),
-  GateSystem: (gameManager) => new GateSystem(gameManager),
-  NPCMovementSystem: () => new NPCMovementSystem(),
-  ProjectileSystem: (_gameManager, systems) => {
-    let healthSystem = systems.get('HealthSystem') as HealthSystem | undefined;
-    if (!healthSystem) {
-      healthSystem = new HealthSystem();
-      systems.set('HealthSystem', healthSystem);
+const createSystemByName: SystemFactory = (
+  name: string,
+  gameManager: GameManager,
+  createdSystems: Map<string, GameSystem>
+): GameSystem | null => {
+  switch (name) {
+    case 'PushSystem':
+      return new PushSystem();
+
+    case 'TeleporterSystem':
+      return new TeleporterSystem(gameManager);
+
+    case 'CollectionSystem':
+      return new CollectionSystem(gameManager);
+
+    case 'DoorSystem':
+      return new DoorSystem(gameManager);
+
+    case 'FloorEffectSystem':
+      return new FloorEffectSystem(gameManager);
+
+    case 'ExplosionSystem':
+      return new ExplosionSystem();
+
+    case 'HealthSystem':
+      return new HealthSystem();
+
+    case 'PoisonSystem':
+      return new PoisonSystem(gameManager);
+
+    case 'FireSystem':
+      return new FireSystem();
+
+    case 'LiquidSystem':
+      return new LiquidSystem();
+
+    case 'ChainReactionSystem':
+      return new ChainReactionSystem();
+
+    case 'SignalSystem':
+      return new SignalSystem(gameManager);
+
+    case 'GateSystem':
+      return new GateSystem(gameManager);
+
+    case 'NPCMovementSystem':
+      return new NPCMovementSystem();
+
+    case 'ProjectileSystem': {
+      let healthSystem = createdSystems.get('HealthSystem') as
+        | HealthSystem
+        | undefined;
+      if (!healthSystem) {
+        healthSystem = new HealthSystem();
+        createdSystems.set('HealthSystem', healthSystem);
+      }
+      return new ProjectileSystem(healthSystem);
     }
-    return new ProjectileSystem(healthSystem);
-  },
-  TurretSystem: (_gameManager, systems) => {
-    let healthSystem = systems.get('HealthSystem') as HealthSystem | undefined;
-    if (!healthSystem) {
-      healthSystem = new HealthSystem();
-      systems.set('HealthSystem', healthSystem);
+
+    case 'TurretSystem': {
+      let healthSystem = createdSystems.get('HealthSystem') as
+        | HealthSystem
+        | undefined;
+      if (!healthSystem) {
+        healthSystem = new HealthSystem();
+        createdSystems.set('HealthSystem', healthSystem);
+      }
+      let projectileSystem = createdSystems.get('ProjectileSystem') as
+        | ProjectileSystem
+        | undefined;
+      if (!projectileSystem) {
+        projectileSystem = new ProjectileSystem(healthSystem);
+        createdSystems.set('ProjectileSystem', projectileSystem);
+      }
+      return new TurretSystem(healthSystem, projectileSystem);
     }
-    let projectileSystem = systems.get('ProjectileSystem') as ProjectileSystem | undefined;
-    if (!projectileSystem) {
-      projectileSystem = new ProjectileSystem(healthSystem);
-      systems.set('ProjectileSystem', projectileSystem);
-    }
-    return new TurretSystem(healthSystem, projectileSystem);
-  },
-  SpawningSystem: (gameManager) => new SpawningSystem(gameManager),
+
+    case 'SpawningSystem':
+      return new SpawningSystem(gameManager);
+
+    default:
+      return null;
+  }
 };
 
 /**
- * SceneLoader - Parse JSON scene configs and initialize GameRuntime.
+ * List of known system names for validation.
+ */
+const KNOWN_SYSTEMS = [
+  'PushSystem',
+  'TeleporterSystem',
+  'CollectionSystem',
+  'DoorSystem',
+  'FloorEffectSystem',
+  'ExplosionSystem',
+  'HealthSystem',
+  'PoisonSystem',
+  'FireSystem',
+  'LiquidSystem',
+  'ChainReactionSystem',
+  'SignalSystem',
+  'GateSystem',
+  'NPCMovementSystem',
+  'ProjectileSystem',
+  'TurretSystem',
+  'SpawningSystem',
+];
+
+/**
+ * SceneLoader - Platform adapter for web-based game loading.
  *
- * Handles:
- * - Creating GameRuntime with initial scene
- * - Adding additional scenes to SceneManager
- * - Spawning entities in each scene
- * - Registering systems by name
+ * Responsibilities:
+ * - Create DOM-specific input managers (keyboard/mouse)
+ * - Delegate game initialization to GameRuntime.fromConfig()
+ * - Attach input cleanup handlers
+ *
+ * What moved to the package:
+ * - Entity spawning logic (now in GameRuntime.fromConfig())
+ * - Connection registration (now in GameRuntime.fromConfig())
+ * - Scene creation (now in GameRuntime.fromConfig())
+ *
+ * What stays here:
+ * - Input manager creation (DOM-dependent)
+ * - System factory (application-specific)
+ * - Container management (web-specific)
  *
  * @example
  * ```typescript
- * const loader = new SceneLoader();
- * const config = await fetch('/dev/games/basic.json').then(r => r.json());
+ * const loader = new SceneLoader(document.getElementById('game'));
+ * const config = await fetch('/games/level1.json').then(r => r.json());
  * const runtime = loader.load(config);
  * runtime.start();
  * ```
  */
 export class SceneLoader {
-  constructor(private container?: HTMLElement | null) { }
+  constructor(private container?: HTMLElement | null) {}
 
   /**
    * Load scene configuration and create initialized GameRuntime.
@@ -165,58 +188,19 @@ export class SceneLoader {
    * @param config - Scene configuration from JSON
    * @returns Initialized GameRuntime ready to start
    */
-  load(config: SceneConfig): GameRuntime {
-    if (!config.scenes || config.scenes.length === 0) {
-      throw new Error('Scene config must contain at least one scene');
+  load(config: GameConfig): GameRuntime {
+    // Validate config before loading
+    const errors = SceneLoader.validate(config);
+    if (errors.length > 0) {
+      throw new Error(
+        `Invalid scene config:\n${errors.map((e) => `  - ${e}`).join('\n')}`
+      );
     }
 
-    // Find initial scene
-    const initialSceneId = config.initialScene || config.scenes[0].id;
-    const initialScene = config.scenes.find((s) => s.id === initialSceneId);
+    // Delegate to package-native loader
+    const runtime = GameRuntime.fromConfig(config, createSystemByName);
 
-    if (!initialScene) {
-      throw new Error(`Initial scene "${initialSceneId}" not found in config`);
-    }
-
-    // Create runtime with initial scene (empty)
-    const runtimeConfig: GameRuntimeConfig = {
-      initialScene: {
-        id: initialScene.id,
-        width: initialScene.width,
-        height: initialScene.height,
-        metadata: {
-          ...initialScene.metadata,
-          name: initialScene.name,
-        },
-      },
-      systems: [], // Will be populated below
-      tickRate: config.tickRate || 10,
-    };
-
-    const runtime = GameRuntime.new(runtimeConfig);
-
-    // Create and populate initial scene
-    this.populateScene(runtime, initialScene);
-
-    // Create additional scenes
-    for (const sceneDef of config.scenes) {
-      if (sceneDef.id !== initialSceneId) {
-        runtime.game.sceneManager.createScene(
-          sceneDef.id,
-          sceneDef.width,
-          sceneDef.height,
-          {
-            ...sceneDef.metadata,
-            name: sceneDef.name,
-          }
-        );
-
-        this.populateScene(runtime, sceneDef);
-      }
-    }
-
-    // Create input manager and register PlayerInputSystem FIRST
-    // This ensures PlayerInputSystem runs before other systems can react to move intents
+    // Create platform-specific input provider and attach PlayerInputSystem
     if (config.input && config.input.type !== 'none') {
       const { manager, cleanup } = this.createInputManager(
         config.input,
@@ -224,63 +208,31 @@ export class SceneLoader {
       );
 
       // Create InputProvider - use WebInputProvider for DOM-based input, simple adapter for headless
-      const inputProvider = manager instanceof InputManager
-        ? new WebInputProvider(manager)
-        : {
-          // Headless mode: simple adapter
-          getDirection: () => manager.getState().direction,
-          getAction: () => manager.getState().action,
-          getSecondary: () => manager.getState().secondary,
-          getStart: () => manager.getState().start,
-          getRestart: () => manager.getState().restart,
-          destroy: cleanup,
-        };
+      const inputProvider =
+        manager instanceof InputManager
+          ? new WebInputProvider(manager)
+          : {
+              // Headless mode: simple adapter
+              getDirection: () => manager.getState().direction,
+              getAction: () => manager.getState().action,
+              getSecondary: () => manager.getState().secondary,
+              getStart: () => manager.getState().start,
+              getRestart: () => manager.getState().restart,
+              destroy: cleanup,
+            };
 
       // Create and register PlayerInputSystem
       // Runs FIRST to stage movement intents before reactive systems
-      const playerInputSystem = new PlayerInputSystem(runtime.game, inputProvider);
+      const playerInputSystem = new PlayerInputSystem(
+        runtime.game,
+        inputProvider
+      );
       runtime.addSystem(playerInputSystem);
 
       // Store references for external access
       runtime.inputManager = manager;
       runtime.inputCleanup = cleanup;
     }
-
-    // Register other systems AFTER PlayerInputSystem
-    // This allows systems like DoorSystem to react to staged move intents
-    // Track created systems for dependency injection
-    const createdSystems = new Map<string, GameSystem>();
-
-    if (config.systems && config.systems.length > 0) {
-      for (const systemName of config.systems) {
-        // Skip if already created as a dependency
-        if (createdSystems.has(systemName)) {
-          continue;
-        }
-
-        const systemFactory = SYSTEM_REGISTRY[systemName];
-        if (!systemFactory) {
-          console.warn(`Unknown system: ${systemName}`);
-          continue;
-        }
-
-        const system = systemFactory(runtime.game, createdSystems);
-        createdSystems.set(systemName, system);
-        // Add to both systems array (persists across scene transitions) and gameLoop
-        runtime.addSystem(system);
-      }
-
-      // Add any systems that were created as dependencies but not in the config list
-      for (const [systemName, system] of createdSystems) {
-        if (!config.systems.includes(systemName)) {
-          runtime.addSystem(system);
-        }
-      }
-    }
-
-    // Initialize cell masks for all pre-spawned entities
-    // This ensures BLOCKING and VISION_BLOCKING masks are set correctly
-    runtime.spatial.syncMasks();
 
     return runtime;
   }
@@ -293,7 +245,7 @@ export class SceneLoader {
    * @returns Input manager instance and cleanup function
    */
   private createInputManager(
-    config: SceneConfig['input'],
+    config: GameConfig['input'],
     container?: HTMLElement | null
   ): { manager: InputManager | HeadlessInputManager; cleanup: () => void } {
     const inputConfig = config || { type: 'keyboard' as const };
@@ -311,11 +263,12 @@ export class SceneLoader {
 
     // keyboard/gamepad/mouse
     const options = {
-      cellSize: inputConfig.options?.cellSize || 24,
-      cellGap: inputConfig.options?.cellGap || 0,
-      bufferInput: inputConfig.options?.bufferInput || false,
+      cellSize: (inputConfig.options?.cellSize as number) || 24,
+      cellGap: (inputConfig.options?.cellGap as number) || 0,
+      bufferInput: (inputConfig.options?.bufferInput as boolean) || false,
       directionMode:
-        inputConfig.options?.directionMode || ('continuous' as const),
+        (inputConfig.options?.directionMode as 'continuous' | 'tap') ||
+        ('continuous' as const),
     };
 
     const manager = new InputManager(container ?? null, null, options);
@@ -328,157 +281,12 @@ export class SceneLoader {
   }
 
   /**
-   * Populate a scene with entities from definition.
-   *
-   * @param runtime - GameRuntime instance
-   * @param sceneDef - Scene definition with entities
-   */
-  private populateScene(runtime: GameRuntime, sceneDef: SceneDefinition): void {
-    const scene = runtime.game.sceneManager.getScene(sceneDef.id);
-    if (!scene) {
-      throw new Error(`Scene ${sceneDef.id} not found`);
-    }
-
-    const entities = sceneDef.entities || [];
-    let playerId: number | null = null;
-
-    // Spawn all entities
-    for (const entityDef of entities) {
-      // Skip comment/section objects (used for documentation in JSON files)
-      if (!entityDef.type || entityDef.x === undefined || entityDef.y === undefined || entityDef.layer === undefined) {
-        continue;
-      }
-
-      // Validate schema: Check for common mistake of using 'props' instead of 'data'
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((entityDef as any).props && !entityDef.data) {
-        console.error(
-          `[SceneLoader] ❌ SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
-          `  → FIX: Change "props": {...} to "data": {...} in your JSON file.\n` +
-          `  → Properties will NOT be loaded until this is fixed!`
-        );
-        // Fallback to support legacy JSON
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        entityDef.data = (entityDef as any).props;
-      }
-
-      // Add sceneId to entity data
-      const entityData = {
-        ...(entityDef.data || {}),
-        sceneId: scene.id,
-      };
-
-      // Validate entity data using trait guards
-      // Cast type to EntityData - JSON provides string type but EntityData expects literal union
-      const tempEntityForValidation = {
-        id: 0,
-        type: entityDef.type,
-        ...entityData,
-      } as EntityData;
-
-      // Validate required traits for known entity types
-      if (isPlayer(tempEntityForValidation)) {
-        if (!hasHealth(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] Player entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp). This may cause runtime errors.`
-          );
-        }
-      }
-
-      if (isEnemy(tempEntityForValidation)) {
-        if (!hasHealth(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing health properties (hp, maxHp).`
-          );
-        }
-        if (!hasAI(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] Enemy entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing AI properties (aiState).`
-          );
-        }
-      }
-
-      if (isTeleporter(tempEntityForValidation)) {
-        if (!hasTeleportTarget(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] Teleporter entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing teleport target (targetKey).`
-          );
-        }
-      }
-
-      // Validate propagation properties for fire, water, etc.
-      // Use entityDef.type (raw JSON string) since EntityData union uses different names (e.g. 'fire-visual' not 'fire')
-      if (
-        entityDef.type === 'fire' ||
-        entityDef.type === 'fire-visual' ||
-        entityDef.type === 'water' ||
-        entityDef.type === 'poison-gas'
-      ) {
-        if (!hasPropagation(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing propagation properties.\n` +
-            `  → Required: propagationType, spreadRate, spreadLayer, spreadType\n` +
-            `  → Optional: spreadProbability, maxDistance, lifetime, blockedByLayers`
-          );
-        } else {
-          // Validate that spreadType is set
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const propData = tempEntityForValidation as any;
-          if (!propData.spreadType) {
-            console.warn(
-              `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) has propagation but is missing 'spreadType' property.\n` +
-              `  → This will cause spawned entities to have type 'undefined'!`
-            );
-          }
-        }
-      }
-
-      // Validate temperature for grass, gasoline, fuses
-      if (
-        entityDef.type === 'grass' ||
-        entityDef.type === 'gasoline' ||
-        entityDef.type === 'fuse'
-      ) {
-        if (!hasTemperature(tempEntityForValidation)) {
-          console.warn(
-            `[SceneLoader] ${entityDef.type} entity in scene '${sceneDef.id}' at (${entityDef.x}, ${entityDef.y}) is missing temperature properties (temperature, flammable, flamePoint).`
-          );
-        }
-      }
-
-      const id = scene.spatial.spawn(
-        entityDef.type,
-        entityDef.x,
-        entityDef.y,
-        entityDef.layer,
-        entityData
-      );
-
-      // Track player entity
-      if (entityDef.type === 'player') {
-        playerId = id;
-      }
-    }
-
-    // Commit all spawns
-    scene.spatial.commit();
-
-    // Set player entity ID in game state (if player was spawned in initial scene)
-    if (
-      playerId !== null &&
-      sceneDef.id === runtime.game.sceneManager.getActiveScene()?.id
-    ) {
-      runtime.game.gameState.playerEntityId = playerId;
-    }
-  }
-
-  /**
    * Validate scene configuration.
    *
    * @param config - Scene configuration to validate
    * @returns Array of validation errors (empty if valid)
    */
-  static validate(config: SceneConfig): string[] {
+  static validate(config: GameConfig): string[] {
     const errors: string[] = [];
 
     if (!config.scenes || config.scenes.length === 0) {
@@ -515,19 +323,22 @@ export class SceneLoader {
         if (scene.entities) {
           for (let i = 0; i < scene.entities.length; i++) {
             const entity = scene.entities[i];
+            // Skip comment/section objects
+            if (!entity.type) continue;
+
             if (entity.x < 0 || entity.x >= scene.width) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: x=${entity.x} out of bounds (0-${scene.width - 1})`
+                `Scene "${scene.id}" entity ${i} (${entity.type}): x=${entity.x} out of bounds (0-${scene.width - 1})`
               );
             }
             if (entity.y < 0 || entity.y >= scene.height) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: y=${entity.y} out of bounds (0-${scene.height - 1})`
+                `Scene "${scene.id}" entity ${i} (${entity.type}): y=${entity.y} out of bounds (0-${scene.height - 1})`
               );
             }
             if (entity.layer < 0 || entity.layer > 7) {
               errors.push(
-                `Scene "${scene.id}" entity ${i}: layer=${entity.layer} invalid (must be 0-7)`
+                `Scene "${scene.id}" entity ${i} (${entity.type}): layer=${entity.layer} invalid (must be 0-7)`
               );
             }
           }
@@ -538,7 +349,7 @@ export class SceneLoader {
     // Validate systems
     if (config.systems) {
       for (const systemName of config.systems) {
-        if (!SYSTEM_REGISTRY[systemName]) {
+        if (!KNOWN_SYSTEMS.includes(systemName)) {
           errors.push(`Unknown system: "${systemName}"`);
         }
       }

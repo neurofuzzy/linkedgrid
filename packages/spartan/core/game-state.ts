@@ -132,6 +132,28 @@ export class GameState {
   }
 
   /**
+   * Get all connection keys and their endpoints.
+   *
+   * Used for debugging, editor visualization, and validation.
+   *
+   * @returns Copy of the connections map
+   *
+   * @example
+   * ```typescript
+   * const allConnections = gameState.getAllConnections();
+   * for (const [key, endpoints] of allConnections) {
+   *   console.log(`Connection "${key}" has ${endpoints.length} endpoints`);
+   * }
+   * ```
+   */
+  getAllConnections(): Map<
+    string,
+    Array<{ sceneId: string; x: number; y: number; layer: number }>
+  > {
+    return new Map(this.connections);
+  }
+
+  /**
    * Remove connections by key.
    *
    * If sceneId is provided, only removes connections to that scene.

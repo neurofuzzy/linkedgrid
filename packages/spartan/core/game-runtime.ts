@@ -6,6 +6,7 @@ import { GameLoop } from './game-loop';
 import { Scene } from './scene';
 import { SpatialSystem } from './spatial-system';
 import type { GameSystem } from './types';
+import { hasSceneConnection } from '../traits/trait-guards';
 
 /**
  * Configuration for creating a new game.
@@ -23,6 +24,61 @@ export interface GameRuntimeConfig {
   /** Ticks per second (default: 10) */
   tickRate?: number;
 }
+
+/**
+ * Entity definition in JSON game configuration.
+ */
+export interface EntityDefinition {
+  type: string;
+  x: number;
+  y: number;
+  layer: number;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Scene definition in JSON game configuration.
+ */
+export interface SceneDefinition {
+  id: string;
+  name?: string;
+  width: number;
+  height: number;
+  entities?: EntityDefinition[];
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Complete game configuration with scenes, entities, and systems.
+ * Used by GameRuntime.fromConfig() to load JSON-based games.
+ */
+export interface GameConfig {
+  /** Optional description shown in playground */
+  description?: string;
+  /** ID of the starting scene */
+  initialScene: string;
+  /** System names to instantiate */
+  systems?: string[];
+  /** Ticks per second (default: 10) */
+  tickRate?: number;
+  /** Input configuration (platform-specific) */
+  input?: {
+    type: 'keyboard' | 'headless' | 'none';
+    options?: Record<string, unknown>;
+  };
+  /** Scene definitions */
+  scenes: SceneDefinition[];
+}
+
+/**
+ * Factory function to create systems by name.
+ * Application-specific - allows core package to be system-agnostic.
+ */
+export type SystemFactory = (
+  name: string,
+  gameManager: GameManager,
+  createdSystems: Map<string, GameSystem>
+) => GameSystem | null;
 
 /**
  * GameRuntime - Real-time execution environment.
@@ -114,6 +170,213 @@ export class GameRuntime {
     );
 
     return new GameRuntime(game, config.systems, config.tickRate || 10, config);
+  }
+
+  /**
+   * Create a game from complete JSON configuration.
+   *
+   * Three-phase initialization:
+   * 1. STRUCTURE - Create all scenes (empty grids)
+   * 2. HYDRATION - Spawn all entities across all scenes
+   * 3. GLOBAL INDEXING - Register scene connections (teleporters, etc.)
+   *
+   * This ensures GameState.connections is populated before first tick.
+   *
+   * @param config - Complete game configuration from JSON
+   * @param systemFactory - Function to create systems by name
+   * @returns GameRuntime ready to start
+   *
+   * @example
+   * ```typescript
+   * const config = JSON.parse(fs.readFileSync('level.json'));
+   * const runtime = GameRuntime.fromConfig(config, createSystemByName);
+   * runtime.start();
+   * ```
+   */
+  static fromConfig(
+    config: GameConfig,
+    systemFactory: SystemFactory
+  ): GameRuntime {
+    const game = new GameManager();
+
+    // === PHASE 1: STRUCTURE ===
+    // Create all scenes (empty grids)
+    for (const sceneDef of config.scenes) {
+      game.sceneManager.createScene(
+        sceneDef.id,
+        sceneDef.width,
+        sceneDef.height,
+        {
+          ...sceneDef.metadata,
+          name: sceneDef.name,
+        }
+      );
+    }
+
+    // === PHASE 2: HYDRATION ===
+    // Spawn all entities across all scenes
+    let playerId: number | null = null;
+    const initialSceneId = config.initialScene || config.scenes[0]?.id;
+
+    for (const sceneDef of config.scenes) {
+      const scene = game.sceneManager.getScene(sceneDef.id);
+      if (!scene) {
+        throw new Error(`Scene "${sceneDef.id}" not found after creation`);
+      }
+
+      for (const entityDef of sceneDef.entities || []) {
+        // Skip comment/section objects (used for documentation in JSON files)
+        if (
+          !entityDef.type ||
+          entityDef.x === undefined ||
+          entityDef.y === undefined ||
+          entityDef.layer === undefined
+        ) {
+          continue;
+        }
+
+        // Handle legacy 'props' field (deprecated, use 'data' instead)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawDef = entityDef as any;
+        if (rawDef.props && !entityDef.data) {
+          console.error(
+            `[GameRuntime.fromConfig] SCHEMA ERROR: Entity '${entityDef.type}' at (${entityDef.x}, ${entityDef.y}) in scene '${sceneDef.id}' uses 'props' instead of 'data'.\n` +
+              `  FIX: Change "props": {...} to "data": {...} in your JSON file.`
+          );
+          // Fallback to props for backward compatibility
+          entityDef.data = rawDef.props;
+        }
+
+        // Add sceneId to entity data
+        const entityData = {
+          ...(entityDef.data || {}),
+          sceneId: sceneDef.id,
+        };
+
+        const id = scene.spatial.spawn(
+          entityDef.type,
+          entityDef.x,
+          entityDef.y,
+          entityDef.layer,
+          entityData
+        );
+
+        // Track player entity (only in initial scene)
+        if (entityDef.type === 'player' && sceneDef.id === initialSceneId) {
+          playerId = id;
+        }
+      }
+
+      // Commit all spawns for this scene
+      scene.spatial.commit();
+    }
+
+    // Set player entity ID
+    if (playerId !== null) {
+      game.gameState.playerEntityId = playerId;
+    }
+
+    // === PHASE 3: GLOBAL INDEXING ===
+    // Register scene connections (teleporters, linked switches, etc.)
+    let connectionCount = 0;
+    for (const sceneDef of config.scenes) {
+      const scene = game.sceneManager.getScene(sceneDef.id);
+      if (!scene) continue;
+
+      for (const entityDef of sceneDef.entities || []) {
+        if (!entityDef.type) continue;
+
+        // Find the spawned entity at this location
+        const entityId = scene.spatial.getEntityIdAt(
+          entityDef.x,
+          entityDef.y,
+          entityDef.layer
+        );
+
+        if (entityId === null || entityId === undefined) continue;
+
+        const entityData = scene.spatial.getEntityData(entityId);
+        if (!entityData) continue;
+
+        // Check for scene connection trait
+        if (hasSceneConnection(entityData)) {
+          game.gameState.addConnection(
+            entityData.connectionKey,
+            sceneDef.id,
+            entityDef.x,
+            entityDef.y,
+            entityDef.layer
+          );
+          connectionCount++;
+        }
+      }
+    }
+
+    // Validation: warn about orphaned connections
+    if (connectionCount > 0) {
+      const allConnections = game.gameState.getAllConnections();
+      for (const [key, endpoints] of allConnections) {
+        if (endpoints.length === 1) {
+          console.warn(
+            `[GameRuntime.fromConfig] Connection "${key}" has only 1 endpoint - ` +
+              `portal at ${endpoints[0].sceneId}(${endpoints[0].x},${endpoints[0].y}) has no destination!`
+          );
+        }
+      }
+    }
+
+    // === PHASE 4: SYSTEM INITIALIZATION ===
+    const systems: GameSystem[] = [];
+    const createdSystems = new Map<string, GameSystem>();
+
+    if (config.systems && config.systems.length > 0) {
+      for (const systemName of config.systems) {
+        // Skip if already created as a dependency
+        if (createdSystems.has(systemName)) {
+          continue;
+        }
+
+        const system = systemFactory(systemName, game, createdSystems);
+        if (system) {
+          createdSystems.set(systemName, system);
+          systems.push(system);
+        } else {
+          console.warn(`[GameRuntime.fromConfig] Unknown system: ${systemName}`);
+        }
+      }
+
+      // Add any systems that were created as dependencies but not in the config list
+      for (const [systemName, system] of createdSystems) {
+        if (!config.systems.includes(systemName)) {
+          systems.push(system);
+        }
+      }
+    }
+
+    // Set initial/active scene
+    if (!game.sceneManager.setActiveScene(initialSceneId)) {
+      throw new Error(`Initial scene "${initialSceneId}" not found`);
+    }
+
+    // Initialize cell masks for all pre-spawned entities
+    const activeScene = game.sceneManager.getActiveScene();
+    if (activeScene) {
+      activeScene.spatial.syncMasks();
+    }
+
+    // Create minimal config for GameRuntime constructor
+    const runtimeConfig: GameRuntimeConfig = {
+      initialScene: {
+        id: initialSceneId,
+        width: config.scenes.find((s) => s.id === initialSceneId)?.width || 10,
+        height:
+          config.scenes.find((s) => s.id === initialSceneId)?.height || 10,
+      },
+      systems,
+      tickRate: config.tickRate || 10,
+    };
+
+    return new GameRuntime(game, systems, config.tickRate || 10, runtimeConfig);
   }
 
   /**
