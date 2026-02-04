@@ -92,6 +92,11 @@ const AVAILABLE_GAMES = [
     name: 'Push Puzzle (Crates & Circuits)',
     path: '/dev/games/push-puzzle.json',
   },
+  {
+    id: 'spawners-and-signals',
+    name: 'Spawners & Signals',
+    path: '/dev/games/spawners-and-signals.json',
+  },
 ];
 
 /**
