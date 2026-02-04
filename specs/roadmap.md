@@ -1,5 +1,6 @@
 HIGH-LEVEL ROADMAP:
-See `roadmap-gap-analysis-2026-02-04.md` for gap analysis.
+See [Gap Analysis](./roadmap-gap-analysis-2026-02-04.md) for gap analysis.
+Please use this document for tracking using the checkboxes.
 
 Phase 1: Core (Refine[ ] d)
 
