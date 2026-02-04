@@ -28,6 +28,7 @@
                         "hp": 100,
                         "maxHp": 100,
                         "damage": 10,
+                        "pushStrength": 10,
                         "sceneId": "room1"
                     }
                 },
