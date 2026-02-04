@@ -271,8 +271,13 @@ export class GameRuntime {
       scene.spatial.commit();
     }
 
-    // Set player entity ID
-    if (playerId !== null) {
+    // Set player entity ID - warn if missing (some test scenarios don't need a player)
+    if (playerId === null) {
+      console.warn(
+        `[GameRuntime.fromConfig] No player entity found in initial scene "${initialSceneId}". ` +
+        `Game will start with playerEntityId=0.`
+      );
+    } else {
       game.gameState.playerEntityId = playerId;
     }
 
@@ -358,10 +363,12 @@ export class GameRuntime {
       throw new Error(`Initial scene "${initialSceneId}" not found`);
     }
 
-    // Initialize cell masks for all pre-spawned entities
-    const activeScene = game.sceneManager.getActiveScene();
-    if (activeScene) {
-      activeScene.spatial.syncMasks();
+    // Initialize cell masks for all pre-spawned entities in all scenes
+    for (const sceneDef of config.scenes) {
+      const scene = game.sceneManager.getScene(sceneDef.id);
+      if (scene) {
+        scene.spatial.syncMasks();
+      }
     }
 
     // Create minimal config for GameRuntime constructor

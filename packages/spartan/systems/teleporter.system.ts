@@ -109,9 +109,11 @@ export class TeleporterSystem extends BaseReactiveSystem {
           teleporterState: 'inactive',
         });
 
-        // When using connectionKey, spawn player at ACTORS layer (not teleporter's layer)
-        // The connection stores the teleporter's position/layer, but player needs ACTORS layer
-        const targetLayer = GameLayers.ACTORS;
+        // Use player's current layer for teleportation (more robust than hardcoding)
+        const playerEntity = spatial.getEntityData(
+          this.gameManager.gameState.playerEntityId
+        );
+        const targetLayer = playerEntity?.layer ?? GameLayers.ACTORS;
 
         // Execute teleport
         this.gameManager.movePlayerToScene(

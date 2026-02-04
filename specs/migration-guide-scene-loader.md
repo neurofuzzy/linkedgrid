@@ -74,6 +74,9 @@ import { SpawningSystem } from '../packages/spartan/systems/spawning.system';
 import { PushSystem } from '../packages/spartan/systems/push.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 
+// Track created systems for dependency injection (module-level singleton)
+const systemCache = new Map<string, GameSystem>();
+
 /**
  * System factory for web playground.
  * Maps system names to instances with dependency injection.
@@ -84,9 +87,6 @@ export function createSystemByName(
   name: string,
   gameManager: GameManager
 ): GameSystem | null {
-  // Track created systems for dependency injection
-  const systemCache = new Map<string, GameSystem>();
-
   switch (name) {
     case 'PushSystem':
       return new PushSystem();
@@ -134,6 +134,9 @@ export function createSystemByName(
       return new NPCMovementSystem();
 
     case 'ProjectileSystem': {
+      if (systemCache.has('ProjectileSystem')) {
+        return systemCache.get('ProjectileSystem')!;
+      }
       let healthSystem = systemCache.get('HealthSystem') as HealthSystem | undefined;
       if (!healthSystem) {
         healthSystem = new HealthSystem();
@@ -145,6 +148,9 @@ export function createSystemByName(
     }
 
     case 'TurretSystem': {
+      if (systemCache.has('TurretSystem')) {
+        return systemCache.get('TurretSystem')!;
+      }
       let healthSystem = systemCache.get('HealthSystem') as HealthSystem | undefined;
       if (!healthSystem) {
         healthSystem = new HealthSystem();
@@ -157,7 +163,9 @@ export function createSystemByName(
         systemCache.set('ProjectileSystem', projectileSystem);
       }
 
-      return new TurretSystem(healthSystem, projectileSystem);
+      const turretSystem = new TurretSystem(healthSystem, projectileSystem);
+      systemCache.set('TurretSystem', turretSystem);
+      return turretSystem;
     }
 
     case 'SpawningSystem':

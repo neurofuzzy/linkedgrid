@@ -323,8 +323,15 @@ export class SceneLoader {
         if (scene.entities) {
           for (let i = 0; i < scene.entities.length; i++) {
             const entity = scene.entities[i];
-            // Skip comment/section objects
-            if (!entity.type) continue;
+            // Skip comment/section objects or entries missing positioning
+            if (
+              !entity.type ||
+              entity.x === undefined ||
+              entity.y === undefined ||
+              entity.layer === undefined
+            ) {
+              continue;
+            }
 
             if (entity.x < 0 || entity.x >= scene.width) {
               errors.push(
