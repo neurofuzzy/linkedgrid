@@ -20,6 +20,8 @@ import { isGate } from '../traits/trait-guards';
  *   - receivedSignal=FALSE -> WALLS layer (Closed)
  */
 export class GateSystem extends BaseReactiveSystem {
+    readonly executionPhase = 'main' as const;
+
     constructor(private gameManager: GameManager) {
         super();
     }

@@ -68,6 +68,8 @@ interface PendingEmission {
 }
 
 export class SignalSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'main' as const;
+
   // Generator state tracking
   private oscillatorTicks = new Map<number, number>();
   private pressureSwitchStates = new Map<number, boolean>();

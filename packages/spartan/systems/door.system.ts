@@ -31,6 +31,8 @@ import { isPlayer, isDoor, hasInventory } from '../traits/trait-guards';
  * ```
  */
 export class DoorSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'pre-commit' as const;
+
   constructor(private gameManager: GameManager) {
     super();
   }

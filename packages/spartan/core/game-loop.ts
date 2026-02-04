@@ -3,7 +3,21 @@
  */
 import { SpatialSystem } from './spatial-system';
 import type { GameManager } from './game-manager';
-import type { GameSystem, GameContext } from './types';
+import type { GameSystem, GameContext, ExecutionPhase } from './types';
+import { EXECUTION_PHASE_ORDER } from '../config/systems.config';
+
+/**
+ * Sort systems by their execution phase.
+ * Systems without an executionPhase default to 'main'.
+ * Stable sort preserves original order within the same phase.
+ */
+function sortSystemsByPhase(systems: GameSystem[]): GameSystem[] {
+  return [...systems].sort((a, b) => {
+    const phaseA: ExecutionPhase = a.executionPhase ?? 'main';
+    const phaseB: ExecutionPhase = b.executionPhase ?? 'main';
+    return EXECUTION_PHASE_ORDER[phaseA] - EXECUTION_PHASE_ORDER[phaseB];
+  });
+}
 
 /**
  * GameLoop - Orchestrates one game tick for a SpatialSystem.
@@ -38,25 +52,26 @@ export class GameLoop {
   }
 
   /**
-   * Register systems in execution order.
+   * Register systems with automatic phase-based ordering.
    *
-   * CRITICAL: Order matters! Systems execute in registration order.
-   * See GUIDELINES.md for execution phase requirements.
+   * Systems are automatically sorted by their executionPhase property:
+   * 1. 'input' - Input systems (PlayerInputSystem)
+   * 2. 'pre-commit' - React to intents (PushSystem, DoorSystem)
+   * 3. 'main' - Core logic (FireSystem, ExplosionSystem)
+   * 4. 'post-commit' - React to committed state (CollectionSystem, TeleporterSystem)
    *
-   * Recommended order:
-   * 1. Input systems (PlayerInputSystem)
-   * 2. Pre-commit systems (DoorSystem)
-   * 3. Main systems (FireSystem, CombatSystem)
-   * 4. Post-commit systems (CollectionSystem)
+   * Systems without an executionPhase default to 'main'.
+   * Order within the same phase is preserved (stable sort).
    */
   registerSystems(systems: GameSystem[]): void {
-    this.systems = systems;
+    this.systems = sortSystemsByPhase(systems);
   }
 
   /**
    * Register a game system to run each tick.
    *
-   * Systems are executed in registration order.
+   * The system is automatically sorted into the correct position
+   * based on its executionPhase property.
    *
    * @param system - Game system to register
    *
@@ -68,14 +83,16 @@ export class GameLoop {
    */
   addSystem(system: GameSystem): void {
     this.systems.push(system);
+    this.systems = sortSystemsByPhase(this.systems);
   }
 
   /**
    * Add a system to the beginning of the execution list.
-   * Useful for Input systems that must run before logic systems.
+   * @deprecated Use addSystem() instead - systems are now auto-sorted by executionPhase.
    */
   prependSystem(system: GameSystem): void {
     this.systems.unshift(system);
+    this.systems = sortSystemsByPhase(this.systems);
   }
 
   /**

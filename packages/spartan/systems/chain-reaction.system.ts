@@ -41,6 +41,8 @@ type ChainConfig = BaseEntityData & {
  * Used for dominos, wire signals, and other deterministic spread logic.
  */
 export class ChainReactionSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   private spreadState = new Map<number, ChainState>();
   private propagatedEntities = new Map<number, PropagatedEntity>();
 

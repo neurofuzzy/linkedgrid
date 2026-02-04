@@ -8,8 +8,9 @@
  */
 
 import type { EntityData } from '../entities/entity.types';
+import type { ExecutionPhase } from '../config/systems.config';
 import { LinkedCell } from './grid';
-export type { EntityData };
+export type { EntityData, ExecutionPhase };
 
 /**
  * Entity Traits and Archetypes
@@ -217,4 +218,15 @@ export interface GameContext {
  */
 export interface GameSystem {
   update(context: GameContext): void;
+  /**
+   * Execution phase for automatic ordering.
+   * Systems are sorted by phase before execution:
+   * - 'input': Runs first (e.g., PlayerInputSystem)
+   * - 'pre-commit': Reacts to intents before validation (e.g., PushSystem, DoorSystem)
+   * - 'main': Core game logic (e.g., FireSystem, ExplosionSystem)
+   * - 'post-commit': Reacts to committed changes (e.g., CollectionSystem, TeleporterSystem)
+   *
+   * Systems without this property default to 'main' phase.
+   */
+  readonly executionPhase?: ExecutionPhase;
 }

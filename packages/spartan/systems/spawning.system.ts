@@ -76,6 +76,8 @@ interface SpawnerGroup {
  * ```
  */
 export class SpawningSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   protected tickRate = 1; // Run every tick
 
   /** Spawner groups by group ID */

@@ -44,6 +44,8 @@ import type { HasProjectile } from '../traits/projectile.trait';
  * ```
  */
 export class ProjectileSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   protected tickRate = 1; // Run every tick for smooth movement
 
   constructor(private healthSystem: HealthSystem) {

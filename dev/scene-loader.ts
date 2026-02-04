@@ -222,12 +222,12 @@ export class SceneLoader {
           };
 
       // Create and register PlayerInputSystem
-      // Runs FIRST to stage movement intents before reactive systems
+      // Automatically sorted to 'input' phase (runs before other systems)
       const playerInputSystem = new PlayerInputSystem(
         runtime.game,
         inputProvider
       );
-      runtime.prependSystem(playerInputSystem);
+      runtime.addSystem(playerInputSystem);
 
       // Store references for external access
       runtime.inputManager = manager;

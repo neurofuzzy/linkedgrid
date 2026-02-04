@@ -121,3 +121,14 @@ export const GAS_DISPERSION_DELAY = SYSTEM_CONFIG.Poison.tickRate;
 export type SystemName = keyof typeof SYSTEM_CONFIG;
 export type SystemConfig = (typeof SYSTEM_CONFIG)[SystemName];
 export type ExecutionPhase = SystemConfig['executionPhase'];
+
+/**
+ * Execution phase ordering for automatic system sorting.
+ * Lower numbers run first.
+ */
+export const EXECUTION_PHASE_ORDER: Record<ExecutionPhase, number> = {
+  'input': 0,
+  'pre-commit': 1,
+  'main': 2,
+  'post-commit': 3,
+};

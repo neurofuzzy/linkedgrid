@@ -34,6 +34,8 @@ type TeleporterState = 'ready' | 'inactive';
  * ```
  */
 export class TeleporterSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'post-commit' as const;
+
   constructor(private gameManager: GameManager) {
     super();
   }

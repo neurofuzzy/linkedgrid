@@ -62,6 +62,8 @@ interface ExplosionEvent {
  * ```
  */
 export class ExplosionSystem extends BaseTickedSystem {
+  readonly executionPhase = 'main' as const;
+
   // Queue of explosions to process this tick
   private explosionQueue: ExplosionEvent[] = [];
 

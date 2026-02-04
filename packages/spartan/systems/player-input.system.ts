@@ -34,6 +34,8 @@ import type { GameManager } from '../core/game-manager';
  * ```
  */
 export class PlayerInputSystem extends BaseReactiveSystem {
+  readonly executionPhase = 'input' as const;
+
   public debugStats = {
     lastDirection: Direction.NONE,
     movesThisTick: 0,
