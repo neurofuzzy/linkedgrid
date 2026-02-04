@@ -1,7 +1,7 @@
 /**
  * @brief Abstract base classes and interfaces for game systems.
  */
-import type { GameSystem, GameContext } from './types';
+import type { GameSystem, GameContext, EntityLifecycleEvent } from './types';
 
 /**
  * BaseSystem - Abstract base for all game systems
@@ -42,11 +42,50 @@ export abstract class BaseSystem implements GameSystem {
 /**
  * BaseTickedSystem - For systems that run on a fixed cadence
  * 
- * Automatically handles tick counting and rate limiting.
+ * Automatically handles tick counting, rate limiting, and lifecycle events.
  * Subclasses implement onTick() instead of update().
+ * 
+ * ## Lifecycle Events
+ * 
+ * Systems can react to entity spawn/remove events by overriding:
+ * - `onEntitySpawn(event)` - called when a non-ephemeral entity is spawned
+ * - `onEntityRemove(event)` - called when a non-ephemeral entity is removed
+ * 
+ * The base class handles:
+ * - Registering callbacks with SpatialSystem
+ * - Detecting scene changes and re-registering
+ * - Cleanup on resetState()
+ * 
+ * @example
+ * ```typescript
+ * class MySystem extends BaseTickedSystem {
+ *   protected tickRate = 1;
+ *   private dirty = true;
+ *   
+ *   protected onEntitySpawn(event: EntityLifecycleEvent): void {
+ *     if (event.type === 'my-entity') {
+ *       this.dirty = true;
+ *     }
+ *   }
+ *   
+ *   protected onTick(context: GameContext): void {
+ *     if (this.dirty) {
+ *       this.rebuildState(context);
+ *       this.dirty = false;
+ *     }
+ *     // ... process logic
+ *   }
+ * }
+ * ```
  */
 export abstract class BaseTickedSystem extends BaseSystem {
   private _currentTick = 0;
+
+  /** Reference to current spatial system (to detect scene changes) */
+  private _currentSpatial: GameContext['spatial'] | null = null;
+
+  /** Unsubscribe functions for lifecycle callbacks */
+  private _lifecycleUnsubscribers: Array<() => void> = [];
 
   /**
    * How often this system should run (in ticks)
@@ -55,10 +94,13 @@ export abstract class BaseTickedSystem extends BaseSystem {
   protected abstract tickRate: number;
 
   /**
-   * Final update implementation - handles tick counting
+   * Final update implementation - handles tick counting and lifecycle registration
    */
   update(context: GameContext): void {
     this._currentTick++;
+
+    // Register lifecycle handlers (re-registers on scene change)
+    this._registerLifecycleHandlers(context);
 
     if (this._currentTick % this.tickRate !== 0) {
       return;
@@ -68,16 +110,78 @@ export abstract class BaseTickedSystem extends BaseSystem {
   }
 
   /**
+   * Register lifecycle callbacks with SpatialSystem.
+   * Automatically re-registers when spatial system changes (scene transition).
+   * @private
+   */
+  private _registerLifecycleHandlers(context: GameContext): void {
+    // Detect scene change by checking if spatial system changed
+    if (this._currentSpatial !== context.spatial) {
+      // Unsubscribe from old spatial
+      for (const unsub of this._lifecycleUnsubscribers) {
+        unsub();
+      }
+      this._lifecycleUnsubscribers = [];
+      this._currentSpatial = context.spatial;
+
+      // Notify subclass of scene change
+      this.onSceneChange();
+    }
+
+    if (this._lifecycleUnsubscribers.length > 0) return; // Already registered
+
+    this._lifecycleUnsubscribers.push(
+      context.spatial.onSpawn((event) => this.onEntitySpawn(event)),
+      context.spatial.onRemove((event) => this.onEntityRemove(event))
+    );
+  }
+
+  /**
+   * Called when an entity is spawned (non-ephemeral entities only).
+   * Override to react to entity spawns.
+   * 
+   * @param event - Contains entityId, type, x, y, layer
+   */
+  protected onEntitySpawn(_event: EntityLifecycleEvent): void {
+    // Override in subclass to react to spawns
+  }
+
+  /**
+   * Called when an entity is removed (non-ephemeral entities only).
+   * Override to react to entity removals.
+   * 
+   * @param event - Contains entityId, type, x, y, layer
+   */
+  protected onEntityRemove(_event: EntityLifecycleEvent): void {
+    // Override in subclass to react to removals
+  }
+
+  /**
+   * Called when the spatial system changes (scene transition).
+   * Override to reset scene-specific state.
+   */
+  protected onSceneChange(): void {
+    // Override in subclass to handle scene transitions
+  }
+
+  /**
    * Called every N ticks (where N = tickRate)
    * Implement your system logic here
    */
   protected abstract onTick(context: GameContext): void;
 
   /**
-   * Reset tick counter
+   * Reset tick counter and lifecycle state
    */
   public override resetState(): void {
     this._currentTick = 0;
+    this._currentSpatial = null;
+
+    // Unsubscribe from lifecycle callbacks
+    for (const unsub of this._lifecycleUnsubscribers) {
+      unsub();
+    }
+    this._lifecycleUnsubscribers = [];
   }
 
   /**
