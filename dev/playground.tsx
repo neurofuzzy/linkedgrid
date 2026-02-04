@@ -73,6 +73,11 @@ const AVAILABLE_GAMES = [
     path: '/dev/games/npc-movement.json',
   },
   {
+    id: 'npc-paths',
+    name: 'NPC Patrol Paths (Strict & Pursue)',
+    path: '/dev/games/npc-paths.json',
+  },
+  {
     id: 'projectile-demo',
     name: 'Projectiles & Turrets',
     path: '/dev/games/projectile-demo.json',

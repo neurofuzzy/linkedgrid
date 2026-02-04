@@ -5,7 +5,7 @@
  * Used by NPCMovementSystem to control autonomous entity movement.
  */
 
-export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander';
+export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander' | 'patrol' | 'guard';
 
 /**
  * HasNPCMovement - Trait for entities with autonomous movement behavior.
@@ -15,6 +15,7 @@ export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander';
  * - **flee**: Run away from target when it gets too close
  * - **pursue**: Chase target when within trigger range, give up when too far
  * - **wander**: Move randomly to adjacent walkable cells
+ * - **patrol**: Follow path nodes on LOGIC layer, reverse at dead-ends, PRNG at junctions
  *
  * Speed affects movement frequency:
  * - speed 1 = moves every tick (fast)
@@ -55,6 +56,12 @@ export type NPCMovementMode = 'follow' | 'flee' | 'pursue' | 'wander';
  *   movementMode: 'wander',
  *   speed: 4, // slow wanderer
  * };
+ *
+ * // Patrolling NPC that follows path nodes (must spawn on a path-node cell)
+ * const guard: HasNPCMovement = {
+ *   movementMode: 'patrol',
+ *   speed: 2,
+ * };
  * ```
  */
 export interface HasNPCMovement {
@@ -90,9 +97,19 @@ export interface HasNPCMovement {
   /** Maximum pathfinding search range (default: 20) */
   pathfindingRange?: number;
 
+  // Patrol mode parameters
+  /** Base movement mode to return to after interrupts (e.g., pursue gives up) */
+  baseMovementMode?: NPCMovementMode;
+
   // Internal state (managed by system, do not set manually)
   /** Current movement state (managed by system) */
-  aiMovementState?: 'idle' | 'active';
+  aiMovementState?: 'idle' | 'active' | 'returning';
   /** Tick when entity last moved (managed by system) */
   lastMoveTick?: number;
+  /** Home path cell - auto-set on first patrol tick (managed by system) */
+  homePathCell?: { x: number; y: number };
+  /** Previous path cell for no-backtrack logic (managed by system) */
+  lastPathCell?: { x: number; y: number };
+  /** Patrol direction: 1 = forward, -1 = reverse at dead-ends (managed by system) */
+  patrolDirection?: 1 | -1;
 }

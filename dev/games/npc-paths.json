@@ -1,0 +1,950 @@
+{
+  "description": "NPC Patrol Paths Demo - Shows path-following NPCs:\n• Cyan: Strict patrol (never leaves path, reverses at dead-ends)\n• Red: Patrol + pursue (follows path, chases player when close)\n• Orange: Guard (patrols loop, intercepts player on path)\n\nPaths are drawn on the LOGIC layer (gray lines).\nMove near the red guard to trigger pursuit!",
+  "scenes": [
+    {
+      "id": "paths-demo",
+      "name": "NPC Patrol Paths Demo",
+      "width": 24,
+      "height": 18,
+      "metadata": {
+        "description": "Demonstrates strict patrol and patrol+pursue NPC behaviors"
+      },
+      "entities": [
+        {
+          "type": "player",
+          "x": 12,
+          "y": 9,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "paths-demo",
+            "inventory": [],
+            "isPlayer": true,
+            "team": "player",
+            "healthState": "alive",
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "npc",
+          "x": 2,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "movementMode": "patrol",
+            "speed": 2,
+            "team": "neutral",
+            "color": "#00dddd"
+          }
+        },
+        {
+          "type": "npc",
+          "x": 20,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "movementMode": "patrol",
+            "speed": 2,
+            "triggerRange": 5,
+            "giveUpRange": 10,
+            "pathfindingRange": 20,
+            "team": "enemy",
+            "color": "#ff3333"
+          }
+        },
+        {
+          "type": "npc",
+          "x": 6,
+          "y": 12,
+          "layer": 6,
+          "data": {
+            "movementMode": "guard",
+            "speed": 3,
+            "triggerRange": 5,
+            "giveUpRange": 10,
+            "pathfindingRange": 20,
+            "team": "neutral",
+            "color": "#ffaa00"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 2,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 3,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 4,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 5,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 6,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 7,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 8,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 9,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 10,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#666666"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 3,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 4,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 5,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 6,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 7,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 8,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 9,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 10,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 11,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 12,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 20,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 19,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 18,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 17,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 16,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#883333"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 6,
+          "y": 12,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 7,
+          "y": 12,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 8,
+          "y": 12,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 8,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 8,
+          "y": 14,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 7,
+          "y": 14,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 6,
+          "y": 14,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "path-node",
+          "x": 6,
+          "y": 13,
+          "layer": 3,
+          "data": {
+            "conductiveType": "path",
+            "receiverType": "path",
+            "receivedSignal": false,
+            "color": "#886600"
+          }
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 21,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 22,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 0,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 1,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 2,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 3,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 4,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 5,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 6,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 7,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 8,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 9,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 10,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 11,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 12,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 13,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 14,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 15,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 16,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 17,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 18,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 19,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 20,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 21,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 22,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 17,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 1,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 2,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 3,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 4,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 5,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 6,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 7,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 9,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 10,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 11,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 12,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 13,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 14,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 15,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 0,
+          "y": 16,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 1,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 2,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 3,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 4,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 5,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 6,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 7,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 9,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 10,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 11,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 12,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 13,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 14,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 15,
+          "layer": 5
+        },
+        {
+          "type": "wall",
+          "x": 23,
+          "y": 16,
+          "layer": 5
+        }
+      ]
+    }
+  ],
+  "initialScene": "paths-demo",
+  "systems": [
+    "NPCMovementSystem"
+  ],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

@@ -4,23 +4,27 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';
-import { hasNPCMovement } from '../traits/trait-guards';
+import { hasNPCMovement, isPathNode } from '../traits/trait-guards';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { LinkedCell } from '../core/grid/linked-cell';
 import { Direction } from '../core/grid/direction';
+import { GameLayers } from '../config/layers.config';
+import type { HasNPCMovement } from '../traits/npc-movement.trait';
 
 /**
  * NPCMovementSystem - Manages autonomous NPC movement behaviors.
  *
- * Supports four movement modes:
+ * Supports five movement modes:
  * - **follow**: Maintain distance range from target (approach when far, retreat when close)
  * - **flee**: Run away from target when it gets too close
  * - **pursue**: Chase target when within trigger range, give up when too far
  * - **wander**: Move randomly to adjacent walkable cells
+ * - **patrol**: Follow path nodes on LOGIC layer, reverse at dead-ends, PRNG at junctions
  *
  * Uses BFS pathfinding via LinkedCellUtils.findPath() for pursue and follow modes.
  * Uses greedy direction selection for flee mode.
  * Uses random direction for wander mode.
+ * Uses path-node adjacency for patrol mode.
  *
  * @system
  * @reactsTo Entities with HasNPCMovement trait
@@ -70,6 +74,12 @@ export class NPCMovementSystem extends BaseTickedSystem {
         case 'wander':
           moved = this.processWander(context, entityId);
           break;
+        case 'patrol':
+          moved = this.processPatrol(context, entityId, entityData);
+          break;
+        case 'guard':
+          moved = this.processGuard(context, entityId, entityData);
+          break;
       }
 
       // Update lastMoveTick if the entity moved
@@ -87,7 +97,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processFollow(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; minDistance?: number; maxDistance?: number; pathfindingRange?: number },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
     if (targetEntityId === undefined) return false;
@@ -127,7 +137,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   private processFlee(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; panicDistance?: number; safeDistance?: number; aiMovementState?: 'idle' | 'active' },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
     if (targetEntityId === undefined) return false;
@@ -167,26 +177,88 @@ export class NPCMovementSystem extends BaseTickedSystem {
 
   /**
    * Pursue mode: chase target when in range, give up when too far.
-   * State machine: idle when out of range, active when chasing.
+   * State machine: idle when out of range, active when chasing, returning when going back to path.
+   * If NPC has baseMovementMode='patrol', returns to path when giving up.
    * @returns true if a movement was issued
    */
   private processPursue(
     context: GameContext,
     entityId: number,
-    entityData: ReturnType<typeof context.spatial.getEntityData> & { targetEntityId?: number; triggerRange?: number; giveUpRange?: number; pathfindingRange?: number; aiMovementState?: 'idle' | 'active' },
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement,
     targetEntityId: number | undefined
   ): boolean {
-    if (targetEntityId === undefined) return false;
-
     const npcPos = context.spatial.getEntityPosition(entityId);
+    if (!npcPos) return false;
+
+    // Handle "returning" state first - doesn't require a target
+    if (entityData.aiMovementState === 'returning') {
+      // Check if we've reached any path node (not just home)
+      const pathNodeId = context.spatial.getEntityIdAt(npcPos.x, npcPos.y, GameLayers.LOGIC);
+      if (pathNodeId !== undefined) {
+        const pathNodeData = context.spatial.getEntityData(pathNodeId);
+        if (pathNodeData && isPathNode(pathNodeData)) {
+          // Reached a path node, switch to patrol mode
+          entityData.movementMode = 'patrol';
+          entityData.aiMovementState = 'idle';
+          entityData.lastPathCell = { x: npcPos.x, y: npcPos.y }; // Set to current pos to prevent immediate backtracking
+          return false;
+        }
+      }
+
+      // Check if player came back in range - interrupt return to chase again
+      if (targetEntityId !== undefined) {
+        const targetPos = context.spatial.getEntityPosition(targetEntityId);
+        if (targetPos) {
+          const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
+          const triggerRange = entityData.triggerRange ?? 8;
+          if (distance <= triggerRange) {
+            entityData.aiMovementState = 'active';
+            // Fall through to active state handling below
+          } else {
+            // Continue pathfinding back to home path
+            if (entityData.homePathCell) {
+              const nextStep = this.findNextStepToward(
+                context,
+                npcPos,
+                entityData.homePathCell,
+                entityData.pathfindingRange ?? 20
+              );
+              if (nextStep) {
+                context.spatial.move(entityId, nextStep.x, nextStep.y);
+                return true;
+              }
+            }
+            return false;
+          }
+        }
+      } else {
+        // No target, just continue returning to path
+        if (entityData.homePathCell) {
+          const nextStep = this.findNextStepToward(
+            context,
+            npcPos,
+            entityData.homePathCell,
+            entityData.pathfindingRange ?? 20
+          );
+          if (nextStep) {
+            context.spatial.move(entityId, nextStep.x, nextStep.y);
+            return true;
+          }
+        }
+        return false;
+      }
+    }
+
+    // For non-returning states, we need a valid target
+    if (targetEntityId === undefined) return false;
     const targetPos = context.spatial.getEntityPosition(targetEntityId);
-    if (!npcPos || !targetPos) return false;
+    if (!targetPos) return false;
 
     const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
     const triggerRange = entityData.triggerRange ?? 8;
     const giveUpRange = entityData.giveUpRange ?? 15;
 
-    // State machine
+    // State machine for idle/active
     if (entityData.aiMovementState !== 'active') {
       // Idle state - check if should start pursuing
       if (distance <= triggerRange) {
@@ -198,7 +270,38 @@ export class NPCMovementSystem extends BaseTickedSystem {
       // Chasing state
       if (distance > giveUpRange) {
         // Target too far, give up
-        entityData.aiMovementState = 'idle';
+
+        // If NPC has a base patrol mode, start returning to path
+        if (entityData.baseMovementMode === 'patrol' && entityData.homePathCell) {
+          // Check if already on a path node
+          const pathNodeId = context.spatial.getEntityIdAt(npcPos.x, npcPos.y, GameLayers.LOGIC);
+          if (pathNodeId !== undefined) {
+            const pathNodeData = context.spatial.getEntityData(pathNodeId);
+            if (pathNodeData && isPathNode(pathNodeData)) {
+              // Already on path, switch to patrol mode
+              entityData.movementMode = 'patrol';
+              entityData.aiMovementState = 'idle';
+              entityData.lastPathCell = { x: npcPos.x, y: npcPos.y }; // Set to current pos to prevent immediate backtracking
+              return false;
+            }
+          }
+
+          // Not on path, start returning
+          entityData.aiMovementState = 'returning';
+          const nextStep = this.findNextStepToward(
+            context,
+            npcPos,
+            entityData.homePathCell,
+            entityData.pathfindingRange ?? 20
+          );
+          if (nextStep) {
+            context.spatial.move(entityId, nextStep.x, nextStep.y);
+            return true;
+          }
+        } else {
+          // No base patrol mode, just go idle
+          entityData.aiMovementState = 'idle';
+        }
       } else if (distance <= 1) {
         // Caught the target - stay adjacent
         // (system doesn't handle catch events, just movement)
@@ -243,6 +346,218 @@ export class NPCMovementSystem extends BaseTickedSystem {
     return true;
   }
 
+  /**
+   * Patrol mode: follow path nodes on LOGIC layer.
+   * - NPCs auto-detect home path on first tick
+   * - At junctions (3+ path neighbors), use PRNG to select
+   * - No backtracking unless at dead-end (1 neighbor)
+   * - Circular paths are supported (no reversal needed)
+   * - If NPC has triggerRange set, switches to pursue when player is in range
+   * @returns true if a movement was issued
+   */
+  private processPatrol(
+    context: GameContext,
+    entityId: number,
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement
+  ): boolean {
+    const npcPos = context.spatial.getEntityPosition(entityId);
+    if (!npcPos) return false;
+
+    // Check for pursue trigger if NPC has triggerRange
+    if (entityData.triggerRange !== undefined) {
+      const playerEntityId = context.gameManager?.gameState?.playerEntityId;
+      const targetId = entityData.targetEntityId ?? playerEntityId;
+      if (targetId !== undefined) {
+        const targetPos = context.spatial.getEntityPosition(targetId);
+        if (targetPos) {
+          const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
+          if (distance <= entityData.triggerRange) {
+            // Switch to pursue mode, remember base mode for return
+            entityData.baseMovementMode = 'patrol';
+            entityData.movementMode = 'pursue';
+            entityData.aiMovementState = 'active';
+            return false; // Let pursue mode handle next tick
+          }
+        }
+      }
+    }
+
+    // Initialize home path cell on first tick
+    if (!entityData.homePathCell) {
+      // Check if NPC is on a path node
+      const pathNodeId = context.spatial.getEntityIdAt(npcPos.x, npcPos.y, GameLayers.LOGIC);
+      if (pathNodeId !== undefined) {
+        const pathNodeData = context.spatial.getEntityData(pathNodeId);
+        if (pathNodeData && isPathNode(pathNodeData)) {
+          entityData.homePathCell = { x: npcPos.x, y: npcPos.y };
+          entityData.patrolDirection = 1;
+        }
+      }
+      // If not on a path, NPC can't patrol
+      if (!entityData.homePathCell) return false;
+    }
+
+    // Get adjacent path nodes
+    const pathNeighbors = this.getPathNeighbors(context, npcPos.x, npcPos.y);
+    if (pathNeighbors.length === 0) return false;
+
+    // Filter out lastPathCell to prevent backtracking (unless dead-end)
+    // Filter out lastPathCell to prevent backtracking, but check for blockages
+    let validNeighbors = pathNeighbors;
+    if (entityData.lastPathCell && pathNeighbors.length > 1) {
+      const potentialNeighbors = pathNeighbors.filter(
+        (n) => n.x !== entityData.lastPathCell!.x || n.y !== entityData.lastPathCell!.y
+      );
+
+      // Check if potential neighbors are unblocked
+      const unblockedNeighbors = potentialNeighbors.filter((n) => {
+        const cell = context.spatial.grid.cell(n.x, n.y);
+        return cell && !context.spatial.isBlocked(cell);
+      });
+
+      if (unblockedNeighbors.length > 0) {
+        validNeighbors = unblockedNeighbors;
+      }
+      // Else: all forward paths blocked, fall back to pathNeighbors (allowing backtrack)
+    }
+
+    // Dead-end: only one neighbor (which is lastPathCell), reverse by allowing backtrack
+    if (validNeighbors.length === 0) {
+      validNeighbors = pathNeighbors;
+    }
+
+    // Select next cell
+    let nextCell: { x: number; y: number };
+    if (validNeighbors.length === 1) {
+      nextCell = validNeighbors[0];
+    } else {
+      // Junction: PRNG selection
+      const randomIndex = Math.floor(Math.random() * validNeighbors.length);
+      nextCell = validNeighbors[randomIndex];
+    }
+
+    // Check if the cell is walkable (not blocked by walls/actors)
+    const targetCell = context.spatial.grid.cell(nextCell.x, nextCell.y);
+    if (!targetCell || context.spatial.isBlocked(targetCell)) {
+      return false;
+    }
+
+    // Update lastPathCell and move
+    entityData.lastPathCell = { x: npcPos.x, y: npcPos.y };
+    context.spatial.move(entityId, nextCell.x, nextCell.y);
+    return true;
+  }
+
+  /**
+   * Guard mode: patrols normally, but intercepts player when in range.
+   * - Idle: Acts exactly like Patrol mode.
+   * - Active: Finds path node closest to player and moves there (staying on path).
+   * - Giving Up: Resumes normal patrol.
+   */
+  private processGuard(
+    context: GameContext,
+    entityId: number,
+    entityData: ReturnType<typeof context.spatial.getEntityData> & HasNPCMovement
+  ): boolean {
+    const npcPos = context.spatial.getEntityPosition(entityId);
+    if (!npcPos) return false;
+
+    // Check for player target
+    const playerEntityId = context.gameManager?.gameState?.playerEntityId;
+    const targetId = entityData.targetEntityId ?? playerEntityId;
+
+    if (targetId === undefined) return this.processPatrol(context, entityId, entityData);
+
+    const targetPos = context.spatial.getEntityPosition(targetId);
+    if (!targetPos) return this.processPatrol(context, entityId, entityData);
+
+    const distance = this.manhattanDistance(npcPos.x, npcPos.y, targetPos.x, targetPos.y);
+    const triggerRange = entityData.triggerRange ?? 8;
+    const giveUpRange = entityData.giveUpRange ?? 15;
+
+    // State Machine
+    if (entityData.aiMovementState !== 'active') {
+      if (distance <= triggerRange) {
+        entityData.aiMovementState = 'active';
+      }
+    } else {
+      if (distance > giveUpRange) {
+        entityData.aiMovementState = 'idle';
+      }
+    }
+
+    // If idle, just patrol
+    if (entityData.aiMovementState !== 'active') {
+      return this.processPatrol(context, entityId, entityData);
+    }
+
+
+    // --- Active Guard Logic ---
+    // 1. Find all reachable path nodes from current position (BFS restricted to path nodes)
+    const reachablePathNodes = this.findReachablePathNodes(context, npcPos, 20);
+    if (reachablePathNodes.length === 0) return false;
+
+    // 2. Find the path node closest to the player
+    let closestNode: { x: number; y: number } | null = null;
+    let minDistToPlayer = Infinity;
+
+    for (const node of reachablePathNodes) {
+      const dist = this.manhattanDistance(node.x, node.y, targetPos.x, targetPos.y);
+      if (dist < minDistToPlayer) {
+        minDistToPlayer = dist;
+        closestNode = node;
+      }
+    }
+
+    if (!closestNode) return false;
+
+    // 3. If we are already at the closest node, stay there and face player
+    if (closestNode.x === npcPos.x && closestNode.y === npcPos.y) {
+      return false; // Stand guard
+    }
+
+    // 4. Move toward that node, staying strictly on path
+    const nextStep = this.findNextStepOnPath(context, npcPos, closestNode, 20);
+    if (nextStep) {
+      // Update lastPathCell to keep patrol state consistent
+      entityData.lastPathCell = { x: npcPos.x, y: npcPos.y };
+      context.spatial.move(entityId, nextStep.x, nextStep.y);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get adjacent cells that have path-node entities on the LOGIC layer.
+   * Used by patrol mode to follow paths.
+   */
+  private getPathNeighbors(
+    context: GameContext,
+    x: number,
+    y: number
+  ): Array<{ x: number; y: number }> {
+    const cell = context.spatial.grid.cell(x, y);
+    if (!cell) return [];
+
+    const neighbors: Array<{ x: number; y: number }> = [];
+    for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+      const neighbor = cell.neighbor(dir);
+      if (!neighbor) continue;
+
+      // Check if there's a path-node on the LOGIC layer
+      const pathNodeId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, GameLayers.LOGIC);
+      if (pathNodeId !== undefined) {
+        const pathNodeData = context.spatial.getEntityData(pathNodeId);
+        if (pathNodeData && isPathNode(pathNodeData)) {
+          neighbors.push({ x: neighbor.x, y: neighbor.y });
+        }
+      }
+    }
+
+    return neighbors;
+  }
+
   // ========== Helper Functions ==========
 
   /**
@@ -277,6 +592,99 @@ export class NPCMovementSystem extends BaseTickedSystem {
     }
 
     return null;
+  }
+
+  /**
+   * Find the next step toward a target, constrained to path nodes.
+   */
+  private findNextStepOnPath(
+    context: GameContext,
+    fromPos: { x: number; y: number },
+    toPos: { x: number; y: number },
+    maxRange: number
+  ): { x: number; y: number } | null {
+    const fromCell = context.spatial.grid.cell(fromPos.x, fromPos.y);
+    const toCell = context.spatial.grid.cell(toPos.x, toPos.y);
+    if (!fromCell || !toCell) return null;
+
+    const path = LinkedCellUtils.findPath(
+      fromCell,
+      (c) => {
+        if (!c || context.spatial.isBlocked(c)) return false;
+        // Must be a path node
+        const pathNodeId = context.spatial.getEntityIdAt(c.x, c.y, GameLayers.LOGIC);
+        if (pathNodeId === undefined) return false;
+        const data = context.spatial.getEntityData(pathNodeId);
+        return !!(data && isPathNode(data));
+      },
+      (c) => c === toCell,
+      maxRange
+    );
+
+    if (path.length > 0) {
+      return { x: path[0].x, y: path[0].y };
+    }
+
+    return null;
+  }
+
+  /**
+   * Find all reachable path nodes within a range.
+   * Used by Guard mode to identify candidate guard posts.
+   */
+  private findReachablePathNodes(
+    context: GameContext,
+    startPos: { x: number; y: number },
+    maxRange: number
+  ): Array<{ x: number; y: number }> {
+    const startCell = context.spatial.grid.cell(startPos.x, startPos.y);
+    if (!startCell) return [];
+
+    const reachableNodes: Array<{ x: number; y: number }> = [];
+    const visited = new Set<string>();
+    const queue: Array<{ cell: LinkedCell; dict: number }> = [{ cell: startCell, dict: 0 }];
+    visited.add(`${startCell.x},${startCell.y}`);
+
+    // Since we're already at start, add it
+    reachableNodes.push({ x: startCell.x, y: startCell.y });
+
+    while (queue.length > 0) {
+      const { cell, dict } = queue.shift()!;
+      if (dict >= maxRange) continue;
+
+      for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+        const neighbor = cell.neighbor(dir);
+        if (!neighbor) continue;
+
+        const key = `${neighbor.x},${neighbor.y}`;
+        if (visited.has(key)) continue;
+
+        if (context.spatial.isBlocked(neighbor)) continue;
+
+        // Check for path node
+        const pathNodeId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, GameLayers.LOGIC);
+        if (neighbor.x === 6 && neighbor.y === 10) {
+          // console.error(`[BFS-Debug] Visiting (6,10). Blocked: ${context.spatial.isBlocked(neighbor)}. NodeID: ${pathNodeId}`);
+          if (pathNodeId !== undefined) {
+            const data = context.spatial.getEntityData(pathNodeId);
+            // console.error(`[BFS-Debug] (6,10) Entity Data: ${JSON.stringify(data)}`);
+            // console.error(`[BFS-Debug] (6,10) isPathNode: ${data ? isPathNode(data) : 'N/A'}`);
+          }
+        }
+
+        if (pathNodeId !== undefined) {
+          const data = context.spatial.getEntityData(pathNodeId);
+          if (data && isPathNode(data)) {
+            visited.add(key);
+            reachableNodes.push({ x: neighbor.x, y: neighbor.y });
+            queue.push({ cell: neighbor, dict: dict + 1 });
+          }
+        }
+      }
+    }
+
+    // console.log(`[Reachable] Found ${reachableNodes.length} nodes from ${startPos.x},${startPos.y}`);
+    return reachableNodes;
   }
 
   /**
@@ -318,7 +726,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
   public override getDebugState(): Record<string, unknown> {
     return {
       ...super.getDebugState(),
-      description: 'NPC Movement System (follow, flee, pursue, wander)',
+      description: 'NPC Movement System (follow, flee, pursue, wander, patrol)',
     };
   }
 }

@@ -1,16 +1,108 @@
 ## PR Code Suggestions ✨
 
-<!-- b8eb76a -->
+<!-- 60898bd -->
 
 Explore these optional code suggestions:
 
+<table><thead><tr><td><strong>Category</strong></td><td align=left><strong>Suggestion&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </strong></td><td align=center><strong>Impact</strong></td></tr><tbody><tr><td rowspan=2>Possible issue</td>
+<td>
 
 
-<details><summary>Refactor system dependency injection mechanism</summary>
+
+<details><summary>Fix NPC getting stuck at junctions</summary>
 
 ___
 
-**The current dependency injection in <code>scene-loader.ts</code> is brittle. It should be <br>refactored to use a more robust, declarative pattern or a simple IoC container <br>for managing system dependencies.**
+**Update the backtracking logic to prevent NPCs from getting stuck at junctions. <br>The NPC should only avoid its <code>lastPathCell</code> if other unblocked paths are <br>available; otherwise, it should be allowed to reverse.**
+
+[packages/spartan/systems/npc-movement.system.ts [416-422]](https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-f252990c88405e3357f3d35b86e4a425e79449afd0824e502bd4c0000a9bcf01R416-R422)
+
+```diff
+-// Filter out lastPathCell to prevent backtracking (unless dead-end)
++// Filter out lastPathCell to prevent backtracking, but check for blockages.
+ let validNeighbors = pathNeighbors;
+ if (entityData.lastPathCell && pathNeighbors.length > 1) {
+-  validNeighbors = pathNeighbors.filter(
++  const potentialNeighbors = pathNeighbors.filter(
+     (n) => n.x !== entityData.lastPathCell!.x || n.y !== entityData.lastPathCell!.y
+   );
++  
++  const unblockedNeighbors = potentialNeighbors.filter(n => {
++    const cell = context.spatial.grid.cell(n.x, n.y);
++    return cell && !context.spatial.isBlocked(cell);
++  });
++
++  if (unblockedNeighbors.length > 0) {
++    validNeighbors = unblockedNeighbors;
++  }
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=0 -->
+
+
+<details><summary>Suggestion importance[1-10]: 8</summary>
+
+__
+
+Why: This suggestion addresses a valid edge case where an NPC could become stuck at a junction if its only non-backtracking path is blocked. The proposed change makes the movement logic more resilient by allowing the NPC to reverse if no other options are available.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Prevent NPC from immediately backtracking</summary>
+
+___
+
+**To prevent an NPC from immediately backtracking after returning to a path, set <br><code>lastPathCell</code> to the NPC's current position instead of <code>undefined</code>.**
+
+[packages/spartan/systems/npc-movement.system.ts [200-211]](https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-f252990c88405e3357f3d35b86e4a425e79449afd0824e502bd4c0000a9bcf01R200-R211)
+
+```diff
+ // Check if we've reached any path node (not just home)
+ const pathNodeId = context.spatial.getEntityIdAt(npcPos.x, npcPos.y, GameLayers.LOGIC);
+ if (pathNodeId !== undefined) {
+   const pathNodeData = context.spatial.getEntityData(pathNodeId);
+   if (pathNodeData && isPathNode(pathNodeData)) {
+     // Reached a path node, switch to patrol mode
+     entityData.movementMode = 'patrol';
+     entityData.aiMovementState = 'idle';
+-    entityData.lastPathCell = undefined; // Reset to allow any direction
++    // Set lastPathCell to current pos to prevent immediate backtracking
++    entityData.lastPathCell = { x: npcPos.x, y: npcPos.y };
+     return false;
+   }
+ }
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
+
+
+<details><summary>Suggestion importance[1-10]: 7</summary>
+
+__
+
+Why: This suggestion correctly identifies a potential issue where an NPC could unnaturally backtrack after returning to a path. Setting `lastPathCell` improves the patrol logic's robustness and leads to more predictable movement.
+
+
+</details></details></td><td align=center>Medium
+
+</td></tr><tr><td rowspan=1>High-level</td>
+<td>
+
+
+
+<details><summary>Decouple pathfinding from entity-based nodes</summary>
+
+___
+
+**The patrol logic is tightly coupled to <code>path-node</code> entities on the <code>LOGIC</code> layer. It <br>should be refactored to use an abstract path data structure in the scene <br>configuration, separating path data from game entities.**
 
 
 ### Examples:
@@ -19,24 +111,49 @@ ___
 
 <details>
 <summary>
-<a href="https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-950f0a4080831ca6034793672a2302efb2c0fe3af1f13faaa883e7fe9890b4b5R89-R136">dev/scene-loader.ts [89-136]</a>
+<a href="https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-f252990c88405e3357f3d35b86e4a425e79449afd0824e502bd4c0000a9bcf01R456-R480">packages/spartan/systems/npc-movement.system.ts [456-480]</a>
 </summary>
 
 
 
 ```typescript
-type SystemFactory = (
-  gameManager: GameManager,
-  systems: Map<string, GameSystem>
-) => GameSystem;
+  private getPathNeighbors(
+    context: GameContext,
+    x: number,
+    y: number
+  ): Array<{ x: number; y: number }> {
+    const cell = context.spatial.grid.cell(x, y);
+    if (!cell) return [];
 
-/**
- * System registry for mapping string names to system constructors.
- * Add new systems here as they're implemented.
- *
- * The systems map allows dependent systems to access already-created systems.
+    const neighbors: Array<{ x: number; y: number }> = [];
+    for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
 
- ... (clipped 38 lines)
+ ... (clipped 15 lines)
+```
+</details>
+
+
+
+<details>
+<summary>
+<a href="https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-31f7645d7bd84caa8256e6599a96c8394b8056b58bf5c33a2af5080fc6609068R73-R106">dev/games/npc-paths.json [73-106]</a>
+</summary>
+
+
+
+```json
+        { "type": "path-node", "x": 2, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 3, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 4, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 5, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 6, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 7, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 8, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 9, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+        { "type": "path-node", "x": 10, "y": 3, "layer": 3, "data": { "conductiveType": "path", "receiverType": "path", "receivedSignal": false, "color": "#666666" } },
+
+
+ ... (clipped 24 lines)
 ```
 </details>
 
@@ -48,32 +165,27 @@ type SystemFactory = (
 
 
 #### Before:
-```typescript
-// dev/scene-loader.ts
-const SYSTEM_REGISTRY = {
-  // ...
-  TurretSystem: (_gameManager, systems) => {
-    let healthSystem = systems.get('HealthSystem');
-    if (!healthSystem) {
-      healthSystem = new HealthSystem();
-      systems.set('HealthSystem', healthSystem);
-    }
-    let projectileSystem = systems.get('ProjectileSystem');
-    if (!projectileSystem) {
-      projectileSystem = new ProjectileSystem(healthSystem);
-      systems.set('ProjectileSystem', projectileSystem);
-    }
-    return new TurretSystem(healthSystem, projectileSystem);
-  },
-};
+```json
+// packages/spartan/systems/npc-movement.system.ts
+class NPCMovementSystem {
+  processPatrol(context, entityId, entityData) {
+    const npcPos = context.spatial.getEntityPosition(entityId);
+    // Path logic is derived from querying for neighbor entities
+    const pathNeighbors = this.getPathNeighbors(context, npcPos.x, npcPos.y);
+    // ... move based on neighbors
+  }
 
-// ... in SceneLoader.load
-const createdSystems = new Map();
-for (const systemName of config.systems) {
-  const factory = SYSTEM_REGISTRY[systemName];
-  const system = factory(runtime.game, createdSystems);
-  createdSystems.set(systemName, system);
-  runtime.addSystem(system);
+  getPathNeighbors(context, x, y) {
+    const neighbors = [];
+    for (const dir of [UP, DOWN, LEFT, RIGHT]) {
+      // Checks for a specific entity type on a specific layer
+      const pathNodeId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, GameLayers.LOGIC);
+      if (pathNodeId && isPathNode(context.spatial.getEntityData(pathNodeId))) {
+        neighbors.push(neighbor);
+      }
+    }
+    return neighbors;
+  }
 }
 
 ```
@@ -81,32 +193,31 @@ for (const systemName of config.systems) {
 
 
 #### After:
-```typescript
-// A declarative dependency definition
-const SYSTEM_DEFINITIONS = {
-  HealthSystem: { create: () => new HealthSystem(), deps: [] },
-  ProjectileSystem: { create: (health) => new ProjectileSystem(health), deps: ['HealthSystem'] },
-  TurretSystem: { create: (health, proj) => new TurretSystem(health, proj), deps: ['HealthSystem', 'ProjectileSystem'] },
-  // ... other systems
-};
+```json
+// dev/games/npc-paths.json (hypothetical change)
+{
+  "scenes": [{
+    "id": "paths-demo",
+    "entities": [ ... ],
+    "paths": {
+      "cyan-path": [{x: 2, y: 3}, {x: 3, y: 3}, ...],
+      "red-path": [{x: 20, y: 3}, {x: 20, y: 4}, ...]
+    }
+  }]
+}
 
-// A resolver function that builds the dependency graph
-function resolveAndCreateSystems(systemNames: string[]) {
-  const created = new Map();
-  
-  function createSystem(name) {
-    if (created.has(name)) return created.get(name);
-    
-    const definition = SYSTEM_DEFINITIONS[name];
-    const dependencies = definition.deps.map(depName => createSystem(depName));
-    
-    const system = definition.create(...dependencies);
-    created.set(name, system);
-    return system;
+// packages/spartan/systems/npc-movement.system.ts (hypothetical change)
+class NPCMovementSystem {
+  processPatrol(context, entityId, entityData) {
+    const npcPos = context.spatial.getEntityPosition(entityId);
+    const scene = context.sceneManager.getActiveScene();
+    // Path is retrieved from a scene-level data structure
+    const path = scene.paths[entityData.pathId];
+
+    // Find next node from the abstract path data, not from entities
+    const nextNode = findNextNodeInPath(path, npcPos);
+    context.spatial.move(entityId, nextNode.x, nextNode.y);
   }
-
-  systemNames.forEach(name => createSystem(name));
-  return created;
 }
 
 ```
@@ -114,158 +225,88 @@ function resolveAndCreateSystems(systemNames: string[]) {
 
 
 
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: The suggestion correctly identifies a significant architectural weakness in the new dependency injection mechanism, which is brittle and not scalable, making it a high-impact improvement for maintainability.
-
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td rowspan=2>Possible issue</td>
-<td>
-
-
-
-<details><summary>Add LOS check before firing</summary>
-
-___
-
-**Add a line-of-sight check to the <code>findNearestTarget</code> method to ensure turrets do <br>not target enemies through walls.**
-
-[packages/spartan/systems/turret.system.ts [187-189]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-1bdd597f60fd1d12fe2b1d023eadc2fd4b1f501372262be04906ca1b102947deR187-R189)
-
-```diff
- if (nearestId === null || nearestPos === null) return null;
-+
-+// Check line of sight
-+const startCell = context.spatial.grid.cell(turretPos.x, turretPos.y);
-+const targetCell = context.spatial.grid.cell(nearestPos.x, nearestPos.y);
-+if (!startCell || !targetCell) return null;
-+const line = LinkedCellUtils.getLine(startCell, targetCell);
-+if (line.some(cell => context.spatial.isBlocked(cell))) return null;
- 
- return { x: nearestPos.x, y: nearestPos.y, entityId: nearestId };
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=1 -->
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: This is a critical improvement to prevent turrets from firing at targets through walls, which fixes a significant flaw in the targeting logic.
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td>
-
-
-
-<details><summary>Make game manager a required parameter</summary>
-
-___
-
-**Make the <code>gameManager</code> parameter required in the <code>GameLoop</code> constructor to enforce <br>its presence at compile time, as it is always provided and used without a null <br>check.**
-
-[packages/spartan/core/game-loop.ts [30-33]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-3042bf78b8729c8df0b47cc175b03f7484b0289bcb4dc4f8f2ff1bf9a4b778dbR30-R33)
-
-```diff
- constructor(
-   private spatial: SpatialSystem,
--  private gameManager?: GameManager
-+  private gameManager: GameManager
- ) { }
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=2 -->
-
-
 <details><summary>Suggestion importance[1-10]: 7</summary>
 
 __
 
-Why: This suggestion correctly identifies that `gameManager` is always provided and improves type safety by making it a required parameter, preventing potential runtime errors and simplifying code.
+Why: The suggestion correctly identifies a tight coupling between patrol logic and `path-node` entities, proposing a valid and more flexible architectural alternative that would improve scalability and separation of concerns.
 
 
 </details></details></td><td align=center>Medium
 
-</td></tr><tr><td rowspan=1>Security</td>
+</td></tr><tr><td rowspan=2>General</td>
 <td>
 
 
 
-<details><summary>Prevent potential XSS in game description</summary>
+<details><summary>Simplify dead-end reversal logic</summary>
 
 ___
 
-**To prevent a potential Cross-Site Scripting (XSS) vulnerability, render the <br><code>gameDescription</code> by splitting it into lines and creating a separate element for <br>each, ensuring content is treated as text.**
+**Simplify dead-end handling by removing the unused <code>patrolDirection</code> property, as <br>backtracking is already managed by <code>lastPathCell</code>.**
 
-[dev/playground.tsx [444-451]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-8b5cc67c6f801fec5a9635a2b22cd8721d47f6c6e0c7f3f09c8f0380783847f7R444-R451)
-
-```diff
--<p style={{ 
--  whiteSpace: 'pre-line', 
-+<div style={{ 
-   color: '#b0b0b0', 
-   lineHeight: '1.5',
-   fontSize: '13px'
- }}>
--  {gameDescription}
--</p>
-+  {gameDescription.split('\\n').map((line, index) => (
-+    <div key={index}>{line}</div>
-+  ))}
-+</div>
-```
-
-
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=3 -->
-
-
-<details><summary>Suggestion importance[1-10]: 8</summary>
-
-__
-
-Why: This suggestion correctly identifies a potential XSS vulnerability from rendering user-provided content as HTML and proposes a valid mitigation, which is a critical security improvement.
-
-
-</details></details></td><td align=center>Medium
-
-</td></tr><tr><td rowspan=1>General</td>
-<td>
-
-
-
-<details><summary>Allow armor to fully block damage</summary>
-
-___
-
-**Change the armor calculation to allow damage to be fully negated, by setting the <br>minimum damage to 0 instead of 1.**
-
-[packages/spartan/systems/health.system.ts [190-193]](https://github.com/neurofuzzy/linkedgrid/pull/23/files#diff-7c3ff98821bcb4d02d1a5ad79c7109cda4acb787009ce81828a16f4c9e5dd01fR190-R193)
+[packages/spartan/systems/npc-movement.system.ts [426-429]](https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-f252990c88405e3357f3d35b86e4a425e79449afd0824e502bd4c0000a9bcf01R426-R429)
 
 ```diff
- // Apply armor (flat reduction)
- if ('armor' in entityData && typeof entityData.armor === 'number') {
--  damage = Math.max(1, damage - entityData.armor); // Minimum 1 damage
-+  damage = Math.max(0, damage - entityData.armor);
+-// Dead-end: only one neighbor (which is lastPathCell), reverse direction
++// Dead-end: only one neighbor (which is lastPathCell), reverse by allowing backtrack
+ if (validNeighbors.length === 0) {
+   validNeighbors = pathNeighbors;
+-  entityData.patrolDirection = entityData.patrolDirection === 1 ? -1 : 1;
  }
 ```
 
 
-- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+
+`[To ensure code accuracy, apply this suggestion manually]`
 
 
 <details><summary>Suggestion importance[1-10]: 5</summary>
 
 __
 
-Why: This is a valid suggestion for a gameplay logic change, allowing armor to fully negate damage, which could be a desirable behavior.
+Why: This suggestion correctly identifies that `patrolDirection` is an unused property. Removing it and its related logic simplifies the code and improves maintainability by eliminating dead code.
+
+
+</details></details></td><td align=center>Low
+
+</td></tr><tr><td>
+
+
+
+<details><summary>Eliminate unused guard function</summary>
+
+___
+
+**Remove the unused `hasPathFollowing` type guard to eliminate dead code.**
+
+[packages/spartan/traits/trait-guards.ts [828-838]](https://github.com/neurofuzzy/linkedgrid/pull/24/files#diff-e6fe0a27a19016994f4da0c6ee5948e9656ec928c82808ef97ff98ac52d8f5d8R828-R838)
+
+```diff
+-export function hasPathFollowing(
+-  entity: EntityData
+-): entity is EntityData & HasNPCMovement & { homePathCell: { x: number; y: number } } {
+-  if (!hasNPCMovement(entity)) return false;
+-  return (
+-    'homePathCell' in entity &&
+-    entity.homePathCell !== undefined &&
+-    typeof (entity.homePathCell as { x: number; y: number }).x === 'number' &&
+-    typeof (entity.homePathCell as { x: number; y: number }).y === 'number'
+-  );
+-}
++// removed unused hasPathFollowing guard
+```
+
+
+- [ ] **Apply / Chat** <!-- /improve --apply_suggestion=4 -->
+
+
+<details><summary>Suggestion importance[1-10]: 4</summary>
+
+__
+
+Why: The suggestion correctly identifies that the `hasPathFollowing` function is not used anywhere in the codebase. Removing this dead code improves maintainability and reduces clutter.
+
 
 </details></details></td><td align=center>Low
 
@@ -275,4 +316,3 @@ Why: This is a valid suggestion for a gameplay logic change, allowing armor to f
 - [ ] More <!-- /improve --more_suggestions=true -->
 
 </td><td></td></tr></tbody></table>
-
