@@ -7,7 +7,7 @@ import { PlayerData } from './player.entity';
 import { EnemyData } from './enemy.entity';
 import { TeleporterData } from './teleporter.entity';
 import { ItemData, KeyData, GasolineData, FuseData } from './collectible.entity';
-import { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData } from './structure.entity';
+import { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData } from './structure.entity';
 import { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData } from './hazard.entity';
 import { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData } from './elemental.entity';
 import { ChainLinkData, PathNodeData, SleepWakeData } from './logic.entity';
@@ -16,7 +16,7 @@ import { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, 
 // Re-export commonly used types for external consumption
 export { BaseEntityData, TeleporterData, PlayerData, EnemyData };
 export { ItemData, KeyData, GasolineData, FuseData };
-export { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData };
+export { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData };
 export { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData };
 export { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData };
 export { ChainLinkData, PathNodeData, SleepWakeData };
@@ -54,4 +54,5 @@ export type EntityData = PlayerData |
   InverterData |
   ConductiveFloorData |
   GateData |
-  TransceiverData;
+  TransceiverData |
+  SpawnerData;

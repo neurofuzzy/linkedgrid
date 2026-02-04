@@ -31,6 +31,7 @@ import type { HealthState } from './health.trait';
 import type { HasArmor, HasShield, HasResistance } from './defense.trait';
 import type { HasProjectile } from './projectile.trait';
 import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
+import type { HasSpawner } from './spawner.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -65,6 +66,7 @@ import type {
   GateData,
   PathNodeData,
   SleepWakeData,
+  SpawnerData,
 } from '../entities';
 
 /**
@@ -84,7 +86,7 @@ import type {
  */
 export function hasHealth(
   entity: EntityData
-): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData {
+): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData | SpawnerData {
   return (
     'hp' in entity && typeof entity.hp === 'number' &&
     'maxHp' in entity && typeof entity.maxHp === 'number'
@@ -1009,5 +1011,46 @@ export function hasTurret(
   const validWeapon = weaponType === 'projectile' || weaponType === 'ray';
   const validTargeting = targeting === 'nearest' || targeting === 'player' || targeting === 'fixed' || targeting === 'cardinal';
   return validWeapon && validTargeting && 'cooldown' in entity && 'range' in entity;
+}
+
+/**
+ * Spawner Trait Guard
+ *
+ * Checks if an entity can spawn other entities.
+ */
+
+/**
+ * Check if entity is a spawner.
+ *
+ * Entities with spawner trait can spawn other entities in adjacent cells.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has spawner trait
+ */
+export function hasSpawner(
+  entity: EntityData
+): entity is EntityData & HasSpawner {
+  return (
+    'spawnType' in entity &&
+    typeof entity.spawnType === 'string' &&
+    'spawnLimit' in entity &&
+    typeof entity.spawnLimit === 'number' &&
+    'cooldown' in entity &&
+    typeof entity.cooldown === 'number' &&
+    'spawnLayer' in entity &&
+    typeof entity.spawnLayer === 'number' &&
+    'activationRange' in entity &&
+    typeof entity.activationRange === 'number'
+  );
+}
+
+/**
+ * Check if entity is a spawner (type check).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'spawner'
+ */
+export function isSpawner(entity: EntityData): entity is SpawnerData {
+  return entity.type === 'spawner';
 }
 

@@ -208,6 +208,7 @@ export class ExplosionSystem extends BaseTickedSystem {
       lifetime: 2, // Lasts 2 ticks
       color: '#ff6600',
       spawnTick: this.currentTick, // Track spawn tick for cleanup
+      ephemeral: true,
     });
   }
 

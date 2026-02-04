@@ -19,6 +19,7 @@ import { GateSystem } from '../packages/spartan/systems/gate.system';
 import { NPCMovementSystem } from '../packages/spartan/systems/npc-movement.system';
 import { ProjectileSystem } from '../packages/spartan/systems/projectile.system';
 import { TurretSystem } from '../packages/spartan/systems/turret.system';
+import { SpawningSystem } from '../packages/spartan/systems/spawning.system';
 import type { GameSystem } from '../packages/spartan/core/types';
 import type { EntityData } from '../packages/spartan/entities/entity.types';
 import {
@@ -133,6 +134,7 @@ const SYSTEM_REGISTRY: Record<string, SystemFactory> = {
     }
     return new TurretSystem(healthSystem, projectileSystem);
   },
+  SpawningSystem: (gameManager) => new SpawningSystem(gameManager),
 };
 
 /**

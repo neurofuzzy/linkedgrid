@@ -295,6 +295,7 @@ export class ProjectileSystem extends BaseTickedSystem {
       targetX,
       targetY,
       damage,
+      ephemeral: true,
       ...options,
     });
   }

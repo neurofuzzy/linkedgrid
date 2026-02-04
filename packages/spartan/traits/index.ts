@@ -12,4 +12,5 @@ export * from './role.trait';
 export * from './defense.trait';
 export * from './projectile.trait';
 export * from './turret.trait';
+export * from './spawner.trait';
 export * from './trait-guards';

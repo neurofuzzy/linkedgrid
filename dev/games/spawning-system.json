@@ -1,0 +1,182 @@
+{
+    "initialScene": "room1",
+    "systems": [
+        "TeleporterSystem",
+        "SpawningSystem",
+        "HealthSystem",
+        "NPCMovementSystem",
+        "ProjectileSystem"
+    ],
+    "tickRate": 10,
+    "scenes": [
+        {
+            "id": "room1",
+            "name": "Spawner Basics",
+            "width": 20,
+            "height": 20,
+            "entities": [
+                {
+                    "type": "player",
+                    "x": 10,
+                    "y": 10,
+                    "layer": 6,
+                    "data": {
+                        "hp": 100,
+                        "maxHp": 100,
+                        "damage": 10,
+                        "sceneId": "room1"
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 5,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 3,
+                        "cooldown": 20,
+                        "activationRange": 8,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": true,
+                        "color": "#ff00ff",
+                        "hp": 50,
+                        "maxHp": 50,
+                        "spawnProps": {
+                            "hp": 20,
+                            "maxHp": 20,
+                            "aiState": "chase"
+                        }
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 15,
+                    "y": 5,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 1,
+                        "cooldown": 5,
+                        "activationRange": 10,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": true,
+                        "color": "#00ff00",
+                        "hp": 30,
+                        "maxHp": 30,
+                        "spawnProps": {
+                            "hp": 10,
+                            "maxHp": 10,
+                            "aiState": "wander"
+                        }
+                    }
+                },
+                {
+                    "type": "teleporter",
+                    "x": 18,
+                    "y": 18,
+                    "layer": 1,
+                    "data": {
+                        "destination": {
+                            "sceneId": "room2",
+                            "x": 2,
+                            "y": 2,
+                            "layer": 6
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "room2",
+            "name": "Spawner Groups",
+            "width": 20,
+            "height": 20,
+            "entities": [
+                {
+                    "type": "spawner",
+                    "x": 10,
+                    "y": 10,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 5,
+                        "cooldown": 10,
+                        "activationRange": 15,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": false,
+                        "color": "#ff0000",
+                        "hp": 100,
+                        "maxHp": 100,
+                        "spawnProps": {
+                            "hp": 50,
+                            "maxHp": 50
+                        }
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 11,
+                    "y": 10,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 5,
+                        "cooldown": 10,
+                        "activationRange": 15,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": false,
+                        "color": "#ff0000",
+                        "hp": 100,
+                        "maxHp": 100,
+                        "spawnProps": {
+                            "hp": 50,
+                            "maxHp": 50
+                        }
+                    }
+                },
+                {
+                    "type": "spawner",
+                    "x": 10,
+                    "y": 11,
+                    "layer": 5,
+                    "data": {
+                        "spawnType": "enemy",
+                        "spawnLimit": 5,
+                        "cooldown": 10,
+                        "activationRange": 15,
+                        "spawnLayer": 6,
+                        "requiresLineOfSight": false,
+                        "color": "#ff0000",
+                        "hp": 100,
+                        "maxHp": 100,
+                        "spawnProps": {
+                            "hp": 50,
+                            "maxHp": 50
+                        }
+                    }
+                },
+                {
+                    "type": "teleporter",
+                    "x": 1,
+                    "y": 1,
+                    "layer": 1,
+                    "data": {
+                        "destination": {
+                            "sceneId": "room1",
+                            "x": 17,
+                            "y": 17,
+                            "layer": 6
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "input": {
+        "type": "keyboard",
+        "options": {
+            "directionMode": "continuous"
+        }
+    }
+}

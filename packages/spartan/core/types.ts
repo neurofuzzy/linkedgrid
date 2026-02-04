@@ -83,6 +83,50 @@ export interface PendingOperation {
 }
 
 /**
+ * SpawnIntent - Request to spawn an entity from a source.
+ *
+ * Used by SpawningSystem to validate and process spawn requests.
+ * Prevents runaway spawning by tracking source, deduping by cell+layer+tick,
+ * and rejecting intents from dead sources.
+ */
+export interface SpawnIntent {
+  /** Entity ID requesting the spawn (must be alive) */
+  sourceId: number;
+  /** Type of entity to spawn (e.g., 'enemy', 'homing-missile') */
+  entityType: string;
+  /** Layer to spawn on */
+  layer: Layer;
+  /** Optional entity properties */
+  props?: Record<string, unknown>;
+  /** Optional preferred spawn location */
+  preferredCell?: { x: number; y: number };
+}
+
+/**
+ * EntityLifecycleEvent - Event emitted when entities are spawned or removed.
+ *
+ * Used by systems that need to react to entity lifecycle changes.
+ * Ephemeral entities (projectiles, visual effects) skip these events for performance.
+ */
+export interface EntityLifecycleEvent {
+  /** Entity ID that was spawned or removed */
+  entityId: number;
+  /** Entity type (e.g., 'enemy', 'spawner') */
+  type: string;
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Layer the entity was on */
+  layer: Layer;
+}
+
+/**
+ * LifecycleCallback - Function signature for lifecycle event handlers.
+ */
+export type LifecycleCallback = (event: EntityLifecycleEvent) => void;
+
+/**
  * GameContext - Context passed to systems each tick.
  *
  * Provides systems with overlap data and spatial access.
@@ -132,6 +176,8 @@ export interface GameContext {
     isAlive: (entityId: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
     cancelMove: (entityId: number) => void;
+    onSpawn: (callback: LifecycleCallback) => () => void;
+    onRemove: (callback: LifecycleCallback) => () => void;
   };
   sceneManager?: {
     getScene: (id: string) => unknown;
