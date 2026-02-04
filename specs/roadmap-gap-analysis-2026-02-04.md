@@ -261,6 +261,24 @@ class PowerupSystem extends BaseTickedSystem {
 
 ---
 
+### 1.5 Flammable Walls
+
+**Gap Level:** VERY LOW
+
+**Solution:** Add HasTemperature to DestructibleWallData type definition.
+
+```typescript
+// In structure.entity.ts
+type DestructibleWallData = BaseEntityData & {
+  type: 'destructible-wall';
+} & HasHealth & HasTemperature;  // Add HasTemperature
+```
+
+This is a configuration change, not new implementation.
+
+
+---
+
 ## Phase 2: Core II - Gap Analysis
 
 ### 2.1 Score System
@@ -391,7 +409,7 @@ interface HasSpawner {
 }
 ```
 
-**Clarification:** Wave spawners spawn multiple entities simultaneously from a single spawner, distinct from existing group coordination.
+**Clarification:** Wave spawners spawn multiple entities simultaneously from a single spawner or from contiguous spawners on the same tick.
 
 ---
 
@@ -417,6 +435,8 @@ class VisualSystem extends BaseReactiveSystem {
 
 ### 4.2 Visual States
 
+NOTE: See sprite sheets below regarding state/animation matrix.
+
 ```typescript
 interface HasVisualState {
   visualState: 0 | 1 | 2 | 3 | 4;
@@ -435,6 +455,8 @@ interface HasFacing {
 ```
 
 ### 4.4 Sprite Animation
+
+NOTE: Sprite animation is not movement-based, it simply sets a frame number for any states that have more than one sprite, for instance, a walking animation may have legs in different positions. Sprite sheets can be envisioned as a 5x5 matrix with each row being a state and each column being a frame in the state. A state can have 0 or more frames. If no frames, it reverts to the default state (idle)
 
 ```typescript
 interface HasAnimation {
@@ -498,7 +520,7 @@ class EdgeTransitionSystem extends BaseReactiveSystem {
 }
 ```
 
-**Potential Incompatibility:** Current isolation model assumes explicit transitions. Edge transitions are implicit and may require SceneManager changes.
+**Potential Incompatibility:** Current isolation model assumes explicit transitions. Edge transitions are implicit and may require SceneManager changes. ENGINEERING NOTE: Game editor will eventually provide an interface to enable specific adjacencies, and married edges must be clear of blocking entities.
 
 ---
 
@@ -540,24 +562,7 @@ class StunSystem extends BaseTickedSystem {
 
 ---
 
-### 5.4 Flammable Walls
-
-**Gap Level:** VERY LOW
-
-**Solution:** Add HasTemperature to DestructibleWallData type definition.
-
-```typescript
-// In structure.entity.ts
-type DestructibleWallData = BaseEntityData & {
-  type: 'destructible-wall';
-} & HasHealth & HasTemperature;  // Add HasTemperature
-```
-
-This is a configuration change, not new implementation.
-
----
-
-### 5.5 Conjoined NPCs (Snakes/Centipedes)
+### 5.4 Conjoined NPCs (Snakes/Centipedes)
 
 **Gap Level:** VERY HIGH - ARCHITECTURAL RISK
 
@@ -603,6 +608,7 @@ Breaks core assumption. Would require:
 | 1 | Melee | HIGH | Medium | Low |
 | 1 | Weapons | HIGH | High | Low |
 | 1 | Pickups/Buffs | MEDIUM | Low | Low |
+| 1 | Flammable Walls | VERY LOW | Trivial | None |
 | 2 | Score | MEDIUM | Low | Low |
 | 2 | Objectives | HIGH | Medium | Low |
 | 3 | Range Sensors | LOW | Low | Low |
@@ -611,7 +617,6 @@ Breaks core assumption. Would require:
 | 5 | Scene Edges | HIGH | Medium | Medium |
 | 5 | Homing | LOW | Low | Low |
 | 5 | Freeze/Stun | MEDIUM | Low | Low |
-| 5 | Flammable Walls | VERY LOW | Trivial | None |
 | 5 | Conjoined NPCs | VERY HIGH | High | HIGH |
 
 ---
@@ -620,23 +625,21 @@ Breaks core assumption. Would require:
 
 1. **Melee vs Weapons:** Separate systems. Weapons falls back to melee when out of ammo.
 
-2. **Wave Spawners:** Single spawner spawns multiple entities at once. Distinct from existing group coordination.
+2. **Wave Spawners:** Single spawner or groups of contiguous spawners spawn multiple entities at once. Uses existing group coordination but allows for more than one spawn in the same tick.
 
 3. **Scene Completion:** Flag as complete + emit event. Auto-advance is renderer-specific.
 
 4. **Conjoined NPCs:** Use following entities pattern to maintain single-cell principle.
 
-5. **Edge Scene Linking:** Automatic detection, transition requires explicit SceneManager call.
+5. **Edge Scene Linking:** Uses explicit adjacency flags, transition requires explicit SceneManager call.
 
 ---
 
 ## Recommendations
 
-1. **Reorder Phase 5.4 (Flammable Walls):** Move to Phase 1 or 2 - it's trivial config change.
+1. **Split Phase 4:** Into 4a (foundation), 4b (movement-visual), 4c (effects).
 
-2. **Split Phase 4:** Into 4a (foundation), 4b (movement-visual), 4c (effects).
-
-3. **Defer Phase 5.5 (Conjoined NPCs):** Most complex item, consider separate spike/prototype first.
+2. **Defer Phase 5.4 (Conjoined NPCs):** Most complex item, consider separate spike/prototype first.
 
 4. **Add Phase 1 dependency:** Melee before Weapons (weapons needs melee fallback).
 
