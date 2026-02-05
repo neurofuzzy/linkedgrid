@@ -216,6 +216,107 @@ export class GameManager {
   }
 
   /**
+   * Spawn or respawn the player in a scene.
+   *
+   * This is the single entry point for all player placement operations.
+   * Handles both live player transfers and respawning dead players.
+   *
+   * Key behaviors:
+   * - If player entity exists in another scene, removes it first
+   * - If player entity doesn't exist (dead), spawns fresh with provided data
+   * - Always queues scene transition for GameRuntime to rebuild GameLoop
+   *
+   * @param targetSceneId - Scene to place player in
+   * @param x - X coordinate in target scene
+   * @param y - Y coordinate in target scene
+   * @param layer - Layer in target scene
+   * @param playerData - Player entity data (used when spawning fresh)
+   * @returns true if spawn was queued successfully
+   *
+   * @example
+   * ```typescript
+   * // Respawn dead player
+   * game.spawnPlayerInScene('room1', 5, 5, GameLayers.ACTORS, {
+   *   hp: 100,
+   *   maxHp: 100,
+   *   damage: 10,
+   *   healthState: 'alive',
+   * });
+   * ```
+   */
+  spawnPlayerInScene(
+    targetSceneId: string,
+    x: number,
+    y: number,
+    layer: Layer,
+    playerData: Record<string, unknown>
+  ): boolean {
+    const playerId = this.gameState.playerEntityId;
+    if (playerId === 0) {
+      return false; // No player ID set
+    }
+
+    // Get target scene
+    const targetScene = this.sceneManager.getScene(targetSceneId);
+    if (!targetScene) {
+      console.warn(`[spawnPlayerInScene] Target scene '${targetSceneId}' not found`);
+      return false;
+    }
+
+    // Pre-check destination
+    const targetCell = targetScene.grid.cell(x, y);
+    if (!targetCell) {
+      console.warn(`[spawnPlayerInScene] Invalid destination (${x}, ${y})`);
+      return false;
+    }
+    if (targetCell.getValue(layer) !== undefined) {
+      console.warn(`[spawnPlayerInScene] Destination (${x}, ${y}) is occupied`);
+      return false;
+    }
+
+    // Check if player currently exists in any scene
+    const currentScene = this.getPlayerScene();
+
+    if (currentScene) {
+      // Player exists - remove from current scene first
+      const currentPos = currentScene.spatial.getEntityPosition(playerId);
+      if (currentPos) {
+        currentScene.spatial.removeAt(currentPos.x, currentPos.y, currentPos.layer);
+        currentScene.spatial.commit();
+      }
+    }
+
+    // Spawn player in target scene
+    const dataWithScene = {
+      ...playerData,
+      sceneId: targetSceneId,
+    };
+
+    targetScene.spatial.spawnWithId(
+      playerId,
+      'player',
+      x,
+      y,
+      layer,
+      dataWithScene
+    );
+    targetScene.spatial.commit();
+
+    // Verify spawn succeeded
+    const newPos = targetScene.spatial.getEntityPosition(playerId);
+    if (!newPos || newPos.x !== x || newPos.y !== y) {
+      console.warn(`[spawnPlayerInScene] Spawn verification failed`);
+      return false;
+    }
+
+    // Queue scene transition so GameRuntime rebuilds GameLoop
+    // This is critical for cross-scene respawn to work correctly
+    this.pendingSceneTransition = { sceneId: targetSceneId, x, y, layer };
+
+    return true;
+  }
+
+  /**
    * Execute pending scene transition, if any.
    *
    * Should be called by GameRuntime after game loop tick completes.
@@ -238,7 +339,16 @@ export class GameManager {
 
     const { sceneId, x, y, layer } = this.pendingSceneTransition;
 
-    // Execute the actual transition
+    // Check if player is already at the target location (from spawnPlayerInScene)
+    const playerPos = this.getPlayerPosition();
+    if (playerPos && playerPos.sceneId === sceneId && playerPos.x === x && playerPos.y === y) {
+      // Player already placed via spawnPlayerInScene - just switch active scene
+      this.sceneManager.setActiveScene(sceneId);
+      this.pendingSceneTransition = undefined;
+      return true;
+    }
+
+    // Player needs to be moved (from movePlayerToScene/teleporter)
     const success = this._movePlayerToSceneImmediate(sceneId, x, y, layer);
 
     this.pendingSceneTransition = undefined;

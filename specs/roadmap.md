@@ -41,6 +41,10 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 [x] B) Multiscene game with hazards and checkpoints for death and respawning -> `dev/games/respawn-demo.json`
 [x] C) Powerups and buffs -> `dev/games/powerups-demo.json`
 [x] D) Flammable Walls (enhanced existing demo) -> `dev/games/flammability.json`
+[ ] E) Weapons Demo with example weapon pickups:
+      i. pistol, single projectile at a time: ammo 12, cooldown 8 ticks
+      ii. machine-gun, single projectile at a time: ammo 100, cooldown 2 ticks
+      iii. shotgun, no projectile, uses LinkedCell `fieldOfViewCone` to apply damage: ammo 20, cooldown 16 ticks
 
 ---
 

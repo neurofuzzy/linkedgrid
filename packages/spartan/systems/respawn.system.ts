@@ -212,13 +212,19 @@ export class RespawnSystem extends BaseReactiveSystem {
 
   /**
    * Find the appropriate respawn location for the player.
+   *
+   * Priority order:
+   * 1. Last activated checkpoint (may be in different scene)
+   * 2. Player-start in initial scene
+   * 3. Player-start in any scene
+   * 4. Fallback to (1,1) in initial scene
    */
   private findRespawnLocation(
-    context: GameContext,
-    playerId: number,
+    _context: GameContext,
+    _playerId: number,
     playerData: any
   ): { sceneId: string; x: number; y: number } | null {
-    // Check for saved checkpoint
+    // Priority 1: Check for saved checkpoint
     if (hasCheckpoint(playerData) && playerData.lastCheckpointSceneId) {
       return {
         sceneId: playerData.lastCheckpointSceneId,
@@ -227,50 +233,82 @@ export class RespawnSystem extends BaseReactiveSystem {
       };
     }
 
-    // Get current scene ID (may be undefined in tests without full scene setup)
-    const sceneManager = context.gameManager?.sceneManager;
-    const currentSceneId = sceneManager?.getActiveScene()?.id ?? playerData.sceneId ?? 'default';
+    // Get scene manager and initial scene ID
+    const sceneManager = this.gameManager.sceneManager;
+    const initialSceneId = this.gameManager.gameState.initialSceneId;
 
-    // Find player-start entity
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !isPlayerStart(entityData)) continue;
+    // Priority 2: Find player-start in initial scene first
+    if (initialSceneId) {
+      const initialScene = sceneManager.getScene(initialSceneId);
+      if (initialScene) {
+        const startPos = this.findPlayerStartInScene(initialScene);
+        if (startPos) {
+          return {
+            sceneId: initialSceneId,
+            x: startPos.x,
+            y: startPos.y,
+          };
+        }
+      }
+    }
 
-      const pos = context.spatial.getEntityPosition(entityId);
-      if (pos) {
+    // Priority 3: Search all scenes for player-start
+    for (const sceneId of sceneManager.getAllSceneIds()) {
+      const scene = sceneManager.getScene(sceneId);
+      if (!scene) continue;
+
+      const startPos = this.findPlayerStartInScene(scene);
+      if (startPos) {
         return {
-          sceneId: currentSceneId,
-          x: pos.x,
-          y: pos.y,
+          sceneId,
+          x: startPos.x,
+          y: startPos.y,
         };
       }
     }
 
-    // Last resort: respawn at (1,1)
+    // Priority 4: Fallback to (1,1) in initial scene or first available scene
+    const fallbackSceneId = initialSceneId || sceneManager.getAllSceneIds()[0] || 'default';
     return {
-      sceneId: currentSceneId,
+      sceneId: fallbackSceneId,
       x: 1,
       y: 1,
     };
   }
 
   /**
+   * Find player-start entity in a specific scene.
+   */
+  private findPlayerStartInScene(scene: { spatial: { getAllPositions(): IterableIterator<[number, { x: number; y: number; layer: number }]>; getEntityData(id: number): any; getEntityPosition(id: number): { x: number; y: number } | null } }): { x: number; y: number } | null {
+    for (const [entityId] of scene.spatial.getAllPositions()) {
+      const entityData = scene.spatial.getEntityData(entityId);
+      if (!entityData || !isPlayerStart(entityData)) continue;
+
+      const pos = scene.spatial.getEntityPosition(entityId);
+      if (pos) {
+        return { x: pos.x, y: pos.y };
+      }
+    }
+    return null;
+  }
+
+  /**
    * Execute the pending respawn.
+   *
+   * Uses GameManager.spawnPlayerInScene() as the single entry point for
+   * player placement, ensuring proper scene transitions and GameLoop rebuilds.
    */
   private executeRespawn(context: GameContext): void {
     if (!this.pendingRespawn) return;
 
     const { playerId, targetSceneId, targetX, targetY, cachedPlayerData } = this.pendingRespawn;
-    const sceneManager = context.gameManager?.sceneManager;
-    const currentSceneId = sceneManager?.getActiveScene()?.id;
 
-    // Use cached player data (entity was removed by HealthSystem)
+    // Build respawn data from cached player info (entity was removed by HealthSystem)
     const respawnData = {
       hp: cachedPlayerData.maxHp,
       maxHp: cachedPlayerData.maxHp,
       healthState: 'alive' as const,
       damage: cachedPlayerData.damage,
-      sceneId: targetSceneId,
       inventory: [],
       pushStrength: 1,
       // Preserve checkpoint info
@@ -280,16 +318,19 @@ export class RespawnSystem extends BaseReactiveSystem {
       lastCheckpointY: cachedPlayerData.lastCheckpointY,
     };
 
-    if (currentSceneId && currentSceneId !== targetSceneId) {
-      // Cross-scene respawn - use GameManager
-      this.gameManager.movePlayerToScene(targetSceneId, targetX, targetY, GameLayers.ACTORS);
-    } else {
-      // Same-scene respawn (or no scene manager) - spawn at checkpoint location
-      context.spatial.spawnWithId(playerId, 'player', targetX, targetY, GameLayers.ACTORS, respawnData);
+    // Use centralized player placement API
+    // This handles both same-scene and cross-scene respawns correctly,
+    // and queues scene transitions for GameRuntime to rebuild GameLoop
+    const success = this.gameManager.spawnPlayerInScene(
+      targetSceneId,
+      targetX,
+      targetY,
+      GameLayers.ACTORS,
+      respawnData
+    );
 
-      // Commit immediately since we're in post-commit phase
-      // This ensures the player is available immediately after respawn
-      context.spatial.commit();
+    if (!success) {
+      console.warn(`[RespawnSystem] Failed to spawn player in scene '${targetSceneId}' at (${targetX}, ${targetY})`);
     }
 
     this.debugStats.respawnsThisSession++;

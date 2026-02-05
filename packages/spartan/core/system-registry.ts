@@ -83,7 +83,7 @@ export function createAllSystems(
   const teleporterSystem = new TeleporterSystem(gameManager);
   const collectionSystem = new CollectionSystem(gameManager);
   const doorSystem = new DoorSystem(gameManager);
-  const floorEffectSystem = new FloorEffectSystem(gameManager);
+  const floorEffectSystem = new FloorEffectSystem(gameManager, healthSystem);
   const poisonSystem = new PoisonSystem(gameManager);
   const signalSystem = new SignalSystem(gameManager);
   const gateSystem = new GateSystem(gameManager);

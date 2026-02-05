@@ -5,6 +5,7 @@
  * - Player loses life on death and respawns
  * - Game over when no lives remaining
  * - Lives tracked in GameState (single source of truth)
+ * - Cross-scene respawn (player dies in scene B, respawns in scene A)
  */
 import { visual } from './visual-helpers';
 import { GameLayers } from '../config/layers.config';
@@ -13,15 +14,23 @@ import { HealthSystem } from '../systems/health.system';
 import { RespawnSystem } from '../systems/respawn.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
+import { GameRuntime } from '../core/game-runtime';
 
 visual('player loses life on death and respawns', {
-  arrange: ({ spatial }) => {
+  arrange: ({ spatial, store }) => {
+    // Create proper scene setup with SceneManager
+    const gameManager = new GameManager();
+    const scene = gameManager.sceneManager.createScene('test-scene', 10, 10);
+    gameManager.sceneManager.setActiveScene('test-scene');
+
     // Spawn player with full health
-    spawnPlayer(spatial, 5, 5, {
+    const playerId = scene.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
       hp: 10,
       maxHp: 100,
       damage: 10,
       sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
       // Set checkpoint for respawn location
       lastCheckpointSceneId: 'test-scene',
       lastCheckpointX: 2,
@@ -29,19 +38,18 @@ visual('player loses life on death and respawns', {
     });
 
     // Spawn player-start as fallback
-    spatial.spawn('player-start', 2, 2, GameLayers.LOGIC, {
+    scene.spatial.spawn('player-start', 2, 2, GameLayers.LOGIC, {
       sceneId: 'test-scene',
     });
 
-    spatial.commit();
-  },
-  act: ({ spatial, store }) => {
-    // Create game manager and wire up systems
-    const gameManager = new GameManager();
-    gameManager.gameState.entityStore = store;
-
-    const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
+    scene.spatial.commit();
     gameManager.gameState.playerEntityId = playerId;
+
+    // Store for act phase
+    (spatial as any).__testSetup = { gameManager, playerId, scene };
+  },
+  act: ({ spatial }) => {
+    const { gameManager, playerId, scene } = (spatial as any).__testSetup;
 
     const healthSystem = new HealthSystem({ dyingDuration: 1 });
     const respawnSystem = new RespawnSystem(gameManager, {
@@ -49,7 +57,7 @@ visual('player loses life on death and respawns', {
       maxLives: 3,
     });
 
-    const gameLoop = new GameLoop(spatial, gameManager);
+    const gameLoop = new GameLoop(scene.spatial, gameManager);
     gameLoop.addSystem(healthSystem);
     gameLoop.addSystem(respawnSystem);
 
@@ -70,11 +78,15 @@ visual('player loses life on death and respawns', {
     // Tick 3: Respawn executes
     gameLoop.tick();
 
+    // Execute pending scene transition (for consistency)
+    gameManager.executePendingTransition();
+
     // Store result for assertion
     (spatial as any).__testResult = {
       livesAfterDeath: gameManager.gameState.lives,
       respawnSystem,
       playerId,
+      scene,
     };
   },
   assert: ({ spatial, expect }) => {
@@ -87,7 +99,7 @@ visual('player loses life on death and respawns', {
     });
 
     expect('Player respawned at checkpoint', () => {
-      const playerPos = spatial.getEntityPosition(result.playerId);
+      const playerPos = result.scene.spatial.getEntityPosition(result.playerId);
       if (!playerPos) {
         throw new Error('Player not found after respawn');
       }
@@ -97,7 +109,7 @@ visual('player loses life on death and respawns', {
     });
 
     expect('Player is alive again', () => {
-      const playerData = spatial.getEntityData(result.playerId);
+      const playerData = result.scene.spatial.getEntityData(result.playerId);
       if (!playerData) {
         throw new Error('Player data not found');
       }
@@ -249,6 +261,241 @@ visual('lives are tracked in GameState (single source of truth)', {
     expect('resetLives() resets to GameState.maxLives', () => {
       if (result.afterReset !== 5) {
         throw new Error(`Expected afterReset=5, got ${result.afterReset}`);
+      }
+    });
+  },
+});
+
+visual('no checkpoint fallback: player dies in scene B, respawns at scene A player-start', {
+  arrange: ({ spatial }) => {
+    // Create multi-scene setup
+    const gameManager = new GameManager();
+
+    // Create two scenes
+    gameManager.sceneManager.createScene('room1', 10, 10);
+    gameManager.sceneManager.createScene('room2', 10, 10);
+
+    // Set room1 as initial scene (this is the fallback for respawn)
+    gameManager.gameState.initialSceneId = 'room1';
+
+    // Set room2 as active (player will die here)
+    gameManager.sceneManager.setActiveScene('room2');
+
+    const room1 = gameManager.sceneManager.getScene('room1')!;
+    const room2 = gameManager.sceneManager.getScene('room2')!;
+
+    // Spawn player-start in room1 (fallback respawn location)
+    room1.spatial.spawn('player-start', 4, 4, GameLayers.LOGIC, {
+      sceneId: 'room1',
+    });
+    room1.spatial.commit();
+
+    // Spawn player in room2 WITHOUT any checkpoint data
+    const playerId = room2.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      damage: 10,
+      healthState: 'alive',
+      sceneId: 'room2',
+      inventory: [],
+      pushStrength: 1,
+      // NO checkpoint data - should fall back to player-start in initial scene
+    });
+    room2.spatial.commit();
+
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Store for act phase
+    (spatial as any).__testSetup = {
+      gameManager,
+      playerId,
+      room1,
+      room2,
+    };
+  },
+  act: ({ spatial }) => {
+    const { gameManager, playerId, room2 } = (spatial as any).__testSetup;
+
+    // Create systems
+    const healthSystem = new HealthSystem({ dyingDuration: 1 });
+    const respawnSystem = new RespawnSystem(gameManager, {
+      respawnDelay: 1,
+      maxLives: 3,
+    });
+
+    // Create game loop for room2 (current scene)
+    const gameLoop = new GameLoop(room2.spatial, gameManager);
+    gameLoop.addSystem(healthSystem);
+    gameLoop.addSystem(respawnSystem);
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+
+    // Tick 1: Player enters dying state
+    gameLoop.tick();
+
+    // Tick 2: Player dies, respawn scheduled
+    gameLoop.tick();
+
+    // Tick 3: Respawn executes (should go to room1's player-start)
+    gameLoop.tick();
+
+    // Execute pending scene transition
+    gameManager.executePendingTransition();
+
+    // Store results
+    (spatial as any).__testResult = {
+      activeSceneId: gameManager.sceneManager.getActiveScene()?.id,
+      playerScene: gameManager.getPlayerScene()?.id,
+      playerPos: gameManager.getPlayerPosition(),
+      lives: gameManager.gameState.lives,
+    };
+  },
+  assert: ({ spatial, expect }) => {
+    const result = (spatial as any).__testResult;
+
+    expect('Active scene changed to room1 (initial scene)', () => {
+      if (result.activeSceneId !== 'room1') {
+        throw new Error(`Expected active scene 'room1', got '${result.activeSceneId}'`);
+      }
+    });
+
+    expect('Player is now in room1', () => {
+      if (result.playerScene !== 'room1') {
+        throw new Error(`Expected player in 'room1', got '${result.playerScene}'`);
+      }
+    });
+
+    expect('Player respawned at player-start location (4,4)', () => {
+      if (!result.playerPos) {
+        throw new Error('Player position not found');
+      }
+      if (result.playerPos.x !== 4 || result.playerPos.y !== 4) {
+        throw new Error(`Expected (4,4), got (${result.playerPos.x},${result.playerPos.y})`);
+      }
+    });
+
+    expect('Player lost one life', () => {
+      if (result.lives !== 2) {
+        throw new Error(`Expected 2 lives, got ${result.lives}`);
+      }
+    });
+  },
+});
+
+visual('cross-scene respawn: player dies in scene B, respawns in scene A', {
+  arrange: ({ spatial, store }) => {
+    // We need a multi-scene setup, so we'll use GameManager directly
+    const gameManager = new GameManager();
+
+    // Create two scenes
+    gameManager.sceneManager.createScene('room1', 10, 10);
+    gameManager.sceneManager.createScene('room2', 10, 10);
+
+    // Set room2 as active (player will die here)
+    gameManager.sceneManager.setActiveScene('room2');
+
+    const room1 = gameManager.sceneManager.getScene('room1')!;
+    const room2 = gameManager.sceneManager.getScene('room2')!;
+
+    // Spawn checkpoint in room1 (where player should respawn)
+    room1.spatial.spawn('checkpoint', 3, 3, GameLayers.LOGIC, {
+      sceneId: 'room1',
+      activated: true,
+    });
+    room1.spatial.commit();
+
+    // Spawn player in room2 with checkpoint data pointing to room1
+    const playerId = room2.spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      damage: 10,
+      healthState: 'alive',
+      sceneId: 'room2',
+      inventory: [],
+      pushStrength: 1,
+      // Checkpoint is in room1
+      lastCheckpointSceneId: 'room1',
+      lastCheckpointX: 3,
+      lastCheckpointY: 3,
+    });
+    room2.spatial.commit();
+
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Store for act phase
+    (spatial as any).__testSetup = {
+      gameManager,
+      playerId,
+      room1,
+      room2,
+    };
+  },
+  act: ({ spatial }) => {
+    const { gameManager, playerId, room2 } = (spatial as any).__testSetup;
+
+    // Create systems
+    const healthSystem = new HealthSystem({ dyingDuration: 1 });
+    const respawnSystem = new RespawnSystem(gameManager, {
+      respawnDelay: 1,
+      maxLives: 3,
+    });
+
+    // Create game loop for room2 (current scene)
+    const gameLoop = new GameLoop(room2.spatial, gameManager);
+    gameLoop.addSystem(healthSystem);
+    gameLoop.addSystem(respawnSystem);
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+
+    // Tick 1: Player enters dying state
+    gameLoop.tick();
+
+    // Tick 2: Player dies, respawn scheduled
+    gameLoop.tick();
+
+    // Tick 3: Respawn executes (should transition to room1)
+    gameLoop.tick();
+
+    // Execute any pending scene transition
+    gameManager.executePendingTransition();
+
+    // Store results
+    (spatial as any).__testResult = {
+      activeSceneId: gameManager.sceneManager.getActiveScene()?.id,
+      playerScene: gameManager.getPlayerScene()?.id,
+      playerPos: gameManager.getPlayerPosition(),
+      lives: gameManager.gameState.lives,
+    };
+  },
+  assert: ({ spatial, expect }) => {
+    const result = (spatial as any).__testResult;
+
+    expect('Active scene changed to room1', () => {
+      if (result.activeSceneId !== 'room1') {
+        throw new Error(`Expected active scene 'room1', got '${result.activeSceneId}'`);
+      }
+    });
+
+    expect('Player is now in room1', () => {
+      if (result.playerScene !== 'room1') {
+        throw new Error(`Expected player in 'room1', got '${result.playerScene}'`);
+      }
+    });
+
+    expect('Player respawned at checkpoint location (3,3)', () => {
+      if (!result.playerPos) {
+        throw new Error('Player position not found');
+      }
+      if (result.playerPos.x !== 3 || result.playerPos.y !== 3) {
+        throw new Error(`Expected (3,3), got (${result.playerPos.x},${result.playerPos.y})`);
+      }
+    });
+
+    expect('Player lost one life', () => {
+      if (result.lives !== 2) {
+        throw new Error(`Expected 2 lives, got ${result.lives}`);
       }
     });
   },

@@ -280,6 +280,9 @@ export class GameRuntime {
       game.gameState.playerEntityId = playerId;
     }
 
+    // Track initial scene for fallback respawn (when no checkpoint)
+    game.gameState.initialSceneId = initialSceneId;
+
     // === PHASE 3: GLOBAL INDEXING ===
     // Register scene connections (teleporters, linked switches, etc.)
     let connectionCount = 0;

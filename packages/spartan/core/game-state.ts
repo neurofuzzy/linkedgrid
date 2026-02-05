@@ -27,6 +27,9 @@ export class GameState {
   /** Player entity ID (tracked globally across scenes) */
   playerEntityId: number = 0;
 
+  /** Initial scene ID (for fallback respawn when no checkpoint) */
+  initialSceneId: string = '';
+
   /** Maximum lives (starting lives, used for reset) */
   maxLives: number = 3;
 
@@ -206,6 +209,7 @@ export class GameState {
 
     return {
       playerEntityId: this.playerEntityId,
+      initialSceneId: this.initialSceneId,
       maxLives: this.maxLives,
       lives: this.lives,
       score: this.score,
@@ -228,6 +232,7 @@ export class GameState {
    */
   static deserialize(data: {
     playerEntityId?: number;
+    initialSceneId?: string;
     maxLives?: number;
     lives?: number;
     score?: number;
@@ -242,6 +247,7 @@ export class GameState {
   }): GameState {
     const state = new GameState();
     state.playerEntityId = data.playerEntityId ?? 0;
+    state.initialSceneId = data.initialSceneId ?? '';
     state.maxLives = data.maxLives ?? 3;
     state.lives = data.lives ?? 3;
     state.score = data.score ?? 0;
