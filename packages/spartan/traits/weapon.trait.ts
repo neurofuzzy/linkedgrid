@@ -29,18 +29,20 @@ export interface WeaponConfig {
   name: string;
   /** Damage dealt per hit */
   damage: number;
-  /** Type of projectile to spawn */
+  /** Type of projectile to spawn ('none' for cone-based weapons like shotgun) */
   projectileType: string;
   /** Ticks between shots (cooldown) */
   fireRate: number;
   /** Ammo consumed per shot */
   ammoCost: number;
-  /** Maximum range in cells (optional, for raycast weapons) */
+  /** Maximum range in cells (for projectile weapons or cone range for shotgun) */
   range?: number;
   /** Projectile movement speed in cells per tick */
   projectileSpeed?: number;
   /** Color for projectile visual */
   projectileColor?: string;
+  /** Cone spread in radians (for cone-based weapons like shotgun) */
+  coneSpread?: number;
 }
 
 /**
@@ -82,21 +84,30 @@ export const DEFAULT_WEAPONS: Record<string, WeaponConfig> = {
     name: 'pistol',
     damage: 15,
     projectileType: 'bullet',
-    fireRate: 5,
+    fireRate: 8, // cooldown 8 ticks per roadmap
     ammoCost: 1,
     range: 15,
     projectileSpeed: 2,
     projectileColor: '#ffff00',
   },
+  'machine-gun': {
+    name: 'machine-gun',
+    damage: 8,
+    projectileType: 'bullet',
+    fireRate: 2, // cooldown 2 ticks per roadmap
+    ammoCost: 1,
+    range: 12,
+    projectileSpeed: 3,
+    projectileColor: '#ff6600',
+  },
   shotgun: {
     name: 'shotgun',
     damage: 30,
-    projectileType: 'pellet',
-    fireRate: 12,
+    projectileType: 'none', // cone-based, no projectile per roadmap
+    fireRate: 16, // cooldown 16 ticks per roadmap
     ammoCost: 1,
-    range: 6,
-    projectileSpeed: 3,
-    projectileColor: '#ff8800',
+    range: 4, // cone range
+    coneSpread: Math.PI / 4, // 45 degree cone spread
   },
   rifle: {
     name: 'rifle',

@@ -112,6 +112,11 @@ const AVAILABLE_GAMES = [
     name: 'Powerups Demo (Buffs & Pickups)',
     path: '/dev/games/powerups-demo.json',
   },
+  {
+    id: 'weapons-demo',
+    name: 'Weapons Demo (Pickups & Presets)',
+    path: '/dev/games/weapons-demo.json',
+  },
 ];
 
 /**

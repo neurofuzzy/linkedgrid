@@ -8,6 +8,7 @@ import type { BaseEntityData } from '../entities/entity.types';
 import type { GameManager } from '../core/game-manager';
 import { GameLayers } from "../config/layers.config";
 import { hasFloorEffect, hasHealth } from '../traits/trait-guards';
+import type { HealthSystem } from './health.system';
 
 /**
  * Entity timing state tracked by FloorEffectSystem.
@@ -79,7 +80,10 @@ export class FloorEffectSystem extends BaseTickedSystem {
 
   protected tickRate = SYSTEM_CONFIG.FloorEffect.tickRate;
 
-  constructor(private gameManager: GameManager) {
+  constructor(
+    private gameManager: GameManager,
+    private healthSystem?: HealthSystem
+  ) {
     super();
   }
 
@@ -375,18 +379,22 @@ export class FloorEffectSystem extends BaseTickedSystem {
     }
 
     // Apply damage
-    const newHp = Math.max(0, entityData.hp - effectiveDamage);
-    this.gameManager.gameState.entityStore.setData(entityData.id, {
-      hp: newHp,
-    });
+    if (this.healthSystem) {
+      this.healthSystem.damage(entityData.id, effectiveDamage, 'floor-effect');
+    } else {
+      const newHp = Math.max(0, entityData.hp - effectiveDamage);
+      this.gameManager.gameState.entityStore.setData(entityData.id, {
+        hp: newHp,
+      });
 
-    // Update timing state
-    state.lastDamageTime = currentTick;
-
-    // Remove entity if dead
-    if (newHp <= 0) {
-      context.spatial.remove(entityData.id);
+      // Remove entity if dead
+      if (newHp <= 0) {
+        context.spatial.remove(entityData.id);
+      }
     }
+
+    // Always update timing state to enforce cadence
+    state.lastDamageTime = currentTick;
   }
 
   /**

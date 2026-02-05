@@ -28,6 +28,8 @@ import {
   WebInputProvider,
 } from './input';
 
+import type { InputPreset } from '../spartan/core/input-provider';
+
 /**
  * Input configuration for GameEmbed.
  */
@@ -42,6 +44,13 @@ export interface GameEmbedInputConfig {
   bufferInput?: boolean;
   /** Direction input mode */
   directionMode?: 'continuous' | 'tap';
+  /**
+   * Input preset for mapping controls.
+   * - 'classic': Both arrow and WASD control movement, aim follows last move
+   * - 'twin-stick': Arrows for movement, WASD for aiming (auto-fires)
+   * - 'separated': Arrows for movement, WASD for attack direction
+   */
+  preset?: InputPreset;
 }
 
 /**
@@ -112,8 +121,14 @@ export class GameEmbed {
       );
     }
 
-    // Determine input configuration (prioritize gameConfig.input, fallback to embedConfig)
-    const inputConfig = gameConfig.input ?? this.embedConfig.input ?? { type: 'keyboard' as const };
+    // Build input configuration by merging gameConfig.input with embedConfig.input
+    // Spread options first to prevent them from overriding type/preset
+    const inputConfig: GameEmbedInputConfig = {
+      ...this.embedConfig.input,
+      ...(gameConfig.input?.options as Record<string, unknown> ?? {}),
+      type: gameConfig.input?.type ?? this.embedConfig.input?.type ?? 'keyboard',
+      preset: gameConfig.input?.preset ?? this.embedConfig.input?.preset ?? 'classic',
+    };
 
     // Create input manager and provider
     if (inputConfig.type !== 'none') {
@@ -227,14 +242,11 @@ export class GameEmbed {
     if (config.type === 'headless') {
       const headless = new HeadlessInputManager();
       headless.enable();
+      if (config.preset) {
+        headless.setPreset(config.preset);
+      }
       this.inputManager = headless;
-      this.inputProvider = {
-        getDirection: () => headless.getState().direction,
-        getAction: () => headless.getState().action,
-        getSecondary: () => headless.getState().secondary,
-        getStart: () => headless.getState().start,
-        getRestart: () => headless.getState().restart,
-      };
+      this.inputProvider = headless.asInputProvider();
       return;
     }
 
@@ -244,6 +256,7 @@ export class GameEmbed {
       cellGap: config.cellGap ?? 0,
       bufferInput: config.bufferInput ?? false,
       directionMode: config.directionMode ?? ('continuous' as const),
+      preset: config.preset ?? 'classic',
     };
 
     const manager = new InputManager(this.container, null, options);
@@ -251,6 +264,11 @@ export class GameEmbed {
 
     this.inputManager = manager;
     this.inputProvider = new WebInputProvider(manager);
+
+    // Apply preset from config to the provider (mapping happens in provider, not manager)
+    if (config.preset) {
+      (this.inputProvider as WebInputProvider).setPreset(config.preset);
+    }
   }
 
   /**

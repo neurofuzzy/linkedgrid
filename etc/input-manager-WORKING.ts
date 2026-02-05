@@ -852,14 +852,7 @@ export class InputManager {
     this.updateStateFromEvents(true);
 
     // Create a copy of the fully updated state to return to the caller.
-    // IMPORTANT: clone nested objects so subsequent internal clears do not
-    // mutate the returned snapshot.
-    const result: InputState = {
-      ...this.state,
-      mouse: { ...this.state.mouse },
-      gamepad: { ...this.state.gamepad },
-      keys: new Set(this.state.keys),
-    };
+    const result = { ...this.state };
 
     // Now, clear the one-shot events from the internal state for the next frame.
     this.mouseClicked = false;
@@ -897,18 +890,24 @@ export class InputManager {
     }
 
     // Shoot direction (WASD for twin-stick shooters)
-    // Check both keysDown AND keysJustPressed to capture quick taps
-    // This must be consistent with getCurrentDirection() to avoid movement bugs
-    this.state.shootDirection = this.getWasdDirection();
+    if (this.keysDown.has('w') || this.keysDown.has('W')) {
+      this.state.shootDirection = Direction.UP;
+    } else if (this.keysDown.has('s') || this.keysDown.has('S')) {
+      this.state.shootDirection = Direction.DOWN;
+    } else if (this.keysDown.has('a') || this.keysDown.has('A')) {
+      this.state.shootDirection = Direction.LEFT;
+    } else if (this.keysDown.has('d') || this.keysDown.has('D')) {
+      this.state.shootDirection = Direction.RIGHT;
+    } else {
+      this.state.shootDirection = Direction.NONE;
+    }
 
     // Action from held keys or buffer
-    // Only consume buffer when explicitly requested (from getState())
-    const bufferedAction = consumeBuffer ? this.actionBuffer : false;
     this.state.action =
-      this.keysDown.has(' ') || this.actionKeyPressed || bufferedAction;
+      this.keysDown.has(' ') || this.actionKeyPressed || this.actionBuffer;
 
-    // Clear consumed action buffer only when explicitly consuming
-    if (consumeBuffer && this.actionBuffer) {
+    // Clear consumed action buffer
+    if (this.actionBuffer) {
       this.actionBuffer = false;
     }
 
@@ -999,26 +998,6 @@ export class InputManager {
     if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
     if (this.keysDown.has('d') || this.keysDown.has('D'))
       return Direction.RIGHT;
-    return Direction.NONE;
-  }
-
-  /**
-   * Get WASD direction from both keysDown AND keysJustPressed.
-   * This must be consistent with getCurrentDirection() to avoid movement bugs
-   * where a quick WASD tap gets captured by direction but not shootDirection.
-   */
-  private getWasdDirection(): Direction {
-    // Check keysJustPressed first (for quick taps) with deterministic priority
-    if (this.keysJustPressed.has('w') || this.keysJustPressed.has('W')) return Direction.UP;
-    if (this.keysJustPressed.has('s') || this.keysJustPressed.has('S')) return Direction.DOWN;
-    if (this.keysJustPressed.has('a') || this.keysJustPressed.has('A')) return Direction.LEFT;
-    if (this.keysJustPressed.has('d') || this.keysJustPressed.has('D')) return Direction.RIGHT;
-
-    // Fall back to keysDown (for held keys)
-    if (this.keysDown.has('w') || this.keysDown.has('W')) return Direction.UP;
-    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DOWN;
-    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
-    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RIGHT;
     return Direction.NONE;
   }
 

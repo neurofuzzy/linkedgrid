@@ -83,7 +83,7 @@ export function createAllSystems(
   const teleporterSystem = new TeleporterSystem(gameManager);
   const collectionSystem = new CollectionSystem(gameManager);
   const doorSystem = new DoorSystem(gameManager);
-  const floorEffectSystem = new FloorEffectSystem(gameManager);
+  const floorEffectSystem = new FloorEffectSystem(gameManager, healthSystem);
   const poisonSystem = new PoisonSystem(gameManager);
   const signalSystem = new SignalSystem(gameManager);
   const gateSystem = new GateSystem(gameManager);
@@ -116,7 +116,14 @@ export function createAllSystems(
   if (inputProvider) {
     const playerInputSystem = new PlayerInputSystem(gameManager, inputProvider);
     const meleeSystem = new MeleeSystem(gameManager, inputProvider, healthSystem);
-    const playerWeaponSystem = new PlayerWeaponSystem(gameManager, inputProvider, projectileSystem);
+    const playerWeaponSystem = new PlayerWeaponSystem(
+      gameManager,
+      inputProvider,
+      projectileSystem,
+      meleeSystem,
+      undefined, // customWeapons
+      healthSystem // for cone-based weapon damage
+    );
 
     systems.push(playerInputSystem);
     systems.push(meleeSystem);

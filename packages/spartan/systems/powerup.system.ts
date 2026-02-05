@@ -22,6 +22,7 @@ import {
   isDamageBoost,
   isInvincibility,
   isAmmoPack,
+  isWeaponPickup,
   isPowerup,
   isPlayer,
   hasShield,
@@ -157,6 +158,8 @@ export class PowerupSystem extends BaseReactiveSystem {
       consumed = this.applyInvincibility(collectorData, powerupData.duration, currentTick);
     } else if (isAmmoPack(powerupData)) {
       consumed = this.applyAmmoPack(collectorData, powerupData.weaponType, powerupData.ammoAmount);
+    } else if (isWeaponPickup(powerupData)) {
+      consumed = this.applyWeaponPickup(collectorData, powerupData.weaponType, powerupData.ammoAmount);
     }
 
     // Remove the powerup if consumed
@@ -287,6 +290,33 @@ export class PowerupSystem extends BaseReactiveSystem {
     }
 
     collectorData.ammo[weaponType] += ammoAmount;
+    return true;
+  }
+
+  /**
+   * Apply weapon pickup - switch weapon and add starting ammo.
+   */
+  private applyWeaponPickup(collectorData: EntityData, weaponType: string, ammoAmount: number): boolean {
+    // Initialize weapon trait if not present
+    if (!hasWeapon(collectorData)) {
+      (collectorData as any).equippedWeapon = weaponType;
+      (collectorData as any).ammo = {};
+    }
+
+    const weaponData = collectorData as EntityData & { equippedWeapon: string; ammo: Record<string, number> };
+
+    // Switch to the new weapon
+    weaponData.equippedWeapon = weaponType;
+
+    // Initialize ammo for weapon type if not present
+    if (!(weaponData.ammo[weaponType] >= 0)) {
+      weaponData.ammo[weaponType] = 0;
+    }
+
+    // Add starting ammo (defensive - normalize to non-negative integer)
+    const normalizedAmmo = Number.isFinite(ammoAmount) ? Math.max(0, Math.floor(ammoAmount)) : 0;
+    weaponData.ammo[weaponType] += normalizedAmmo;
+
     return true;
   }
 

@@ -371,6 +371,132 @@ visual('mud cancels player movement', {
   },
 });
 
+visual('lava deals continuous damage while player stands on it', {
+  arrange: ({ spatial }) => {
+    // Spawn player with enough HP to survive multiple hits
+    spawnPlayer(spatial, 5, 5, {
+      hp: 100,
+      maxHp: 100,
+      damage: 10,
+      sceneId: 'test-scene',
+    });
+
+    // Spawn lava with cadence of 3 ticks
+    spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
+      effectType: 'damage',
+      triggerMode: 'continuous',
+      damage: 10,
+      cadence: 3,
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const floorSystem = new FloorEffectSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(floorSystem);
+
+    // Run 10 ticks - should apply damage at ticks 1, 4, 7, 10 (4 times total)
+    for (let i = 0; i < 10; i++) {
+      gameLoop.tick();
+    }
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Player took multiple damage ticks from lava', () => {
+      const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS);
+      if (!playerId) {
+        throw new Error('Player not found');
+      }
+
+      const playerData = spatial.getEntityData(playerId)!;
+      if (!hasHealth(playerData)) {
+        throw new Error('Player missing health');
+      }
+
+      // With cadence=3 and 10 ticks, damage should apply ~3-4 times
+      // 10 damage per hit, so HP should be around 60-70
+      if (playerData.hp > 70) {
+        throw new Error(`Expected multiple damage applications, got hp=${playerData.hp} (should be <= 70)`);
+      }
+      if (playerData.hp < 50) {
+        throw new Error(`Too much damage applied, got hp=${playerData.hp} (should be >= 50)`);
+      }
+    });
+  },
+});
+
+visual('moving between lava tiles respects damage cadence', {
+  arrange: ({ spatial }) => {
+    // Spawn player
+    spawnPlayer(spatial, 5, 5, {
+      hp: 100,
+      maxHp: 100,
+      damage: 10,
+      sceneId: 'test-scene',
+    });
+
+    // Spawn two adjacent lava tiles with cadence of 5
+    spatial.spawn('lava', 5, 5, GameLayers.FLOOR, {
+      effectType: 'damage',
+      triggerMode: 'continuous',
+      damage: 10,
+      cadence: 5,
+    });
+    spatial.spawn('lava', 6, 5, GameLayers.FLOOR, {
+      effectType: 'damage',
+      triggerMode: 'continuous',
+      damage: 10,
+      cadence: 5,
+    });
+
+    spatial.commit();
+  },
+  act: ({ spatial, store }) => {
+    const gameManager = new GameManager();
+    gameManager.gameState.entityStore = store;
+    const floorSystem = new FloorEffectSystem(gameManager);
+    const gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(floorSystem);
+
+    const playerId = spatial.getEntityIdAt(5, 5, GameLayers.ACTORS)!;
+
+    // Tick 1: Take damage from first lava
+    gameLoop.tick();
+
+    // Move to second lava tile
+    spatial.move(playerId, 6, 5);
+    
+    // Ticks 2-5: Moving between lava, cadence prevents spam damage
+    for (let i = 0; i < 4; i++) {
+      gameLoop.tick();
+    }
+    
+    // Tick 6: Cadence elapsed, should take damage again
+    gameLoop.tick();
+  },
+  assert: ({ spatial, expect }) => {
+    expect('Player took damage twice (respecting cadence)', () => {
+      const playerId = spatial.getEntityIdAt(6, 5, GameLayers.ACTORS);
+      if (!playerId) {
+        throw new Error('Player not found at (6,5)');
+      }
+
+      const playerData = spatial.getEntityData(playerId)!;
+      if (!hasHealth(playerData)) {
+        throw new Error('Player missing health');
+      }
+
+      // Should have taken damage twice: 100 - 10 - 10 = 80
+      // (once at tick 1, once at tick 6 when cadence elapsed)
+      if (playerData.hp !== 80) {
+        throw new Error(`Expected hp=80 (2 damage applications), got hp=${playerData.hp}`);
+      }
+    });
+  },
+});
+
 visual('player killed by lava is removed from grid', {
   arrange: ({ spatial }) => {
     // Spawn player with low health

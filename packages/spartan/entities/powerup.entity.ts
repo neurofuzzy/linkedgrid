@@ -97,3 +97,20 @@ export type AmmoPackData = BaseEntityData & {
   ammoAmount: number;
 } & IsCollectible &
   HasColor;
+
+/**
+ * WeaponPickupData - Weapon pickup entity.
+ *
+ * Gives the player a weapon and starting ammo when collected.
+ * Switches player's equipped weapon to the picked-up type.
+ *
+ * Placed on COLLECTIBLES layer.
+ */
+export type WeaponPickupData = BaseEntityData & {
+  type: 'weapon-pickup';
+  /** Weapon type to grant (e.g., 'pistol', 'machine-gun', 'shotgun') */
+  weaponType: string;
+  /** Starting ammo amount when picked up */
+  ammoAmount: number;
+} & IsCollectible &
+  HasColor;

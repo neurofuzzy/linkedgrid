@@ -104,15 +104,34 @@ export class ProjectileSystem extends BaseTickedSystem {
     if (!pos) return;
 
     const startCell = context.spatial.grid.cell(pos.x, pos.y);
-    const targetCell = context.spatial.grid.cell(projectile.targetX, projectile.targetY);
-
-    if (!startCell || !targetCell) {
+    if (!startCell) {
       projectile.path = [];
       return;
     }
 
-    const cells = LinkedCellUtils.getLine(startCell, targetCell);
-    projectile.path = cells.map((c) => ({ x: c.x, y: c.y }));
+    // Clamp target coordinates to grid bounds to ensure valid path
+    const grid = context.spatial.grid;
+    const clampedTargetX = Math.max(0, Math.min(grid.width - 1, projectile.targetX));
+    const clampedTargetY = Math.max(0, Math.min(grid.height - 1, projectile.targetY));
+
+    // Update projectile target with clamped values for consistency
+    projectile.targetX = clampedTargetX;
+    projectile.targetY = clampedTargetY;
+
+    const targetCell = grid.cell(projectile.targetX, projectile.targetY);
+
+    if (!targetCell) {
+      projectile.path = [];
+      return;
+    }
+
+    // getLine excludes the start cell, so we need to prepend it
+    // This ensures collision check happens at spawn position
+    const lineCells = LinkedCellUtils.getLine(startCell, targetCell);
+    projectile.path = [
+      { x: startCell.x, y: startCell.y },
+      ...lineCells.map((c) => ({ x: c.x, y: c.y })),
+    ];
     projectile.pathIndex = 0;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;
