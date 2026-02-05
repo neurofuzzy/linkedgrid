@@ -294,7 +294,7 @@ export function hasPropagation(
  */
 export function hasTemperature(
   entity: EntityData
-): entity is GrassData | GasolineData | FuseData | BarrelData | (DestructibleWallData & HasTemperature) {
+): entity is EntityData & HasTemperature {
   return (
     'temperature' in entity && typeof entity.temperature === 'number' &&
     'flammable' in entity && typeof entity.flammable === 'boolean' &&
@@ -1145,7 +1145,7 @@ export function hasWeapon(
  */
 export function hasCheckpoint(
   entity: EntityData
-): entity is EntityData & { lastCheckpointSceneId?: string; lastCheckpointX?: number; lastCheckpointY?: number } {
+): entity is EntityData & { lastCheckpointId?: number; lastCheckpointSceneId?: string; lastCheckpointX?: number; lastCheckpointY?: number } {
   // The trait is optional properties, so we check if ANY checkpoint property exists
   return (
     'lastCheckpointId' in entity ||

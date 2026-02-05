@@ -201,8 +201,8 @@ export class PowerupSystem extends BaseReactiveSystem {
 
     const shieldData = collectorData as EntityData & { shield: number; maxShield: number };
 
-    // Skip if already at max shield and no duration (permanent)
-    if (!duration && shieldData.shield >= shieldData.maxShield) return false;
+    // Skip if already at max shield and no explicit duration (permanent)
+    if (duration === undefined && shieldData.shield >= shieldData.maxShield) return false;
 
     if (duration) {
       // Temporary shield - add as buff
@@ -277,8 +277,12 @@ export class PowerupSystem extends BaseReactiveSystem {
   private applyAmmoPack(collectorData: EntityData, weaponType: string, ammoAmount: number): boolean {
     if (!hasWeapon(collectorData)) return false;
 
+    // Ensure ammo map exists
+    if (!collectorData.ammo) {
+      (collectorData as any).ammo = {};
+    }
     // Initialize ammo for weapon type if not present
-    if (!collectorData.ammo[weaponType]) {
+    if (!(collectorData.ammo[weaponType] >= 0)) {
       collectorData.ammo[weaponType] = 0;
     }
 
@@ -347,14 +351,17 @@ export class PowerupSystem extends BaseReactiveSystem {
    * Called when a buff expires. Can be used to remove
    * any persistent effects the buff applied.
    */
-  private onBuffExpired(_entity: EntityData, _buff: Buff): void {
-    // Shield buffs: Could reduce maxShield back to base
-    // Speed buffs: Movement system checks active buffs each tick
-    // Damage buffs: Combat systems check active buffs each tick
-    // Invincibility: HealthSystem checks for invincibility buff before applying damage
-
-    // For now, just removing the buff is sufficient.
-    // The other systems check for active buffs each tick.
+  private onBuffExpired(entity: EntityData, buff: Buff): void {
+    if (buff.type === 'shield') {
+      if (hasShield(entity)) {
+        // Reduce shield and maxShield by the buff's magnitude
+        entity.shield = Math.max(0, entity.shield - buff.magnitude);
+        entity.maxShield = Math.max(0, entity.maxShield - buff.magnitude);
+      }
+    }
+    // Other buff types like speed, damage, and invincibility are handled by
+    // other systems checking for active buffs each tick, so no specific
+    // cleanup is needed here for them.
   }
 
   /**

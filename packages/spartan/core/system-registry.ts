@@ -104,12 +104,12 @@ export function createAllSystems(
   const projectileSystem = new ProjectileSystem(healthSystem);
   const powerupSystem = new PowerupSystem({ healthSystem });
 
-  systems.push(projectileSystem);
-  systems.push(powerupSystem);
-
   // === SYSTEMS NEEDING PROJECTILESYSTEM ===
   const turretSystem = new TurretSystem(healthSystem, projectileSystem);
   systems.push(turretSystem);
+
+  systems.push(projectileSystem);
+  systems.push(powerupSystem);
 
   // === SYSTEMS NEEDING INPUTPROVIDER ===
   // Only create these if inputProvider is available
