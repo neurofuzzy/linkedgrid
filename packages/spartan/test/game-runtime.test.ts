@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { GameRuntime, type GameConfig, type SystemFactory } from '../core/game-runtime';
+import { GameRuntime, type GameConfig } from '../core/game-runtime';
 import { GameLayers } from '../config/layers.config';
-import type { GameSystem } from '../core/types';
 
 describe('GameRuntime', () => {
   it('should create and initialize game', () => {
@@ -142,9 +141,6 @@ describe('GameRuntime', () => {
 });
 
 describe('GameRuntime.fromConfig', () => {
-  // Mock system factory that returns null (no systems)
-  const nullSystemFactory: SystemFactory = () => null;
-
   it('should create all scenes from config', () => {
     const config: GameConfig = {
       initialScene: 'room1',
@@ -155,7 +151,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
 
     expect(runtime.game.sceneManager.getScene('room1')).toBeDefined();
     expect(runtime.game.sceneManager.getScene('room2')).toBeDefined();
@@ -179,7 +175,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
     const spatial = runtime.spatial;
 
     // Verify player spawned
@@ -229,7 +225,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
     const connections = runtime.game.gameState.getConnections('red');
 
     expect(connections).toHaveLength(2);
@@ -261,7 +257,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    GameRuntime.fromConfig(config, nullSystemFactory);
+    GameRuntime.fromConfig(config);
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Connection "blue" has only 1 endpoint')
@@ -286,7 +282,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
 
     expect(runtime.game.gameState.playerEntityId).not.toBe(0);
 
@@ -295,20 +291,19 @@ describe('GameRuntime.fromConfig', () => {
     expect(playerPos?.y).toBe(5);
   });
 
-  it('should call system factory for configured systems', () => {
-    const mockFactory = vi.fn<SystemFactory>().mockReturnValue(null);
-
+  it('should initialize all systems automatically', () => {
     const config: GameConfig = {
       initialScene: 'room1',
-      systems: ['TestSystem', 'AnotherSystem'],
       scenes: [{ id: 'room1', width: 10, height: 10, entities: [] }],
     };
 
-    GameRuntime.fromConfig(config, mockFactory);
-
-    expect(mockFactory).toHaveBeenCalledTimes(2);
-    expect(mockFactory).toHaveBeenCalledWith('TestSystem', expect.anything(), expect.any(Map));
-    expect(mockFactory).toHaveBeenCalledWith('AnotherSystem', expect.anything(), expect.any(Map));
+    // Systems are now initialized internally by the system registry
+    // No external factory is needed
+    const runtime = GameRuntime.fromConfig(config);
+    
+    // Runtime should be created successfully with all systems
+    expect(runtime).toBeDefined();
+    expect(runtime.game).toBeDefined();
   });
 
   it('should skip comment/section objects in entities array', () => {
@@ -330,7 +325,7 @@ describe('GameRuntime.fromConfig', () => {
     };
 
     // Should not throw
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
     const wallId = runtime.spatial.getEntityIdAt(5, 5, GameLayers.WALLS);
     expect(wallId).toBeDefined();
   });
@@ -359,7 +354,7 @@ describe('GameRuntime.fromConfig', () => {
       ],
     };
 
-    const runtime = GameRuntime.fromConfig(config, nullSystemFactory);
+    const runtime = GameRuntime.fromConfig(config);
 
     // Should log error
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('SCHEMA ERROR'));

@@ -97,6 +97,21 @@ const AVAILABLE_GAMES = [
     name: 'Spawners & Signals',
     path: '/dev/games/spawners-and-signals.json',
   },
+  {
+    id: 'combat-demo',
+    name: 'Combat Demo (Melee & Ranged)',
+    path: '/dev/games/combat-demo.json',
+  },
+  {
+    id: 'respawn-demo',
+    name: 'Respawn Demo (Checkpoints & Hazards)',
+    path: '/dev/games/respawn-demo.json',
+  },
+  {
+    id: 'powerups-demo',
+    name: 'Powerups Demo (Buffs & Pickups)',
+    path: '/dev/games/powerups-demo.json',
+  },
 ];
 
 /**

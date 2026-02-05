@@ -4,19 +4,19 @@ Please use this document for tracking using the checkboxes.
 
 Phase 1: Core
 
-[ ] 1. Melee System 
+[x] 1. Melee System 
    - New `HasMelee` trait and `MeleeSystem`. 
    - Fallback for weapons when out of ammo.
-[ ] 2. Player Weapons System
+[x] 2. Player Weapons System
    - `HasWeapon` trait, `WeaponConfig`, `PlayerWeaponSystem`.
    - Ammo tracking and projectile integration.
-[ ] 3. Player Start / Respawn
+[x] 3. Player Start / Respawn
    - `PlayerStart` and `Checkpoint` entities.
    - Cross-scene respawn support.
-[ ] 4. Pickups / Buffs
+[x] 4. Pickups / Buffs
    - Health, Shield, Speed types.
    - `PowerupSystem` for applying effects.
-[ ] 5. Flammable Walls (Config change only)
+[x] 5. Flammable Walls (Config change only)
 
 Phase [ ] 1.5: Cleanup and Refactor
 
@@ -29,10 +29,10 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 
 *SEPARATE DEMOS EXPECTED*
 
-[ ] A) Single player melee combat and ranged combat
-[ ] B) Multiscene game with hazards and checkpoints for death and respawning
-[ ] C) Powerups and buffs
-[ ] D) Flammable Walls (can enhance existing flammable demo)
+[x] A) Single player melee combat and ranged combat -> `dev/games/combat-demo.json`
+[x] B) Multiscene game with hazards and checkpoints for death and respawning -> `dev/games/respawn-demo.json`
+[x] C) Powerups and buffs -> `dev/games/powerups-demo.json`
+[x] D) Flammable Walls (enhanced existing demo) -> `dev/games/flammability.json`
 
 ---
 

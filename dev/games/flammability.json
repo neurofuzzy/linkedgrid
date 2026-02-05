@@ -1,4 +1,6 @@
 {
+  "name": "Flammability Demo",
+  "description": "Phase 1 Demo D: Fire spread mechanics with flammable walls. Watch fire spread across grass and burn through wooden walls. Water extinguishes fire.",
   "scenes": [
     {
       "id": "fire-test",
@@ -17,6 +19,84 @@
             "sceneId": "fire-test"
           }
         },
+
+        { "_comment": "=== FLAMMABLE WOODEN WALLS ===" },
+        {
+          "type": "destructible-wall",
+          "x": 10,
+          "y": 5,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 0,
+            "color": "#8B4513",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 10,
+          "y": 6,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 0,
+            "color": "#8B4513",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 10,
+          "y": 7,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 0,
+            "color": "#8B4513",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 10,
+          "y": 8,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 0,
+            "color": "#8B4513",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150
+          }
+        },
+        {
+          "type": "destructible-wall",
+          "x": 10,
+          "y": 9,
+          "layer": 5,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "hardness": 0,
+            "color": "#8B4513",
+            "temperature": 0,
+            "flammable": true,
+            "flamePoint": 150
+          }
+        },
+
         {
           "type": "grass",
           "x": 4,
