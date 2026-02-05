@@ -61,9 +61,22 @@ export interface GameConfig {
   systems?: string[];
   /** Ticks per second (default: 10) */
   tickRate?: number;
-  /** Input configuration (platform-specific) */
+  /**
+   * Input configuration (platform-specific)
+   *
+   * @example
+   * ```typescript
+   * input: {
+   *   type: 'keyboard',
+   *   preset: 'twin-stick',  // 'classic' | 'twin-stick' | 'separated'
+   *   options: { bufferInput: true }
+   * }
+   * ```
+   */
   input?: {
     type: 'keyboard' | 'headless' | 'none';
+    /** Input preset for mapping controls (default: 'classic') */
+    preset?: 'classic' | 'twin-stick' | 'separated';
     options?: Record<string, unknown>;
   };
   /** Scene definitions */

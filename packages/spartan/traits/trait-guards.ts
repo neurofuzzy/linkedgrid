@@ -36,6 +36,7 @@ import type { HasSpawner } from './spawner.trait';
 import type { HasSceneConnection } from './scene-connection.trait';
 import type { HasBuff, Buff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
+import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
   EnemyData,
@@ -77,6 +78,7 @@ import type {
   DamageBoostData,
   InvincibilityData,
   AmmoPackData,
+  WeaponPickupData,
 } from '../entities';
 
 /**
@@ -1104,7 +1106,13 @@ export function hasPusher(entity: EntityData): entity is EntityData & HasPusher 
  */
 export function hasMelee(
   entity: EntityData
-): entity is EntityData & { meleeDamage: number; meleeCooldown: number; meleeRange: number } {
+): entity is EntityData & {
+  meleeDamage: number;
+  meleeCooldown: number;
+  meleeRange: number;
+  lastMeleeAttackTick?: number;
+  meleeDirection?: Direction;
+} {
   return (
     'meleeDamage' in entity &&
     typeof entity.meleeDamage === 'number' &&
@@ -1125,7 +1133,13 @@ export function hasMelee(
  */
 export function hasWeapon(
   entity: EntityData
-): entity is EntityData & { equippedWeapon: string; ammo: Record<string, number> } {
+): entity is EntityData & {
+  equippedWeapon: string;
+  ammo: Record<string, number>;
+  unlimitedAmmo?: boolean;
+  lastFireTick?: number;
+  fireDirection?: Direction;
+} {
   return (
     'equippedWeapon' in entity &&
     typeof entity.equippedWeapon === 'string' &&
@@ -1262,18 +1276,29 @@ export function isAmmoPack(entity: EntityData): entity is AmmoPackData {
 }
 
 /**
+ * Check if entity is a weapon pickup.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'weapon-pickup'
+ */
+export function isWeaponPickup(entity: EntityData): entity is WeaponPickupData {
+  return entity.type === 'weapon-pickup';
+}
+
+/**
  * Check if entity is any powerup type.
  *
  * @param entity - Entity to check
  * @returns true if entity is a collectible powerup
  */
-export function isPowerup(entity: EntityData): entity is HealthPackData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData {
+export function isPowerup(entity: EntityData): entity is HealthPackData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData | WeaponPickupData {
   return (
     isHealthPack(entity) ||
     isShieldPack(entity) ||
     isSpeedBoost(entity) ||
     isDamageBoost(entity) ||
     isInvincibility(entity) ||
-    isAmmoPack(entity)
+    isAmmoPack(entity) ||
+    isWeaponPickup(entity)
   );
 }

@@ -116,7 +116,14 @@ export function createAllSystems(
   if (inputProvider) {
     const playerInputSystem = new PlayerInputSystem(gameManager, inputProvider);
     const meleeSystem = new MeleeSystem(gameManager, inputProvider, healthSystem);
-    const playerWeaponSystem = new PlayerWeaponSystem(gameManager, inputProvider, projectileSystem);
+    const playerWeaponSystem = new PlayerWeaponSystem(
+      gameManager,
+      inputProvider,
+      projectileSystem,
+      meleeSystem,
+      undefined, // customWeapons
+      healthSystem // for cone-based weapon damage
+    );
 
     systems.push(playerInputSystem);
     systems.push(meleeSystem);

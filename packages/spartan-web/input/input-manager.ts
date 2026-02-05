@@ -73,6 +73,7 @@
  */
 
 import { Direction } from '../../spartan/core/grid/direction';
+import type { InputPreset } from '../../spartan/core/input-provider';
 
 /**
  * Stick processing mode.
@@ -150,7 +151,7 @@ export interface GamepadState {
  * All inputs are processed and available simultaneously.
  */
 export interface InputState {
-  /** Current movement direction from any input source (WASD, arrows, D-pad, stick) */
+  /** Current movement direction from any input source (WASD, arrows, D-pad, stick) - legacy combined */
   direction: Direction;
   /** Primary action (space, enter, left click, A button) */
   action: boolean;
@@ -160,8 +161,21 @@ export interface InputState {
   start: boolean;
   /** Restart/reset (R key) */
   restart: boolean;
-  /** Directional shooting using WASD for twin-stick style games */
+  /** Directional shooting using WASD for twin-stick style games (legacy - use aimDirection instead) */
   shootDirection: Direction;
+
+  // === Separated Input Channels ===
+  /** Direction from arrow keys only */
+  arrowDirection: Direction;
+  /** Direction from WASD keys only */
+  wasdDirection: Direction;
+
+  // === Mapped Intent Directions (based on preset) ===
+  /** Mapped movement direction based on preset */
+  moveDirection: Direction;
+  /** Mapped aim/attack direction based on preset */
+  aimDirection: Direction;
+
   /** Mouse state with grid and pixel coordinates */
   mouse: MouseState;
   /** Gamepad state (first connected gamepad) */
@@ -193,6 +207,14 @@ export interface InputConfig {
   bufferTimeMs?: number;
   /** Direction input mode: 'continuous' (hold key = keep direction) or 'tap' (each press = one frame) */
   directionMode?: DirectionMode;
+  /**
+   * Input preset for mapping arrow/WASD keys to movement/aim.
+   * - 'classic': Both arrow and WASD control movement, aim follows last move direction
+   * - 'twin-stick': Arrows for movement, WASD for aiming (auto-fires when aiming)
+   * - 'separated': Arrows for movement, WASD for attack direction (uses action buttons)
+   * Default: 'classic'
+   */
+  preset?: InputPreset;
 }
 
 /**
@@ -255,6 +277,9 @@ export class InputManager {
   private bufferedDirection: Direction = Direction.NONE;
   private bufferedTimestamp: number = 0;
 
+  // Classic mode: track last movement direction for aim
+  private lastMoveDirection: Direction = Direction.NONE;
+
   // Current input state (continuously updated by events)
   private state: InputState;
 
@@ -306,6 +331,7 @@ export class InputManager {
       bufferInput: config.bufferInput ?? false,
       bufferTimeMs: config.bufferTimeMs ?? 200,
       directionMode: config.directionMode ?? 'continuous',
+      preset: config.preset ?? 'classic',
     };
 
     this.state = this.createEmptyState();
@@ -324,6 +350,12 @@ export class InputManager {
       start: false,
       restart: false,
       shootDirection: Direction.NONE,
+      // Separated input channels
+      arrowDirection: Direction.NONE,
+      wasdDirection: Direction.NONE,
+      // Mapped intent directions
+      moveDirection: Direction.NONE,
+      aimDirection: Direction.NONE,
       mouse: {
         x: 0,
         y: 0,
@@ -368,6 +400,31 @@ export class InputManager {
       ...this.config,
       ...config,
     };
+  }
+
+  /**
+   * Set the input preset for mapping arrow/WASD keys to movement/aim.
+   *
+   * @param preset - 'classic', 'twin-stick', or 'separated'
+   * @returns this for chaining
+   *
+   * @example
+   * ```typescript
+   * inputManager.setPreset('twin-stick');
+   * ```
+   */
+  setPreset(preset: InputPreset): this {
+    this.config.preset = preset;
+    // Reset lastMoveDirection when switching presets
+    this.lastMoveDirection = Direction.NONE;
+    return this;
+  }
+
+  /**
+   * Get the current input preset.
+   */
+  getPreset(): InputPreset {
+    return this.config.preset ?? 'classic';
   }
 
   // ========================================================================
@@ -590,6 +647,28 @@ export class InputManager {
     }
   }
 
+  /**
+   * Get direction from arrow keys only.
+   */
+  private getArrowDirection(): Direction {
+    if (this.keysDown.has('ArrowUp')) return Direction.UP;
+    if (this.keysDown.has('ArrowDown')) return Direction.DOWN;
+    if (this.keysDown.has('ArrowLeft')) return Direction.LEFT;
+    if (this.keysDown.has('ArrowRight')) return Direction.RIGHT;
+    return Direction.NONE;
+  }
+
+  /**
+   * Get direction from WASD keys only.
+   */
+  private getWasdDirection(): Direction {
+    if (this.keysDown.has('w') || this.keysDown.has('W')) return Direction.UP;
+    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DOWN;
+    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
+    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RIGHT;
+    return Direction.NONE;
+  }
+
   // ========================================================================
   // Event Listeners Setup and Cleanup
   // ========================================================================
@@ -794,6 +873,7 @@ export class InputManager {
     this.actionBuffer = false;
     this.bufferedDirection = Direction.NONE;
     this.bufferedTimestamp = 0;
+    this.lastMoveDirection = Direction.NONE;
     this.state = this.createEmptyState();
   }
 
@@ -889,17 +969,54 @@ export class InputManager {
       this.state.direction = this.getCurrentDirection();
     }
 
-    // Shoot direction (WASD for twin-stick shooters)
-    if (this.keysDown.has('w') || this.keysDown.has('W')) {
-      this.state.shootDirection = Direction.UP;
-    } else if (this.keysDown.has('s') || this.keysDown.has('S')) {
-      this.state.shootDirection = Direction.DOWN;
-    } else if (this.keysDown.has('a') || this.keysDown.has('A')) {
-      this.state.shootDirection = Direction.LEFT;
-    } else if (this.keysDown.has('d') || this.keysDown.has('D')) {
-      this.state.shootDirection = Direction.RIGHT;
-    } else {
-      this.state.shootDirection = Direction.NONE;
+    // === Separated Input Channels ===
+    this.state.arrowDirection = this.getArrowDirection();
+    this.state.wasdDirection = this.getWasdDirection();
+
+    // Shoot direction (WASD for twin-stick shooters) - legacy, kept for compatibility
+    this.state.shootDirection = this.state.wasdDirection;
+
+    // === Preset-based Mapping ===
+    const preset = this.config.preset ?? 'classic';
+    const gamepadDir = this.state.gamepad.direction;
+    const gamepadRightDir = this.state.gamepad.rightDirection;
+
+    switch (preset) {
+      case 'twin-stick':
+        // Arrows/LStick for movement, WASD/RStick for aiming
+        this.state.moveDirection =
+          this.state.arrowDirection !== Direction.NONE
+            ? this.state.arrowDirection
+            : gamepadDir;
+        this.state.aimDirection =
+          this.state.wasdDirection !== Direction.NONE
+            ? this.state.wasdDirection
+            : gamepadRightDir;
+        break;
+
+      case 'separated':
+        // Arrows for movement, WASD for attack direction (no auto-fire)
+        this.state.moveDirection =
+          this.state.arrowDirection !== Direction.NONE
+            ? this.state.arrowDirection
+            : gamepadDir;
+        this.state.aimDirection =
+          this.state.wasdDirection !== Direction.NONE
+            ? this.state.wasdDirection
+            : gamepadRightDir;
+        break;
+
+      case 'classic':
+      default:
+        // Both arrow and WASD control movement, aim follows last move direction
+        this.state.moveDirection = this.state.direction; // Combined direction
+        // Track last non-NONE movement direction for aim
+        if (this.state.moveDirection !== Direction.NONE) {
+          this.lastMoveDirection = this.state.moveDirection;
+        }
+        // In classic mode, aim direction is last move direction
+        this.state.aimDirection = this.lastMoveDirection;
+        break;
     }
 
     // Action from held keys or buffer

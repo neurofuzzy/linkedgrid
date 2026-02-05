@@ -1,13 +1,14 @@
 import React from 'react';
 import type { Scene } from '../packages/spartan/core/scene';
 import { GameRuntime } from '../packages/spartan/core/game-runtime';
-import { InputManager } from '../packages/spartan/input/input-manager';
+import { InputManager } from '../packages/spartan-web/input/input-manager';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
 import {
   hasColor,
   hasDensity,
   hasLiquid,
   hasHealth,
+  hasWeapon,
   hasSignalEmitter,
   hasSignalReceiver,
 } from '../packages/spartan/traits/trait-guards';
@@ -263,11 +264,24 @@ export function HUD({ runtime }: HUDProps) {
   let maxHp = 0;
 
   if (playerData && hasHealth(playerData)) {
-    hp = playerData.hp;
-    maxHp = playerData.maxHp;
+    hp = playerData.hp ?? 0;
+    maxHp = playerData.maxHp ?? 0;
   }
 
   const hpPercent = maxHp > 0 ? (hp / maxHp) * 100 : 0;
+
+  // Get weapon and ammo info
+  let equippedWeapon: string | null = null;
+  let currentAmmo = 0;
+  let hasUnlimitedAmmo = false;
+
+  if (playerData && hasWeapon(playerData)) {
+    equippedWeapon = playerData.equippedWeapon || null;
+    hasUnlimitedAmmo = playerData.unlimitedAmmo ?? false;
+    if (equippedWeapon && playerData.ammo) {
+      currentAmmo = playerData.ammo[equippedWeapon] ?? 0;
+    }
+  }
 
   // Get Score and Lives from game state (placeholder for now)
   const score = runtime.game.gameState.score ?? 0;
@@ -333,6 +347,44 @@ export function HUD({ runtime }: HUDProps) {
             />
           </div>
         </div>
+
+        {/* Weapon & Ammo Display */}
+        {equippedWeapon && (
+          <div
+            style={{
+              minWidth: '140px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#33b5cc',
+                marginBottom: '4px',
+              }}
+            >
+              WEAPON
+            </div>
+            <div
+              style={{
+                fontSize: '14px',
+                color: '#cc99ff',
+                textTransform: 'uppercase',
+              }}
+            >
+              {equippedWeapon}
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: hasUnlimitedAmmo ? '#33cc66' : (currentAmmo > 0 ? '#cccc33' : '#cc3366'),
+                marginTop: '2px',
+              }}
+            >
+              {hasUnlimitedAmmo ? '∞' : `${currentAmmo} ammo`}
+            </div>
+          </div>
+        )}
 
         {/* Score Display */}
         <div

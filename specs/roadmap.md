@@ -26,12 +26,19 @@ Phase [x] 1.25: Lives System
    - RespawnSystem delegates to GameState
    - Visual tests for lives/respawn flow
 
+Phase [x] 1.3: Weapons Pickups / Presets
+
+  - pistol, single projectile at a time: ammo 12, cooldown 8 ticks
+  - machine-gun, single projectile at a time: ammo 100, cooldown 2 ticks
+  - shotgun, no projectile, uses LinkedCell `fieldOfViewCone` to apply damage: ammo 20, cooldown 16 ticks
+
 Phase [ ] 1.5: Cleanup and Refactor
 
 [ ] 1. Assess all systems and execution flow
 [ ] 2. Assess proper usage patterns and leveraging LinkedGrid/LinkedCell API
 [ ] 3. Audit responsibility boundaries
 [ ] 4. Normalize and refactor where necessary 
+[ ] 5. Typescript error sweep and fix (incl. pre-existing)
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
@@ -41,10 +48,7 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 [x] B) Multiscene game with hazards and checkpoints for death and respawning -> `dev/games/respawn-demo.json`
 [x] C) Powerups and buffs -> `dev/games/powerups-demo.json`
 [x] D) Flammable Walls (enhanced existing demo) -> `dev/games/flammability.json`
-[ ] E) Weapons Demo with example weapon pickups:
-      i. pistol, single projectile at a time: ammo 12, cooldown 8 ticks
-      ii. machine-gun, single projectile at a time: ammo 100, cooldown 2 ticks
-      iii. shotgun, no projectile, uses LinkedCell `fieldOfViewCone` to apply damage: ammo 20, cooldown 16 ticks
+[x] E) Weapons Demo with example weapon pickups -> `dev/games/weapons-demo.json`
 
 ---
 

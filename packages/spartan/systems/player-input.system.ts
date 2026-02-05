@@ -58,7 +58,7 @@ export class PlayerInputSystem extends BaseReactiveSystem {
     const pos = context.spatial.getEntityPosition(playerId);
     if (!pos) return;
 
-    const lastDirection = this.inputProvider.getDirection();
+    const lastDirection = this.inputProvider.getMoveDirection();
 
     this.debugStats.lastDirection = lastDirection;
 

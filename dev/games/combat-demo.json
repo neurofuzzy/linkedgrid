@@ -197,6 +197,7 @@
   "tickRate": 10,
   "input": {
     "type": "keyboard",
+    "preset": "classic",
     "options": {
       "directionMode": "continuous"
     }

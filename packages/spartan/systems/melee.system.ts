@@ -73,10 +73,10 @@ export class MeleeSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Update player facing direction based on movement input.
+   * Update player facing direction based on aim input.
    */
-  private updatePlayerFacing(context: GameContext): void {
-    const dir = this.inputProvider.getDirection();
+  private updatePlayerFacing(_context: GameContext): void {
+    const dir = this.inputProvider.getAimDirection();
     if (dir !== Direction.NONE) {
       this.lastPlayerDirection = dir;
     }
@@ -95,7 +95,7 @@ export class MeleeSystem extends BaseReactiveSystem {
     if (!playerData || !hasMelee(playerData)) return;
 
     // Check if action button is pressed OR meleeDirection is explicitly set (fallback from weapon system)
-    const actionPressed = this.inputProvider.getAction();
+    const actionPressed = this.inputProvider.getPrimaryAction();
     const hasExplicitDirection = playerData.meleeDirection && playerData.meleeDirection !== Direction.NONE;
 
     if (!actionPressed && !hasExplicitDirection) return;

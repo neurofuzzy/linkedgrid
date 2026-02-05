@@ -1,0 +1,411 @@
+{
+  "name": "Weapons Demo",
+  "description": "Phase 1 Demo E: Weapon pickups showcase. Pick up weapons to equip them.\nPistol (yellow): 12 ammo, single projectile, 8 tick cooldown\nMachine-gun (orange): 100 ammo, rapid fire, 2 tick cooldown\nShotgun (brown): 20 ammo, cone damage, 16 tick cooldown\nUse arrow keys to move, Shift to fire.",
+  "scenes": [
+    {
+      "id": "weapons-arena",
+      "name": "Weapons Arena",
+      "width": 20,
+      "height": 15,
+      "entities": [
+        { "_comment": "=== PLAYER (starts with melee only) ===" },
+        {
+          "type": "player",
+          "x": 10,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "weapons-arena",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== WEAPON PICKUPS ===" },
+        {
+          "type": "weapon-pickup",
+          "x": 3,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "weaponType": "pistol",
+            "ammoAmount": 12,
+            "collectibleType": "powerup",
+            "collectibleId": "weapon-pistol",
+            "color": "#ffff00"
+          }
+        },
+        {
+          "type": "weapon-pickup",
+          "x": 10,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "weaponType": "machine-gun",
+            "ammoAmount": 100,
+            "collectibleType": "powerup",
+            "collectibleId": "weapon-machinegun",
+            "color": "#ff6600"
+          }
+        },
+        {
+          "type": "weapon-pickup",
+          "x": 16,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "weaponType": "shotgun",
+            "ammoAmount": 20,
+            "collectibleType": "powerup",
+            "collectibleId": "weapon-shotgun",
+            "color": "#8b4513"
+          }
+        },
+
+        { "_comment": "=== AMMO PICKUPS ===" },
+        {
+          "type": "ammo-pack",
+          "x": 3,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "weaponType": "pistol",
+            "ammoAmount": 12,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-pistol",
+            "color": "#cccc00"
+          }
+        },
+        {
+          "type": "ammo-pack",
+          "x": 10,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "weaponType": "machine-gun",
+            "ammoAmount": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-machinegun",
+            "color": "#cc5500"
+          }
+        },
+        {
+          "type": "ammo-pack",
+          "x": 16,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "weaponType": "shotgun",
+            "ammoAmount": 10,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-shotgun",
+            "color": "#6b3503"
+          }
+        },
+
+        { "_comment": "=== PISTOL ZONE ENEMIES (left) ===" },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 2,
+          "y": 6,
+          "layer": 6,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 2,
+          "y": 8,
+          "layer": 6,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== MACHINE-GUN ZONE ENEMIES (center) ===" },
+        {
+          "type": "enemy",
+          "x": 8,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 16,
+            "maxHp": 16,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 9,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 16,
+            "maxHp": 16,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 10,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 16,
+            "maxHp": 16,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 11,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 16,
+            "maxHp": 16,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 12,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 16,
+            "maxHp": 16,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== SHOTGUN ZONE ENEMIES (right, grouped for cone damage) ===" },
+        {
+          "type": "enemy",
+          "x": 16,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 17,
+          "y": 6,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 17,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 17,
+          "y": 8,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== HEALTH PACKS ===" },
+        {
+          "type": "health-pack",
+          "x": 5,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "healAmount": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "hp-1",
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "health-pack",
+          "x": 14,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "healAmount": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "hp-2",
+            "color": "#00ff00"
+          }
+        },
+
+        { "_comment": "=== BORDER WALLS - TOP ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 15, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 16, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 17, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 18, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 0, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - BOTTOM ===" },
+        { "type": "wall", "x": 0, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 15, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 16, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 17, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 18, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 14, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - LEFT ===" },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - RIGHT ===" },
+        { "type": "wall", "x": 19, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 19, "y": 13, "layer": 5 },
+
+        { "_comment": "=== ZONE DIVIDER WALLS ===" },
+        { "type": "wall", "x": 6, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 12, "layer": 5 }
+      ]
+    }
+  ],
+  "initialScene": "weapons-arena",
+  "systems": [],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "preset": "classic",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

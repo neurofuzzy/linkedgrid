@@ -3,6 +3,10 @@
  *
  * Processes shooting on secondary input, manages ammo, and integrates with
  * ProjectileSystem for projectile spawning. Falls back to melee when out of ammo.
+ *
+ * Supports two weapon types:
+ * - Projectile weapons: Spawn moving projectiles
+ * - Cone weapons (e.g., shotgun): Instant hit within a cone area
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
@@ -10,9 +14,11 @@ import type { InputProvider } from '../core/input-provider';
 import type { GameManager } from '../core/game-manager';
 import type { ProjectileSystem } from './projectile.system';
 import type { MeleeSystem } from './melee.system';
+import type { HealthSystem } from './health.system';
 import { Direction } from '../core/grid/direction';
-import { hasWeapon, hasMelee } from '../traits/trait-guards';
+import { hasWeapon, hasMelee, hasHealth, isEnemyTeam } from '../traits/trait-guards';
 import { DEFAULT_WEAPONS, type WeaponConfig } from '../traits/weapon.trait';
+import { GameLayers } from '../config/layers.config';
 
 /**
  * PlayerWeaponSystem - Manages ranged weapon firing for the player.
@@ -51,11 +57,15 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
   /** Track last movement direction for player aiming */
   private lastPlayerDirection: Direction = Direction.DOWN;
 
+  /** Health system reference for cone-based weapon damage */
+  private healthSystem?: HealthSystem;
+
   /** Debug stats */
   private debugStats = {
     shotsFiredThisTick: 0,
     totalShotsFired: 0,
     meleeFallbacksThisTick: 0,
+    coneAttacksThisTick: 0,
   };
 
   constructor(
@@ -63,15 +73,25 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
     private inputProvider: InputProvider,
     private projectileSystem: ProjectileSystem,
     private meleeSystem?: MeleeSystem,
-    customWeapons?: Record<string, WeaponConfig>
+    customWeapons?: Record<string, WeaponConfig>,
+    healthSystem?: HealthSystem
   ) {
     super();
     this.weaponConfigs = { ...DEFAULT_WEAPONS, ...customWeapons };
+    this.healthSystem = healthSystem;
+  }
+
+  /**
+   * Set the health system reference (for dependency injection after construction).
+   */
+  setHealthSystem(healthSystem: HealthSystem): void {
+    this.healthSystem = healthSystem;
   }
 
   update(context: GameContext): void {
     this.debugStats.shotsFiredThisTick = 0;
     this.debugStats.meleeFallbacksThisTick = 0;
+    this.debugStats.coneAttacksThisTick = 0;
 
     const currentTick = context.tick ?? 0;
 
@@ -83,10 +103,10 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Update player aiming direction based on movement input.
+   * Update player aiming direction based on aim input.
    */
   private updatePlayerAiming(): void {
-    const dir = this.inputProvider.getDirection();
+    const dir = this.inputProvider.getAimDirection();
     if (dir !== Direction.NONE) {
       this.lastPlayerDirection = dir;
     }
@@ -94,10 +114,12 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
 
   /**
    * Process player weapon fire when secondary button is pressed.
+   * Also supports twin-stick auto-fire when isAiming() returns true.
    */
   private processPlayerFire(context: GameContext, currentTick: number): void {
-    // Check if secondary button is pressed
-    if (!this.inputProvider.getSecondary()) return;
+    // Check if secondary button is pressed OR twin-stick auto-fire is active
+    const shouldFire = this.inputProvider.getSecondaryAction() || this.inputProvider.isAiming();
+    if (!shouldFire) return;
 
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId || playerId === 0) return;
@@ -139,24 +161,33 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
     // Calculate target position based on direction and range
     const delta = this.directionToDelta(fireDir);
     const range = weaponConfig.range ?? 10;
-    const targetX = pos.x + delta.dx * range;
-    const targetY = pos.y + delta.dy * range;
 
-    // Spawn projectile
-    this.projectileSystem.spawnProjectile(
-      context,
-      pos.x + delta.dx, // Start one cell in front of player
-      pos.y + delta.dy,
-      targetX,
-      targetY,
-      weaponConfig.damage,
-      {
-        speed: weaponConfig.projectileSpeed ?? 2,
-        ownerId: playerId,
-        damageType: weaponConfig.name,
-        color: weaponConfig.projectileColor ?? '#ffff00',
-      }
-    );
+    // Check if this is a cone-based weapon (like shotgun)
+    if (weaponConfig.coneSpread !== undefined) {
+      // Cone attack - instant hit within cone area
+      this.processConeAttack(context, playerId, pos, fireDir, weaponConfig);
+      this.debugStats.coneAttacksThisTick++;
+    } else {
+      // Projectile attack
+      const targetX = pos.x + delta.dx * range;
+      const targetY = pos.y + delta.dy * range;
+
+      this.projectileSystem.spawnProjectile(
+        context,
+        pos.x + delta.dx, // Start one cell in front of player
+        pos.y + delta.dy,
+        targetX,
+        targetY,
+        weaponConfig.damage,
+        {
+          speed: weaponConfig.projectileSpeed ?? 2,
+          ownerId: playerId,
+          damageType: weaponConfig.name,
+          color: weaponConfig.projectileColor ?? '#ffff00',
+        }
+      );
+      this.debugStats.shotsFiredThisTick++;
+    }
 
     // Consume ammo
     if (!playerData.unlimitedAmmo) {
@@ -166,7 +197,6 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
     // Update cooldown
     playerData.lastFireTick = currentTick;
 
-    this.debugStats.shotsFiredThisTick++;
     this.debugStats.totalShotsFired++;
   }
 
@@ -247,12 +277,91 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
     }
   }
 
+  /**
+   * Convert direction to angle in radians for fieldOfViewCone.
+   */
+  private directionToAngle(dir: Direction): number {
+    switch (dir) {
+      case Direction.UP:
+        return -Math.PI / 2; // -90 degrees (up is negative Y)
+      case Direction.DOWN:
+        return Math.PI / 2; // 90 degrees
+      case Direction.LEFT:
+        return Math.PI; // 180 degrees
+      case Direction.RIGHT:
+        return 0; // 0 degrees
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Process a cone-based attack (e.g., shotgun).
+   *
+   * Uses fieldOfViewCone to find all cells in the cone, then
+   * damages enemies in those cells.
+   */
+  private processConeAttack(
+    context: GameContext,
+    ownerId: number,
+    pos: { x: number; y: number },
+    direction: Direction,
+    weaponConfig: WeaponConfig
+  ): void {
+    const grid = context.spatial.getGrid();
+    const cell = grid.cell(pos.x, pos.y);
+    if (!cell) return;
+
+    const angle = this.directionToAngle(direction);
+    const range = weaponConfig.range ?? 4;
+    const spread = weaponConfig.coneSpread ?? Math.PI / 4;
+
+    // Get all cells in the cone
+    const coneCells = cell.fieldOfViewCone(
+      range,
+      angle,
+      spread,
+      (c) => context.spatial.blocksVision(c)
+    );
+
+    // Track which entities we've already damaged (to avoid double hits)
+    const damagedEntities = new Set<number>();
+
+    // Check each cell in the cone for enemies
+    for (const targetCell of coneCells) {
+      // Skip the cell the player is standing on
+      if (targetCell.x === pos.x && targetCell.y === pos.y) continue;
+
+      // Check ACTORS layer for enemies
+      const entityId = context.spatial.getEntityIdAt(targetCell.x, targetCell.y, GameLayers.ACTORS);
+      if (entityId === undefined || entityId === ownerId || damagedEntities.has(entityId)) continue;
+
+      const entityData = context.spatial.getEntityData(entityId);
+      if (!entityData) continue;
+
+      // Only damage enemy team entities with health
+      if (!hasHealth(entityData)) continue;
+      if (!isEnemyTeam(entityData)) continue;
+
+      // Apply damage
+      if (this.healthSystem) {
+        this.healthSystem.damage(entityId, weaponConfig.damage, weaponConfig.name);
+      } else {
+        // Direct damage if no health system
+        entityData.hp = Math.max(0, entityData.hp - weaponConfig.damage);
+      }
+
+      damagedEntities.add(entityId);
+    }
+  }
+
   public override resetState(): void {
     this.lastPlayerDirection = Direction.DOWN;
     this.debugStats = {
       shotsFiredThisTick: 0,
       totalShotsFired: 0,
       meleeFallbacksThisTick: 0,
+      coneAttacksThisTick: 0,
     };
   }
 

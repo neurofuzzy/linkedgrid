@@ -35,6 +35,7 @@
  */
 
 import { Direction } from '../../spartan/core/grid/direction';
+import { InputProvider, InputPreset } from '../../spartan/core/input-provider';
 
 /**
  * Headless input state for a single frame.
@@ -46,6 +47,9 @@ export interface HeadlessInputState {
   secondary: boolean; // Secondary button
   start: boolean; // Start button (just pressed)
   restart: boolean; // Restart button (just pressed)
+  // New fields for preset-based input
+  moveDirection: Direction;
+  aimDirection: Direction;
 }
 
 /**
@@ -56,15 +60,23 @@ export interface HeadlessInputState {
  */
 export class HeadlessInputManager {
   private enabled = false;
+  private preset: InputPreset = 'classic';
 
   // Current input state (persists across frames until changed)
   private direction: Direction = Direction.NONE;
   private action: boolean = false;
   private secondary: boolean = false;
 
+  // Separated input channels
+  private moveDirection: Direction = Direction.NONE;
+  private aimDirection: Direction = Direction.NONE;
+
   // One-shot inputs (consumed after being read once)
   private start: boolean = false;
   private restart: boolean = false;
+
+  // Track last move direction for classic mode aim
+  private lastMoveDirection: Direction = Direction.NONE;
 
   /**
    * Create a new HeadlessInputManager.
@@ -98,13 +110,67 @@ export class HeadlessInputManager {
   }
 
   /**
+   * Set the input preset for mapping.
+   */
+  setPreset(preset: InputPreset): void {
+    this.preset = preset;
+    this.lastMoveDirection = Direction.NONE;
+  }
+
+  /**
+   * Get the current input preset.
+   */
+  getPreset(): InputPreset {
+    return this.preset;
+  }
+
+  /**
    * Set direction input (like holding an arrow key).
    * Direction persists until changed or cleared.
+   * In classic mode, this sets both move and aim direction.
    *
    * @param direction - Direction to set (use Direction.NONE to clear)
    */
   setDirection(direction: Direction): void {
     this.direction = direction;
+
+    // In classic mode, direction controls movement
+    if (this.preset === 'classic') {
+      this.moveDirection = direction;
+      if (direction !== Direction.NONE) {
+        this.lastMoveDirection = direction;
+        this.aimDirection = direction;
+      }
+    }
+  }
+
+  /**
+   * Set movement direction explicitly.
+   * Used for twin-stick and separated modes where move != aim.
+   *
+   * @param direction - Direction to move
+   */
+  setMoveDirection(direction: Direction): void {
+    this.moveDirection = direction;
+    this.direction = direction; // For backwards compatibility
+
+    // Update last move direction and aim in classic mode
+    if (direction !== Direction.NONE) {
+      this.lastMoveDirection = direction;
+      if (this.preset === 'classic') {
+        this.aimDirection = direction;
+      }
+    }
+  }
+
+  /**
+   * Set aim/attack direction explicitly.
+   * Used for twin-stick and separated modes.
+   *
+   * @param direction - Direction to aim/attack
+   */
+  setAimDirection(direction: Direction): void {
+    this.aimDirection = direction;
   }
 
   /**
@@ -152,6 +218,8 @@ export class HeadlessInputManager {
     this.secondary = false;
     this.start = false;
     this.restart = false;
+    this.moveDirection = Direction.NONE;
+    this.aimDirection = Direction.NONE;
   }
 
   /**
@@ -168,7 +236,15 @@ export class HeadlessInputManager {
         secondary: false,
         start: false,
         restart: false,
+        moveDirection: Direction.NONE,
+        aimDirection: Direction.NONE,
       };
+    }
+
+    // Compute aim direction based on preset
+    let computedAimDirection = this.aimDirection;
+    if (this.preset === 'classic' && computedAimDirection === Direction.NONE) {
+      computedAimDirection = this.lastMoveDirection;
     }
 
     // Build state
@@ -178,6 +254,8 @@ export class HeadlessInputManager {
       secondary: this.secondary,
       start: this.start,
       restart: this.restart,
+      moveDirection: this.moveDirection,
+      aimDirection: computedAimDirection,
     };
 
     // Consume one-shot inputs
@@ -185,6 +263,30 @@ export class HeadlessInputManager {
     this.restart = false;
 
     return state;
+  }
+
+  /**
+   * Get an InputProvider interface for this manager.
+   * Useful for passing to game systems that expect the InputProvider interface.
+   *
+   * @returns InputProvider interface wrapping this manager
+   */
+  asInputProvider(): InputProvider {
+    return {
+      getMoveDirection: () => this.getState().moveDirection,
+      getAimDirection: () => this.getState().aimDirection,
+      getPrimaryAction: () => this.getState().action,
+      getSecondaryAction: () => this.getState().secondary,
+      getStart: () => this.getState().start,
+      getRestart: () => this.getState().restart,
+      isAiming: () => {
+        // Twin-stick mode: aiming when aim direction is set
+        if (this.preset === 'twin-stick') {
+          return this.aimDirection !== Direction.NONE;
+        }
+        return false;
+      },
+    };
   }
 
   /**
