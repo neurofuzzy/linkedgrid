@@ -263,6 +263,11 @@ export class GameEmbed {
 
     this.inputManager = manager;
     this.inputProvider = new WebInputProvider(manager);
+
+    // Apply preset from config to the provider (mapping happens in provider, not manager)
+    if (config.preset) {
+      (this.inputProvider as WebInputProvider).setPreset(config.preset);
+    }
   }
 
   /**

@@ -121,8 +121,13 @@ export class ProjectileSystem extends BaseTickedSystem {
       return;
     }
 
-    const cells = LinkedCellUtils.getLine(startCell, targetCell);
-    projectile.path = cells.map((c) => ({ x: c.x, y: c.y }));
+    // getLine excludes the start cell, so we need to prepend it
+    // This ensures collision check happens at spawn position
+    const lineCells = LinkedCellUtils.getLine(startCell, targetCell);
+    projectile.path = [
+      { x: startCell.x, y: startCell.y },
+      ...lineCells.map((c) => ({ x: c.x, y: c.y })),
+    ];
     projectile.pathIndex = 0;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;

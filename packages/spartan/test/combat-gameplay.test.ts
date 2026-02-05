@@ -218,9 +218,12 @@ describe('Combat Gameplay - Separated Mode', () => {
       expect(spatial.getEntityPosition(projId)?.x).toBe(6);
 
       // Tick: Projectile should move and hit enemy at (8,5)
-      // Path: (6,5) -> [7,5, 8,5, 9,5, 10,5]
-      // With speed 2, moves to 7,5 then 8,5, hits enemy at 8,5
-      gameLoop.tick();
+      // Path: [6,5, 7,5, 8,5, 9,5, 10,5] (includes spawn position)
+      // With speed 2:
+      // Tick 1: moves to 6,5 (spawn) then 7,5
+      // Tick 2: moves to 8,5 (hits enemy) then would move to 9,5 but destroyed
+      gameLoop.tick(); // Move to 7,5
+      gameLoop.tick(); // Move to 8,5, hit enemy
 
       // Enemy should have taken damage
       const enemyData = spatial.getEntityData(enemyId);
@@ -278,15 +281,18 @@ describe('Combat Gameplay - Separated Mode', () => {
       }
       expect(projectileId).toBeDefined();
 
-      // Check projectile position and data after tick 1
+      // Check projectile position and data after fire tick
+      // Projectile was just spawned at (6,5), projectile system hasn't moved it yet
       const projPos1 = spatial.getEntityPosition(projectileId!);
       const projData = spatial.getEntityData(projectileId!);
-      expect(projPos1?.x).toBe(6); // Should be at (6,5) after tick 1
+      expect(projPos1?.x).toBe(6); // At spawn position (6,5)
       expect((projData as any)?.damage).toBe(15); // Pistol damage
 
-      // Tick until projectile reaches enemy
-      // With speed 2, projectile moves from (6,5) to (7,5) to (8,5) where enemy is
-      gameLoop.tick();
+      // Tick to move projectile - with speed 2 and path [6,5, 7,5, 8,5, ...]
+      // Tick 2: moves from 6,5 to 7,5
+      // Tick 3: moves from 7,5 to 8,5 (hits enemy)
+      gameLoop.tick(); // Move to 7,5
+      gameLoop.tick(); // Move to 8,5, hit enemy
 
       // Check enemy health - should have taken 15 damage
       const enemyDataAfter = spatial.getEntityData(enemyId);

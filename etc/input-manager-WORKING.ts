@@ -890,9 +890,17 @@ export class InputManager {
     }
 
     // Shoot direction (WASD for twin-stick shooters)
-    // Check both keysDown AND keysJustPressed to capture quick taps
-    // This must be consistent with getCurrentDirection() to avoid movement bugs
-    this.state.shootDirection = this.getWasdDirection();
+    if (this.keysDown.has('w') || this.keysDown.has('W')) {
+      this.state.shootDirection = Direction.UP;
+    } else if (this.keysDown.has('s') || this.keysDown.has('S')) {
+      this.state.shootDirection = Direction.DOWN;
+    } else if (this.keysDown.has('a') || this.keysDown.has('A')) {
+      this.state.shootDirection = Direction.LEFT;
+    } else if (this.keysDown.has('d') || this.keysDown.has('D')) {
+      this.state.shootDirection = Direction.RIGHT;
+    } else {
+      this.state.shootDirection = Direction.NONE;
+    }
 
     // Action from held keys or buffer
     this.state.action =
@@ -990,27 +998,6 @@ export class InputManager {
     if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
     if (this.keysDown.has('d') || this.keysDown.has('D'))
       return Direction.RIGHT;
-    return Direction.NONE;
-  }
-
-  /**
-   * Get WASD direction from both keysDown AND keysJustPressed.
-   * This must be consistent with getCurrentDirection() to avoid movement bugs
-   * where a quick WASD tap gets captured by direction but not shootDirection.
-   */
-  private getWasdDirection(): Direction {
-    // Check keysJustPressed first (for quick taps)
-    for (const key of this.keysJustPressed) {
-      if (key === 'w' || key === 'W') return Direction.UP;
-      if (key === 's' || key === 'S') return Direction.DOWN;
-      if (key === 'a' || key === 'A') return Direction.LEFT;
-      if (key === 'd' || key === 'D') return Direction.RIGHT;
-    }
-    // Fall back to keysDown (for held keys)
-    if (this.keysDown.has('w') || this.keysDown.has('W')) return Direction.UP;
-    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DOWN;
-    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
-    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RIGHT;
     return Direction.NONE;
   }
 

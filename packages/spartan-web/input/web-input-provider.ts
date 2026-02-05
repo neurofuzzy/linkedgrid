@@ -1,23 +1,33 @@
 import { Direction } from '../../spartan/core/grid/direction';
 import { InputProvider, InputPreset } from '../../spartan/core/input-provider';
-import { InputManager, InputConfig, InputState } from './input-manager';
+import { InputManager, InputConfig } from './input-manager';
 
 /**
  * Web-based implementation of InputProvider.
  *
  * Wraps InputManager to provide the InputProvider interface for game systems.
- * Supports preset-based input mapping (classic, twin-stick, separated).
+ * This is a thin adapter that maps the InputManager's state to the InputProvider interface.
  *
- * IMPORTANT: Caches getState() per tick to prevent multiple calls from
- * draining one-shot events (like keypresses). Call beginFrame() at the
- * start of each game tick to refresh the cache.
+ * IMPORTANT: This provider calls getState() once per frame via beginFrame().
+ * All getter methods read from the cached state to ensure consistency within a frame.
  */
 export class WebInputProvider implements InputProvider {
   readonly manager: InputManager;
   private ownsManager: boolean;
+  private preset: InputPreset = 'classic';
 
-  /** Cached input state for current frame - prevents multiple getState() calls from draining events */
-  private cachedState: InputState | null = null;
+  /** Last non-NONE movement direction for aim tracking in classic mode */
+  private lastMoveDirection: Direction = Direction.NONE;
+
+  /** Cached state for current frame */
+  private frameState: {
+    direction: Direction;
+    shootDirection: Direction;
+    action: boolean;
+    secondary: boolean;
+    start: boolean;
+    restart: boolean;
+  } | null = null;
 
   /**
    * Create a WebInputProvider with an existing InputManager (for dependency injection).
@@ -29,7 +39,7 @@ export class WebInputProvider implements InputProvider {
    * Create a WebInputProvider with a new InputManager.
    * @param container - DOM container for input
    * @param canvas - Canvas element for mouse input
-   * @param config - Input configuration (including preset)
+   * @param config - Input configuration
    */
   constructor(container: HTMLElement | null, canvas: HTMLCanvasElement | null, config?: InputConfig);
 
@@ -38,16 +48,22 @@ export class WebInputProvider implements InputProvider {
     canvas?: HTMLCanvasElement | null,
     config?: InputConfig
   ) {
-    if (managerOrContainer instanceof InputManager) {
+    // Use duck typing to check if this is an InputManager
+    // (instanceof can fail in test environments due to module loading)
+    if (managerOrContainer && typeof (managerOrContainer as InputManager).getState === 'function') {
       // Dependency injection: use existing manager
-      this.manager = managerOrContainer;
+      this.manager = managerOrContainer as InputManager;
       this.ownsManager = false;
     } else {
-      // Create new manager
-      this.manager = new InputManager(managerOrContainer, canvas ?? null, config);
+      // Create new manager with container (can be null for headless)
+      this.manager = new InputManager(
+        managerOrContainer as HTMLElement | null,
+        canvas ?? null,
+        config
+      );
       this.ownsManager = true;
-      // Auto-enable all input listeners for better usability
-      this.manager.enableKeyboard().enableMouse().enableGamepad();
+      // Auto-enable keyboard for better usability
+      this.manager.enableKeyboard();
     }
   }
 
@@ -56,97 +72,127 @@ export class WebInputProvider implements InputProvider {
   /**
    * Begin a new input frame. Call this at the start of each game tick.
    * Consumes the input state from the manager and caches it for this frame.
-   *
-   * This should be called once per tick, before any systems run.
-   * It uses getState() which properly consumes buffers and one-shot events.
    */
   beginFrame(): void {
-    // Consume state once per frame using getState()
-    this.cachedState = this.manager.getState();
+    const state = this.manager.getState();
+    this.frameState = {
+      direction: state.direction,
+      shootDirection: state.shootDirection,
+      action: state.action,
+      secondary: state.secondary,
+      start: state.start,
+      restart: state.restart,
+    };
+
+    // Track last movement direction for classic mode aim
+    if (this.frameState.direction !== Direction.NONE) {
+      this.lastMoveDirection = this.frameState.direction;
+    }
   }
 
   /**
-   * Get the cached input state for this frame.
-   *
-   * If beginFrame() hasn't been called yet, uses peekState() which
-   * reads current state without consuming one-shot events.
+   * Get frame state, calling beginFrame() if needed.
    */
-  private getFrameState(): InputState {
-    if (this.cachedState === null) {
-      // Fallback if beginFrame() wasn't called - use peekState to avoid draining
-      this.cachedState = this.manager.peekState();
+  private getFrame() {
+    if (this.frameState === null) {
+      this.beginFrame();
     }
-    return this.cachedState;
+    return this.frameState!;
   }
 
-  // === New InputProvider Interface ===
+  // === InputProvider Interface ===
 
   /**
    * Get the movement direction.
-   * Uses preset-based mapping from InputManager.
+   * - Classic: Uses combined direction (arrows + WASD)
+   * - Twin-stick/Separated: Uses arrow keys only (direction minus WASD)
    */
   getMoveDirection(): Direction {
-    return this.getFrameState().moveDirection;
+    const frame = this.getFrame();
+
+    if (this.preset === 'classic') {
+      return frame.direction;
+    }
+
+    // For twin-stick and separated: arrows = movement, WASD = aim/fire
+    // shootDirection is ONLY set from WASD keys (keysDown)
+    // If shootDirection matches direction, it means WASD was pressed (not arrows)
+    // If shootDirection is NONE but direction is set, it could be arrows OR
+    // a WASD key that was released (in keysJustPressed but not keysDown)
+    //
+    // The safest heuristic: only move if direction differs from shootDirection
+    // OR if both are NONE (no input)
+    if (frame.shootDirection !== Direction.NONE) {
+      // WASD is being held - check if direction differs (arrows also pressed)
+      if (frame.direction !== frame.shootDirection) {
+        // Both arrows and WASD pressed with different directions - arrows win for movement
+        return frame.direction;
+      }
+      // direction == shootDirection: only WASD pressed, no movement
+      return Direction.NONE;
+    }
+
+    // shootDirection is NONE - no WASD held currently
+    // But direction might still be from a WASD key in keysJustPressed (released same frame)
+    // We can't distinguish this reliably, but we can check if the raw key state
+    // indicates WASD was the source. Since we don't have access to raw keys here,
+    // we assume if shootDirection is NONE, direction came from arrows.
+    // This is safe because shootDirection uses keysDown which persists while held.
+    return frame.direction;
   }
 
   /**
    * Get the aiming/attack direction.
-   * Uses preset-based mapping from InputManager.
+   * - Classic: Last movement direction
+   * - Twin-stick/Separated: WASD direction (shootDirection)
    */
   getAimDirection(): Direction {
-    return this.getFrameState().aimDirection;
+    const frame = this.getFrame();
+
+    if (this.preset === 'classic') {
+      return this.lastMoveDirection;
+    }
+
+    // Twin-stick and separated use shootDirection (WASD)
+    return frame.shootDirection;
   }
 
   /**
    * Check if primary action button is pressed.
-   * Maps to: Space, Enter, left click, gamepad A button.
    */
   getPrimaryAction(): boolean {
-    return this.getFrameState().action;
+    return this.getFrame().action;
   }
 
   /**
    * Check if secondary action button is pressed.
-   * Maps to: Shift, right-click, gamepad B button.
    */
   getSecondaryAction(): boolean {
-    return this.getFrameState().secondary;
+    return this.getFrame().secondary;
   }
 
   /**
    * Check if start/pause button is pressed.
    */
   getStart(): boolean {
-    return this.getFrameState().start;
+    return this.getFrame().start;
   }
 
   /**
    * Check if restart button is pressed.
    */
   getRestart(): boolean {
-    return this.getFrameState().restart;
+    return this.getFrame().restart;
   }
 
   /**
    * Check if player is actively aiming.
-   *
-   * In twin-stick and separated modes, this returns true when aim direction is set,
-   * which triggers auto-fire behavior in combat systems.
-   * - Twin-stick: WASD sets aim direction, auto-fires while aiming
-   * - Separated: WASD fires in that direction immediately (W fires up, etc.)
-   *
-   * In classic mode, this returns false (movement controls aiming).
+   * In twin-stick and separated modes, returns true when aim direction is set.
    */
   isAiming(): boolean {
-    const preset = this.manager.getPreset();
-
-    // Twin-stick and separated modes: aiming when aim direction is set
-    // This allows WASD to auto-fire in the pressed direction
-    if (preset === 'twin-stick' || preset === 'separated') {
-      return this.getFrameState().aimDirection !== Direction.NONE;
+    if (this.preset === 'twin-stick' || this.preset === 'separated') {
+      return this.getAimDirection() !== Direction.NONE;
     }
-
-    // Classic mode: not auto-aiming (aim follows movement)
     return false;
   }
 
@@ -156,7 +202,8 @@ export class WebInputProvider implements InputProvider {
    * Set the input preset for this provider.
    */
   setPreset(preset: InputPreset): this {
-    this.manager.setPreset(preset);
+    this.preset = preset;
+    this.lastMoveDirection = Direction.NONE;
     return this;
   }
 
@@ -164,13 +211,12 @@ export class WebInputProvider implements InputProvider {
    * Get the current input preset.
    */
   getPreset(): InputPreset {
-    return this.manager.getPreset();
+    return this.preset;
   }
 
   // === Lifecycle ===
 
   destroy(): void {
-    // Only destroy the manager if we own it
     if (this.ownsManager) {
       this.manager.destroy();
     }

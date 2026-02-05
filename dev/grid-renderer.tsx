@@ -9,6 +9,7 @@ import {
   hasLiquid,
   hasHealth,
   hasWeapon,
+  hasMelee,
   hasSignalEmitter,
   hasSignalReceiver,
 } from '../packages/spartan/traits/trait-guards';
@@ -285,6 +286,7 @@ export function HUD({ runtime }: HUDProps) {
   let equippedWeapon: string | null = null;
   let currentAmmo = 0;
   let hasUnlimitedAmmo = false;
+  let canMelee = false;
 
   if (playerData && hasWeapon(playerData)) {
     equippedWeapon = playerData.equippedWeapon || null;
@@ -293,6 +295,15 @@ export function HUD({ runtime }: HUDProps) {
       currentAmmo = playerData.ammo[equippedWeapon] ?? 0;
     }
   }
+
+  if (playerData && hasMelee(playerData)) {
+    canMelee = true;
+  }
+
+  // Determine display weapon: show MELEE if no weapon, no ammo, or weapon not set
+  const displayWeapon = (equippedWeapon && (currentAmmo > 0 || hasUnlimitedAmmo))
+    ? equippedWeapon
+    : (canMelee ? 'MELEE' : null);
 
   // Get Score and Lives from game state (placeholder for now)
   const score = runtime.game.gameState.score ?? 0;
@@ -368,7 +379,7 @@ export function HUD({ runtime }: HUDProps) {
         </div>
 
         {/* Weapon & Ammo Display - compact */}
-        {equippedWeapon && (
+        {displayWeapon && (
           <div style={{ textAlign: 'center', minWidth: isVerySmallGrid ? '50px' : '70px' }}>
             <div
               style={{
@@ -382,21 +393,23 @@ export function HUD({ runtime }: HUDProps) {
             <div
               style={{
                 fontSize: isSmallGrid ? '11px' : '12px',
-                color: '#cc99ff',
+                color: displayWeapon === 'MELEE' ? '#ff9966' : '#cc99ff',
                 textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
               }}
             >
-              {equippedWeapon}
+              {displayWeapon}
             </div>
             <div
               style={{
                 fontSize: isSmallGrid ? '9px' : '10px',
-                color: hasUnlimitedAmmo ? '#33cc66' : (currentAmmo > 0 ? '#cccc33' : '#cc3366'),
+                color: displayWeapon === 'MELEE'
+                  ? '#888888'
+                  : (hasUnlimitedAmmo ? '#33cc66' : (currentAmmo > 0 ? '#cccc33' : '#cc3366')),
                 marginTop: '1px',
               }}
             >
-              {hasUnlimitedAmmo ? '∞' : currentAmmo}
+              {displayWeapon === 'MELEE' ? '--' : (hasUnlimitedAmmo ? '∞' : currentAmmo)}
             </div>
           </div>
         )}

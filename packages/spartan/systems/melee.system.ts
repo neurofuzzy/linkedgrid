@@ -10,7 +10,7 @@ import type { InputProvider } from '../core/input-provider';
 import type { GameManager } from '../core/game-manager';
 import type { HealthSystem } from './health.system';
 import { Direction } from '../core/grid/direction';
-import { hasMelee, hasHealth, isPlayer, hasTeam, isPlayerTeam, isEnemyTeam } from '../traits/trait-guards';
+import { hasMelee, hasHealth, isPlayer, hasTeam, isPlayerTeam, isEnemyTeam, hasWeapon } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
 
 /**
@@ -39,8 +39,8 @@ import { GameLayers } from '../config/layers.config';
 export class MeleeSystem extends BaseReactiveSystem {
   readonly executionPhase = 'pre-commit' as const;
 
-  /** Track last movement direction for player facing */
-  private lastPlayerDirection: Direction = Direction.NONE;
+  /** Track last movement direction for player facing (default DOWN so melee works at start) */
+  private lastPlayerDirection: Direction = Direction.DOWN;
 
   /** Debug stats */
   private debugStats = {
@@ -83,7 +83,8 @@ export class MeleeSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Process player melee attacks when action button is pressed or meleeDirection is set.
+   * Process player melee attacks when action button is pressed, meleeDirection is set,
+   * or isAiming() returns true (for separated mode WASD attacks).
    *
    * meleeDirection can be set by other systems (like PlayerWeaponSystem for fallback).
    */
@@ -98,7 +99,30 @@ export class MeleeSystem extends BaseReactiveSystem {
     const actionPressed = this.inputProvider.getPrimaryAction();
     const hasExplicitDirection = playerData.meleeDirection && playerData.meleeDirection !== Direction.NONE;
 
-    if (!actionPressed && !hasExplicitDirection) return;
+    // In separated/twin-stick mode, isAiming() returns true when WASD is pressed
+    // This allows WASD to trigger melee directly if no weapon is equipped or out of ammo
+    const aimingForMelee = this.inputProvider.isAiming();
+
+    // If isAiming is true but player has a weapon with ammo, let weapon system handle it
+    // Only trigger melee if:
+    // 1. Space pressed (actionPressed), OR
+    // 2. Explicit meleeDirection set (from fallback), OR
+    // 3. isAiming AND (no weapon equipped OR out of ammo)
+    let shouldMelee = actionPressed || hasExplicitDirection;
+
+    if (!shouldMelee && aimingForMelee) {
+      // Check if player has weapon with ammo - if so, weapon system should handle
+      const hasWorkingWeapon = hasWeapon(playerData) &&
+        playerData.equippedWeapon &&
+        (playerData.unlimitedAmmo || (playerData.ammo?.[playerData.equippedWeapon] ?? 0) > 0);
+
+      if (!hasWorkingWeapon) {
+        // No weapon or out of ammo - melee on WASD
+        shouldMelee = true;
+      }
+    }
+
+    if (!shouldMelee) return;
 
     // Check cooldown (undefined means never attacked, so allow first attack)
     const lastAttack = playerData.lastMeleeAttackTick;
