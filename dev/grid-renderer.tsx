@@ -308,6 +308,8 @@ export function HUD({ runtime }: HUDProps) {
   // Get Score and Lives from game state (placeholder for now)
   const score = runtime.game.gameState.score ?? 0;
   const lives = runtime.game.gameState.lives ?? 3;
+  // Ensure lives is a valid non-negative integer to prevent RangeError
+  const safeLives = Math.max(0, Math.floor(lives));
 
   // HP bar color based on percentage
   let hpColor = '#33cccc'; // Desaturated Cyan (Healthy)
@@ -457,13 +459,13 @@ export function HUD({ runtime }: HUDProps) {
             }}
           >
             {isVerySmallGrid ? (
-              <span>{lives}</span>
+              <span>{safeLives}</span>
             ) : (
-              Array.from({ length: Math.min(lives, 5) }).map((_, i) => (
+              Array.from({ length: Math.min(safeLives, 5) }).map((_, i) => (
                 <span key={i}>♥</span>
               ))
             )}
-            {!isVerySmallGrid && lives > 5 && <span>+{lives - 5}</span>}
+            {!isVerySmallGrid && safeLives > 5 && <span>+{safeLives - 5}</span>}
           </div>
         </div>
       </div>

@@ -114,7 +114,11 @@ export class ProjectileSystem extends BaseTickedSystem {
     const clampedTargetX = Math.max(0, Math.min(grid.width - 1, projectile.targetX));
     const clampedTargetY = Math.max(0, Math.min(grid.height - 1, projectile.targetY));
 
-    const targetCell = grid.cell(clampedTargetX, clampedTargetY);
+    // Update projectile target with clamped values for consistency
+    projectile.targetX = clampedTargetX;
+    projectile.targetY = clampedTargetY;
+
+    const targetCell = grid.cell(projectile.targetX, projectile.targetY);
 
     if (!targetCell) {
       projectile.path = [];

@@ -387,14 +387,14 @@ export class FloorEffectSystem extends BaseTickedSystem {
         hp: newHp,
       });
 
-      // Update timing state
-      state.lastDamageTime = currentTick;
-
       // Remove entity if dead
       if (newHp <= 0) {
         context.spatial.remove(entityData.id);
       }
     }
+
+    // Always update timing state to enforce cadence
+    state.lastDamageTime = currentTick;
   }
 
   /**

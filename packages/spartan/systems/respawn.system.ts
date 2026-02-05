@@ -88,9 +88,14 @@ export class RespawnSystem extends BaseReactiveSystem {
   ) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
+
     // Initialize GameState lives from config
-    this.gameManager.gameState.maxLives = this.config.maxLives;
-    this.gameManager.gameState.lives = this.config.maxLives;
+    // Note: We always set lives from config on construction.
+    // To preserve lives across scene reloads, the caller should manage
+    // gameState persistence externally before creating new RespawnSystem.
+    const gs = this.gameManager.gameState;
+    gs.maxLives = this.config.maxLives;
+    gs.lives = this.config.maxLives;
   }
 
   update(context: GameContext): void {

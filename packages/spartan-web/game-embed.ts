@@ -122,11 +122,12 @@ export class GameEmbed {
     }
 
     // Build input configuration by merging gameConfig.input with embedConfig.input
+    // Spread options first to prevent them from overriding type/preset
     const inputConfig: GameEmbedInputConfig = {
       ...this.embedConfig.input,
+      ...(gameConfig.input?.options as Record<string, unknown> ?? {}),
       type: gameConfig.input?.type ?? this.embedConfig.input?.type ?? 'keyboard',
       preset: gameConfig.input?.preset ?? this.embedConfig.input?.preset ?? 'classic',
-      ...(gameConfig.input?.options as Record<string, unknown> ?? {}),
     };
 
     // Create input manager and provider

@@ -174,13 +174,14 @@ visual('game over when no lives remaining', {
       livesRemaining: gameManager.gameState.lives,
     };
   },
-  assert: ({ expect }) => {
-    const result = (globalThis as any).visualTests?.at(-1)?.__testResult ||
-      ((globalThis as any).__visualTestContext?.spatial as any)?.__testResult;
+  assert: ({ expect, spatial }) => {
+    const result = (spatial as any)?.__testResult;
 
-    // Get result from spatial context
+    // Get result from spatial context and verify game over was called
     expect('Game over callback was called', () => {
-      // Access through the test context
+      if (!result?.gameOverCalled) {
+        throw new Error('Expected onGameOver to be called');
+      }
     });
   },
 });

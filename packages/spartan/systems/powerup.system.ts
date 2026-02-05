@@ -313,8 +313,9 @@ export class PowerupSystem extends BaseReactiveSystem {
       weaponData.ammo[weaponType] = 0;
     }
 
-    // Add starting ammo
-    weaponData.ammo[weaponType] += ammoAmount;
+    // Add starting ammo (defensive - normalize to non-negative integer)
+    const normalizedAmmo = Number.isFinite(ammoAmount) ? Math.max(0, Math.floor(ammoAmount)) : 0;
+    weaponData.ammo[weaponType] += normalizedAmmo;
 
     return true;
   }

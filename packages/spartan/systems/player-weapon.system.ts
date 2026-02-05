@@ -347,8 +347,14 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
       if (this.healthSystem) {
         this.healthSystem.damage(entityId, weaponConfig.damage, weaponConfig.name);
       } else {
-        // Direct damage if no health system
-        entityData.hp = Math.max(0, entityData.hp - weaponConfig.damage);
+        // Direct damage if no health system - persist through entity store
+        const newHp = Math.max(0, entityData.hp - weaponConfig.damage);
+        context.gameManager.gameState.entityStore.setData(entityId, { hp: newHp });
+
+        // Basic cleanup if HealthSystem is not wired
+        if (newHp <= 0) {
+          context.spatial.remove(entityId);
+        }
       }
 
       damagedEntities.add(entityId);
