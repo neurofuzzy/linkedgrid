@@ -1,6 +1,6 @@
 {
   "name": "Combat Demo",
-  "description": "Phase 1 Demo A: Single player melee and ranged combat.\nArrow keys: Move | WASD: Attack direction | Space: Melee | Shift: Fire weapon",
+  "description": "Phase 1 Demo A: Single player melee and ranged combat.\nArrow keys: Move | WASD: Fire in that direction | Space: Melee",
   "scenes": [
     {
       "id": "arena",

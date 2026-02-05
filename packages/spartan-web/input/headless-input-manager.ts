@@ -269,20 +269,36 @@ export class HeadlessInputManager {
    * Get an InputProvider interface for this manager.
    * Useful for passing to game systems that expect the InputProvider interface.
    *
+   * The returned InputProvider caches state per frame to prevent
+   * multiple getState() calls from draining one-shot events.
+   *
    * @returns InputProvider interface wrapping this manager
    */
   asInputProvider(): InputProvider {
+    let cachedState: HeadlessInputState | null = null;
+
+    const getFrameState = (): HeadlessInputState => {
+      if (cachedState === null) {
+        cachedState = this.getState();
+      }
+      return cachedState;
+    };
+
     return {
-      getMoveDirection: () => this.getState().moveDirection,
-      getAimDirection: () => this.getState().aimDirection,
-      getPrimaryAction: () => this.getState().action,
-      getSecondaryAction: () => this.getState().secondary,
-      getStart: () => this.getState().start,
-      getRestart: () => this.getState().restart,
+      beginFrame: () => {
+        cachedState = this.getState();
+      },
+      getMoveDirection: () => getFrameState().moveDirection,
+      getAimDirection: () => getFrameState().aimDirection,
+      getPrimaryAction: () => getFrameState().action,
+      getSecondaryAction: () => getFrameState().secondary,
+      getStart: () => getFrameState().start,
+      getRestart: () => getFrameState().restart,
       isAiming: () => {
-        // Twin-stick mode: aiming when aim direction is set
-        if (this.preset === 'twin-stick') {
-          return this.aimDirection !== Direction.NONE;
+        // Twin-stick and separated modes: aiming when aim direction is set
+        // This allows WASD to auto-fire in the pressed direction
+        if (this.preset === 'twin-stick' || this.preset === 'separated') {
+          return getFrameState().aimDirection !== Direction.NONE;
         }
         return false;
       },

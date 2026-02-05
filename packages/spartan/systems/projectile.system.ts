@@ -104,9 +104,19 @@ export class ProjectileSystem extends BaseTickedSystem {
     if (!pos) return;
 
     const startCell = context.spatial.grid.cell(pos.x, pos.y);
-    const targetCell = context.spatial.grid.cell(projectile.targetX, projectile.targetY);
+    if (!startCell) {
+      projectile.path = [];
+      return;
+    }
 
-    if (!startCell || !targetCell) {
+    // Clamp target coordinates to grid bounds to ensure valid path
+    const grid = context.spatial.grid;
+    const clampedTargetX = Math.max(0, Math.min(grid.width - 1, projectile.targetX));
+    const clampedTargetY = Math.max(0, Math.min(grid.height - 1, projectile.targetY));
+
+    const targetCell = grid.cell(clampedTargetX, clampedTargetY);
+
+    if (!targetCell) {
       projectile.path = [];
       return;
     }

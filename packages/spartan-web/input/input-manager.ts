@@ -649,8 +649,25 @@ export class InputManager {
 
   /**
    * Get direction from arrow keys only.
+   * In tap mode, checks keysJustPressed to capture quick taps.
    */
   private getArrowDirection(): Direction {
+    // In TAP MODE: Check keysJustPressed first to catch quick taps
+    if (this.config.directionMode === 'tap') {
+      if (this.keysJustPressed.has('ArrowUp')) return Direction.UP;
+      if (this.keysJustPressed.has('ArrowDown')) return Direction.DOWN;
+      if (this.keysJustPressed.has('ArrowLeft')) return Direction.LEFT;
+      if (this.keysJustPressed.has('ArrowRight')) return Direction.RIGHT;
+      return Direction.NONE;
+    }
+
+    // CONTINUOUS MODE: Check keysJustPressed first, then fall back to keysDown
+    if (this.keysJustPressed.has('ArrowUp') && this.keysDown.has('ArrowUp')) return Direction.UP;
+    if (this.keysJustPressed.has('ArrowDown') && this.keysDown.has('ArrowDown')) return Direction.DOWN;
+    if (this.keysJustPressed.has('ArrowLeft') && this.keysDown.has('ArrowLeft')) return Direction.LEFT;
+    if (this.keysJustPressed.has('ArrowRight') && this.keysDown.has('ArrowRight')) return Direction.RIGHT;
+
+    // Fall back to held keys
     if (this.keysDown.has('ArrowUp')) return Direction.UP;
     if (this.keysDown.has('ArrowDown')) return Direction.DOWN;
     if (this.keysDown.has('ArrowLeft')) return Direction.LEFT;
@@ -660,12 +677,39 @@ export class InputManager {
 
   /**
    * Get direction from WASD keys only.
+   * In tap mode, checks keysJustPressed to capture quick taps.
    */
   private getWasdDirection(): Direction {
-    if (this.keysDown.has('w') || this.keysDown.has('W')) return Direction.UP;
-    if (this.keysDown.has('s') || this.keysDown.has('S')) return Direction.DOWN;
-    if (this.keysDown.has('a') || this.keysDown.has('A')) return Direction.LEFT;
-    if (this.keysDown.has('d') || this.keysDown.has('D')) return Direction.RIGHT;
+    // In TAP MODE: Check keysJustPressed first to catch quick taps
+    if (this.config.directionMode === 'tap') {
+      if (this.keysJustPressed.has('w') || this.keysJustPressed.has('W')) return Direction.UP;
+      if (this.keysJustPressed.has('s') || this.keysJustPressed.has('S')) return Direction.DOWN;
+      if (this.keysJustPressed.has('a') || this.keysJustPressed.has('A')) return Direction.LEFT;
+      if (this.keysJustPressed.has('d') || this.keysJustPressed.has('D')) return Direction.RIGHT;
+      return Direction.NONE;
+    }
+
+    // CONTINUOUS MODE: Check keysJustPressed first, then fall back to keysDown
+    const wPressed = this.keysJustPressed.has('w') || this.keysJustPressed.has('W');
+    const sPressed = this.keysJustPressed.has('s') || this.keysJustPressed.has('S');
+    const aPressed = this.keysJustPressed.has('a') || this.keysJustPressed.has('A');
+    const dPressed = this.keysJustPressed.has('d') || this.keysJustPressed.has('D');
+
+    const wDown = this.keysDown.has('w') || this.keysDown.has('W');
+    const sDown = this.keysDown.has('s') || this.keysDown.has('S');
+    const aDown = this.keysDown.has('a') || this.keysDown.has('A');
+    const dDown = this.keysDown.has('d') || this.keysDown.has('D');
+
+    if (wPressed && wDown) return Direction.UP;
+    if (sPressed && sDown) return Direction.DOWN;
+    if (aPressed && aDown) return Direction.LEFT;
+    if (dPressed && dDown) return Direction.RIGHT;
+
+    // Fall back to held keys
+    if (wDown) return Direction.UP;
+    if (sDown) return Direction.DOWN;
+    if (aDown) return Direction.LEFT;
+    if (dDown) return Direction.RIGHT;
     return Direction.NONE;
   }
 
@@ -947,6 +991,22 @@ export class InputManager {
     this.state.mouse.wheelDeltaY = 0;
 
     return result;
+  }
+
+  /**
+   * Get current state without consuming one-shot events.
+   *
+   * Use this for multiple reads within the same frame when you need
+   * consistent state. The first call should use getState() to consume
+   * buffers, subsequent calls can use peekState().
+   *
+   * @returns Current input state (does not clear one-shot events)
+   */
+  peekState(): InputState {
+    // Update state without consuming from buffer
+    this.updateStateFromEvents(false);
+    // Return a copy without clearing one-shot events
+    return { ...this.state };
   }
 
   /**

@@ -129,18 +129,23 @@ export class GameRuntime {
   public inputManager?: unknown;
   public inputCleanup?: () => void;
 
+  // Optional input provider for beginFrame() calls
+  private inputProvider?: InputProvider;
+
   private constructor(
     game: GameManager,
     systems: GameSystem[],
     tickRate: number,
     initialConfig: GameRuntimeConfig,
-    initialTickCount = 0
+    initialTickCount = 0,
+    inputProvider?: InputProvider
   ) {
     this.game = game;
     this.systems = systems;
     this.tickInterval = 1000 / tickRate;
     this.initialConfig = initialConfig;
     this._tickCount = initialTickCount;
+    this.inputProvider = inputProvider;
 
     // Initialize loop for active scene
     const activeScene = game.sceneManager.getActiveScene();
@@ -374,7 +379,7 @@ export class GameRuntime {
       tickRate: config.tickRate || 10,
     };
 
-    return new GameRuntime(game, systems, config.tickRate || 10, runtimeConfig);
+    return new GameRuntime(game, systems, config.tickRate || 10, runtimeConfig, 0, inputProvider);
   }
 
   /**
@@ -507,6 +512,11 @@ export class GameRuntime {
    */
   tick(): void {
     const sceneBefore = this.game.sceneManager.getActiveScene();
+
+    // 0. Begin input frame (caches input state for this tick)
+    if (this.inputProvider?.beginFrame) {
+      this.inputProvider.beginFrame();
+    }
 
     // 1. Run game loop (systems stage intents)
     this.gameLoop.tick();
@@ -667,6 +677,11 @@ export class GameRuntime {
     while (this.accumulator >= this.tickInterval) {
       // Call internal tick logic (without double-incrementing count)
       const sceneBefore = this.game.sceneManager.getActiveScene();
+
+      // 0. Begin input frame (caches input state for this tick)
+      if (this.inputProvider?.beginFrame) {
+        this.inputProvider.beginFrame();
+      }
 
       // 1. Run game loop
       this.gameLoop.tick();

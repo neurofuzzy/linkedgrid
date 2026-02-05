@@ -107,4 +107,15 @@ export interface InputProvider {
    * @returns true if actively aiming (for auto-fire in twin-stick mode)
    */
   isAiming(): boolean;
+
+  /**
+   * Begin a new input frame (optional).
+   *
+   * Called at the start of each game tick to refresh input state.
+   * Implementations should use this to cache input for the current frame,
+   * preventing multiple reads from draining one-shot events.
+   *
+   * This method is optional for backward compatibility.
+   */
+  beginFrame?(): void;
 }
