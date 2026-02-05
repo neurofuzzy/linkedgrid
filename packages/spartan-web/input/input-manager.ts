@@ -1033,8 +1033,11 @@ export class InputManager {
     this.state.restart =
       this.keysJustPressed.has('r') || this.keysJustPressed.has('R');
 
-    // Secondary action
-    this.state.secondary = this.mouseRightDown || this.state.gamepad.secondary;
+    // Secondary action (Shift key, right-click, or gamepad B button)
+    this.state.secondary =
+      this.keysDown.has('Shift') ||
+      this.mouseRightDown ||
+      this.state.gamepad.secondary;
 
     // Mouse state
     const cellTotal = this.config.cellSize! + this.config.cellGap!;

@@ -1,6 +1,6 @@
 {
   "name": "Weapons Demo",
-  "description": "Phase 1 Demo E: Weapon pickups showcase. Pick up weapons to equip them.\nPistol (yellow): 12 ammo, single projectile, 8 tick cooldown\nMachine-gun (orange): 100 ammo, rapid fire, 2 tick cooldown\nShotgun (brown): 20 ammo, cone damage, 16 tick cooldown\nUse arrow keys to move, Shift to fire.",
+  "description": "Phase 1 Demo E: Weapon pickups showcase. Pick up weapons to equip them.\nPistol (yellow): 12 ammo, single projectile, 8 tick cooldown\nMachine-gun (orange): 100 ammo, rapid fire, 2 tick cooldown\nShotgun (brown): 20 ammo, cone damage, 16 tick cooldown\nArrow keys: Move | WASD: Fire/Melee direction | Space: Melee | Shift: Fire weapon",
   "scenes": [
     {
       "id": "weapons-arena",
@@ -403,7 +403,7 @@
   "tickRate": 10,
   "input": {
     "type": "keyboard",
-    "preset": "classic",
+    "preset": "separated",
     "options": {
       "directionMode": "continuous"
     }

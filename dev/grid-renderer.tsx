@@ -234,12 +234,15 @@ export function GridRenderer({ scene }: Props) {
 }
 
 /**
- * HUD - Display player stats (HP, Score, Lives).
+ * HUD - Display player stats (HP, Score, Lives, Weapon/Ammo).
  *
  * Shows:
  * - HP bar with current/max values
- * - Score (placeholder)
- * - Lives (placeholder)
+ * - Weapon and ammo (if equipped)
+ * - Score
+ * - Lives
+ *
+ * The HUD matches the grid width and condenses gracefully for small grids.
  *
  * @example
  * ```tsx
@@ -250,6 +253,9 @@ interface HUDProps {
   runtime: GameRuntime;
 }
 
+// Cell size matches GridRenderer (24px per cell)
+const CELL_SIZE = 24;
+
 export function HUD({ runtime }: HUDProps) {
   if (!runtime || !runtime.activeScene) {
     return null;
@@ -258,6 +264,11 @@ export function HUD({ runtime }: HUDProps) {
   const scene = runtime.activeScene;
   const playerId = runtime.game.gameState.playerEntityId;
   const playerData = playerId ? scene.spatial.getEntityData(playerId) : null;
+
+  // Calculate grid width in pixels
+  const gridWidthPx = scene.grid.width * CELL_SIZE;
+  const isSmallGrid = scene.grid.width < 12;
+  const isVerySmallGrid = scene.grid.width < 8;
 
   // Get HP (default to 0/0 if no player or no health)
   let hp = 0;
@@ -299,42 +310,50 @@ export function HUD({ runtime }: HUDProps) {
     <div
       className="hud"
       style={{
-        marginTop: '12px',
-        padding: '16px',
+        width: `${gridWidthPx}px`,
+        boxSizing: 'border-box',
+        marginTop: '8px',
+        padding: isSmallGrid ? '8px' : '12px',
         backgroundColor: '#0f0f1a',
         border: '1px solid #222',
-        borderLeft: '4px solid #333344',
+        borderLeft: '3px solid #333344',
         borderRadius: '0',
         fontFamily: 'Lexend, monospace',
-        fontSize: '12px',
+        fontSize: isSmallGrid ? '10px' : '11px',
       }}
     >
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-        {/* HP Display */}
-        <div style={{ flex: '1', minWidth: '200px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: isSmallGrid ? '8px 12px' : '12px 20px',
+          alignItems: 'center',
+        }}
+      >
+        {/* HP Display - compact */}
+        <div style={{ flex: '1 1 auto', minWidth: isVerySmallGrid ? '60px' : '100px', maxWidth: '180px' }}>
           <div
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '6px',
-              fontSize: '12px',
+              marginBottom: '4px',
+              fontSize: isSmallGrid ? '9px' : '10px',
               color: '#33b5cc',
             }}
           >
             <span>HP</span>
-            <span>
-              {hp} / {maxHp}
+            <span style={{ fontFamily: 'monospace' }}>
+              {hp}/{maxHp}
             </span>
           </div>
           <div
             style={{
               width: '100%',
-              height: '16px',
+              height: isSmallGrid ? '10px' : '12px',
               backgroundColor: '#1a1a2a',
               border: '1px solid #333',
               borderRadius: '0',
               overflow: 'hidden',
-              position: 'relative',
             }}
           >
             <div
@@ -348,98 +367,90 @@ export function HUD({ runtime }: HUDProps) {
           </div>
         </div>
 
-        {/* Weapon & Ammo Display */}
+        {/* Weapon & Ammo Display - compact */}
         {equippedWeapon && (
-          <div
-            style={{
-              minWidth: '140px',
-              textAlign: 'center',
-            }}
-          >
+          <div style={{ textAlign: 'center', minWidth: isVerySmallGrid ? '50px' : '70px' }}>
             <div
               style={{
-                fontSize: '12px',
+                fontSize: isSmallGrid ? '9px' : '10px',
                 color: '#33b5cc',
-                marginBottom: '4px',
+                marginBottom: '2px',
               }}
             >
-              WEAPON
+              {isVerySmallGrid ? 'WPN' : 'WEAPON'}
             </div>
             <div
               style={{
-                fontSize: '14px',
+                fontSize: isSmallGrid ? '11px' : '12px',
                 color: '#cc99ff',
                 textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
               }}
             >
               {equippedWeapon}
             </div>
             <div
               style={{
-                fontSize: '12px',
+                fontSize: isSmallGrid ? '9px' : '10px',
                 color: hasUnlimitedAmmo ? '#33cc66' : (currentAmmo > 0 ? '#cccc33' : '#cc3366'),
-                marginTop: '2px',
+                marginTop: '1px',
               }}
             >
-              {hasUnlimitedAmmo ? '∞' : `${currentAmmo} ammo`}
+              {hasUnlimitedAmmo ? '∞' : currentAmmo}
             </div>
           </div>
         )}
 
-        {/* Score Display */}
-        <div
-          style={{
-            minWidth: '120px',
-            textAlign: 'center',
-          }}
-        >
+        {/* Score Display - compact */}
+        <div style={{ textAlign: 'center', minWidth: isVerySmallGrid ? '40px' : '60px' }}>
           <div
             style={{
-              fontSize: '12px',
+              fontSize: isSmallGrid ? '9px' : '10px',
               color: '#33b5cc',
-              marginBottom: '4px',
+              marginBottom: '2px',
             }}
           >
-            SCORE
+            {isVerySmallGrid ? 'PTS' : 'SCORE'}
           </div>
           <div
             style={{
-              fontSize: '16px',
+              fontSize: isSmallGrid ? '12px' : '14px',
               color: '#cccc33',
+              fontFamily: 'monospace',
             }}
           >
             {score.toLocaleString()}
           </div>
         </div>
 
-        {/* Lives Display */}
-        <div
-          style={{
-            minWidth: '100px',
-            textAlign: 'center',
-          }}
-        >
+        {/* Lives Display - compact */}
+        <div style={{ textAlign: 'center', minWidth: isVerySmallGrid ? '30px' : '50px' }}>
           <div
             style={{
-              fontSize: '12px',
+              fontSize: isSmallGrid ? '9px' : '10px',
               color: '#33b5cc',
-              marginBottom: '4px',
+              marginBottom: '2px',
             }}
           >
-            LIVES
+            {isVerySmallGrid ? '♥' : 'LIVES'}
           </div>
           <div
             style={{
-              fontSize: '16px',
+              fontSize: isSmallGrid ? '12px' : '14px',
               color: '#cc3366',
               display: 'flex',
               justifyContent: 'center',
-              gap: '4px',
+              gap: '2px',
             }}
           >
-            {Array.from({ length: lives }).map((_, i) => (
-              <span key={i}>♥</span>
-            ))}
+            {isVerySmallGrid ? (
+              <span>{lives}</span>
+            ) : (
+              Array.from({ length: Math.min(lives, 5) }).map((_, i) => (
+                <span key={i}>♥</span>
+              ))
+            )}
+            {!isVerySmallGrid && lives > 5 && <span>+{lives - 5}</span>}
           </div>
         </div>
       </div>

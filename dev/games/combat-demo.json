@@ -1,6 +1,6 @@
 {
   "name": "Combat Demo",
-  "description": "Phase 1 Demo A: Single player melee and ranged combat. Use arrow keys to move, Space for melee attack, Shift+Space for ranged attack.",
+  "description": "Phase 1 Demo A: Single player melee and ranged combat.\nArrow keys: Move | WASD: Attack direction | Space: Melee | Shift: Fire weapon",
   "scenes": [
     {
       "id": "arena",
@@ -197,7 +197,7 @@
   "tickRate": 10,
   "input": {
     "type": "keyboard",
-    "preset": "classic",
+    "preset": "separated",
     "options": {
       "directionMode": "continuous"
     }
