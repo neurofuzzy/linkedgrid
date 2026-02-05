@@ -64,7 +64,7 @@
           "layer": 2,
           "data": {
             "damage": 50,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -76,7 +76,7 @@
           "layer": 2,
           "data": {
             "damage": 50,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -88,7 +88,7 @@
           "layer": 2,
           "data": {
             "damage": 50,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -100,7 +100,7 @@
           "layer": 2,
           "data": {
             "damage": 50,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -432,7 +432,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
-            "cadence": 1000,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -444,7 +444,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
-            "cadence": 1000,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -456,7 +456,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
-            "cadence": 1000,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -468,7 +468,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
-            "cadence": 1000,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -480,7 +480,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
-            "cadence": 1000,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -492,6 +492,7 @@
           "layer": 2,
           "data": {
             "damage": 25,
+            "cadence": 5,
             "color": "#00ff44",
             "effectType": "damage"
           }
@@ -506,7 +507,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -518,7 +519,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -530,7 +531,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -542,7 +543,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -554,7 +555,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
-            "cadence": 1000,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }
@@ -566,6 +567,7 @@
           "layer": 2,
           "data": {
             "damage": 100,
+            "cadence": 10,
             "color": "#ff4400",
             "effectType": "damage"
           }

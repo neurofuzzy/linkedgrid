@@ -13,9 +13,6 @@ import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
 import { GameLoop } from '../core/game-loop';
 import { GameManager } from '../core/game-manager';
-import { GameState } from '../core/game-state';
-import { SceneManager } from '../core/scene-manager';
-import { Scene } from '../core/scene';
 import { HealthSystem } from '../systems/health.system';
 import { RespawnSystem } from '../systems/respawn.system';
 import { GameLayers } from '../config/layers.config';
@@ -28,21 +25,20 @@ describe('RespawnSystem', () => {
   let gameManager: GameManager;
   let healthSystem: HealthSystem;
   let respawnSystem: RespawnSystem;
-  let sceneManager: SceneManager;
 
   beforeEach(() => {
-    grid = new LinkedGrid(10, 10);
-    store = new SparseEntityStore();
-    spatial = new SpatialSystem(grid, store);
-
-    const gameState = new GameState();
-    sceneManager = new SceneManager(gameState);
+    // Create GameManager (it creates its own GameState and SceneManager)
+    gameManager = new GameManager();
 
     // Create a scene for testing
-    const scene = sceneManager.createScene('test-scene', 10, 10);
-    sceneManager.setActiveScene('test-scene');
+    gameManager.sceneManager.createScene('test-scene', 10, 10);
+    gameManager.sceneManager.setActiveScene('test-scene');
 
-    gameManager = new GameManager(gameState, sceneManager);
+    // Get the scene's spatial system
+    const scene = gameManager.sceneManager.getScene('test-scene')!;
+    spatial = scene.spatial;
+    grid = scene.grid;
+    store = gameManager.gameState.entityStore;
 
     // Pass gameManager to GameLoop so context.gameManager is available
     gameLoop = new GameLoop(spatial, gameManager);
@@ -50,7 +46,7 @@ describe('RespawnSystem', () => {
     healthSystem = new HealthSystem({ dyingDuration: 2 });
     respawnSystem = new RespawnSystem(gameManager, {
       respawnDelay: 1,
-      initialLives: 3,
+      maxLives: 3,
     });
 
     gameLoop.addSystem(healthSystem);
@@ -191,6 +187,8 @@ describe('RespawnSystem', () => {
     spatial.commit();
     gameManager.gameState.playerEntityId = playerId;
 
+    // Verify initial lives in GameState
+    expect(gameManager.gameState.lives).toBe(3);
     expect(respawnSystem.getLives()).toBe(3);
 
     // Kill the player
@@ -198,6 +196,8 @@ describe('RespawnSystem', () => {
     gameLoop.tick(); // tick 1: dying, dyingTicks 2 -> 1
     gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, lives decremented
 
+    // Verify lives decremented in GameState
+    expect(gameManager.gameState.lives).toBe(2);
     expect(respawnSystem.getLives()).toBe(2);
   });
 
@@ -205,7 +205,7 @@ describe('RespawnSystem', () => {
     const onGameOver = vi.fn();
     const testRespawnSystem = new RespawnSystem(gameManager, {
       respawnDelay: 2,
-      initialLives: 1,
+      maxLives: 1,
       onGameOver,
     });
 
@@ -234,6 +234,8 @@ describe('RespawnSystem', () => {
     gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, game over
 
     expect(onGameOver).toHaveBeenCalled();
+    // Verify lives is 0 in both GameState and via getLives()
+    expect(gameManager.gameState.lives).toBe(0);
     expect(testRespawnSystem.getLives()).toBe(0);
   });
 

@@ -16,8 +16,8 @@ import { GameLayers } from '../config/layers.config';
 export interface RespawnSystemConfig {
   /** Number of ticks to wait before respawning (for death animation) */
   respawnDelay: number;
-  /** Initial number of lives (0 = infinite) */
-  initialLives: number;
+  /** Maximum number of lives (0 = infinite). Sets GameState.maxLives and GameState.lives on init. */
+  maxLives: number;
   /** Callback when player respawns */
   onRespawn?: (context: GameContext, playerId: number) => void;
   /** Callback when game is over (no lives remaining) */
@@ -26,7 +26,7 @@ export interface RespawnSystemConfig {
 
 const DEFAULT_CONFIG: RespawnSystemConfig = {
   respawnDelay: 5,
-  initialLives: 3,
+  maxLives: 3,
 };
 
 /**
@@ -80,7 +80,6 @@ export class RespawnSystem extends BaseReactiveSystem {
   private debugStats = {
     respawnsThisSession: 0,
     checkpointsActivated: 0,
-    currentLives: 0,
   };
 
   constructor(
@@ -89,7 +88,9 @@ export class RespawnSystem extends BaseReactiveSystem {
   ) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.debugStats.currentLives = this.config.initialLives;
+    // Initialize GameState lives from config
+    this.gameManager.gameState.maxLives = this.config.maxLives;
+    this.gameManager.gameState.lives = this.config.maxLives;
   }
 
   update(context: GameContext): void {
@@ -167,11 +168,12 @@ export class RespawnSystem extends BaseReactiveSystem {
       return;
     }
 
-    // Check lives
-    if (this.config.initialLives > 0) {
-      this.debugStats.currentLives--;
+    // Check lives (use GameState as single source of truth)
+    const gameState = this.gameManager.gameState;
+    if (this.config.maxLives > 0) {
+      gameState.lives--;
 
-      if (this.debugStats.currentLives <= 0) {
+      if (gameState.lives <= 0) {
         // Game over
         if (this.config.onGameOver) {
           this.config.onGameOver(context);
@@ -301,24 +303,24 @@ export class RespawnSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Get remaining lives.
+   * Get remaining lives from GameState.
    */
   getLives(): number {
-    return this.debugStats.currentLives;
+    return this.gameManager.gameState.lives;
   }
 
   /**
-   * Add lives.
+   * Add lives to GameState.
    */
   addLives(count: number): void {
-    this.debugStats.currentLives += count;
+    this.gameManager.gameState.lives += count;
   }
 
   /**
-   * Reset lives to initial value.
+   * Reset lives to max value in GameState.
    */
   resetLives(): void {
-    this.debugStats.currentLives = this.config.initialLives;
+    this.gameManager.gameState.lives = this.gameManager.gameState.maxLives;
   }
 
   public override resetState(): void {
@@ -326,14 +328,17 @@ export class RespawnSystem extends BaseReactiveSystem {
     this.debugStats = {
       respawnsThisSession: 0,
       checkpointsActivated: 0,
-      currentLives: this.config.initialLives,
     };
+    // Reset lives in GameState
+    this.resetLives();
   }
 
   public override getDebugState(): Record<string, unknown> {
     return {
       ...super.getDebugState(),
       ...this.debugStats,
+      currentLives: this.gameManager.gameState.lives,
+      maxLives: this.gameManager.gameState.maxLives,
       pendingRespawn: this.pendingRespawn !== null,
       respawnDelay: this.config.respawnDelay,
     };

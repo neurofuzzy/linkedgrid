@@ -18,6 +18,14 @@ Phase 1: Core
    - `PowerupSystem` for applying effects.
 [x] 5. Flammable Walls (Config change only)
 
+Phase [x] 1.25: Lives System
+
+[x] 1. Lives System - Unify lives tracking in GameState
+   - GameState.lives as single source of truth
+   - GameState.maxLives for reset support
+   - RespawnSystem delegates to GameState
+   - Visual tests for lives/respawn flow
+
 Phase [ ] 1.5: Cleanup and Refactor
 
 [ ] 1. Assess all systems and execution flow
