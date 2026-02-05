@@ -1,0 +1,204 @@
+{
+  "name": "Combat Demo",
+  "description": "Phase 1 Demo A: Single player melee and ranged combat. Use arrow keys to move, Space for melee attack, Shift+Space for ranged attack.",
+  "scenes": [
+    {
+      "id": "arena",
+      "name": "Combat Arena",
+      "width": 15,
+      "height": 15,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 7,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "arena",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 20 },
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== ENEMIES - MELEE TARGETS ===" },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "healthState": "alive",
+            "damage": 10,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 11,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "healthState": "alive",
+            "damage": 10,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== ENEMIES - RANGED TARGETS ===" },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 11,
+          "layer": 6,
+          "data": {
+            "hp": 75,
+            "maxHp": 75,
+            "healthState": "alive",
+            "damage": 10,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 11,
+          "y": 11,
+          "layer": 6,
+          "data": {
+            "hp": 75,
+            "maxHp": 75,
+            "healthState": "alive",
+            "damage": 10,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== AMMO PICKUPS ===" },
+        {
+          "type": "ammo-pack",
+          "x": 7,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "weaponType": "pistol",
+            "ammoAmount": 10,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-1",
+            "color": "#888888"
+          }
+        },
+        {
+          "type": "ammo-pack",
+          "x": 7,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "weaponType": "pistol",
+            "ammoAmount": 10,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-2",
+            "color": "#888888"
+          }
+        },
+
+        { "_comment": "=== BORDER WALLS - TOP ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - BOTTOM ===" },
+        { "type": "wall", "x": 0, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 14, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - LEFT ===" },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - RIGHT ===" },
+        { "type": "wall", "x": 14, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 13, "layer": 5 },
+
+        { "_comment": "=== COVER WALLS ===" },
+        { "type": "wall", "x": 5, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 9, "layer": 5 }
+      ]
+    }
+  ],
+  "initialScene": "arena",
+  "systems": [],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

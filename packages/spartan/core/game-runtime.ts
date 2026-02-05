@@ -70,15 +70,10 @@ export interface GameConfig {
   scenes: SceneDefinition[];
 }
 
-/**
- * Factory function to create systems by name.
- * Application-specific - allows core package to be system-agnostic.
- */
-export type SystemFactory = (
-  name: string,
-  gameManager: GameManager,
-  createdSystems: Map<string, GameSystem>
-) => GameSystem | null;
+import type { InputProvider } from './input-provider';
+export type { InputProvider } from './input-provider';
+
+import { createAllSystems } from './system-registry';
 
 /**
  * GameRuntime - Real-time execution environment.
@@ -182,20 +177,24 @@ export class GameRuntime {
    *
    * This ensures GameState.connections is populated before first tick.
    *
+   * All game systems are automatically initialized using the built-in
+   * system registry. Pass an InputProvider to enable player-controlled
+   * systems (PlayerInputSystem, MeleeSystem, PlayerWeaponSystem).
+   *
    * @param config - Complete game configuration from JSON
-   * @param systemFactory - Function to create systems by name
+   * @param inputProvider - Optional input provider for player-controlled systems
    * @returns GameRuntime ready to start
    *
    * @example
    * ```typescript
    * const config = JSON.parse(fs.readFileSync('level.json'));
-   * const runtime = GameRuntime.fromConfig(config, createSystemByName);
+   * const runtime = GameRuntime.fromConfig(config, inputProvider);
    * runtime.start();
    * ```
    */
   static fromConfig(
     config: GameConfig,
-    systemFactory: SystemFactory
+    inputProvider?: InputProvider
   ): GameRuntime {
     const game = new GameManager();
 
@@ -331,32 +330,8 @@ export class GameRuntime {
     }
 
     // === PHASE 4: SYSTEM INITIALIZATION ===
-    const systems: GameSystem[] = [];
-    const createdSystems = new Map<string, GameSystem>();
-
-    if (config.systems && config.systems.length > 0) {
-      for (const systemName of config.systems) {
-        // Skip if already created as a dependency
-        if (createdSystems.has(systemName)) {
-          continue;
-        }
-
-        const system = systemFactory(systemName, game, createdSystems);
-        if (system) {
-          createdSystems.set(systemName, system);
-          systems.push(system);
-        } else {
-          console.warn(`[GameRuntime.fromConfig] Unknown system: ${systemName}`);
-        }
-      }
-
-      // Add any systems that were created as dependencies but not in the config list
-      for (const [systemName, system] of createdSystems) {
-        if (!config.systems.includes(systemName)) {
-          systems.push(system);
-        }
-      }
-    }
+    // Use built-in system registry to create all systems
+    const systems = createAllSystems(game, inputProvider);
 
     // Set initial/active scene
     if (!game.sceneManager.setActiveScene(initialSceneId)) {

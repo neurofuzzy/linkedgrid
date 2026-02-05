@@ -34,6 +34,8 @@ import type { HasProjectile } from './projectile.trait';
 import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
 import type { HasSpawner } from './spawner.trait';
 import type { HasSceneConnection } from './scene-connection.trait';
+import type { HasBuff, Buff } from './buff.trait';
+import type { HasTemperature } from './thermal.trait';
 import type {
   PlayerData,
   EnemyData,
@@ -69,6 +71,12 @@ import type {
   PathNodeData,
   SleepWakeData,
   SpawnerData,
+  HealthPackData,
+  ShieldPackData,
+  SpeedBoostData,
+  DamageBoostData,
+  InvincibilityData,
+  AmmoPackData,
 } from '../entities';
 
 /**
@@ -286,7 +294,7 @@ export function hasPropagation(
  */
 export function hasTemperature(
   entity: EntityData
-): entity is GrassData | GasolineData | FuseData | BarrelData {
+): entity is EntityData & HasTemperature {
   return (
     'temperature' in entity && typeof entity.temperature === 'number' &&
     'flammable' in entity && typeof entity.flammable === 'boolean' &&
@@ -1078,4 +1086,194 @@ export function hasPushable(entity: EntityData): entity is EntityData & HasPusha
 
 export function hasPusher(entity: EntityData): entity is EntityData & HasPusher {
   return 'pushStrength' in entity && typeof entity.pushStrength === 'number';
+}
+
+/**
+ * Melee Trait Guard
+ *
+ * Checks if an entity can perform melee attacks.
+ */
+
+/**
+ * Check if entity has melee attack capability.
+ *
+ * Entities with melee trait can attack adjacent cells.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has melee trait
+ */
+export function hasMelee(
+  entity: EntityData
+): entity is EntityData & { meleeDamage: number; meleeCooldown: number; meleeRange: number } {
+  return (
+    'meleeDamage' in entity &&
+    typeof entity.meleeDamage === 'number' &&
+    'meleeCooldown' in entity &&
+    typeof entity.meleeCooldown === 'number' &&
+    'meleeRange' in entity &&
+    typeof entity.meleeRange === 'number'
+  );
+}
+
+/**
+ * Check if entity has ranged weapon capability.
+ *
+ * Entities with weapon trait can fire projectiles.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has weapon trait
+ */
+export function hasWeapon(
+  entity: EntityData
+): entity is EntityData & { equippedWeapon: string; ammo: Record<string, number> } {
+  return (
+    'equippedWeapon' in entity &&
+    typeof entity.equippedWeapon === 'string' &&
+    'ammo' in entity &&
+    typeof entity.ammo === 'object' &&
+    entity.ammo !== null
+  );
+}
+
+/**
+ * Check if entity has checkpoint tracking capability.
+ *
+ * Entities with checkpoint trait can respawn at checkpoints.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has checkpoint trait
+ */
+export function hasCheckpoint(
+  entity: EntityData
+): entity is EntityData & { lastCheckpointId?: number; lastCheckpointSceneId?: string; lastCheckpointX?: number; lastCheckpointY?: number } {
+  // The trait is optional properties, so we check if ANY checkpoint property exists
+  return (
+    'lastCheckpointId' in entity ||
+    'lastCheckpointSceneId' in entity ||
+    'lastCheckpointX' in entity ||
+    'lastCheckpointY' in entity
+  );
+}
+
+/**
+ * Check if entity is a player-start marker.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'player-start'
+ */
+export function isPlayerStart(entity: EntityData): boolean {
+  return entity.type === 'player-start';
+}
+
+/**
+ * Check if entity is a checkpoint.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'checkpoint'
+ */
+export function isCheckpoint(entity: EntityData): boolean {
+  return entity.type === 'checkpoint';
+}
+
+/**
+ * Buff Trait Guards
+ *
+ * These check for buff-related traits.
+ */
+
+/**
+ * Check if entity can have buffs.
+ *
+ * Entities with buff trait can receive temporary status effects.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has buff trait (activeBuffs array)
+ */
+export function hasBuff(
+  entity: EntityData
+): entity is EntityData & HasBuff {
+  return 'activeBuffs' in entity && Array.isArray(entity.activeBuffs);
+}
+
+/**
+ * Powerup Entity Type Guards
+ *
+ * These check for specific powerup entity types.
+ */
+
+/**
+ * Check if entity is a health pack.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'health-pack'
+ */
+export function isHealthPack(entity: EntityData): entity is HealthPackData {
+  return entity.type === 'health-pack';
+}
+
+/**
+ * Check if entity is a shield pack.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'shield-pack'
+ */
+export function isShieldPack(entity: EntityData): entity is ShieldPackData {
+  return entity.type === 'shield-pack';
+}
+
+/**
+ * Check if entity is a speed boost.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'speed-boost'
+ */
+export function isSpeedBoost(entity: EntityData): entity is SpeedBoostData {
+  return entity.type === 'speed-boost';
+}
+
+/**
+ * Check if entity is a damage boost.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'damage-boost'
+ */
+export function isDamageBoost(entity: EntityData): entity is DamageBoostData {
+  return entity.type === 'damage-boost';
+}
+
+/**
+ * Check if entity is an invincibility powerup.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'invincibility'
+ */
+export function isInvincibility(entity: EntityData): entity is InvincibilityData {
+  return entity.type === 'invincibility';
+}
+
+/**
+ * Check if entity is an ammo pack.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'ammo-pack'
+ */
+export function isAmmoPack(entity: EntityData): entity is AmmoPackData {
+  return entity.type === 'ammo-pack';
+}
+
+/**
+ * Check if entity is any powerup type.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is a collectible powerup
+ */
+export function isPowerup(entity: EntityData): entity is HealthPackData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData {
+  return (
+    isHealthPack(entity) ||
+    isShieldPack(entity) ||
+    isSpeedBoost(entity) ||
+    isDamageBoost(entity) ||
+    isInvincibility(entity) ||
+    isAmmoPack(entity)
+  );
 }

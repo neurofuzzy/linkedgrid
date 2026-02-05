@@ -1,0 +1,276 @@
+{
+  "name": "Powerups Demo",
+  "description": "Phase 1 Demo C: Powerups and buffs. Collect various powerups to see their effects: health (green), shield (blue), speed (yellow), damage (red), invincibility (white).",
+  "scenes": [
+    {
+      "id": "powerup-room",
+      "name": "Powerup Showcase",
+      "width": 15,
+      "height": 15,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 7,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 100,
+            "damage": 10,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "powerup-room",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== HEALTH PACKS (GREEN) ===" },
+        {
+          "type": "health-pack",
+          "x": 3,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "healAmount": 25,
+            "collectibleType": "powerup",
+            "collectibleId": "hp-1",
+            "color": "#00ff00"
+          }
+        },
+        {
+          "type": "health-pack",
+          "x": 11,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "healAmount": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "hp-2",
+            "color": "#00cc00"
+          }
+        },
+
+        { "_comment": "=== SHIELD PACKS (BLUE) ===" },
+        {
+          "type": "shield-pack",
+          "x": 3,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "shieldAmount": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "shield-1",
+            "color": "#0088ff"
+          }
+        },
+        {
+          "type": "shield-pack",
+          "x": 11,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "shieldAmount": 30,
+            "duration": 100,
+            "collectibleType": "powerup",
+            "collectibleId": "shield-2",
+            "color": "#0066cc"
+          }
+        },
+
+        { "_comment": "=== SPEED BOOSTS (YELLOW) ===" },
+        {
+          "type": "speed-boost",
+          "x": 3,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "speedMultiplier": 1.5,
+            "duration": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "speed-1",
+            "color": "#ffff00"
+          }
+        },
+        {
+          "type": "speed-boost",
+          "x": 7,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "speedMultiplier": 2.0,
+            "duration": 30,
+            "collectibleType": "powerup",
+            "collectibleId": "speed-2",
+            "color": "#cccc00"
+          }
+        },
+
+        { "_comment": "=== DAMAGE BOOSTS (RED) ===" },
+        {
+          "type": "damage-boost",
+          "x": 11,
+          "y": 11,
+          "layer": 4,
+          "data": {
+            "damageMultiplier": 2.0,
+            "duration": 50,
+            "collectibleType": "powerup",
+            "collectibleId": "dmg-1",
+            "color": "#ff0000"
+          }
+        },
+
+        { "_comment": "=== INVINCIBILITY (WHITE) ===" },
+        {
+          "type": "invincibility",
+          "x": 7,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "duration": 30,
+            "collectibleType": "powerup",
+            "collectibleId": "invincible-1",
+            "color": "#ffffff"
+          }
+        },
+
+        { "_comment": "=== AMMO PACKS (GRAY) ===" },
+        {
+          "type": "ammo-pack",
+          "x": 5,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "weaponType": "pistol",
+            "ammoAmount": 20,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-1",
+            "color": "#888888"
+          }
+        },
+        {
+          "type": "ammo-pack",
+          "x": 9,
+          "y": 7,
+          "layer": 4,
+          "data": {
+            "weaponType": "shotgun",
+            "ammoAmount": 8,
+            "collectibleType": "powerup",
+            "collectibleId": "ammo-2",
+            "color": "#666666"
+          }
+        },
+
+        { "_comment": "=== TEST ENEMIES (to test damage boost) ===" },
+        {
+          "type": "enemy",
+          "x": 5,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 9,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy"
+          }
+        },
+
+        { "_comment": "=== BORDER WALLS - TOP ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - BOTTOM ===" },
+        { "type": "wall", "x": 0, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 1, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 2, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 3, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 4, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 5, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 6, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 7, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 8, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 9, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 10, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 11, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 12, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 13, "y": 14, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 14, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - LEFT ===" },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5 },
+
+        { "_comment": "=== BORDER WALLS - RIGHT ===" },
+        { "type": "wall", "x": 14, "y": 1, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 2, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 3, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 4, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 5, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 6, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 7, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 8, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 9, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 10, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 11, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 12, "layer": 5 },
+        { "type": "wall", "x": 14, "y": 13, "layer": 5 }
+      ]
+    }
+  ],
+  "initialScene": "powerup-room",
+  "systems": [],
+  "tickRate": 10,
+  "input": {
+    "type": "keyboard",
+    "options": {
+      "directionMode": "continuous"
+    }
+  }
+}

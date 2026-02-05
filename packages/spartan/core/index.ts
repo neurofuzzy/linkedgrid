@@ -10,3 +10,4 @@ export * from './spatial-system';
 export * from './types';
 export * from './base-system';
 export * from './input-provider';
+export * from './system-registry';

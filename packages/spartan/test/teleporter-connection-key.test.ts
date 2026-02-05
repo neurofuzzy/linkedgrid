@@ -1,23 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GameRuntime, GameConfig } from '../core/game-runtime';
-import { TeleporterSystem } from '../systems/teleporter.system';
 import { GameLayers } from '../config/layers.config';
-import type { GameSystem } from '../core/types';
-
-/**
- * System factory for tests - only creates TeleporterSystem
- */
-function createTestSystem(
-  name: string,
-  gameManager: unknown
-): GameSystem | null {
-  if (name === 'TeleporterSystem') {
-    return new TeleporterSystem(
-      gameManager as Parameters<typeof TeleporterSystem['prototype']['constructor']>[0]
-    );
-  }
-  return null;
-}
 
 describe('TeleporterSystem with connectionKey', () => {
   describe('separate scenes', () => {
@@ -64,7 +47,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
 
       // Verify connection was registered
       const connections = runtime.game.gameState.getConnections('red');
@@ -133,7 +116,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
       const playerId = runtime.game.gameState.playerEntityId;
       const room2 = runtime.game.sceneManager.getScene('room2')!;
 
@@ -234,7 +217,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
       const playerId = runtime.game.gameState.playerEntityId;
 
       // Verify both connections registered
@@ -306,7 +289,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
       const playerId = runtime.game.gameState.playerEntityId;
 
       // Verify both endpoints registered
@@ -361,7 +344,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
       const playerId = runtime.game.gameState.playerEntityId;
 
       // Teleport from (5,5) to (15,15)
@@ -431,7 +414,7 @@ describe('TeleporterSystem with connectionKey', () => {
         ],
       };
 
-      const runtime = GameRuntime.fromConfig(config, createTestSystem);
+      const runtime = GameRuntime.fromConfig(config);
       const playerId = runtime.game.gameState.playerEntityId;
 
       // No connectionKey connections should be registered
