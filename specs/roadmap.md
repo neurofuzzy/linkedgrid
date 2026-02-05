@@ -2,7 +2,7 @@ HIGH-LEVEL ROADMAP:
 See [Gap Analysis](./roadmap-gap-analysis-2026-02-04.md) for gap analysis.
 Please use this document for tracking using the checkboxes.
 
-Phase 1: Core (Refine[ ] d)
+Phase 1: Core
 
 [ ] 1. Melee System 
    - New `HasMelee` trait and `MeleeSystem`. 
@@ -27,6 +27,8 @@ Phase [ ] 1.5: Cleanup and Refactor
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
+*SEPARATE DEMOS EXPECTED*
+
 [ ] A) Single player melee combat and ranged combat
 [ ] B) Multiscene game with hazards and checkpoints for death and respawning
 [ ] C) Powerups and buffs
@@ -44,6 +46,8 @@ Phase 2: Core II
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
+*SEPARATE DEMOS EXPECTED*
+
 [ ] A) Score tracking and objectives
 [ ] B) Multiscene game with objectives
 
@@ -55,6 +59,8 @@ Phase 3: Gameplay Enhancements
 [ ] 2. Wave spawners (contiguous groups spawning simultaneously)
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
+
+*SEPARATE DEMOS EXPECTED*
 
 [ ] A) Range sensors
 [ ] B) Wave spawners, single in first scene and contiguous groups in second scene
@@ -76,6 +82,8 @@ Phase [ ] 4.5: Refactor Visual Interplay
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
+*SEPARATE DEMOS EXPECTED*
+
 [ ] A) Visual states and facing direction, simple animation using numeric frame numbers
 [ ] B) Effects manager demo with explosions
 
@@ -89,6 +97,8 @@ Phase 5: Gameplay Enhancements II
 [ ] 4. Conjoined NPCs (via "Chain Following" pattern)
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
+
+*SEPARATE DEMOS EXPECTED*
 
 [ ] A) Scene coordinates and explicit edge-based linking
 [ ] B) Homing projectiles

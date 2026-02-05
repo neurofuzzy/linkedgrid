@@ -1,0 +1,272 @@
+/**
+ * Tests for RespawnSystem.
+ *
+ * Tests respawn mechanics:
+ * - Checkpoint activation
+ * - Player respawn at checkpoint
+ * - Default respawn at player-start
+ * - Life tracking
+ */
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { SpatialSystem } from '../core/spatial-system';
+import { SparseEntityStore } from '../core/entity-store';
+import { LinkedGrid } from '../core/grid/linked-grid';
+import { GameLoop } from '../core/game-loop';
+import { GameManager } from '../core/game-manager';
+import { GameState } from '../core/game-state';
+import { SceneManager } from '../core/scene-manager';
+import { Scene } from '../core/scene';
+import { HealthSystem } from '../systems/health.system';
+import { RespawnSystem } from '../systems/respawn.system';
+import { GameLayers } from '../config/layers.config';
+
+describe('RespawnSystem', () => {
+  let grid: LinkedGrid;
+  let store: SparseEntityStore;
+  let spatial: SpatialSystem;
+  let gameLoop: GameLoop;
+  let gameManager: GameManager;
+  let healthSystem: HealthSystem;
+  let respawnSystem: RespawnSystem;
+  let sceneManager: SceneManager;
+
+  beforeEach(() => {
+    grid = new LinkedGrid(10, 10);
+    store = new SparseEntityStore();
+    spatial = new SpatialSystem(grid, store);
+
+    const gameState = new GameState();
+    sceneManager = new SceneManager(gameState);
+
+    // Create a scene for testing
+    const scene = sceneManager.createScene('test-scene', 10, 10);
+    sceneManager.setActiveScene('test-scene');
+
+    gameManager = new GameManager(gameState, sceneManager);
+
+    // Pass gameManager to GameLoop so context.gameManager is available
+    gameLoop = new GameLoop(spatial, gameManager);
+
+    healthSystem = new HealthSystem({ dyingDuration: 2 });
+    respawnSystem = new RespawnSystem(gameManager, {
+      respawnDelay: 1,
+      initialLives: 3,
+    });
+
+    gameLoop.addSystem(healthSystem);
+    gameLoop.addSystem(respawnSystem);
+  });
+
+  it('activates checkpoint when player overlaps', () => {
+    // Arrange: Player at (5,5), checkpoint at (5,5)
+    const playerId = spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+      hp: 100,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+    });
+
+    const checkpointId = spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
+      activated: false,
+      sceneId: 'test-scene',
+      color: '#00ff00',
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Act: Run system
+    gameLoop.tick();
+
+    // Assert: Checkpoint is activated
+    const checkpointData = spatial.getEntityData(checkpointId);
+    expect(checkpointData?.activated).toBe(true);
+
+    // Assert: Player has checkpoint tracked
+    const playerData = spatial.getEntityData(playerId);
+    expect((playerData as any)?.lastCheckpointId).toBe(checkpointId);
+  });
+
+  it('respawns player at checkpoint after death', () => {
+    // Arrange: Player at (2,2) with checkpoint data
+    const playerId = spatial.spawn('player', 2, 2, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+      // Checkpoint data directly on player
+      lastCheckpointId: 999,
+      lastCheckpointSceneId: 'test-scene',
+      lastCheckpointX: 8,
+      lastCheckpointY: 8,
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Verify checkpoint data is on player
+    const preData = spatial.getEntityData(playerId);
+    expect((preData as any).lastCheckpointSceneId).toBe('test-scene');
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+    gameLoop.tick(); // tick 1: dying, dyingTicks 2 -> 1
+
+    // Verify player is dying
+    let midData = spatial.getEntityData(playerId);
+    expect((midData as any)?.healthState).toBe('dying');
+
+    gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, respawn scheduled
+
+    // Verify player is dead
+    midData = spatial.getEntityData(playerId);
+    // Note: player may be removed by HealthSystem by now
+
+    gameLoop.tick(); // tick 3: respawn executes
+
+    // Assert: Player respawned at checkpoint location
+    const newPos = spatial.getEntityPosition(playerId);
+    expect(newPos?.x).toBe(8);
+    expect(newPos?.y).toBe(8);
+
+    // Assert: Player is alive again
+    const playerData = spatial.getEntityData(playerId);
+    expect((playerData as any)?.healthState).toBe('alive');
+    expect(playerData?.hp).toBe(100); // Full health
+  });
+
+  it('respawns at player-start if no checkpoint', () => {
+    // Arrange: Player at (2,2), player-start at (1,1)
+    const playerId = spatial.spawn('player', 2, 2, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+    });
+
+    spatial.spawn('player-start', 1, 1, GameLayers.FLOOR, {
+      sceneId: 'test-scene',
+      color: '#0000ff',
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+    gameLoop.tick(); // tick 1: dying, dyingTicks 2 -> 1
+    gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, respawn scheduled for tick 3
+    gameLoop.tick(); // tick 3: respawn executes
+
+    // Assert: Player respawned at player-start
+    const newPos = spatial.getEntityPosition(playerId);
+    expect(newPos?.x).toBe(1);
+    expect(newPos?.y).toBe(1);
+  });
+
+  it('decrements lives on death', () => {
+    // Arrange: Player with 3 lives
+    const playerId = spatial.spawn('player', 2, 2, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+      lastCheckpointSceneId: 'test-scene',
+      lastCheckpointX: 5,
+      lastCheckpointY: 5,
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    expect(respawnSystem.getLives()).toBe(3);
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+    gameLoop.tick(); // tick 1: dying, dyingTicks 2 -> 1
+    gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, lives decremented
+
+    expect(respawnSystem.getLives()).toBe(2);
+  });
+
+  it('calls onGameOver when no lives remaining', () => {
+    const onGameOver = vi.fn();
+    const testRespawnSystem = new RespawnSystem(gameManager, {
+      respawnDelay: 2,
+      initialLives: 1,
+      onGameOver,
+    });
+
+    // Replace the respawn system
+    gameLoop = new GameLoop(spatial);
+    gameLoop.addSystem(healthSystem);
+    gameLoop.addSystem(testRespawnSystem);
+
+    // Arrange: Player with 1 life
+    const playerId = spatial.spawn('player', 2, 2, GameLayers.ACTORS, {
+      hp: 10,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Kill the player
+    healthSystem.damage(playerId, 100);
+    gameLoop.tick(); // tick 1: dying, dyingTicks 2 -> 1
+    gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, game over
+
+    expect(onGameOver).toHaveBeenCalled();
+    expect(testRespawnSystem.getLives()).toBe(0);
+  });
+
+  it('does not activate already activated checkpoints', () => {
+    // Arrange: Player at (5,5), already activated checkpoint at (5,5)
+    const playerId = spatial.spawn('player', 5, 5, GameLayers.ACTORS, {
+      hp: 100,
+      maxHp: 100,
+      healthState: 'alive',
+      damage: 10,
+      sceneId: 'test-scene',
+      inventory: [],
+      pushStrength: 1,
+    });
+
+    const checkpointId = spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
+      activated: true, // Already activated
+      sceneId: 'test-scene',
+      color: '#00ff00',
+    });
+
+    spatial.commit();
+    gameManager.gameState.playerEntityId = playerId;
+
+    // Get initial debug state
+    const initialState = respawnSystem.getDebugState();
+    const initialActivations = initialState.checkpointsActivated as number;
+
+    // Act: Run system
+    gameLoop.tick();
+
+    // Assert: No new activation counted
+    const newState = respawnSystem.getDebugState();
+    expect(newState.checkpointsActivated).toBe(initialActivations);
+  });
+});

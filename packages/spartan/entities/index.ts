@@ -7,5 +7,7 @@ export * from './hazard.entity';
 export * from './elemental.entity';
 export * from './logic.entity';
 export * from './signal.entity';
+export * from './spawning.entity';
+export * from './powerup.entity';
 export * from './entity.types';
 export * from './spawn-helpers';
