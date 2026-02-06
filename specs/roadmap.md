@@ -113,6 +113,22 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 [x] B) Wave spawners, single in first scene and contiguous groups in second scene -> `dev/games/wave-spawner-demo.json`
 [x] C) Wave recycling, borderless game with flying enemies that go offscreen with score objective -> `dev/games/wave-recycling-demo.json`
 
+Phase 3.5: NPC Movement and Attack Modes
+
+NPC AI has movement modes via the npc movement system, but we need a proper NPC state machine that coordinates movement modes, attack and defense posture and weapons/melee usage. This should also understand teams and who is a player.
+
+[ ] 1. NPC State Machine System: coordinator of all NPCs. Entities remain dumb
+[ ] 2. NPC Attack/Defense Posture - links with NPC movement modes
+[ ] 3. NPC prey/threat identification - decision-making heuristics that determine state transitions
+
+GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
+
+*SEPARATE DEMOS EXPECTED*
+
+[ ] A) Upgrade existing NPC movement demo to include melee attacks
+[ ] B) Upgrade existing NPC paths to support melee and ranged (projectile) weapons
+[ ] C) New multi-scene demo with one enemy per scene in maze/dungeon environments
+
 ---
 
 Phase 4: Visual System (New Subsystem)
