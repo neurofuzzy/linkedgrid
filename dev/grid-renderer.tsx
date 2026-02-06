@@ -624,11 +624,12 @@ export function GameStatusPanel({ runtime }: GameStatusPanelProps) {
   if (!runtime) return null;
 
   const objectives = runtime.game.gameState.objectives;
-  if (!objectives || objectives.length === 0) return null;
+  const activeScene = runtime.activeScene;
+
+  if (!objectives || objectives.length === 0 || !activeScene) return null;
 
   // Get active scene ID
-  const activeScene = runtime.activeScene;
-  const activeSceneId = activeScene?.id || '';
+  const activeSceneId = activeScene.id;
 
   // Filter objectives for active scene and other scenes
   const sceneObjectives = objectives.filter((o) => o.sceneId === activeSceneId);

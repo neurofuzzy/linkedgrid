@@ -861,6 +861,7 @@ export function spawnExit(
   overrides?: Partial<{ color: string; sceneId: string }>
 ): number {
   return spatial.spawn('exit', x, y, GameLayers.FLOOR, {
+    activated: false,
     color: '#00ff00',
     ...overrides,
   });

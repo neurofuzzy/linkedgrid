@@ -77,6 +77,10 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 [x] B) Multiscene game with objectives -> `dev/games/multiscene-objectives-demo.json`
 [x] C) Multiscene game with player, NPC combat as tournament -> `dev/games/tournament-demo.json`
 
+Phase 2.5: Documentation
+
+The goal of this phase will be to document the codebase, starting from the code itself (implementation), and integrating relevant sections of the specs (intent), as well as understanding of the mechanics that are tested in the testing framework. The goal is to create a LLM-friendly reference for the conventions and constructs we are using in composition to create emergent game designs.
+
 ---
 
 Phase 3: Gameplay Enhancements

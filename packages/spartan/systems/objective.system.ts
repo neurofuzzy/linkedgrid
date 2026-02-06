@@ -6,6 +6,17 @@
  * - kill-all: All enemies in the scene must be eliminated
  * - reach-exit: Player must overlap an exit entity
  *
+ * Performance: Uses lazy scene initialization and tracked entity sets
+ * instead of iterating all positions every tick. On first encounter of
+ * a scene, scans once to build tracking data (O(n)). Subsequent ticks
+ * are O(tracked_enemies + tracked_flags) per objective check, which is
+ * orders of magnitude faster for large grids (e.g., 1000x1000).
+ *
+ * For kill-all: consumes HealthSystem death events to decrement enemy
+ * count, with periodic pruning of dead IDs from the tracked set.
+ *
+ * For collect-flag: checks isAlive() on tracked flag entity IDs.
+ *
  * Objectives are defined in GameState.objectives and tracked per scene.
  * When all objectives for a scene are completed, a scene completion
  * event fires. When all objectives in the game are completed, a
@@ -31,17 +42,30 @@ export interface ObjectiveSystemConfig {
 }
 
 /**
+ * Per-scene tracking data built on first encounter.
+ */
+interface SceneTracking {
+  /** Set of alive enemy entity IDs in this scene */
+  enemyIds: Set<number>;
+  /** Flag entity IDs grouped by objectiveId (targetId) */
+  flagIds: Map<string, Set<number>>;
+  /** Exit entity IDs in this scene */
+  exitIds: Set<number>;
+}
+
+/**
  * ObjectiveSystem - Manages game objectives and completion tracking.
  *
  * Key responsibilities:
- * 1. Track collect-flag objectives (count remaining flags)
- * 2. Track kill-all objectives (count remaining enemies)
- * 3. Track reach-exit objectives (player on exit)
+ * 1. Track collect-flag objectives (tracked flag entity IDs)
+ * 2. Track kill-all objectives (tracked enemy IDs + death events)
+ * 3. Track reach-exit objectives (player on exit via overlaps)
  * 4. Fire completion callbacks
+ * 5. Manage exit activation state
  *
  * @system
- * @reactsTo Entity state changes, overlaps
- * @modifies GameState.objectives completion status
+ * @reactsTo HealthSystem death events, entity overlaps
+ * @modifies GameState.objectives completion status, exit entity activation
  *
  * @example
  * ```typescript
@@ -63,6 +87,9 @@ export class ObjectiveSystem extends BaseReactiveSystem {
   /** Track if game completion callback has fired */
   private gameCompleted = false;
 
+  /** Lazy-initialized tracking data per scene */
+  private sceneTracking: Map<string, SceneTracking> = new Map();
+
   constructor(
     private gameManager: GameManager,
     private healthSystem: HealthSystem,
@@ -76,6 +103,17 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     const objectives = this.gameManager.gameState.objectives;
     if (!objectives || objectives.length === 0) return;
 
+    const activeSceneId = this.getActiveSceneId();
+
+    // Lazy init: scan scene on first encounter to build tracking data
+    if (activeSceneId && !this.sceneTracking.has(activeSceneId)) {
+      this.initializeSceneTracking(context, activeSceneId);
+    }
+
+    // Consume death events to update enemy tracking
+    this.processDeathEvents(activeSceneId);
+
+    // Check each objective
     for (const objective of objectives) {
       if (objective.completed) continue;
 
@@ -86,7 +124,7 @@ export class ObjectiveSystem extends BaseReactiveSystem {
           completed = this.checkCollectFlag(context, objective);
           break;
         case 'kill-all':
-          completed = this.checkKillAll(context, objective);
+          completed = this.checkKillAll(objective);
           break;
         case 'reach-exit':
           completed = this.checkReachExit(context, objective);
@@ -102,7 +140,7 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     }
 
     // Update exit activation state based on prerequisite objectives
-    this.updateExitActivation(context, objectives);
+    this.updateExitActivation(context, objectives, activeSceneId);
 
     // Check scene completion
     this.checkSceneCompletion(objectives);
@@ -111,55 +149,107 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     this.checkGameCompletion(objectives);
   }
 
-  /**
-   * Check if all flags with the target objectiveId have been collected.
-   *
-   * Returns true when no flag entities with the matching objectiveId
-   * remain in the scene.
-   */
-  private checkCollectFlag(context: GameContext, objective: ObjectiveDefinition): boolean {
-    // Only check in the objective's scene
-    const activeScene = this.gameManager.sceneManager.getActiveScene();
-    if (!activeScene) return false;
-
-    const activeSceneId = this.getActiveSceneId();
-    if (activeSceneId !== objective.sceneId) return false;
-
-    // Count remaining flags with matching objectiveId
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData) continue;
-      if (!context.spatial.isAlive(entityId)) continue;
-
-      if (isFlag(entityData) && entityData.objectiveId === objective.targetId) {
-        return false; // Still have uncollected flags
-      }
-    }
-
-    return true; // All flags collected
-  }
+  // === Scene Tracking ===
 
   /**
-   * Check if all enemies in the scene have been eliminated.
+   * Scan the scene once to build tracking data for enemies, flags, and exits.
+   * Called lazily on first update for a given scene.
    *
-   * Returns true when no alive enemy entities remain in the scene.
+   * This is the only O(all_entities) scan -- subsequent ticks use the
+   * tracked sets which are O(enemies + flags + exits).
    */
-  private checkKillAll(context: GameContext, objective: ObjectiveDefinition): boolean {
-    const activeSceneId = this.getActiveSceneId();
-    if (activeSceneId !== objective.sceneId) return false;
+  private initializeSceneTracking(context: GameContext, sceneId: string): void {
+    const tracking: SceneTracking = {
+      enemyIds: new Set(),
+      flagIds: new Map(),
+      exitIds: new Set(),
+    };
 
-    // Count remaining alive enemies
     for (const [entityId] of context.spatial.getAllPositions()) {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData) continue;
       if (!context.spatial.isAlive(entityId)) continue;
 
       if (isEnemy(entityData) && isEntityAlive(entityData)) {
-        return false; // Still have living enemies
+        tracking.enemyIds.add(entityId);
+      }
+
+      if (isFlag(entityData)) {
+        const objectiveId = entityData.objectiveId;
+        if (!tracking.flagIds.has(objectiveId)) {
+          tracking.flagIds.set(objectiveId, new Set());
+        }
+        tracking.flagIds.get(objectiveId)!.add(entityId);
+      }
+
+      if (isExit(entityData)) {
+        tracking.exitIds.add(entityId);
       }
     }
 
-    return true; // All enemies eliminated
+    this.sceneTracking.set(sceneId, tracking);
+  }
+
+  /**
+   * Consume death events from HealthSystem to update enemy tracking.
+   * O(death_events_this_tick) -- typically 0-3 per tick.
+   */
+  private processDeathEvents(activeSceneId: string): void {
+    const tracking = this.sceneTracking.get(activeSceneId);
+    if (!tracking) return;
+
+    for (const event of this.healthSystem.getDeathEvents()) {
+      // Remove dead enemies from tracked set
+      if (event.entityType === 'enemy') {
+        tracking.enemyIds.delete(event.entityId);
+      }
+    }
+  }
+
+  // === Objective Checks ===
+
+  /**
+   * Check if all flags with the target objectiveId have been collected.
+   *
+   * Uses tracked flag IDs with isAlive() checks: O(flags_for_objective).
+   * Prunes confirmed-dead flags from the tracking set.
+   */
+  private checkCollectFlag(context: GameContext, objective: ObjectiveDefinition): boolean {
+    const activeSceneId = this.getActiveSceneId();
+    if (activeSceneId !== objective.sceneId) return false;
+
+    const tracking = this.sceneTracking.get(activeSceneId);
+    if (!tracking) return false;
+
+    const flagIds = tracking.flagIds.get(objective.targetId ?? '');
+    if (!flagIds || flagIds.size === 0) return true; // No flags to collect
+
+    // Check which tracked flags are still alive
+    for (const flagId of flagIds) {
+      if (context.spatial.isAlive(flagId)) {
+        return false; // Still have uncollected flags
+      }
+    }
+
+    // All flags dead/removed -- prune the set
+    flagIds.clear();
+    return true;
+  }
+
+  /**
+   * Check if all enemies in the scene have been eliminated.
+   *
+   * Uses tracked enemy IDs populated at scene init and decremented
+   * via death events: O(1) check on set size.
+   */
+  private checkKillAll(objective: ObjectiveDefinition): boolean {
+    const activeSceneId = this.getActiveSceneId();
+    if (activeSceneId !== objective.sceneId) return false;
+
+    const tracking = this.sceneTracking.get(activeSceneId);
+    if (!tracking) return false;
+
+    return tracking.enemyIds.size === 0;
   }
 
   /**
@@ -167,6 +257,9 @@ export class ObjectiveSystem extends BaseReactiveSystem {
    *
    * Returns true when player overlaps an exit AND all prerequisite
    * objectives for this scene (non-reach-exit) are completed.
+   *
+   * Uses overlap list from GameLoop (already small) -- no change needed
+   * since overlaps are inherently bounded by actual entity co-locations.
    */
   private checkReachExit(context: GameContext, objective: ObjectiveDefinition): boolean {
     const activeSceneId = this.getActiveSceneId();
@@ -215,33 +308,43 @@ export class ObjectiveSystem extends BaseReactiveSystem {
       .every((o) => o.completed);
   }
 
+  // === Exit Activation ===
+
   /**
    * Update exit entity activation state based on prerequisite objectives.
    * Sets `activated: true` on exit entities when all non-reach-exit
    * objectives for their scene are completed.
+   *
+   * Uses tracked exit IDs: O(exits_in_scene) instead of O(all_entities).
    */
-  private updateExitActivation(context: GameContext, objectives: ObjectiveDefinition[]): void {
-    const activeSceneId = this.getActiveSceneId();
+  private updateExitActivation(
+    _context: GameContext,
+    objectives: ObjectiveDefinition[],
+    activeSceneId: string,
+  ): void {
+    const tracking = this.sceneTracking.get(activeSceneId);
+    if (!tracking) return;
 
     // Check if all non-reach-exit objectives for the active scene are complete
     const prerequisitesMet = objectives
       .filter((o) => o.sceneId === activeSceneId && o.type !== 'reach-exit')
       .every((o) => o.completed);
 
-    // Update all exit entities in the scene
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !isExit(entityData)) continue;
-      if (!context.spatial.isAlive(entityId)) continue;
+    // Update tracked exit entities only
+    for (const exitId of tracking.exitIds) {
+      const entityData = this.gameManager.gameState.entityStore.getData(exitId);
+      if (!entityData) continue;
 
-      const currentlyActivated = entityData.activated ?? false;
+      const currentlyActivated = (entityData as Record<string, unknown>).activated ?? false;
       if (currentlyActivated !== prerequisitesMet) {
-        this.gameManager.gameState.entityStore.setData(entityId, {
+        this.gameManager.gameState.entityStore.setData(exitId, {
           activated: prerequisitesMet,
         });
       }
     }
   }
+
+  // === Completion Tracking ===
 
   /**
    * Check if all objectives for a scene are completed.
@@ -288,14 +391,8 @@ export class ObjectiveSystem extends BaseReactiveSystem {
    * Get the active scene ID.
    */
   private getActiveSceneId(): string {
-    const allSceneIds = this.gameManager.sceneManager.getAllSceneIds();
-    for (const sceneId of allSceneIds) {
-      const scene = this.gameManager.sceneManager.getScene(sceneId);
-      if (scene === this.gameManager.sceneManager.getActiveScene()) {
-        return sceneId;
-      }
-    }
-    return '';
+    const activeScene = this.gameManager.sceneManager.getActiveScene();
+    return activeScene ? activeScene.id : '';
   }
 
   // === Public Query API ===
@@ -348,18 +445,38 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     return prerequisites.length === 0 || prerequisites.every((o) => o.completed);
   }
 
+  /**
+   * Force re-scan of the active scene's tracking data.
+   *
+   * Call this after dynamic entity spawning (e.g., SpawningSystem adding
+   * new enemies mid-scene) to update the tracked sets.
+   */
+  reinitializeScene(context: GameContext, sceneId?: string): void {
+    const id = sceneId ?? this.getActiveSceneId();
+    if (id) {
+      this.sceneTracking.delete(id);
+      this.initializeSceneTracking(context, id);
+    }
+  }
+
   public override resetState(): void {
     this.completedScenes.clear();
     this.gameCompleted = false;
+    this.sceneTracking.clear();
   }
 
   public override getDebugState(): Record<string, unknown> {
     const status = this.getObjectiveStatus();
+    const activeSceneId = this.getActiveSceneId();
+    const tracking = this.sceneTracking.get(activeSceneId);
     return {
       ...super.getDebugState(),
       ...status,
       completedScenes: [...this.completedScenes],
       gameCompleted: this.gameCompleted,
+      trackedEnemies: tracking?.enemyIds.size ?? 0,
+      trackedExits: tracking?.exitIds.size ?? 0,
+      initializedScenes: [...this.sceneTracking.keys()],
     };
   }
 }

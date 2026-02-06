@@ -45,6 +45,10 @@ export type HealthIntent = DamageIntent | HealIntent;
  *
  * Available for one tick via getDeathEvents() before being cleared.
  * Used by ScoreSystem and ObjectiveSystem to react to kills.
+ *
+ * Contains a snapshot of entity data at time of death, so consumers
+ * don't rely on the entity still existing in the spatial system
+ * (which may have removed it by the time post-commit systems run).
  */
 export interface DeathEvent {
   /** Entity ID that died */
@@ -53,6 +57,8 @@ export interface DeathEvent {
   entityType: string;
   /** Entity ID that dealt the killing blow (if tracked) */
   killerEntityId?: number;
+  /** Snapshot of entity data at time of death (shallow copy) */
+  entityData: EntityData;
 }
 
 /**
@@ -298,13 +304,14 @@ export class HealthSystem extends BaseReactiveSystem {
         const dyingTicks = entityData.dyingTicks ?? 0;
 
         if (dyingTicks <= 1) {
-          // Transition to dead - emit death event
+          // Transition to dead - emit death event with data snapshot
           entityData.healthState = 'dead';
 
           this.deathEvents.push({
             entityId,
             entityType: entityData.type as string,
             killerEntityId: this.lastDamageSource.get(entityId),
+            entityData: { ...entityData } as EntityData,
           });
           this.lastDamageSource.delete(entityId);
         } else {

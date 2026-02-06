@@ -77,8 +77,11 @@ export class ScoreSystem extends BaseReactiveSystem {
    * Reads death events from HealthSystem and checks if the killed
    * entity has a scoreValue property. Only awards points if the
    * killer was the player (or player-controlled).
+   *
+   * Uses the entity data snapshot from the DeathEvent rather than
+   * looking up via spatial, ensuring resilience to removal timing.
    */
-  private processKillScore(context: GameContext): void {
+  private processKillScore(_context: GameContext): void {
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId) return;
 
@@ -88,10 +91,9 @@ export class ScoreSystem extends BaseReactiveSystem {
       // Only award points for player kills
       if (event.killerEntityId !== playerId) continue;
 
-      // Check if the dead entity had a scoreValue
-      const entityData = context.spatial.getEntityData(event.entityId);
-      if (entityData && hasScoreValue(entityData)) {
-        this.gameManager.gameState.score += entityData.scoreValue;
+      // Check if the dead entity had a scoreValue (from death snapshot)
+      if (hasScoreValue(event.entityData)) {
+        this.gameManager.gameState.score += event.entityData.scoreValue;
       }
     }
   }
