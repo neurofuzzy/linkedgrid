@@ -82,7 +82,7 @@
             "destination": {
               "sceneId": "room2",
               "x": 1,
-              "y": 9,
+              "y": 1,
               "layer": 6
             }
           }
@@ -189,7 +189,7 @@
             "destination": {
               "sceneId": "room3",
               "x": 1,
-              "y": 12,
+              "y": 1,
               "layer": 6
             }
           }
@@ -204,8 +204,8 @@
           "data": {
             "destination": {
               "sceneId": "room1",
-              "x": 9,
-              "y": 9,
+              "x": 10,
+              "y": 10,
               "layer": 6
             }
           }
@@ -316,7 +316,7 @@
           "data": {
             "destination": {
               "sceneId": "room2",
-              "x": 1,
+              "x": 14,
               "y": 8,
               "layer": 6
             }

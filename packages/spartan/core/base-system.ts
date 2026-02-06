@@ -130,6 +130,10 @@ export abstract class BaseTickedSystem extends BaseSystem {
       this._lifecycleUnsubscribers = [];
       this._currentSpatial = context.spatial;
 
+      // Reset tick counter so the system fires on its first tick in the new scene.
+      // Without this, tickRate > 1 systems may skip the first tick after transition.
+      this._currentTick = 0;
+
       // Notify subclass of scene change
       this.onSceneChange();
     }

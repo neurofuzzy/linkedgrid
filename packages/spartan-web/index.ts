@@ -19,5 +19,8 @@
 // Main embedding API
 export { GameEmbed, type GameEmbedConfig, type GameEmbedInputConfig } from './game-embed';
 
+// Debug/fallback Canvas2D renderer
+export { DebugCanvasRenderer, type DebugRendererConfig } from './debug-renderer';
+
 // Input management (re-export for advanced users)
 export * from './input';
