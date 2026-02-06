@@ -41,6 +41,27 @@ export interface HealIntent {
 export type HealthIntent = DamageIntent | HealIntent;
 
 /**
+ * DeathEvent - Emitted when an entity transitions to 'dead' state.
+ *
+ * Available for one tick via getDeathEvents() before being cleared.
+ * Used by ScoreSystem and ObjectiveSystem to react to kills.
+ *
+ * Contains a snapshot of entity data at time of death, so consumers
+ * don't rely on the entity still existing in the spatial system
+ * (which may have removed it by the time post-commit systems run).
+ */
+export interface DeathEvent {
+  /** Entity ID that died */
+  entityId: number;
+  /** Entity type string */
+  entityType: string;
+  /** Entity ID that dealt the killing blow (if tracked) */
+  killerEntityId?: number;
+  /** Snapshot of entity data at time of death (shallow copy) */
+  entityData: EntityData;
+}
+
+/**
  * Configuration for death animation/delay.
  */
 export interface HealthSystemConfig {
@@ -86,6 +107,12 @@ export class HealthSystem extends BaseReactiveSystem {
 
   private intents: HealthIntent[] = [];
   private config: HealthSystemConfig;
+
+  /** Death events from the current tick. Cleared at start of next update(). */
+  private deathEvents: DeathEvent[] = [];
+
+  /** Tracks the last damage source per entity (for kill attribution). */
+  private lastDamageSource: Map<number, number> = new Map();
 
   constructor(config: Partial<HealthSystemConfig> = {}) {
     super();
@@ -140,10 +167,23 @@ export class HealthSystem extends BaseReactiveSystem {
   }
 
   /**
+   * Get death events from the current tick.
+   *
+   * Available after HealthSystem.update() runs and before the next update() clears them.
+   * Used by ScoreSystem and ObjectiveSystem to react to kills.
+   */
+  getDeathEvents(): ReadonlyArray<DeathEvent> {
+    return this.deathEvents;
+  }
+
+  /**
    * Process all health intents and handle death states.
    */
   update(context: GameContext): void {
     const currentTick = context.tick ?? 0;
+
+    // Clear death events from previous tick
+    this.deathEvents = [];
 
     // Process all staged intents
     this.processIntents(context);
@@ -223,6 +263,11 @@ export class HealthSystem extends BaseReactiveSystem {
       entityData.hp = Math.max(0, entityData.hp - damage);
     }
 
+    // Track damage source for kill attribution
+    if (intent.sourceId !== undefined) {
+      this.lastDamageSource.set(intent.targetId, intent.sourceId);
+    }
+
     // Check for death
     if (entityData.hp <= 0) {
       this.startDying(entityData);
@@ -259,8 +304,16 @@ export class HealthSystem extends BaseReactiveSystem {
         const dyingTicks = entityData.dyingTicks ?? 0;
 
         if (dyingTicks <= 1) {
-          // Transition to dead
+          // Transition to dead - emit death event with data snapshot
           entityData.healthState = 'dead';
+
+          this.deathEvents.push({
+            entityId,
+            entityType: entityData.type as string,
+            killerEntityId: this.lastDamageSource.get(entityId),
+            entityData: { ...entityData } as EntityData,
+          });
+          this.lastDamageSource.delete(entityId);
         } else {
           // Countdown
           entityData.dyingTicks = dyingTicks - 1;
@@ -304,6 +357,8 @@ export class HealthSystem extends BaseReactiveSystem {
 
   public override resetState(): void {
     this.intents = [];
+    this.deathEvents = [];
+    this.lastDamageSource.clear();
   }
 
   public override getDebugState(): Record<string, unknown> {

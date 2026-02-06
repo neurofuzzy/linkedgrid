@@ -54,18 +54,32 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 
 Phase 2: Core II
 
-[ ] 1. Score System (score on kill, coin collection)
-   - Via `HealthSystem` death callback.
-[ ] 2. Game Objectives System 
+[x] 1. Score System (score on kill, coin collection)
+   - Via `HealthSystem` death events (`getDeathEvents()`).
+   - `ScoreSystem` awards points for player kills (scoreValue) and coin collection.
+   - `CoinData` entity type with scoreValue.
+[x] 2. Game Objectives System 
    - Flag pickup, Kill-all, Reach-exit.
-   - Scene completion events.
+   - Scene completion events via callbacks.
+   - `ObjectiveSystem` tracks objectives stored in `GameState.objectives`.
+   - `FlagData`, `ExitData` entity types.
+[x] 3. Character Personas
+   - `CharacterPersona` config with speed, hp, armor, hardness, scoreValue.
+   - Player Character (most flexible and composable, the superset).
+   - Preset NPC classes: grunt (T1), soldier (T2), elite (T3), boss (T4).
+   - `spawnNPC()` and `spawnNPCFromPersona()` spawn helpers.
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
 *SEPARATE DEMOS EXPECTED*
 
-[ ] A) Score tracking and objectives
-[ ] B) Multiscene game with objectives
+[x] A) Score tracking and objectives -> `dev/games/score-objectives-demo.json`
+[x] B) Multiscene game with objectives -> `dev/games/multiscene-objectives-demo.json`
+[x] C) Multiscene game with player, NPC combat as tournament -> `dev/games/tournament-demo.json`
+
+Phase 2.5: Documentation
+
+The goal of this phase will be to document the codebase, starting from the code itself (implementation), and integrating relevant sections of the specs (intent), as well as understanding of the mechanics that are tested in the testing framework. The goal is to create a LLM-friendly reference for the conventions and constructs we are using in composition to create emergent game designs.
 
 ---
 

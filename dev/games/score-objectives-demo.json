@@ -1,0 +1,173 @@
+{
+  "name": "Score & Objectives Demo",
+  "description": "Phase 2 Demo A: Score tracking and objectives.\nArrow keys: Move | WASD: Fire | Space: Melee\nCollect coins for points. Kill enemies for score. Reach the exit.",
+  "initialScene": "arena",
+  "input": {
+    "type": "keyboard",
+    "preset": "twin-stick"
+  },
+  "objectives": [
+    { "id": "collect-flags", "type": "collect-flag", "sceneId": "arena", "targetId": "red-flag" },
+    { "id": "kill-all", "type": "kill-all", "sceneId": "arena" },
+    { "id": "reach-exit", "type": "reach-exit", "sceneId": "arena" }
+  ],
+  "scenes": [
+    {
+      "id": "arena",
+      "name": "Score Arena",
+      "width": 15,
+      "height": 15,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 7,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "arena",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 30 },
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== ENEMIES (with scoreValue) ===" },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 30,
+            "maxHp": 30,
+            "healthState": "alive",
+            "damage": 5,
+            "aiState": "idle",
+            "team": "enemy",
+            "scoreValue": 10,
+            "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 11,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 10,
+            "aiState": "idle",
+            "team": "enemy",
+            "scoreValue": 25,
+            "armor": 2,
+            "color": "#ff8800"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 11,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "healthState": "alive",
+            "damage": 15,
+            "aiState": "idle",
+            "team": "enemy",
+            "scoreValue": 50,
+            "armor": 5,
+            "hardness": 3,
+            "color": "#cc00cc"
+          }
+        },
+
+        { "_comment": "=== COINS ===" },
+        { "type": "coin", "x": 1, "y": 1, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 13, "y": 1, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 1, "y": 13, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 13, "y": 13, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 7, "y": 1, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 7, "y": 13, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== FLAGS (objective) ===" },
+        { "type": "flag", "x": 5, "y": 5, "layer": 4, "data": { "objectiveId": "red-flag", "collectibleId": "flag", "color": "#ff0000" } },
+        { "type": "flag", "x": 9, "y": 9, "layer": 4, "data": { "objectiveId": "red-flag", "collectibleId": "flag", "color": "#ff0000" } },
+
+        { "_comment": "=== EXIT ===" },
+        { "type": "exit", "x": 13, "y": 7, "layer": 1, "data": { "color": "#00ff00" } },
+
+        { "_comment": "=== WALLS (border) ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 12, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 13, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 14, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 10, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 12, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 14, "y": 13, "layer": 5, "data": { "color": "#444444" } }
+      ]
+    }
+  ]
+}

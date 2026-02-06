@@ -52,6 +52,20 @@ export interface SceneDefinition {
  * Complete game configuration with scenes, entities, and systems.
  * Used by GameRuntime.fromConfig() to load JSON-based games.
  */
+/**
+ * Objective definition in JSON game configuration.
+ */
+export interface ObjectiveConfig {
+  /** Unique objective identifier */
+  id: string;
+  /** Objective type: collect all flags, kill all enemies, or reach exit */
+  type: 'collect-flag' | 'kill-all' | 'reach-exit';
+  /** Scene this objective applies to */
+  sceneId: string;
+  /** For collect-flag: the objectiveId on flag entities to collect */
+  targetId?: string;
+}
+
 export interface GameConfig {
   /** Optional description shown in playground */
   description?: string;
@@ -81,6 +95,8 @@ export interface GameConfig {
   };
   /** Scene definitions */
   scenes: SceneDefinition[];
+  /** Game objectives (tracked by ObjectiveSystem) */
+  objectives?: ObjectiveConfig[];
 }
 
 import type { InputProvider } from './input-provider';
@@ -350,7 +366,16 @@ export class GameRuntime {
       }
     }
 
-    // === PHASE 4: SYSTEM INITIALIZATION ===
+    // === PHASE 4: OBJECTIVES ===
+    // Load objectives into GameState
+    if (config.objectives) {
+      game.gameState.objectives = config.objectives.map((obj) => ({
+        ...obj,
+        completed: false,
+      }));
+    }
+
+    // === PHASE 5: SYSTEM INITIALIZATION ===
     // Use built-in system registry to create all systems
     const systems = createAllSystems(game, inputProvider);
 

@@ -11,6 +11,7 @@
 
 See also [Developer Context](./DEVELOPER_CONTEXT.md)
 See also [Package Contents](./PACKAGE_CONTENTS.md)
+See also [Web Platform Package Contents](./PLATFORM_WEB.md)
 See also [Spartan Reviewer Rules](./specs/spartan-review-rules.md)
 
 For a PR to be accepted, it must follow the above rules.

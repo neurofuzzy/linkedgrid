@@ -110,6 +110,20 @@ export const SYSTEM_CONFIG = {
     dependencies: ['SpatialSystem', 'HealthSystem', 'ProjectileSystem'] as const,
     description: 'Handles turret targeting, fires projectiles or rays',
   },
+
+  Score: {
+    tickRate: 1,
+    executionPhase: 'post-commit' as const,
+    dependencies: ['SpatialSystem', 'HealthSystem'] as const,
+    description: 'Awards score points for kills and coin collection',
+  },
+
+  Objective: {
+    tickRate: 1,
+    executionPhase: 'post-commit' as const,
+    dependencies: ['SpatialSystem', 'HealthSystem'] as const,
+    description: 'Tracks game objectives (collect-flag, kill-all, reach-exit) and scene completion',
+  },
 } as const;
 
 // Timing constants extracted from config

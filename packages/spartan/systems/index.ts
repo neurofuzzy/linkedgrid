@@ -28,5 +28,7 @@ export { PushSystem } from './push.system';
 export { RespawnSystem } from './respawn.system';
 export { TeleporterSystem } from './teleporter.system';
 export { TurretSystem } from './turret.system';
+export { ScoreSystem } from './score.system';
+export { ObjectiveSystem } from './objective.system';
 export { SignalSystem } from './signal.system';
 export { SpawningSystem } from './spawning.system';

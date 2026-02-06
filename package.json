@@ -26,7 +26,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "visual": "tsx tools/visual-runner/cli.tsx",
-    "ai:map": "tsx scripts/generate-map.ts packages/spartan > .ai/PACKAGE_CONTENTS.md"
+    "ai:map": "tsx scripts/generate-map.ts packages/spartan > .ai/PACKAGE_CONTENTS.md && tsx scripts/generate-map.ts packages/spartan-web > .ai/PLATFORM_WEB.md"
   },
   "repository": {
     "type": "git",

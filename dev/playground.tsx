@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan-web/input';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
-import { GridRenderer, HUD, DebugPanel } from './grid-renderer';
+import { GridRenderer, HUD, DebugPanel, GameStatusPanel } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/core/game-runtime';
 
 /**
@@ -116,6 +116,21 @@ const AVAILABLE_GAMES = [
     id: 'weapons-demo',
     name: 'Weapons Demo (Pickups & Presets)',
     path: '/dev/games/weapons-demo.json',
+  },
+  {
+    id: 'score-objectives-demo',
+    name: 'Score & Objectives Demo',
+    path: '/dev/games/score-objectives-demo.json',
+  },
+  {
+    id: 'multiscene-objectives-demo',
+    name: 'Multiscene Objectives Demo',
+    path: '/dev/games/multiscene-objectives-demo.json',
+  },
+  {
+    id: 'tournament-demo',
+    name: 'Tournament Demo (Tiered NPC Combat)',
+    path: '/dev/games/tournament-demo.json',
   },
 ];
 
@@ -478,6 +493,8 @@ function Playground() {
             playerInputSystem={playerInputSystem}
           />
 
+          {runtime && <GameStatusPanel runtime={runtime} />}
+
           {gameDescription && (
             <div className="debug-panel" style={{ marginBottom: '15px' }}>
               <h3>Instructions</h3>
@@ -485,7 +502,6 @@ function Playground() {
                 <div key={index}>{line}</div>
               ))}
             </div>
-
           )}
 
           <div className="debug-panel">

@@ -38,6 +38,8 @@ import { SignalSystem } from '../systems/signal.system';
 import { SpawningSystem } from '../systems/spawning.system';
 import { TeleporterSystem } from '../systems/teleporter.system';
 import { TurretSystem } from '../systems/turret.system';
+import { ScoreSystem } from '../systems/score.system';
+import { ObjectiveSystem } from '../systems/objective.system';
 
 /**
  * Create all game systems with proper dependency resolution.
@@ -103,6 +105,8 @@ export function createAllSystems(
   // === SYSTEMS NEEDING HEALTHSYSTEM ===
   const projectileSystem = new ProjectileSystem(healthSystem);
   const powerupSystem = new PowerupSystem({ healthSystem });
+  const scoreSystem = new ScoreSystem(gameManager, healthSystem);
+  const objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);
 
   // === SYSTEMS NEEDING PROJECTILESYSTEM ===
   const turretSystem = new TurretSystem(healthSystem, projectileSystem);
@@ -110,6 +114,8 @@ export function createAllSystems(
 
   systems.push(projectileSystem);
   systems.push(powerupSystem);
+  systems.push(scoreSystem);
+  systems.push(objectiveSystem);
 
   // === SYSTEMS NEEDING INPUTPROVIDER ===
   // Only create these if inputProvider is available
@@ -160,6 +166,8 @@ export const ALL_SYSTEM_NAMES = [
   'PlayerInputSystem',
   'MeleeSystem',
   'PlayerWeaponSystem',
+  'ScoreSystem',
+  'ObjectiveSystem',
 ] as const;
 
 export type SystemName = (typeof ALL_SYSTEM_NAMES)[number];

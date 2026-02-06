@@ -128,6 +128,10 @@ export {
   isPlayerWithHealth,
   isEnemyWithAI,
   isTeleporterWithTarget,
+  isCoin,
+  isFlag,
+  isExit,
+  hasScoreValue,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
@@ -138,6 +142,11 @@ export {
   spawnItem,
   spawnWall,
   spawnPlayerWithId,
+  spawnNPC,
+  spawnNPCFromPersona,
+  spawnCoin,
+  spawnFlag,
+  spawnExit,
 } from './entities/spawn-helpers';
 
 // Helpers
@@ -154,6 +163,15 @@ export {
   LiquidSystem,
   PlayerInputSystem,
   PoisonSystem,
+  ScoreSystem,
+  ObjectiveSystem,
   TeleporterSystem,
 } from './systems';
+
+// Character Personas
+export { CHARACTER_PERSONAS, getPersona } from './config/personas.config';
+export type { CharacterPersona } from './config/personas.config';
+
+// Objective types
+export type { ObjectiveDefinition, ObjectiveType, HasScoreValue } from './traits/objective.trait';
 
