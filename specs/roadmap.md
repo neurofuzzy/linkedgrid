@@ -100,6 +100,10 @@ Phase 3: Gameplay Enhancements
 
 [ ] 1. Range Sensors (like pressure plates but activates within range + LOS)
 [ ] 2. Wave spawners (contiguous groups spawning simultaneously)
+      a. example: 4 contiguous spawners in a line with a wave size of 2 would spawn from pos 1 and 3, then after cooldown, from pos 2 and 4
+      b. only spawn as many as max concurrent allowed
+[ ] 3. Wave recycling: Allow spawned entities to fly offscreen and be removed without counting as "killed by player"
+[ ] 4. Waves and Game Objectives: Link wave completion to (optional) game completion with an (optional) score threshold for win/lose
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
@@ -107,6 +111,7 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 
 [ ] A) Range sensors
 [ ] B) Wave spawners, single in first scene and contiguous groups in second scene
+[ ] C) Wave recycling, borderless game with flying enemies that go offscreen with score objective
 
 ---
 
