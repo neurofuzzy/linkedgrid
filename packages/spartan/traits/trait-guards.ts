@@ -37,6 +37,7 @@ import type { HasSceneConnection } from './scene-connection.trait';
 import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
 import type { HasScoreValue } from './objective.trait';
+import type { HasNPCBrain } from './npc-brain.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -74,6 +75,7 @@ import type {
   SleepWakeData,
   SpawnerData,
   HealthPackData,
+  HealthPotionData,
   ShieldPackData,
   SpeedBoostData,
   DamageBoostData,
@@ -84,6 +86,7 @@ import type {
   CoinData,
   FlagData,
   ExitData,
+  RangeSensorData,
 } from '../entities';
 
 /**
@@ -693,11 +696,11 @@ export function isTeleporterWithTarget(
  */
 export function hasSignalEmitter(
   entity: EntityData
-): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData {
+): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData | RangeSensorData {
   if (!('signalType' in entity)) return false;
   const signalType = entity.signalType;
   return (
-    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver') &&
+    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver' || signalType === 'range-sensor') &&
     'signalState' in entity && typeof entity.signalState === 'boolean'
   );
 }
@@ -804,6 +807,16 @@ export function isGate(entity: EntityData): entity is GateData {
  */
 export function isTransceiver(entity: EntityData): entity is TransceiverData {
   return entity.type === 'transceiver';
+}
+
+/**
+ * Check if entity is a range sensor.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'range-sensor'
+ */
+export function isRangeSensor(entity: EntityData): entity is RangeSensorData {
+  return entity.type === 'range-sensor';
 }
 
 /**
@@ -1244,6 +1257,16 @@ export function isHealthPack(entity: EntityData): entity is HealthPackData {
 }
 
 /**
+ * Check if entity is a health potion (heal-over-time).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'health-potion'
+ */
+export function isHealthPotion(entity: EntityData): entity is HealthPotionData {
+  return entity.type === 'health-potion';
+}
+
+/**
  * Check if entity is a shield pack.
  *
  * @param entity - Entity to check
@@ -1309,9 +1332,10 @@ export function isWeaponPickup(entity: EntityData): entity is WeaponPickupData {
  * @param entity - Entity to check
  * @returns true if entity is a collectible powerup
  */
-export function isPowerup(entity: EntityData): entity is HealthPackData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData | WeaponPickupData {
+export function isPowerup(entity: EntityData): entity is HealthPackData | HealthPotionData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData | WeaponPickupData {
   return (
     isHealthPack(entity) ||
+    isHealthPotion(entity) ||
     isShieldPack(entity) ||
     isSpeedBoost(entity) ||
     isDamageBoost(entity) ||
@@ -1361,4 +1385,14 @@ export function isExit(entity: EntityData): entity is ExitData {
  */
 export function hasScoreValue(entity: EntityData): entity is EntityData & HasScoreValue {
   return typeof entity.scoreValue === 'number';
+}
+
+/**
+ * Check if entity has NPC brain trait.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has NPC brain configuration
+ */
+export function hasNPCBrain(entity: EntityData): entity is EntityData & HasNPCBrain {
+  return 'posture' in entity || 'threatRange' in entity || 'attackRange' in entity || 'retreatHealthPct' in entity;
 }

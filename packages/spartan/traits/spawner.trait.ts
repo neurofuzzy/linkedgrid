@@ -82,6 +82,23 @@ export interface HasSpawner {
   /** Maximum health (for damageable spawners) */
   maxHp?: number;
 
+  // ========== Wave Mode ==========
+  /** Enable wave spawning mode (spawn waveSize entities simultaneously) */
+  waveMode?: boolean;
+
+  /** Number of entities to spawn per wave (default: 1) */
+  waveSize?: number;
+
+  /** Total number of waves to spawn (undefined = infinite) */
+  totalWaves?: number;
+
+  /** Ticks between waves (overrides cooldown when in wave mode) */
+  waveCooldown?: number;
+
+  // ========== Boundary Recycling ==========
+  /** If true, spawned entities that reach grid boundary are removed without counting as kills */
+  recycleAtBoundary?: boolean;
+
   // ========== Internal State (managed by system) ==========
   /** IDs of living entities spawned by this spawner (filtered each tick) */
   spawnedEntityIds?: number[];

@@ -229,13 +229,14 @@ Scenes contain entity definitions in JSON:
 
 ## Game Systems at a Glance
 
-All 24 built-in systems, grouped by execution phase:
+All 25 built-in systems, grouped by execution phase:
 
 | Phase | System | Tick Rate | Description |
 | :--- | :--- | :--- | :--- |
 | **input** | PlayerInputSystem | 1 | Translates player input into movement intents |
 | **pre-commit** | PushSystem | 1 | Resolves push interactions from movement intents |
 | **pre-commit** | DoorSystem | 1 | Unlocks doors when player has matching key |
+| **pre-commit** | NPCBrainSystem | 1 | AI Controller: threat scan, posture, attack/movement intent |
 | **main** | MeleeSystem | 1 | Close-range combat (player and NPC) |
 | **main** | PlayerWeaponSystem | 1 | Ranged weapon firing with ammo tracking |
 | **main** | NPCMovementSystem | 2 | Autonomous NPC movement (pursue, patrol, guard, etc.) |
@@ -247,16 +248,16 @@ All 24 built-in systems, grouped by execution phase:
 | **main** | FloorEffectSystem | 1 | Floor hazards (lava, ice, mud) and healing |
 | **main** | ProjectileSystem | 1 | Autonomous projectiles along Bresenham paths |
 | **main** | TurretSystem | 1 | Stationary shooters targeting entities |
-| **main** | SignalSystem | 1 | Signal propagation (switches, conductors, gates) |
+| **main** | SignalSystem | 1 | Signal propagation (switches, conductors, gates, range sensors) |
 | **main** | GateSystem | 1 | Signal-controlled gate open/close |
-| **main** | SpawningSystem | 1 | Entity spawning from spawner entities |
+| **main** | SpawningSystem | 1 | Entity spawning with wave mode and boundary recycling |
 | **post-commit** | HealthSystem | 1 | Intent-based damage/heal, death states, removal |
 | **post-commit** | CollectionSystem | 1 | Item pickup and inventory |
 | **post-commit** | TeleporterSystem | 1 | Cross-scene teleportation |
-| **post-commit** | PowerupSystem | 1 | Powerup collection and buff management |
+| **post-commit** | PowerupSystem | 1 | Powerup collection, buffs, health-regen (heal-over-time) |
 | **post-commit** | RespawnSystem | 1 | Player death and respawn at checkpoints |
 | **post-commit** | ScoreSystem | 1 | Score tracking from kills and coins |
-| **post-commit** | ObjectiveSystem | 1 | Objective tracking (collect-flag, kill-all, reach-exit) |
+| **post-commit** | ObjectiveSystem | 1 | Objective tracking (collect-flag, kill-all, reach-exit, wave-clear) |
 
 **Source**: [config/systems.config.ts](../config/systems.config.ts), [core/system-registry.ts](../core/system-registry.ts)
 
@@ -284,9 +285,9 @@ interface HasHealth     |  type PlayerData =           |  class HealthSystem
 | **Hazards** | `lava`, `acid`, `medbay`, `ice`, `mud`, `barrel` | FLOOR (1) |
 | **Elementals** | `fire-visual`, `poison-gas`, `water`, `ash`, `grass`, `explosion-visual`, `projectile`, `ray-effect` | Various |
 | **Objectives** | `coin`, `flag`, `exit` | COLLECTIBLES (4) |
-| **Powerups** | `health-pack`, `shield-pack`, `speed-boost`, `damage-boost`, `invincibility`, `ammo-pack`, `weapon-pickup` | COLLECTIBLES (4) |
+| **Powerups** | `health-pack`, `health-potion`, `shield-pack`, `speed-boost`, `damage-boost`, `invincibility`, `ammo-pack`, `weapon-pickup` | COLLECTIBLES (4) |
 | **Spawning** | `player-start`, `checkpoint` | FLOOR (1) |
-| **Signals** | `oscillator`, `pressure-switch`, `inverter`, `conductive-floor`, `gate`, `transceiver` | FLOOR/WALLS |
+| **Signals** | `oscillator`, `pressure-switch`, `inverter`, `conductive-floor`, `gate`, `transceiver`, `range-sensor` | FLOOR/WALLS |
 | **Logic** | `chain-link`, `path-node`, `sleep-wake` | LOGIC (3) |
 | **Teleporters** | `teleporter` | FLOOR (1) |
 
@@ -739,6 +740,7 @@ The signal system enables logic circuits: switches, conductors, gates.
 | `inverter` | Logic | Emits inverted input signal |
 | `transceiver` | Relay | Wireless signal relay by channel |
 | `gate` | Receiver | Opens/closes based on signal state |
+| `range-sensor` | Generator | Emits signal when player is within range (optional LOS) |
 | `sleep-wake` | Receiver | Activates/deactivates NPCs in zone |
 
 ### How Signals Flow
@@ -829,7 +831,7 @@ class HealthSystem {
 | `HasShield` | `shield`, `maxShield`, `shieldRegenRate`, `shieldRegenDelay` | Absorbs damage before HP |
 | `HasResistance` | `resistance` | Percentage damage reduction (0-1) |
 | `HasVulnerability` | `vulnerabilities` | Damage type multipliers |
-| `HasBuff` | `activeBuffs` | PowerupSystem |
+| `HasBuff` | `activeBuffs` | PowerupSystem (health-regen, speed, damage, shield, invincibility) |
 
 ### Movement Traits
 
@@ -837,6 +839,7 @@ class HealthSystem {
 | :--- | :--- | :--- |
 | `HasAI` | `aiState` | General AI state |
 | `HasNPCMovement` | `movementMode`, `speed`, `followTarget`, `patrolPath`, `guardRadius` | NPCMovementSystem |
+| `HasNPCBrain` | `posture`, `threatRange`, `attackRange`, `preferRanged`, `retreatHealthPct` | NPCBrainSystem (Controller/Executor pattern) |
 | `HasPushable` | `pushable` | PushSystem (can be pushed) |
 | `HasPusher` | `pushStrength` | PushSystem (can push) |
 | `HasProjectile` | `projectileSpeed`, `projectileDamage`, `path`, `bounceCount`, `pierceCount` | ProjectileSystem |
@@ -880,7 +883,7 @@ class HealthSystem {
 
 | Trait | Properties | Used By |
 | :--- | :--- | :--- |
-| `HasSpawner` | `spawnType`, `spawnLayer`, `spawnLimit`, `spawnCooldown` | SpawningSystem |
+| `HasSpawner` | `spawnType`, `spawnLayer`, `spawnLimit`, `spawnCooldown`, `waveMode`, `waveSize`, `totalWaves`, `recycleAtBoundary` | SpawningSystem |
 | `HasTurret` | `turretRange`, `turretCooldown`, `turretWeaponType`, `turretTargeting` | TurretSystem |
 
 **Source**: [traits/](../traits/), [traits/trait-guards.ts](../traits/trait-guards.ts)
@@ -1075,6 +1078,13 @@ Inspects pending move ops. If player moves into a locked door and has the matchi
 
 **Source**: [systems/door.system.ts](../systems/door.system.ts)
 
+### NPCBrainSystem
+**Phase**: pre-commit | **Tick Rate**: 1
+
+AI Controller system using the Controller/Executor pattern. High-level brain makes decisions and writes intent fields onto entity data; low-level executor systems (NPCMovementSystem, MeleeSystem, ProjectileSystem) act on those intents. Per NPC each tick: 1) Threat scan (nearest opposing team within `threatRange`), 2) Posture evaluation (aggressive/defensive/retreating/idle based on HP and distance), 3) Attack execution (`meleeDirection` or projectile spawn), 4) Movement override (`movementMode` + `targetEntityId`). Requires `HasNPCBrain` trait.
+
+**Source**: [systems/npc-brain.system.ts](../systems/npc-brain.system.ts)
+
 ### MeleeSystem
 **Phase**: main | **Tick Rate**: 1
 
@@ -1149,7 +1159,7 @@ Handles floor hazards and effects. Effect types: `damage` (lava, acid), `heal` (
 ### SignalSystem
 **Phase**: main | **Tick Rate**: 1
 
-Queue-based signal propagation. Processes generators (oscillators, pressure switches), propagates through conductors, handles inverters, and broadcasts via transceivers.
+Queue-based signal propagation. Processes generators (oscillators, pressure switches, range sensors), propagates through conductors, handles inverters, and broadcasts via transceivers. Range sensors emit signals when the player is within a configurable range, with optional line-of-sight requirement.
 
 **Source**: [systems/signal.system.ts](../systems/signal.system.ts)
 
@@ -1163,7 +1173,7 @@ Opens/closes gates based on signal state. Open gates move from WALLS to FLOOR la
 ### SpawningSystem
 **Phase**: main | **Tick Rate**: 1
 
-Manages entity spawning from spawner entities. Supports spawn limits, cooldowns, group coordination, player range detection, and sleep-wake zone activation.
+Manages entity spawning from spawner entities. Supports spawn limits, cooldowns, group coordination, player range detection, and sleep-wake zone activation. Wave mode (`waveMode: true`) spawns groups simultaneously with configurable `waveSize`, `totalWaves`, and `waveCooldown`. Contiguous spawners form groups that alternate spawn positions. Boundary recycling (`recycleAtBoundary: true`) removes spawned entities that reach the grid edge without counting them as kills.
 
 **Source**: [systems/spawning.system.ts](../systems/spawning.system.ts)
 
@@ -1184,7 +1194,7 @@ Detects player overlap with teleporter entities. Uses `connectionKey` to find de
 ### PowerupSystem
 **Phase**: post-commit | **Tick Rate**: 1
 
-Processes powerup collection from overlaps. Applies effects: health-pack (instant heal), shield-pack (restore shield), speed-boost (timed), damage-boost (timed), invincibility (timed), ammo-pack (restore ammo), weapon-pickup (new weapon). Manages buff durations and expiration.
+Processes powerup collection from overlaps. Applies effects: health-pack (instant heal), health-potion (heal-over-time via `health-regen` buff), shield-pack (restore shield), speed-boost (timed), damage-boost (timed), invincibility (timed), ammo-pack (restore ammo), weapon-pickup (new weapon). Manages buff durations and expiration. Per-tick active buff effects (e.g., health-regen) are processed before expiration checks. Health gained from health-regen buffs is permanent and stays after the buff expires.
 
 **Source**: [systems/powerup.system.ts](../systems/powerup.system.ts)
 
@@ -1205,7 +1215,7 @@ Awards points from two sources: entity kills (reads `DeathEvent` from HealthSyst
 ### ObjectiveSystem
 **Phase**: post-commit | **Tick Rate**: 1
 
-Tracks three objective types: `collect-flag` (collect all flags with matching objectiveId), `kill-all` (eliminate all enemies in scene), `reach-exit` (player reaches exit after prerequisites met). Emits scene and game completion events via callbacks.
+Tracks four objective types: `collect-flag` (collect all flags with matching objectiveId), `kill-all` (eliminate all enemies in scene), `reach-exit` (player reaches exit after prerequisites met), `wave-clear` (all wave spawner groups complete and enemies eliminated, with optional `scoreThreshold`). Emits scene and game completion events via callbacks.
 
 **Source**: [systems/objective.system.ts](../systems/objective.system.ts)
 
@@ -1562,6 +1572,7 @@ Place corresponding entities in the scene:
 - `collect-flag`: Completes when all flags with matching `objectiveId` are collected
 - `kill-all`: Completes when all enemies in the scene are dead
 - `reach-exit`: Completes when player reaches exit AND all prerequisite objectives are done
+- `wave-clear`: Completes when all wave spawner groups are done AND all spawned enemies are dead (optional `scoreThreshold`)
 
 Enemies with `scoreValue` award points on kill. Coins award points on collection.
 
@@ -1670,5 +1681,5 @@ Push the block onto the pressure switch to open the gate.
 
 ---
 
-**Version**: Phase 2.5
+**Version**: Phase 3.5
 **Last Updated**: 2026-02-06

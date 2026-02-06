@@ -505,6 +505,51 @@ export function spawnTransceiver(
 }
 
 /**
+ * Spawn a range sensor entity.
+ *
+ * Range sensors emit ON when the player is within range (and optionally has LOS),
+ * and emit OFF when the player leaves range or LOS is broken.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param layer - Layer to spawn on (typically COLLECTIBLES)
+ * @param sensorRange - Detection range in cells (Manhattan distance)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID of spawned range sensor
+ *
+ * @example
+ * ```typescript
+ * spawnRangeSensor(spatial, 5, 5, GameLayers.COLLECTIBLES, 5, {
+ *   requiresLOS: true,
+ *   color: '#00ffaa'
+ * });
+ * ```
+ */
+export function spawnRangeSensor(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  layer: number,
+  sensorRange: number,
+  overrides?: Partial<{
+    requiresLOS: boolean;
+    signalState: boolean;
+    color: string;
+    sceneId: string;
+  }>
+): number {
+  return spatial.spawn('range-sensor', x, y, layer, {
+    signalType: 'range-sensor',
+    signalState: false,
+    sensorRange,
+    requiresLOS: true,
+    color: '#00ffaa',
+    ...overrides,
+  });
+}
+
+/**
  * Logic System Spawn Helpers
  *
  * Helper functions for spawning logic-layer entities (path nodes, sleep-wake zones).

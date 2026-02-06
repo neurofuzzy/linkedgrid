@@ -156,3 +156,30 @@ export type TransceiverData = BaseEntityData & HasSignalEmitter & HasSignalRecei
   /** Channel identifier - transceivers on same channel are linked */
   channel: string;
 };
+
+/**
+ * Range Sensor - Proximity-based signal emitter with optional line of sight.
+ * 
+ * Emits ON when the player is within range (and optionally has LOS),
+ * emits OFF when player leaves range or LOS is broken.
+ * 
+ * Similar to a pressure switch, but activates at a distance.
+ * 
+ * @example
+ * ```typescript
+ * spatial.spawn('range-sensor', 5, 5, GameLayers.COLLECTIBLES, {
+ *   signalState: false,
+ *   sensorRange: 5,
+ *   requiresLOS: true,
+ *   color: '#00ffaa'
+ * });
+ * ```
+ */
+export type RangeSensorData = BaseEntityData & HasSignalEmitter & HasColor & {
+  type: 'range-sensor';
+  signalType: 'range-sensor';
+  /** Detection range in cells (Manhattan distance) */
+  sensorRange: number;
+  /** Whether line of sight to player is required for activation */
+  requiresLOS: boolean;
+};

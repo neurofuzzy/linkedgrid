@@ -1,5 +1,5 @@
 {
-  "description": "NPC Patrol Paths Demo - Shows path-following NPCs:\n• Cyan: Strict patrol (never leaves path, reverses at dead-ends)\n• Red: Patrol + pursue (follows path, chases player when close)\n• Orange: Guard (patrols loop, intercepts player on path)\n\nPaths are drawn on the LOGIC layer (gray lines).\nMove near the red guard to trigger pursuit!",
+  "description": "NPC Patrol Paths Demo - Shows path-following NPCs:\n• Cyan: Strict patrol (never leaves path, reverses at dead-ends)\n• Red: Patrol + pursue + RANGED COMBAT (has pistol + melee fallback!)\n• Orange: Guard (patrols loop, intercepts player on path)\n\nArrow keys: Move | WASD: Fire | Space: Melee\nMove near the red guard to trigger pursuit and gunfire!",
   "scenes": [
     {
       "id": "paths-demo",
@@ -24,6 +24,11 @@
             "isPlayer": true,
             "team": "player",
             "healthState": "alive",
+            "meleeDamage": 20,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 30 },
             "color": "#00ff00"
           }
         },
@@ -40,17 +45,33 @@
           }
         },
         {
-          "type": "npc",
+          "_comment": "Red patrol NPC with NPC Brain + ranged + melee combat",
+          "type": "enemy",
           "x": 20,
           "y": 5,
           "layer": 6,
           "data": {
+            "hp": 80,
+            "maxHp": 80,
+            "healthState": "alive",
+            "damage": 5,
             "movementMode": "patrol",
             "speed": 2,
             "triggerRange": 5,
             "giveUpRange": 10,
             "pathfindingRange": 20,
             "team": "enemy",
+            "threatRange": 10,
+            "attackRange": 6,
+            "posture": "aggressive",
+            "preferRanged": true,
+            "retreatHealthPct": 0.2,
+            "meleeDamage": 12,
+            "meleeCooldown": 5,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 15 },
+            "scoreValue": 50,
             "color": "#ff3333"
           }
         },
@@ -943,8 +964,6 @@
   "tickRate": 10,
   "input": {
     "type": "keyboard",
-    "options": {
-      "directionMode": "continuous"
-    }
+    "preset": "twin-stick"
   }
 }

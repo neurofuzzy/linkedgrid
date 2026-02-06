@@ -132,6 +132,9 @@ export {
   isFlag,
   isExit,
   hasScoreValue,
+  isRangeSensor,
+  isHealthPotion,
+  hasNPCBrain,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
@@ -147,6 +150,7 @@ export {
   spawnCoin,
   spawnFlag,
   spawnExit,
+  spawnRangeSensor,
 } from './entities/spawn-helpers';
 
 // Helpers
@@ -174,4 +178,7 @@ export type { CharacterPersona } from './config/personas.config';
 
 // Objective types
 export type { ObjectiveDefinition, ObjectiveType, HasScoreValue } from './traits/objective.trait';
+
+// NPC Brain trait
+export type { HasNPCBrain, NPCPosture } from './traits/npc-brain.trait';
 

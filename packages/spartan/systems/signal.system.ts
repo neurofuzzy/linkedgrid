@@ -18,7 +18,9 @@ import {
   hasConductive,
   isTransceiver,
   hasAI,
+  isRangeSensor,
 } from '../traits/trait-guards';
+import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 
 /**
  * Signal - Represents a propagating event in the signal network.
@@ -116,9 +118,10 @@ export class SignalSystem extends BaseReactiveSystem {
     // Phase 2: Check if network topology changed (conductive entities moved)
     const topologyChanged = this.checkTopologyChanged(context);
 
-    // Phase 3: Update generators (oscillators, pressure switches)
+    // Phase 3: Update generators (oscillators, pressure switches, range sensors)
     this.updateOscillators(context);
     this.updatePressureSwitches(context);
+    this.updateRangeSensors(context);
 
     // Phase 4: Create and propagate signals from generators
     // If topology changed, re-propagate from ALL active generators
@@ -315,8 +318,53 @@ export class SignalSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Phase 3: Propagate from generators (oscillators, pressure switches).
+   * Update range sensor states based on player proximity and LOS.
    */
+  private updateRangeSensors(context: GameContext): void {
+    const playerEntityId = this.gameManager.gameState?.playerEntityId;
+    if (!playerEntityId) return;
+
+    const playerPos = context.spatial.getEntityPosition(playerEntityId);
+    if (!playerPos) return;
+
+    for (const [entityId, pos] of context.spatial.getAllPositions()) {
+      const data = context.spatial.getEntityData(entityId);
+      if (!data || !isRangeSensor(data)) continue;
+
+      const sensorRange = data.sensorRange ?? 5;
+      const requiresLOS = data.requiresLOS !== false;
+
+      // Check distance (Manhattan)
+      const distance = Math.abs(playerPos.x - pos.x) + Math.abs(playerPos.y - pos.y);
+      let inRange = distance <= sensorRange;
+
+      // Check LOS if required and in range
+      if (inRange && requiresLOS) {
+        const sensorCell = context.spatial.grid.cell(pos.x, pos.y);
+        const playerCell = context.spatial.grid.cell(playerPos.x, playerPos.y);
+
+        if (sensorCell && playerCell) {
+          const line = LinkedCellUtils.getLine(sensorCell, playerCell);
+          for (let i = 1; i < line.length - 1; i++) {
+            if (context.spatial.isBlocked(line[i])) {
+              inRange = false;
+              break;
+            }
+          }
+        } else {
+          inRange = false;
+        }
+      }
+
+      // Update signal state if changed
+      if (data.signalState !== inRange) {
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          signalState: inRange,
+        });
+      }
+    }
+  }
+
   /**
    * Phase 4: Propagate from generators (oscillators, pressure switches).
    * If topologyChanged is true, re-propagate from ALL active generators,
@@ -527,7 +575,7 @@ export class SignalSystem extends BaseReactiveSystem {
 
     // Emitters acting as conductors
     if (hasSignalEmitter(data)) {
-      if (data.signalType === 'oscillator' || data.signalType === 'pressure') {
+      if (data.signalType === 'oscillator' || data.signalType === 'pressure' || data.signalType === 'range-sensor') {
         return 'conductor';
       }
     }

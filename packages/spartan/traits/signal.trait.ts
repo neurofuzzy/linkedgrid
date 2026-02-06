@@ -17,7 +17,7 @@
  */
 export interface HasSignalEmitter {
   /** Type of signal emitter */
-  signalType: 'oscillator' | 'pressure' | 'inverter' | 'transceiver';
+  signalType: 'oscillator' | 'pressure' | 'inverter' | 'transceiver' | 'range-sensor';
 
   /** Current signal state (on = true, off = false) */
   signalState: boolean;

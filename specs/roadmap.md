@@ -98,15 +98,36 @@ Location: `packages/spartan/docs/`
 
 Phase 3: Gameplay Enhancements
 
-[ ] 1. Range Sensors (like pressure plates but activates within range + LOS)
-[ ] 2. Wave spawners (contiguous groups spawning simultaneously)
+[x] 1. Range Sensors (like pressure plates but activates within range + LOS)
+[x] 2. Wave spawners (contiguous groups spawning simultaneously)
+      a. example: 4 contiguous spawners in a line with a wave size of 2 would spawn from pos 1 and 3, then after cooldown, from pos 2 and 4
+      b. only spawn as many as max concurrent allowed
+[x] 3. Wave recycling: Allow spawned entities to fly offscreen and be removed without counting as "killed by player"
+[x] 4. Waves and Game Objectives: Link wave completion to (optional) game completion with an (optional) score threshold for win/lose
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
 *SEPARATE DEMOS EXPECTED*
 
-[ ] A) Range sensors
-[ ] B) Wave spawners, single in first scene and contiguous groups in second scene
+[x] A) Range sensors -> `dev/games/range-sensor-demo.json`
+[x] B) Wave spawners, single in first scene and contiguous groups in second scene -> `dev/games/wave-spawner-demo.json`
+[x] C) Wave recycling, borderless game with flying enemies that go offscreen with score objective -> `dev/games/wave-recycling-demo.json`
+
+Phase 3.5: NPC Movement and Attack Modes
+
+NPC AI has movement modes via the npc movement system, but we need a proper NPC state machine that coordinates movement modes, attack and defense posture and weapons/melee usage. This should also understand teams and who is a player.
+
+[x] 1. NPC State Machine System: coordinator of all NPCs. Entities remain dumb
+[x] 2. NPC Attack/Defense Posture - links with NPC movement modes
+[x] 3. NPC prey/threat identification - decision-making heuristics that determine state transitions
+
+GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
+
+*SEPARATE DEMOS EXPECTED*
+
+[x] A) Upgrade existing NPC movement demo to include melee attacks -> `dev/games/npc-movement.json`
+[x] B) Upgrade existing NPC paths to support melee and ranged (projectile) weapons -> `dev/games/npc-paths.json`
+[x] C) New multi-scene demo with one enemy per scene in maze/dungeon environments -> `dev/games/npc-dungeon-demo.json`
 
 ---
 

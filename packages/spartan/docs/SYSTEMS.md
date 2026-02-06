@@ -69,7 +69,7 @@ public override getDebugState(): Record<string, unknown> {
 }
 ```
 
-## All Built-in Systems (24)
+## All Built-in Systems (25)
 
 ### Input Phase
 
@@ -83,6 +83,7 @@ public override getDebugState(): Record<string, unknown> {
 | :--- | :--- | :--- |
 | **PushSystem** | 1 | Resolves push interactions from movement intents. Supports chain pushing. |
 | **DoorSystem** | 1 | Unlocks doors when player has matching key. Inspects pending ops. |
+| **NPCBrainSystem** | 1 | AI Controller: threat scanning, posture evaluation, attack/movement intent. |
 
 ### Main Phase
 
@@ -99,9 +100,9 @@ public override getDebugState(): Record<string, unknown> {
 | **FloorEffectSystem** | 1 | Floor hazards: damage, heal, slide, slow. |
 | **ProjectileSystem** | 1 | Autonomous projectiles along Bresenham paths. Bounce, pierce. |
 | **TurretSystem** | 1 | Stationary shooters. Targeting: nearest, player, fixed, cardinal. |
-| **SignalSystem** | 1 | Signal propagation (oscillators, switches, conductors, inverters). |
+| **SignalSystem** | 1 | Signal propagation (oscillators, switches, conductors, inverters, range sensors). |
 | **GateSystem** | 1 | Signal-controlled gate open/close (WALLS <-> FLOOR layer swap). |
-| **SpawningSystem** | 1 | Entity spawning from spawner entities with limits and cooldowns. |
+| **SpawningSystem** | 1 | Entity spawning from spawner entities. Supports wave mode, boundary recycling. |
 
 ### Post-Commit Phase
 
@@ -110,10 +111,10 @@ public override getDebugState(): Record<string, unknown> {
 | **HealthSystem** | 1 | Intent-based damage/heal. Damage pipeline: vuln -> resist -> armor -> shield -> HP. Death states. |
 | **CollectionSystem** | 1 | Item pickup from overlaps. Inventory management. |
 | **TeleporterSystem** | 1 | Cross-scene teleportation via connectionKey matching. |
-| **PowerupSystem** | 1 | Powerup collection and timed buff management. |
+| **PowerupSystem** | 1 | Powerup collection, timed buffs, health-regen (heal-over-time). |
 | **RespawnSystem** | 1 | Player death detection, checkpoint respawning, lives tracking. |
 | **ScoreSystem** | 1 | Score from kills (scoreValue) and coin collection. |
-| **ObjectiveSystem** | 1 | Objective tracking: collect-flag, kill-all, reach-exit. |
+| **ObjectiveSystem** | 1 | Objective tracking: collect-flag, kill-all, reach-exit, wave-clear. |
 
 ## Best Practices
 

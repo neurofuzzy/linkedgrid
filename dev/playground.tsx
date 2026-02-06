@@ -132,6 +132,26 @@ const AVAILABLE_GAMES = [
     name: 'Tournament Demo (Tiered NPC Combat)',
     path: '/dev/games/tournament-demo.json',
   },
+  {
+    id: 'range-sensor-demo',
+    name: 'Range Sensor Demo (Proximity Gates)',
+    path: '/dev/games/range-sensor-demo.json',
+  },
+  {
+    id: 'wave-spawner-demo',
+    name: 'Wave Spawner Demo (Single & Groups)',
+    path: '/dev/games/wave-spawner-demo.json',
+  },
+  {
+    id: 'wave-recycling-demo',
+    name: 'Wave Recycling & Objectives Demo',
+    path: '/dev/games/wave-recycling-demo.json',
+  },
+  {
+    id: 'npc-dungeon-demo',
+    name: 'NPC Dungeon (Brain AI Combat)',
+    path: '/dev/games/npc-dungeon-demo.json',
+  },
 ];
 
 /**

@@ -26,6 +26,7 @@ import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import type { HealthSystem } from './health.system';
+import type { SpawningSystem } from './spawning.system';
 import type { ObjectiveDefinition } from '../traits/objective.trait';
 import { isPlayer, isEnemy, isFlag, isExit, isEntityAlive } from '../traits/trait-guards';
 
@@ -90,6 +91,9 @@ export class ObjectiveSystem extends BaseReactiveSystem {
   /** Lazy-initialized tracking data per scene */
   private sceneTracking: Map<string, SceneTracking> = new Map();
 
+  /** Optional reference to SpawningSystem for wave-clear objectives */
+  private spawningSystem?: SpawningSystem;
+
   constructor(
     private gameManager: GameManager,
     private healthSystem: HealthSystem,
@@ -97,6 +101,14 @@ export class ObjectiveSystem extends BaseReactiveSystem {
   ) {
     super();
     this.config = { ...config };
+  }
+
+  /**
+   * Set the SpawningSystem reference for wave-clear objective support.
+   * Must be called before wave-clear objectives can be evaluated.
+   */
+  setSpawningSystem(spawningSystem: SpawningSystem): void {
+    this.spawningSystem = spawningSystem;
   }
 
   update(context: GameContext): void {
@@ -128,6 +140,9 @@ export class ObjectiveSystem extends BaseReactiveSystem {
           break;
         case 'reach-exit':
           completed = this.checkReachExit(context, objective);
+          break;
+        case 'wave-clear':
+          completed = this.checkWaveClear(objective);
           break;
       }
 
@@ -293,6 +308,36 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     }
 
     return false;
+  }
+
+  /**
+   * Check if all wave spawner waves have been cleared.
+   *
+   * Requires SpawningSystem reference (set via setSpawningSystem()).
+   * Optionally checks score threshold on the objective.
+   *
+   * A wave-clear objective is complete when:
+   * 1. All wave-mode spawner groups have spawned all their waves
+   * 2. All spawned entities from those groups are dead/removed
+   * 3. (Optional) Score meets or exceeds scoreThreshold
+   */
+  private checkWaveClear(objective: ObjectiveDefinition): boolean {
+    if (!this.spawningSystem) return false;
+
+    const activeSceneId = this.getActiveSceneId();
+    if (activeSceneId !== objective.sceneId) return false;
+
+    // Check if all waves are cleared
+    if (!this.spawningSystem.areAllWavesCleared()) return false;
+
+    // Check optional score threshold
+    if (objective.scoreThreshold !== undefined) {
+      if (this.gameManager.gameState.score < objective.scoreThreshold) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

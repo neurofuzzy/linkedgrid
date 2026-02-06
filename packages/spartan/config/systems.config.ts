@@ -83,6 +83,13 @@ export const SYSTEM_CONFIG = {
     description: 'Handles domino-like chain reactions',
   },
 
+  NPCBrain: {
+    tickRate: 1,
+    executionPhase: 'pre-commit' as const,
+    dependencies: ['SpatialSystem', 'ProjectileSystem'] as const,
+    description: 'Autonomous NPC combat AI: threat scan, posture evaluation, attack execution',
+  },
+
   NPCMovement: {
     tickRate: 2,
     executionPhase: 'main' as const,
@@ -122,7 +129,14 @@ export const SYSTEM_CONFIG = {
     tickRate: 1,
     executionPhase: 'post-commit' as const,
     dependencies: ['SpatialSystem', 'HealthSystem'] as const,
-    description: 'Tracks game objectives (collect-flag, kill-all, reach-exit) and scene completion',
+    description: 'Tracks game objectives (collect-flag, kill-all, reach-exit, wave-clear) and scene completion',
+  },
+
+  Spawning: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Spawns entities from spawner entities with grouping, activation, wave mode, and boundary recycling',
   },
 } as const;
 

@@ -1,0 +1,126 @@
+{
+  "name": "Wave Recycling & Objectives Demo",
+  "description": "Phase 3 Demo C: Wave recycling + wave-clear objective.\nArrow keys: Move | WASD: Fire | Space: Melee\nEnemies that reach grid edges are recycled (not counted as kills).\nClear all 3 waves and score 100+ points to win!",
+  "initialScene": "recycling-arena",
+  "input": {
+    "type": "keyboard",
+    "preset": "twin-stick"
+  },
+  "systems": [
+    "SpawningSystem",
+    "HealthSystem",
+    "NPCMovementSystem",
+    "ProjectileSystem",
+    "ObjectiveSystem",
+    "ScoreSystem"
+  ],
+  "objectives": [
+    { "id": "clear-waves", "type": "wave-clear", "sceneId": "recycling-arena", "scoreThreshold": 100 }
+  ],
+  "tickRate": 10,
+  "scenes": [
+    {
+      "id": "recycling-arena",
+      "name": "Wave Recycling Arena",
+      "width": 16,
+      "height": 16,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 8,
+          "y": 8,
+          "layer": 6,
+          "data": {
+            "hp": 150,
+            "maxHp": 150,
+            "damage": 20,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "recycling-arena",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 40,
+            "meleeCooldown": 2,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 200 },
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== TOP SPAWNER: waves from north, enemies walk south & get recycled at bottom edge ===" },
+        {
+          "type": "spawner",
+          "x": 8,
+          "y": 1,
+          "layer": 5,
+          "data": {
+            "spawnType": "enemy",
+            "spawnLimit": 20,
+            "cooldown": 5,
+            "activationRange": 20,
+            "spawnLayer": 6,
+            "requiresLineOfSight": false,
+            "color": "#ff0088",
+            "hp": 500,
+            "maxHp": 500,
+            "waveMode": true,
+            "waveSize": 3,
+            "totalWaves": 3,
+            "waveCooldown": 40,
+            "recycleAtBoundary": true,
+            "spawnProps": {
+              "hp": 30,
+              "maxHp": 30,
+              "aiState": "chase",
+              "damage": 5,
+              "team": "enemy",
+              "scoreValue": 25,
+              "color": "#ff4466"
+            }
+          }
+        },
+
+        { "_comment": "=== LEFT SPAWNER: waves from west side ===" },
+        {
+          "type": "spawner",
+          "x": 1,
+          "y": 8,
+          "layer": 5,
+          "data": {
+            "spawnType": "enemy",
+            "spawnLimit": 20,
+            "cooldown": 5,
+            "activationRange": 20,
+            "spawnLayer": 6,
+            "requiresLineOfSight": false,
+            "color": "#0088ff",
+            "hp": 500,
+            "maxHp": 500,
+            "waveMode": true,
+            "waveSize": 2,
+            "totalWaves": 3,
+            "waveCooldown": 35,
+            "recycleAtBoundary": true,
+            "spawnProps": {
+              "hp": 25,
+              "maxHp": 25,
+              "aiState": "chase",
+              "damage": 8,
+              "team": "enemy",
+              "scoreValue": 30,
+              "color": "#4488ff"
+            }
+          }
+        },
+
+        { "_comment": "=== Score coins to help reach threshold ===" },
+        { "type": "coin", "x": 4, "y": 4, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 12, "y": 4, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 4, "y": 12, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 12, "y": 12, "layer": 4, "data": { "scoreValue": 10, "collectibleId": "coin", "color": "#ffd700" } }
+      ]
+    }
+  ]
+}

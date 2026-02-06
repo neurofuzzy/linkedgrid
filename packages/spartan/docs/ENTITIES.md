@@ -64,9 +64,9 @@ if (isPlayer(entity)) {
 | **Structures** | `wall`, `door`, `open-door`, `destructible-wall`, `spawner` | WALLS (5) | IsLockable, HasSpawner |
 | **Collectibles** | `item`, `key`, `gasoline`, `fuse` | COLLECTIBLES (4) | IsCollectible |
 | **Hazards** | `lava`, `acid`, `medbay`, `ice`, `mud` | FLOOR (1) | HasFloorEffect |
-| **Powerups** | `health-pack`, `shield-pack`, `speed-boost`, `ammo-pack`, `weapon-pickup` | COLLECTIBLES (4) | IsCollectible |
+| **Powerups** | `health-pack`, `health-potion`, `shield-pack`, `speed-boost`, `ammo-pack`, `weapon-pickup` | COLLECTIBLES (4) | IsCollectible |
 | **Objectives** | `coin`, `flag`, `exit` | COLLECTIBLES (4) | HasScoreValue, IsCollectible |
-| **Signals** | `oscillator`, `pressure-switch`, `gate`, `conductive-floor`, `inverter`, `transceiver` | FLOOR/WALLS | HasSignalEmitter, HasSignalReceiver |
+| **Signals** | `oscillator`, `pressure-switch`, `gate`, `conductive-floor`, `inverter`, `transceiver`, `range-sensor` | FLOOR/WALLS | HasSignalEmitter, HasSignalReceiver |
 | **Spawning** | `player-start`, `checkpoint` | FLOOR (1) | HasCheckpoint |
 | **Logic** | `path-node`, `sleep-wake`, `chain-link` | LOGIC (3) | -- |
 | **Teleporters** | `teleporter` | FLOOR (1) | HasSceneConnection |
@@ -118,13 +118,14 @@ type Mage = BaseEntityData & HasHealth & HasMana;
 | `HasWeapon` | `equippedWeapon`, `ammo` | Ranged combat |
 | `HasArmor` | `armor` | Flat damage reduction |
 | `HasShield` | `shield`, `maxShield` | Absorb damage before HP |
-| `HasBuff` | `activeBuffs` | Temporary status effects |
+| `HasBuff` | `activeBuffs` | Temporary status effects (speed, damage, health-regen, shield, invincibility) |
 
 ### Movement and AI
 | Trait | Properties | Usage |
 | :--- | :--- | :--- |
 | `HasAI` | `aiState` | Enemy behavior state |
 | `HasNPCMovement` | `movementMode`, `speed` | Autonomous movement |
+| `HasNPCBrain` | `posture`, `threatRange`, `attackRange`, `preferRanged` | Autonomous combat AI (Controller/Executor pattern) |
 | `HasPushable` | `pushable` | Can be pushed |
 | `HasPusher` | `pushStrength` | Can push others |
 

@@ -13,8 +13,8 @@
  */
 export interface Buff {
   /** Buff type identifier */
-  type: 'health' | 'shield' | 'speed' | 'damage' | 'invincibility';
-  /** Effect magnitude (e.g., +50 health, +25% speed) */
+  type: 'health' | 'health-regen' | 'shield' | 'speed' | 'damage' | 'invincibility';
+  /** Effect magnitude (e.g., +50 health, +25% speed, HP per tick for health-regen) */
   magnitude: number;
   /** Tick when this buff expires (-1 for permanent) */
   expirationTick: number;
@@ -48,4 +48,4 @@ export interface HasBuff {
 /**
  * PowerupType - Types of powerups that can be collected.
  */
-export type PowerupType = 'health-pack' | 'shield-pack' | 'speed-boost' | 'damage-boost' | 'invincibility';
+export type PowerupType = 'health-pack' | 'health-potion' | 'shield-pack' | 'speed-boost' | 'damage-boost' | 'invincibility';

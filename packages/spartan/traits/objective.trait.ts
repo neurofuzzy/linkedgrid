@@ -11,7 +11,7 @@
  * - kill-all: All enemies in the scene must be eliminated
  * - reach-exit: Player must overlap an exit entity
  */
-export type ObjectiveType = 'collect-flag' | 'kill-all' | 'reach-exit';
+export type ObjectiveType = 'collect-flag' | 'kill-all' | 'reach-exit' | 'wave-clear';
 
 /**
  * ObjectiveDefinition - Defines a single game objective.
@@ -38,6 +38,8 @@ export interface ObjectiveDefinition {
   targetId?: string;
   /** Whether this objective has been completed */
   completed: boolean;
+  /** For wave-clear: minimum score threshold required (optional) */
+  scoreThreshold?: number;
 }
 
 /**

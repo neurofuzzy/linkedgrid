@@ -1,0 +1,298 @@
+{
+  "name": "Range Sensor Demo",
+  "description": "Phase 3 Demo A: Range sensors activate based on proximity & LOS.\nArrow keys: Move | WASD: Fire | Space: Melee\nApproach sensors to trigger gates. Some require line of sight!",
+  "initialScene": "sensor-lab",
+  "input": {
+    "type": "keyboard",
+    "preset": "twin-stick"
+  },
+  "systems": [
+    "SpawningSystem",
+    "HealthSystem",
+    "NPCMovementSystem",
+    "ProjectileSystem",
+    "SignalSystem",
+    "GateSystem"
+  ],
+  "tickRate": 10,
+  "scenes": [
+    {
+      "id": "sensor-lab",
+      "name": "Range Sensor Lab",
+      "width": 20,
+      "height": 20,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 10,
+          "y": 16,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 25,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "sensor-lab",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "equippedWeapon": "pistol",
+            "ammo": { "pistol": 50 },
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== SECTION 1: Basic Range Sensor → Gate (no LOS) ===" },
+        { "_comment": "Sensor at (3,3) with range 5, no LOS required" },
+        {
+          "type": "range-sensor",
+          "x": 3,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "signalType": "range-sensor",
+            "signalState": false,
+            "sensorRange": 6,
+            "requiresLOS": false,
+            "color": "#00ffaa"
+          }
+        },
+        { "_comment": "Conductive path from sensor to gate" },
+        { "type": "conductive-floor", "x": 4, "y": 3, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 5, "y": 3, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 6, "y": 3, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        {
+          "type": "gate-closed",
+          "x": 7,
+          "y": 3,
+          "layer": 5,
+          "data": {
+            "receiverType": "gate",
+            "receivedSignal": false,
+            "color": "#ff4400"
+          }
+        },
+        { "_comment": "Prize behind the gate" },
+        { "type": "coin", "x": 8, "y": 3, "layer": 4, "data": { "scoreValue": 25, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== SECTION 2: LOS Range Sensor → Gate (wall blocks LOS) ===" },
+        { "_comment": "Sensor at (16,3) with range 6, requires LOS" },
+        {
+          "type": "range-sensor",
+          "x": 16,
+          "y": 3,
+          "layer": 4,
+          "data": {
+            "signalType": "range-sensor",
+            "signalState": false,
+            "sensorRange": 7,
+            "requiresLOS": true,
+            "color": "#ffaa00"
+          }
+        },
+        { "_comment": "Conductive path to gate" },
+        { "type": "conductive-floor", "x": 15, "y": 3, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 14, "y": 3, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        {
+          "type": "gate-closed",
+          "x": 13,
+          "y": 3,
+          "layer": 5,
+          "data": {
+            "receiverType": "gate",
+            "receivedSignal": false,
+            "color": "#ff4400"
+          }
+        },
+        { "_comment": "Wall that blocks LOS from below" },
+        { "type": "wall", "x": 14, "y": 5, "layer": 5, "data": { "color": "#444466" } },
+        { "type": "wall", "x": 15, "y": 5, "layer": 5, "data": { "color": "#444466" } },
+        { "type": "wall", "x": 16, "y": 5, "layer": 5, "data": { "color": "#444466" } },
+        { "type": "wall", "x": 17, "y": 5, "layer": 5, "data": { "color": "#444466" } },
+        { "_comment": "Prize behind the gate" },
+        { "type": "coin", "x": 12, "y": 3, "layer": 4, "data": { "scoreValue": 50, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== SECTION 3: Sensor → Spawner activation (sensor opens gate protecting spawner area) ===" },
+        { "_comment": "Sensor at (3,10) guards a spawner alcove" },
+        {
+          "type": "range-sensor",
+          "x": 3,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "signalType": "range-sensor",
+            "signalState": false,
+            "sensorRange": 5,
+            "requiresLOS": false,
+            "color": "#ff00aa"
+          }
+        },
+        { "type": "conductive-floor", "x": 4, "y": 10, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 5, "y": 10, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        {
+          "type": "gate-closed",
+          "x": 6,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "receiverType": "gate",
+            "receivedSignal": false,
+            "color": "#ff4400"
+          }
+        },
+        { "_comment": "Spawner behind gate" },
+        {
+          "type": "spawner",
+          "x": 8,
+          "y": 10,
+          "layer": 5,
+          "data": {
+            "spawnType": "enemy",
+            "spawnLimit": 2,
+            "cooldown": 15,
+            "activationRange": 10,
+            "spawnLayer": 6,
+            "requiresLineOfSight": false,
+            "color": "#ff00ff",
+            "hp": 40,
+            "maxHp": 40,
+            "spawnProps": {
+              "hp": 15,
+              "maxHp": 15,
+              "aiState": "chase",
+              "damage": 5,
+              "team": "enemy",
+              "scoreValue": 10,
+              "color": "#ff4488"
+            }
+          }
+        },
+
+        { "_comment": "=== SECTION 4: Two sensors controlling same gate (OR logic) ===" },
+        {
+          "type": "range-sensor",
+          "x": 14,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "signalType": "range-sensor",
+            "signalState": false,
+            "sensorRange": 4,
+            "requiresLOS": true,
+            "color": "#00aaff"
+          }
+        },
+        {
+          "type": "range-sensor",
+          "x": 18,
+          "y": 10,
+          "layer": 4,
+          "data": {
+            "signalType": "range-sensor",
+            "signalState": false,
+            "sensorRange": 4,
+            "requiresLOS": true,
+            "color": "#00aaff"
+          }
+        },
+        { "type": "conductive-floor", "x": 15, "y": 10, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 16, "y": 10, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        { "type": "conductive-floor", "x": 17, "y": 10, "layer": 1, "data": { "conductiveType": "floor", "receiverType": "floor", "receivedSignal": false, "color": "#555566" } },
+        {
+          "type": "gate-closed",
+          "x": 16,
+          "y": 9,
+          "layer": 5,
+          "data": {
+            "receiverType": "gate",
+            "receivedSignal": false,
+            "color": "#ff4400"
+          }
+        },
+        { "type": "coin", "x": 16, "y": 8, "layer": 4, "data": { "scoreValue": 100, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== Decorative walls ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 15, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 16, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 17, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 18, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 0, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 1, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 2, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 3, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 4, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 5, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 6, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 7, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 8, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 9, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 10, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 11, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 12, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 13, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 14, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 15, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 16, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 17, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 18, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 19, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 14, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 15, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 16, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 17, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 0, "y": 18, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 1, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 2, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 3, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 4, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 5, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 6, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 7, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 8, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 9, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 10, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 11, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 12, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 13, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 14, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 15, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 16, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 17, "layer": 5, "data": { "color": "#333344" } },
+        { "type": "wall", "x": 19, "y": 18, "layer": 5, "data": { "color": "#333344" } }
+      ]
+    }
+  ]
+}
