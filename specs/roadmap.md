@@ -77,9 +77,22 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 [x] B) Multiscene game with objectives -> `dev/games/multiscene-objectives-demo.json`
 [x] C) Multiscene game with player, NPC combat as tournament -> `dev/games/tournament-demo.json`
 
-Phase 2.5: Documentation
+[x] Phase 2.5: Documentation
 
-The goal of this phase will be to document the codebase, starting from the code itself (implementation), and integrating relevant sections of the specs (intent), as well as understanding of the mechanics that are tested in the testing framework. The goal is to create a LLM-friendly reference for the conventions and constructs we are using in composition to create emergent game designs.
+[x] 1. REFERENCE.md -- Comprehensive LLM-friendly reference
+   - I. Basics (concepts, architecture, config, data format, systems overview, entities)
+   - II. Getting Started (setup, embedding, input, customization, renderer, HUD)
+   - III. Advanced Concepts (spatial queries, layers, lifecycle, intents, signals)
+   - IV. Composing Traits (philosophy, built-in reference, custom traits, personas)
+   - V. Systems in Detail (base classes, execution order, config, all 24 systems)
+   - VI. Visual and Automated Tests (dual execution, writing tests, timing, fixtures)
+   - VII. How-tos (new entities, new systems, hazards, scenes, objectives, personas, puzzles)
+[x] 2. Updated ENTITIES.md -- Entity categories, personas, all traits, extension guide
+[x] 3. Updated SYSTEMS.md -- All 24 systems by phase, base classes, best practices
+[x] 4. Updated GUIDELINES.md -- Development philosophy, naming, reactive architecture
+[x] 5. Updated HOWTO_SPATIAL.md -- Queries, patterns, field-of-view, API reference
+
+Location: `packages/spartan/docs/`
 
 ---
 
