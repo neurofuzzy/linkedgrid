@@ -68,4 +68,6 @@ export type FlagData = BaseEntityData & {
  */
 export type ExitData = BaseEntityData & {
   type: 'exit';
+  /** Whether the exit is activated (all prerequisite objectives met). Defaults to false. */
+  activated?: boolean;
 } & HasColor;

@@ -101,6 +101,9 @@ export class ObjectiveSystem extends BaseReactiveSystem {
       }
     }
 
+    // Update exit activation state based on prerequisite objectives
+    this.updateExitActivation(context, objectives);
+
     // Check scene completion
     this.checkSceneCompletion(objectives);
 
@@ -160,13 +163,17 @@ export class ObjectiveSystem extends BaseReactiveSystem {
   }
 
   /**
-   * Check if the player is overlapping an exit entity.
+   * Check if the player is overlapping an activated exit entity.
    *
-   * Returns true when player overlaps any exit entity in the scene.
+   * Returns true when player overlaps an exit AND all prerequisite
+   * objectives for this scene (non-reach-exit) are completed.
    */
   private checkReachExit(context: GameContext, objective: ObjectiveDefinition): boolean {
     const activeSceneId = this.getActiveSceneId();
     if (activeSceneId !== objective.sceneId) return false;
+
+    // Gate: all non-reach-exit objectives for this scene must be complete
+    if (!this.arePrerequisitesMet(objective)) return false;
 
     const playerId = this.gameManager.gameState.playerEntityId;
     if (!playerId) return false;
@@ -193,6 +200,47 @@ export class ObjectiveSystem extends BaseReactiveSystem {
     }
 
     return false;
+  }
+
+  /**
+   * Check if all prerequisite objectives for a reach-exit objective are met.
+   * Prerequisites are all non-reach-exit objectives in the same scene.
+   */
+  private arePrerequisitesMet(objective: ObjectiveDefinition): boolean {
+    const objectives = this.gameManager.gameState.objectives;
+    if (!objectives) return true;
+
+    return objectives
+      .filter((o) => o.sceneId === objective.sceneId && o.id !== objective.id && o.type !== 'reach-exit')
+      .every((o) => o.completed);
+  }
+
+  /**
+   * Update exit entity activation state based on prerequisite objectives.
+   * Sets `activated: true` on exit entities when all non-reach-exit
+   * objectives for their scene are completed.
+   */
+  private updateExitActivation(context: GameContext, objectives: ObjectiveDefinition[]): void {
+    const activeSceneId = this.getActiveSceneId();
+
+    // Check if all non-reach-exit objectives for the active scene are complete
+    const prerequisitesMet = objectives
+      .filter((o) => o.sceneId === activeSceneId && o.type !== 'reach-exit')
+      .every((o) => o.completed);
+
+    // Update all exit entities in the scene
+    for (const [entityId] of context.spatial.getAllPositions()) {
+      const entityData = context.spatial.getEntityData(entityId);
+      if (!entityData || !isExit(entityData)) continue;
+      if (!context.spatial.isAlive(entityId)) continue;
+
+      const currentlyActivated = entityData.activated ?? false;
+      if (currentlyActivated !== prerequisitesMet) {
+        this.gameManager.gameState.entityStore.setData(entityId, {
+          activated: prerequisitesMet,
+        });
+      }
+    }
   }
 
   /**
@@ -286,6 +334,18 @@ export class ObjectiveSystem extends BaseReactiveSystem {
       completed,
       remaining: objectives.length - completed,
     };
+  }
+
+  /**
+   * Check if the exit is active for the given scene.
+   * Exit is active when all non-reach-exit objectives for the scene are complete.
+   */
+  isExitActive(sceneId: string): boolean {
+    const objectives = this.gameManager.gameState.objectives || [];
+    const prerequisites = objectives.filter(
+      (o) => o.sceneId === sceneId && o.type !== 'reach-exit'
+    );
+    return prerequisites.length === 0 || prerequisites.every((o) => o.completed);
   }
 
   public override resetState(): void {

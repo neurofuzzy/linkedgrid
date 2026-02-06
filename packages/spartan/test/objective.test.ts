@@ -2,6 +2,8 @@
  * ObjectiveSystem Tests
  *
  * Tests for game objective tracking: collect-flag, kill-all, reach-exit.
+ * Includes integration tests for flag pickup via CollectionSystem and
+ * exit activation gating.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LinkedGrid, SpatialSystem } from '../core';
@@ -11,6 +13,7 @@ import { SceneManager } from '../core/scene-manager';
 import { GameLoop } from '../core/game-loop';
 import { HealthSystem } from '../systems/health.system';
 import { ObjectiveSystem } from '../systems/objective.system';
+import { CollectionSystem } from '../systems/collection.system';
 import { GameLayers } from '../config/layers.config';
 import type { ObjectiveDefinition } from '../traits/objective.trait';
 
@@ -28,6 +31,10 @@ describe('ObjectiveSystem', () => {
     store = new SparseEntityStore();
     spatial = new SpatialSystem(grid, store);
     gameManager = new GameManager();
+
+    // Share entity store between spatial system and gameManager
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (gameManager.gameState as any).entityStore = store;
 
     // Create a scene and set it active
     gameManager.sceneManager.createScene('test-scene', 10, 10);
@@ -200,7 +207,7 @@ describe('ObjectiveSystem', () => {
       expect(objectiveSystem.isObjectiveComplete('escape')).toBe(false);
     });
 
-    it('should complete when player overlaps exit', () => {
+    it('should complete when player overlaps exit (no prerequisites)', () => {
       setup([{ id: 'escape', type: 'reach-exit', sceneId: 'test-scene' }]);
       createPlayer(5, 5);
       createExit(5, 5); // same position as player
@@ -208,6 +215,46 @@ describe('ObjectiveSystem', () => {
       gameLoop.tick();
 
       expect(objectiveSystem.isObjectiveComplete('escape')).toBe(true);
+    });
+
+    it('should NOT complete when player is on exit but prerequisites unmet', () => {
+      setup([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+        { id: 'escape', type: 'reach-exit', sceneId: 'test-scene' },
+      ]);
+      createPlayer(5, 5);
+      createExit(5, 5); // player already on exit
+      createFlag(8, 8, 'red-flag'); // flag not collected
+
+      gameLoop.tick();
+
+      // reach-exit should NOT complete because collect-flag is not done
+      expect(objectiveSystem.isObjectiveComplete('get-flags')).toBe(false);
+      expect(objectiveSystem.isObjectiveComplete('escape')).toBe(false);
+    });
+
+    it('should set exit activated=true when prerequisites are met', () => {
+      setup([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+        { id: 'escape', type: 'reach-exit', sceneId: 'test-scene' },
+      ]);
+      createPlayer(1, 1);
+      const exitId = createExit(9, 9);
+      const flagId = createFlag(5, 5, 'red-flag');
+
+      // Before collecting flag, exit should not be activated
+      gameLoop.tick();
+      let exitData = spatial.getEntityData(exitId);
+      expect(exitData?.activated).toBeFalsy();
+
+      // Collect flag (simulate by removing)
+      spatial.remove(flagId);
+      spatial.commit();
+      gameLoop.tick();
+
+      // Exit should now be activated
+      exitData = spatial.getEntityData(exitId);
+      expect(exitData?.activated).toBe(true);
     });
   });
 
@@ -289,6 +336,154 @@ describe('ObjectiveSystem', () => {
       expect(status.total).toBe(2);
       expect(status.completed).toBe(2);
       expect(status.remaining).toBe(0);
+    });
+
+    it('isExitActive should return false when prerequisites unmet', () => {
+      setup([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+        { id: 'escape', type: 'reach-exit', sceneId: 'test-scene' },
+      ]);
+      createPlayer(1, 1);
+      createFlag(5, 5, 'red-flag');
+
+      expect(objectiveSystem.isExitActive('test-scene')).toBe(false);
+    });
+
+    it('isExitActive should return true when prerequisites met', () => {
+      setup([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+        { id: 'escape', type: 'reach-exit', sceneId: 'test-scene' },
+      ]);
+      createPlayer(1, 1);
+      const flagId = createFlag(5, 5, 'red-flag');
+
+      // Collect flag
+      spatial.remove(flagId);
+      spatial.commit();
+      gameLoop.tick();
+
+      expect(objectiveSystem.isExitActive('test-scene')).toBe(true);
+    });
+  });
+
+  // === Integration: Flag Pickup via CollectionSystem ===
+
+  describe('integration: flag pickup + exit gating', () => {
+    let collectionSystem: CollectionSystem;
+
+    function setupIntegration(objectives: Omit<ObjectiveDefinition, 'completed'>[] = []) {
+      grid = new LinkedGrid(10, 10);
+      store = new SparseEntityStore();
+      spatial = new SpatialSystem(grid, store);
+      gameManager = new GameManager();
+
+      // Share entity store between spatial system and gameManager
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (gameManager.gameState as any).entityStore = store;
+
+      gameManager.sceneManager.createScene('test-scene', 10, 10);
+      gameManager.sceneManager.setActiveScene('test-scene');
+
+      const scene = gameManager.sceneManager.getActiveScene()!;
+      Object.defineProperty(scene, 'spatial', { value: spatial, writable: true });
+
+      gameManager.gameState.objectives = objectives.map((o) => ({
+        ...o,
+        completed: false,
+      }));
+
+      healthSystem = new HealthSystem({ dyingDuration: 1 });
+      collectionSystem = new CollectionSystem(gameManager);
+      objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);
+      gameLoop = new GameLoop(spatial, gameManager);
+      gameLoop.addSystem(healthSystem);
+      gameLoop.addSystem(collectionSystem);
+      gameLoop.addSystem(objectiveSystem);
+    }
+
+    it('should collect flags via CollectionSystem (isCollectible fix)', () => {
+      setupIntegration([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+      ]);
+
+      // Player and flag at same position
+      const playerId = createPlayer(5, 5);
+      createFlag(5, 5, 'red-flag');
+
+      // Tick: overlap detected, CollectionSystem picks up flag
+      gameLoop.tick();
+
+      // Flag should be added to player inventory
+      const playerData = spatial.getEntityData(playerId);
+      expect(playerData?.inventory).toContain('flag');
+
+      // After commit removes the flag, next tick should detect objective complete
+      gameLoop.tick();
+      expect(objectiveSystem.isObjectiveComplete('get-flags')).toBe(true);
+    });
+
+    it('full flow: player walks to inactive exit, picks up flag, returns to active exit', () => {
+      const onObjectiveComplete = vi.fn();
+      const onSceneComplete = vi.fn();
+
+      setupIntegration([
+        { id: 'get-flags', type: 'collect-flag', sceneId: 'test-scene', targetId: 'red-flag' },
+        { id: 'escape', type: 'reach-exit', sceneId: 'test-scene' },
+      ]);
+
+      // Re-create with callbacks
+      objectiveSystem = new ObjectiveSystem(gameManager, healthSystem, {
+        onObjectiveComplete,
+        onSceneComplete,
+      });
+      gameLoop = new GameLoop(spatial, gameManager);
+      gameLoop.addSystem(healthSystem);
+      gameLoop.addSystem(collectionSystem);
+      gameLoop.addSystem(objectiveSystem);
+
+      // Layout: player at (1,1), exit at (3,1), flag at (5,1)
+      const playerId = createPlayer(1, 1);
+      const exitId = createExit(3, 1);
+      createFlag(5, 1, 'red-flag');
+
+      // Step 1: Move player to exit (3,1)
+      spatial.move(playerId, 3, 1);
+      spatial.commit();
+      gameLoop.tick();
+
+      // Exit should be inactive, reach-exit NOT complete
+      let exitData = spatial.getEntityData(exitId);
+      expect(exitData?.activated).toBeFalsy();
+      expect(objectiveSystem.isObjectiveComplete('escape')).toBe(false);
+
+      // Step 2: Move player past exit to flag (5,1)
+      spatial.move(playerId, 5, 1);
+      spatial.commit();
+      gameLoop.tick();
+
+      // Player should pick up flag (overlap detected)
+      const playerData = spatial.getEntityData(playerId);
+      expect(playerData?.inventory).toContain('flag');
+
+      // Step 3: Tick again so flag removal is committed and objective checks
+      gameLoop.tick();
+      expect(objectiveSystem.isObjectiveComplete('get-flags')).toBe(true);
+      expect(onObjectiveComplete).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'get-flags', completed: true })
+      );
+
+      // Exit should now be activated
+      exitData = spatial.getEntityData(exitId);
+      expect(exitData?.activated).toBe(true);
+
+      // Step 4: Move player back to exit (3,1)
+      spatial.move(playerId, 3, 1);
+      spatial.commit();
+      gameLoop.tick();
+
+      // reach-exit should now complete (prerequisites met + player on exit)
+      expect(objectiveSystem.isObjectiveComplete('escape')).toBe(true);
+      expect(onSceneComplete).toHaveBeenCalledWith('test-scene');
     });
   });
 });

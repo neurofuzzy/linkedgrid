@@ -12,6 +12,7 @@ import {
   hasMelee,
   hasSignalEmitter,
   hasSignalReceiver,
+  isExit,
 } from '../packages/spartan/traits/trait-guards';
 
 interface Props {
@@ -40,6 +41,9 @@ const ENTITY_CLASS_MAP: Record<string, string> = {
   gate: 'entity-gate',
   'gate-open': 'entity-gate-open',
   'gate-closed': 'entity-gate-closed',
+  coin: 'entity-item',
+  flag: 'entity-item',
+  exit: 'entity-teleporter',
 };
 
 /**
@@ -64,6 +68,9 @@ const ENTITY_CHAR_MAP: Record<string, string> = {
   gate: '∏',
   'gate-open': '␣',
   'gate-closed': '∏',
+  coin: '$',
+  flag: '⚑',
+  exit: 'X',
 };
 
 /**
@@ -171,7 +178,10 @@ export function GridRenderer({ scene }: Props) {
         let opacity = 1.0;
 
         if (entityData) {
-          if (hasSignalEmitter(entityData)) {
+          // Exit entities: semi-opaque until activated
+          if (isExit(entityData)) {
+            opacity = entityData.activated ? 1.0 : 0.3;
+          } else if (hasSignalEmitter(entityData)) {
             // Priority: If it's an emitter (Oscillator, Switch, Inverter), show output state.
             if (!entityData.signalState) {
               opacity = 0.5;
@@ -474,13 +484,15 @@ export function HUD({ runtime }: HUDProps) {
 }
 
 /**
- * DebugPanel - Display runtime debug information.
+ * DebugPanel - Display runtime debug information in a compact 2-column layout.
  *
  * Shows:
  * - Tick count
  * - Running state
  * - Player position
  * - Entity count
+ * - Input mode
+ * - Movement stats
  *
  * @example
  * ```tsx
@@ -522,55 +534,182 @@ export function DebugPanel({
     }
   }
 
-  return (
-    <div className="debug-panel">
-      <h3>Debug Info</h3>
-      <p>
-        <span className="label">Tick:</span> {runtime.tickCount}
-      </p>
-      <p>
-        <span className="label">Status:</span>{' '}
-        {runtime.isRunning ? (
-          <span style={{ color: '#4ec9b0' }}>Running</span>
-        ) : (
-          <span style={{ color: '#808080' }}>Stopped</span>
-        )}
-      </p>
-      <p>
-        <span className="label">Entities:</span> {entityCount}
-      </p>
-      {playerPos && (
-        <p>
-          <span className="label">Player:</span> ({playerPos.x}, {playerPos.y})
-        </p>
-      )}
-      {inputManager && (
-        <p>
-          <span className="label">Input Mode:</span>{' '}
+  // Build items for 2-column grid
+  const items: Array<{ label: string; value: React.ReactNode }> = [
+    { label: 'Tick', value: runtime.tickCount },
+    {
+      label: 'Status',
+      value: runtime.isRunning ? (
+        <span style={{ color: '#4ec9b0' }}>Running</span>
+      ) : (
+        <span style={{ color: '#808080' }}>Stopped</span>
+      ),
+    },
+    { label: 'Entities', value: entityCount },
+    {
+      label: 'Player',
+      value: playerPos ? `(${playerPos.x}, ${playerPos.y})` : '--',
+    },
+  ];
+
+  if (inputManager) {
+    items.push({
+      label: 'Input',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      value: (
+        <span>
           <span style={{ color: '#dcdcaa', fontWeight: 'bold' }}>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {(inputManager as any).config.directionMode}
           </span>{' '}
-          <span style={{ color: '#808080', fontSize: '11px' }}>
-            (press K to toggle)
+          <span style={{ color: '#808080', fontSize: '10px' }}>(K)</span>
+        </span>
+      ),
+    });
+  }
+
+  if (playerInputSystem) {
+    items.push({
+      label: 'Direction',
+      value: playerInputSystem.debugStats.lastDirection || '--',
+    });
+    items.push({
+      label: 'Moves/Tick',
+      value: playerInputSystem.debugStats.movesThisTick,
+    });
+    items.push({
+      label: 'Blocked',
+      value: playerInputSystem.debugStats.blockedMoves,
+    });
+  }
+
+  return (
+    <div className="debug-panel">
+      <h3>Debug Info</h3>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '4px 16px',
+        }}
+      >
+        {items.map((item, i) => (
+          <p key={i} style={{ margin: 0 }}>
+            <span className="label">{item.label}:</span> {item.value}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * GameStatusPanel - Display objective progress and game status.
+ *
+ * Shows:
+ * - Each objective with completion status
+ * - Exit activation state
+ * - Scene/game completion
+ *
+ * @example
+ * ```tsx
+ * <GameStatusPanel runtime={runtime} />
+ * ```
+ */
+interface GameStatusPanelProps {
+  runtime: GameRuntime;
+}
+
+export function GameStatusPanel({ runtime }: GameStatusPanelProps) {
+  if (!runtime) return null;
+
+  const objectives = runtime.game.gameState.objectives;
+  if (!objectives || objectives.length === 0) return null;
+
+  // Get active scene ID
+  const activeScene = runtime.activeScene;
+  const activeSceneId = activeScene?.id || '';
+
+  // Filter objectives for active scene and other scenes
+  const sceneObjectives = objectives.filter((o) => o.sceneId === activeSceneId);
+  const otherObjectives = objectives.filter((o) => o.sceneId !== activeSceneId);
+
+  const allComplete = objectives.every((o) => o.completed);
+  const sceneComplete = sceneObjectives.length > 0 && sceneObjectives.every((o) => o.completed);
+
+  // Check if exit is active (all non-reach-exit objectives for scene are done)
+  const exitPrereqsMet = sceneObjectives
+    .filter((o) => o.type !== 'reach-exit')
+    .every((o) => o.completed);
+
+  const objectiveLabel = (type: string): string => {
+    switch (type) {
+      case 'collect-flag':
+        return 'Collect Flags';
+      case 'kill-all':
+        return 'Eliminate All';
+      case 'reach-exit':
+        return 'Reach Exit';
+      default:
+        return type;
+    }
+  };
+
+  return (
+    <div
+      className="debug-panel"
+      style={{
+        borderLeft: allComplete
+          ? '3px solid #33cc66'
+          : sceneComplete
+          ? '3px solid #cccc33'
+          : '3px solid #333344',
+      }}
+    >
+      <h3 style={{ color: allComplete ? '#33cc66' : '#33b5cc' }}>
+        {allComplete ? 'GAME COMPLETE' : 'Objectives'}
+      </h3>
+      {sceneObjectives.map((obj) => (
+        <p key={obj.id} style={{ margin: '4px 0' }}>
+          <span
+            style={{
+              display: 'inline-block',
+              width: '16px',
+              color: obj.completed ? '#33cc66' : '#808080',
+              fontWeight: 'bold',
+            }}
+          >
+            {obj.completed ? '\u2713' : '\u25CB'}
+          </span>
+          <span
+            style={{
+              color: obj.completed ? '#33cc66' : '#d0d0d0',
+              textDecoration: obj.completed ? 'line-through' : 'none',
+              opacity: obj.completed ? 0.7 : 1,
+            }}
+          >
+            {objectiveLabel(obj.type)}
           </span>
         </p>
+      ))}
+      {sceneObjectives.some((o) => o.type === 'reach-exit') && (
+        <p
+          style={{
+            margin: '8px 0 0',
+            fontSize: '11px',
+            color: exitPrereqsMet ? '#33cc66' : '#cc8833',
+            fontWeight: 'bold',
+          }}
+        >
+          Exit: {exitPrereqsMet ? 'ACTIVE' : 'LOCKED'}
+        </p>
       )}
-      {playerInputSystem && (
-        <>
-          <p>
-            <span className="label">Last Direction:</span>{' '}
-            {playerInputSystem.debugStats.lastDirection}
-          </p>
-          <p>
-            <span className="label">Moves/Tick:</span>{' '}
-            {playerInputSystem.debugStats.movesThisTick}
-          </p>
-          <p>
-            <span className="label">Blocked:</span>{' '}
-            {playerInputSystem.debugStats.blockedMoves}
-          </p>
-        </>
+      {otherObjectives.length > 0 && (
+        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #333' }}>
+          <span style={{ fontSize: '10px', color: '#808080' }}>
+            Other scenes: {otherObjectives.filter((o) => o.completed).length}/{otherObjectives.length} done
+          </span>
+        </div>
       )}
     </div>
   );

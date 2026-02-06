@@ -8,6 +8,6 @@ export interface IsLockable {
 }
 
 export interface IsCollectible {
-  collectibleType: string;
+  collectibleType?: string;
   collectibleId: string;
 }

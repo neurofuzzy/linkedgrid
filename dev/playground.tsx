@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan-web/input';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
-import { GridRenderer, HUD, DebugPanel } from './grid-renderer';
+import { GridRenderer, HUD, DebugPanel, GameStatusPanel } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/core/game-runtime';
 
 /**
@@ -493,6 +493,8 @@ function Playground() {
             playerInputSystem={playerInputSystem}
           />
 
+          {runtime && <GameStatusPanel runtime={runtime} />}
+
           {gameDescription && (
             <div className="debug-panel" style={{ marginBottom: '15px' }}>
               <h3>Instructions</h3>
@@ -500,7 +502,6 @@ function Playground() {
                 <div key={index}>{line}</div>
               ))}
             </div>
-
           )}
 
           <div className="debug-panel">

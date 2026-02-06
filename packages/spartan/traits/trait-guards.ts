@@ -222,11 +222,8 @@ export function isLockable(
  */
 export function isCollectible(
   entity: EntityData
-): entity is KeyData {
-  return (
-    'collectibleType' in entity && typeof entity.collectibleType === 'string' &&
-    'collectibleId' in entity && typeof entity.collectibleId === 'string'
-  );
+): entity is EntityData & { collectibleId: string } {
+  return 'collectibleId' in entity && typeof entity.collectibleId === 'string';
 }
 
 /**
