@@ -9,8 +9,6 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SpatialSystem } from '../core/spatial-system';
-import { SparseEntityStore } from '../core/entity-store';
-import { LinkedGrid } from '../core/grid/linked-grid';
 import { GameLoop } from '../core/game-loop';
 import { GameManager } from '../core/game-manager';
 import { HealthSystem } from '../systems/health.system';
@@ -18,8 +16,8 @@ import { RespawnSystem } from '../systems/respawn.system';
 import { GameLayers } from '../config/layers.config';
 
 describe('RespawnSystem', () => {
-  let grid: LinkedGrid;
-  let store: SparseEntityStore;
+  // let grid: LinkedGrid;
+  // let store: SparseEntityStore;
   let spatial: SpatialSystem;
   let gameLoop: GameLoop;
   let gameManager: GameManager;
@@ -37,8 +35,8 @@ describe('RespawnSystem', () => {
     // Get the scene's spatial system
     const scene = gameManager.sceneManager.getScene('test-scene')!;
     spatial = scene.spatial;
-    grid = scene.grid;
-    store = gameManager.gameState.entityStore;
+    // grid = scene.grid;
+    // store = gameManager.gameState.entityStore;
 
     // Pass gameManager to GameLoop so context.gameManager is available
     gameLoop = new GameLoop(spatial, gameManager);
@@ -83,7 +81,7 @@ describe('RespawnSystem', () => {
 
     // Assert: Player has checkpoint tracked
     const playerData = spatial.getEntityData(playerId);
-    expect((playerData as any)?.lastCheckpointId).toBe(checkpointId);
+    expect((playerData as unknown as { lastCheckpointId: number })?.lastCheckpointId).toBe(checkpointId);
   });
 
   it('respawns player at checkpoint after death', () => {
@@ -108,7 +106,7 @@ describe('RespawnSystem', () => {
 
     // Verify checkpoint data is on player
     const preData = spatial.getEntityData(playerId);
-    expect((preData as any).lastCheckpointSceneId).toBe('test-scene');
+    expect((preData as unknown as { lastCheckpointSceneId: string }).lastCheckpointSceneId).toBe('test-scene');
 
     // Kill the player
     healthSystem.damage(playerId, 100);
@@ -116,7 +114,7 @@ describe('RespawnSystem', () => {
 
     // Verify player is dying
     let midData = spatial.getEntityData(playerId);
-    expect((midData as any)?.healthState).toBe('dying');
+    expect((midData as unknown as { healthState: string })?.healthState).toBe('dying');
 
     gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, respawn scheduled
 
@@ -133,7 +131,7 @@ describe('RespawnSystem', () => {
 
     // Assert: Player is alive again
     const playerData = spatial.getEntityData(playerId);
-    expect((playerData as any)?.healthState).toBe('alive');
+    expect((playerData as unknown as { healthState: string })?.healthState).toBe('alive');
     expect(playerData?.hp).toBe(100); // Full health
   });
 
@@ -251,7 +249,7 @@ describe('RespawnSystem', () => {
       pushStrength: 1,
     });
 
-    const checkpointId = spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
       activated: true, // Already activated
       sceneId: 'test-scene',
       color: '#00ff00',

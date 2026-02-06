@@ -9,7 +9,7 @@
  * Works with HealthSystem for damage/heal effects.
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext, EntityData, Overlap } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { HealthSystem } from './health.system';
 import type { Buff, HasBuff } from '../traits/buff.trait';
 import {

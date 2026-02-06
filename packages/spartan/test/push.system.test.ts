@@ -1,14 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameState } from '../core/game-state';
+
 import { Scene } from '../core/scene';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
 import { PushSystem } from '../systems/push.system';
 import { GameLayers } from '../config/layers.config';
-import { SYSTEM_CONFIG } from '../config/systems.config';
 
 describe('PushSystem', () => {
-    let gameState: GameState;
+    // let gameState: GameState;
     let gameManager: GameManager;
     let scene: Scene;
     let gameLoop: GameLoop;
@@ -16,7 +15,7 @@ describe('PushSystem', () => {
 
     beforeEach(() => {
         gameManager = new GameManager(); // Handles GameState internally
-        gameState = gameManager.gameState; // Get ref
+        // gameState = gameManager.gameState; // Get ref
         scene = gameManager.sceneManager.createScene('test-scene', 10, 10);
 
         // Create systems

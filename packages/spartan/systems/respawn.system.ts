@@ -5,7 +5,7 @@
  * Supports cross-scene respawning and life tracking.
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import { isEntityDead, isCheckpoint, isPlayerStart, hasCheckpoint } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
@@ -228,7 +228,7 @@ export class RespawnSystem extends BaseReactiveSystem {
   private findRespawnLocation(
     _context: GameContext,
     _playerId: number,
-    playerData: any
+    playerData: EntityData
   ): { sceneId: string; x: number; y: number } | null {
     // Priority 1: Check for saved checkpoint
     if (hasCheckpoint(playerData) && playerData.lastCheckpointSceneId) {
@@ -285,7 +285,7 @@ export class RespawnSystem extends BaseReactiveSystem {
   /**
    * Find player-start entity in a specific scene.
    */
-  private findPlayerStartInScene(scene: { spatial: { getAllPositions(): IterableIterator<[number, { x: number; y: number; layer: number }]>; getEntityData(id: number): any; getEntityPosition(id: number): { x: number; y: number } | null } }): { x: number; y: number } | null {
+  private findPlayerStartInScene(scene: { spatial: { getAllPositions(): IterableIterator<[number, { x: number; y: number; layer: number }]>; getEntityData(id: number): EntityData | undefined; getEntityPosition(id: number): { x: number; y: number } | null } }): { x: number; y: number } | null {
     for (const [entityId] of scene.spatial.getAllPositions()) {
       const entityData = scene.spatial.getEntityData(entityId);
       if (!entityData || !isPlayerStart(entityData)) continue;

@@ -16,11 +16,14 @@ export interface VisualTestContext {
   store: SparseEntityStore;
   expect: (description: string, fn: () => void) => void;
   assertions?: AssertionResult[]; // Will be populated by test executor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>; // Generic storage for test state
 
   // Optional scene system support
   game?: GameManager;
   scene?: Scene;
 }
+
 
 export interface VisualTestDefinition {
   arrange?: (ctx: VisualTestContext) => void | Promise<void>;
@@ -87,6 +90,7 @@ export function visual(
           spatial,
           store,
           expect,
+          data: {},
           game: undefined,
           scene: undefined,
         };

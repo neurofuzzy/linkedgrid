@@ -7,9 +7,9 @@
  */
 import { BaseTickedSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
-import { SYSTEM_CONFIG } from '../config/systems.config';
+
 import { hasPushable, hasPusher } from '../traits/trait-guards';
-import { Direction } from '../core/grid/direction';
+
 
 /**
  * PushSystem - Resolves push interactions.

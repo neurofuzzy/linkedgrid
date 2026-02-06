@@ -7,7 +7,7 @@
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext, EntityData } from '../core/types';
 import { hasHealth, hasHealthState, hasShield, hasVulnerability } from '../traits/trait-guards';
-import type { HealthState, HasHealth } from '../traits/health.trait';
+import type { HasHealth } from '../traits/health.trait';
 import type { HasShield } from '../traits/defense.trait';
 
 /**

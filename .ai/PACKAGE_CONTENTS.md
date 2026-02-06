@@ -1,8 +1,8 @@
 ```
 # Auto-generated project map
-# Last updated: 2026-02-05 18:20:22
-# Files: 129
-# Lines of code: ~31987
+# Last updated: 2026-02-06 00:58:37
+# Files: 131
+# Lines of code: ~33319
 ```
 - **/config**
   - [entities.config.ts](../packages/spartan/config/entities.config.ts) - Default entity configuration values and propert...
@@ -106,8 +106,11 @@
     - Type: `AshData`
     - Type: `GrassData`
     - Type: `ExplosionVisualData`
+    - Type: `ProjectileData` - ProjectileData - Moving projectile entity. Used...
+    - Type: `RayEffectData` - RayEffectData - Visual ray/beam effect. Used fo...
   - [enemy.entity.ts](../packages/spartan/entities/enemy.entity.ts) - Enemy entity definitions.
     - Type: `EnemyData`
+    - Type: `GuardData` - GuardData - NPC guard entity with autonomous mo...
   - [entity.types.ts](../packages/spartan/entities/entity.types.ts) - EntityData - Discriminated union of all entity ...
     - Type: `EntityData`
   - [hazard.entity.ts](../packages/spartan/entities/hazard.entity.ts) - Hazardous entity definitions.
@@ -230,6 +233,7 @@
 - **/test**
   - [assertions.visual.test.ts](../packages/spartan/test/assertions.visual.test.ts)
   - [chain-reaction.test.ts](../packages/spartan/test/chain-reaction.test.ts)
+  - [combat-gameplay.test.ts](../packages/spartan/test/combat-gameplay.test.ts) - Combat Gameplay Integration Tests
   - [explosion.test.ts](../packages/spartan/test/explosion.test.ts)
   - [explosion.visual.test.ts](../packages/spartan/test/explosion.visual.test.ts)
   - [flammability.visual.test.ts](../packages/spartan/test/flammability.visual.test.ts)
@@ -237,6 +241,7 @@
   - [game-loop.test.ts](../packages/spartan/test/game-loop.test.ts)
   - [game-runtime.test.ts](../packages/spartan/test/game-runtime.test.ts)
   - [health.visual.test.ts](../packages/spartan/test/health.visual.test.ts) - Visual tests for HealthSystem.
+  - [input-presets.test.ts](../packages/spartan/test/input-presets.test.ts) - Input Presets Test Suite
   - [layers.visual.test.ts](../packages/spartan/test/layers.visual.test.ts)
   - [lifecycle-callbacks.test.ts](../packages/spartan/test/lifecycle-callbacks.test.ts) - Tests for Entity Lifecycle Callbacks.
   - [melee.test.ts](../packages/spartan/test/melee.test.ts) - Tests for MeleeSystem.
@@ -265,8 +270,11 @@
     - Class: `TestSpatialFixture` (Methods: placeEntity, removeEntity, moveEntity) - Test fixture helper for setting up initial spat...
   - [test-helpers.ts](../packages/spartan/test/test-helpers.ts)
     - Function: `createRuntimeWithSystems` - Create GameRuntime with systems properly regist...
+    - Function: `getAmmo` - Get ammo count for a specific weapon type from ...
+    - Function: `getHp` - Get HP from an entity. Returns undefined if ent...
+    - Function: `getMaxHp` - Get max HP from an entity. Returns undefined if...
   - [test-input-provider.ts](../packages/spartan/test/test-input-provider.ts)
-    - Class: `TestInputProvider` (Methods: getDirection, getAction, getSecondary, getStart, getRestart, setDirection, setAction, setSecondary, reset) - TestInputProvider - Mockable input provider for...
+    - Class: `TestInputProvider` (Methods: getMoveDirection, getAimDirection, getPrimaryAction, getSecondaryAction, getStart, getRestart, isAiming, setPreset, getPreset, setDirection, setMoveDirection, setAimDirection, setAction, setPrimaryAction, setSecondary, setSecondaryAction, pressStart, pressRestart, reset) - TestInputProvider - Mockable input provider for...
   - [transaction-consistency.test.ts](../packages/spartan/test/transaction-consistency.test.ts)
   - [visual-helpers.ts](../packages/spartan/test/visual-helpers.ts)
     - Interface: `AssertionResult`
@@ -402,6 +410,7 @@
     - Function: `hasArmor` - Check if entity has armor.
     - Function: `hasShield` - Check if entity has shields.
     - Function: `hasResistance` - Check if entity has resistance.
+    - Function: `hasVulnerability` - Check if entity has vulnerability multipliers.
     - Function: `hasProjectile` - Check if entity is a projectile.
     - Function: `hasTurret` - Check if entity is a turret.
     - Function: `hasSpawner` - Check if entity is a spawner. Entities with spa...

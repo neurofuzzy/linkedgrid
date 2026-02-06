@@ -19,6 +19,7 @@ import { ProjectileSystem } from '../systems/projectile.system';
 import { TurretSystem } from '../systems/turret.system';
 import { GameLayers } from '../config/layers.config';
 import { Direction } from '../core/grid/direction';
+import { GameManager } from '../core/game-manager';
 
 describe('ProjectileSystem', () => {
   let grid: LinkedGrid;
@@ -601,7 +602,7 @@ describe('TurretSystem', () => {
         playerEntityId: playerId,
         entityStore: store
       }
-    } as any;
+    } as unknown as GameManager;
 
     const testLoop = new GameLoop(spatial, mockManager);
     testLoop.addSystem(turretSystem);

@@ -668,7 +668,7 @@ export class NPCMovementSystem extends BaseTickedSystem {
         if (neighbor.x === 6 && neighbor.y === 10) {
           // console.error(`[BFS-Debug] Visiting (6,10). Blocked: ${context.spatial.isBlocked(neighbor)}. NodeID: ${pathNodeId}`);
           if (pathNodeId !== undefined) {
-            const data = context.spatial.getEntityData(pathNodeId);
+            // const _data = context.spatial.getEntityData(pathNodeId);
             // console.error(`[BFS-Debug] (6,10) Entity Data: ${JSON.stringify(data)}`);
             // console.error(`[BFS-Debug] (6,10) isPathNode: ${data ? isPathNode(data) : 'N/A'}`);
           }

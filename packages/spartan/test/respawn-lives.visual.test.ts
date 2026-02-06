@@ -14,10 +14,9 @@ import { HealthSystem } from '../systems/health.system';
 import { RespawnSystem } from '../systems/respawn.system';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';
-import { GameRuntime } from '../core/game-runtime';
 
 visual('player loses life on death and respawns', {
-  arrange: ({ spatial, store }) => {
+  arrange: ({ spatial: _spatial, store: _store, data }) => {
     // Create proper scene setup with SceneManager
     const gameManager = new GameManager();
     const scene = gameManager.sceneManager.createScene('test-scene', 10, 10);
@@ -46,10 +45,10 @@ visual('player loses life on death and respawns', {
     gameManager.gameState.playerEntityId = playerId;
 
     // Store for act phase
-    (spatial as any).__testSetup = { gameManager, playerId, scene };
+    data.testSetup = { gameManager, playerId, scene };
   },
-  act: ({ spatial }) => {
-    const { gameManager, playerId, scene } = (spatial as any).__testSetup;
+  act: ({ spatial: _spatial, data }) => {
+    const { gameManager, playerId, scene } = data.testSetup;
 
     const healthSystem = new HealthSystem({ dyingDuration: 1 });
     const respawnSystem = new RespawnSystem(gameManager, {
@@ -82,15 +81,15 @@ visual('player loses life on death and respawns', {
     gameManager.executePendingTransition();
 
     // Store result for assertion
-    (spatial as any).__testResult = {
+    data.testResult = {
       livesAfterDeath: gameManager.gameState.lives,
       respawnSystem,
       playerId,
       scene,
     };
   },
-  assert: ({ spatial, expect }) => {
-    const result = (spatial as any).__testResult;
+  assert: ({ expect, data }) => {
+    const result = data.testResult;
 
     expect('Player lost one life', () => {
       if (result.livesAfterDeath !== 2) {
@@ -113,8 +112,8 @@ visual('player loses life on death and respawns', {
       if (!playerData) {
         throw new Error('Player data not found');
       }
-      if ((playerData as any).healthState !== 'alive') {
-        throw new Error(`Expected healthState 'alive', got ${(playerData as any).healthState}`);
+      if ((playerData as unknown as { healthState: string }).healthState !== 'alive') {
+        throw new Error(`Expected healthState 'alive', got ${(playerData as unknown as { healthState: string }).healthState}`);
       }
     });
   },
@@ -132,7 +131,7 @@ visual('game over when no lives remaining', {
 
     spatial.commit();
   },
-  act: ({ spatial, store }) => {
+  act: ({ spatial, store, data }) => {
     // Create game manager
     const gameManager = new GameManager();
     gameManager.gameState.entityStore = store;
@@ -169,13 +168,13 @@ visual('game over when no lives remaining', {
     gameLoop.tick();
 
     // Store result for assertion
-    (spatial as any).__testResult = {
+    data.testResult = {
       gameOverCalled,
       livesRemaining: gameManager.gameState.lives,
     };
   },
-  assert: ({ expect, spatial }) => {
-    const result = (spatial as any)?.__testResult;
+  assert: ({ expect, data }) => {
+    const result = data.testResult;
 
     // Get result from spatial context and verify game over was called
     expect('Game over callback was called', () => {
@@ -198,7 +197,7 @@ visual('lives are tracked in GameState (single source of truth)', {
 
     spatial.commit();
   },
-  act: ({ spatial, store }) => {
+  act: ({ spatial, store, data }) => {
     // Create game manager
     const gameManager = new GameManager();
     gameManager.gameState.entityStore = store;
@@ -227,7 +226,7 @@ visual('lives are tracked in GameState (single source of truth)', {
     const afterReset = gameManager.gameState.lives;
 
     // Store results
-    (spatial as any).__testResult = {
+    data.testResult = {
       initialLives,
       initialMaxLives,
       getLivesResult,
@@ -235,8 +234,8 @@ visual('lives are tracked in GameState (single source of truth)', {
       afterReset,
     };
   },
-  assert: ({ spatial, expect }) => {
-    const result = (spatial as any).__testResult;
+  assert: ({ expect, data }) => {
+    const result = data.testResult;
 
     expect('GameState.lives initialized from maxLives config', () => {
       if (result.initialLives !== 5) {
@@ -268,7 +267,7 @@ visual('lives are tracked in GameState (single source of truth)', {
 });
 
 visual('no checkpoint fallback: player dies in scene B, respawns at scene A player-start', {
-  arrange: ({ spatial }) => {
+  arrange: ({ data }) => {
     // Create multi-scene setup
     const gameManager = new GameManager();
 
@@ -307,15 +306,15 @@ visual('no checkpoint fallback: player dies in scene B, respawns at scene A play
     gameManager.gameState.playerEntityId = playerId;
 
     // Store for act phase
-    (spatial as any).__testSetup = {
+    data.testSetup = {
       gameManager,
       playerId,
       room1,
       room2,
     };
   },
-  act: ({ spatial }) => {
-    const { gameManager, playerId, room2 } = (spatial as any).__testSetup;
+  act: ({ data }) => {
+    const { gameManager, playerId, room2 } = data.testSetup;
 
     // Create systems
     const healthSystem = new HealthSystem({ dyingDuration: 1 });
@@ -345,15 +344,15 @@ visual('no checkpoint fallback: player dies in scene B, respawns at scene A play
     gameManager.executePendingTransition();
 
     // Store results
-    (spatial as any).__testResult = {
+    data.testResult = {
       activeSceneId: gameManager.sceneManager.getActiveScene()?.id,
       playerScene: gameManager.getPlayerScene()?.id,
       playerPos: gameManager.getPlayerPosition(),
       lives: gameManager.gameState.lives,
     };
   },
-  assert: ({ spatial, expect }) => {
-    const result = (spatial as any).__testResult;
+  assert: ({ expect, data }) => {
+    const result = data.testResult;
 
     expect('Active scene changed to room1 (initial scene)', () => {
       if (result.activeSceneId !== 'room1') {
@@ -385,7 +384,7 @@ visual('no checkpoint fallback: player dies in scene B, respawns at scene A play
 });
 
 visual('cross-scene respawn: player dies in scene B, respawns in scene A', {
-  arrange: ({ spatial, store }) => {
+  arrange: ({ store: _store, data }) => {
     // We need a multi-scene setup, so we'll use GameManager directly
     const gameManager = new GameManager();
 
@@ -425,15 +424,15 @@ visual('cross-scene respawn: player dies in scene B, respawns in scene A', {
     gameManager.gameState.playerEntityId = playerId;
 
     // Store for act phase
-    (spatial as any).__testSetup = {
+    data.testSetup = {
       gameManager,
       playerId,
       room1,
       room2,
     };
   },
-  act: ({ spatial }) => {
-    const { gameManager, playerId, room2 } = (spatial as any).__testSetup;
+  act: ({ data }) => {
+    const { gameManager, playerId, room2 } = data.testSetup;
 
     // Create systems
     const healthSystem = new HealthSystem({ dyingDuration: 1 });
@@ -463,15 +462,15 @@ visual('cross-scene respawn: player dies in scene B, respawns in scene A', {
     gameManager.executePendingTransition();
 
     // Store results
-    (spatial as any).__testResult = {
+    data.testResult = {
       activeSceneId: gameManager.sceneManager.getActiveScene()?.id,
       playerScene: gameManager.getPlayerScene()?.id,
       playerPos: gameManager.getPlayerPosition(),
       lives: gameManager.gameState.lives,
     };
   },
-  assert: ({ spatial, expect }) => {
-    const result = (spatial as any).__testResult;
+  assert: ({ expect, data }) => {
+    const result = data.testResult;
 
     expect('Active scene changed to room1', () => {
       if (result.activeSceneId !== 'room1') {

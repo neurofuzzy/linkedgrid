@@ -1,7 +1,7 @@
 /**
  * Traits for pushable entities and entities that can push.
  */
-import { Direction } from '../core/grid/direction';
+
 
 /**
  * HasPushable - Entity can be pushed by other entities.

@@ -3,6 +3,7 @@
  */
 import { BaseEntityData } from './base.entity';
 import { HasHealth, CanDealDamage, HasSceneLocation, HasInventory, HasPusher } from '../traits';
+import { HasWeapon } from '../traits/weapon.trait';
 
 export type PlayerData = BaseEntityData & {
   type: 'player';
@@ -10,4 +11,5 @@ export type PlayerData = BaseEntityData & {
   CanDealDamage &
   HasSceneLocation &
   HasInventory &
-  HasPusher;
+  HasPusher &
+  HasWeapon;

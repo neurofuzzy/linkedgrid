@@ -34,7 +34,7 @@ import type { HasProjectile } from './projectile.trait';
 import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
 import type { HasSpawner } from './spawner.trait';
 import type { HasSceneConnection } from './scene-connection.trait';
-import type { HasBuff, Buff } from './buff.trait';
+import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
