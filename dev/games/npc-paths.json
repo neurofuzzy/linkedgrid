@@ -61,7 +61,7 @@
             "giveUpRange": 10,
             "pathfindingRange": 20,
             "team": "enemy",
-            "threatRange": 6,
+            "threatRange": 10,
             "attackRange": 6,
             "posture": "aggressive",
             "preferRanged": true,

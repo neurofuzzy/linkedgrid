@@ -12,7 +12,7 @@ import type { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, Expl
 import type { ChainLinkData, PathNodeData, SleepWakeData } from './logic.entity';
 import type { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData, RangeSensorData } from './signal.entity';
 import type { PlayerStartData, CheckpointData } from './spawning.entity';
-import type { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData } from './powerup.entity';
+import type { HealthPackData, HealthPotionData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData } from './powerup.entity';
 import type { CoinData, FlagData, ExitData } from './objective.entity';
 
 // Re-export commonly used types for external consumption
@@ -24,7 +24,7 @@ export type { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, Expl
 export type { ChainLinkData, PathNodeData, SleepWakeData };
 export type { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData, RangeSensorData };
 export type { PlayerStartData, CheckpointData };
-export type { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData };
+export type { HealthPackData, HealthPotionData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData };
 export type { CoinData, FlagData, ExitData };
 
 export type EntityData = PlayerData |
@@ -64,6 +64,7 @@ export type EntityData = PlayerData |
   PlayerStartData |
   CheckpointData |
   HealthPackData |
+  HealthPotionData |
   ShieldPackData |
   SpeedBoostData |
   DamageBoostData |

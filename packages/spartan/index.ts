@@ -133,6 +133,7 @@ export {
   isExit,
   hasScoreValue,
   isRangeSensor,
+  isHealthPotion,
   hasNPCBrain,
 } from './traits/trait-guards';
 

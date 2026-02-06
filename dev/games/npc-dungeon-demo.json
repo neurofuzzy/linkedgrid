@@ -305,7 +305,7 @@
         { "type": "wall", "x": 9, "y": 9, "layer": 5, "data": { "color": "#444466" } },
 
         { "_comment": "=== Health pickup ===" },
-        { "type": "coin", "x": 7, "y": 7, "layer": 4, "data": { "scoreValue": 50, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "health-pack", "x": 7, "y": 7, "layer": 4, "data": { "healAmount": 50, "collectibleId": "health", "color": "#00ff00" } },
 
         { "_comment": "=== Teleporter back to Room 2 ===" },
         {

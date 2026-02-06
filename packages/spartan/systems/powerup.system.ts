@@ -17,6 +17,7 @@ import {
   hasWeapon,
   hasBuff,
   isHealthPack,
+  isHealthPotion,
   isShieldPack,
   isSpeedBoost,
   isDamageBoost,
@@ -88,6 +89,9 @@ export class PowerupSystem extends BaseReactiveSystem {
     // Process powerup pickups from overlaps
     this.processPickups(context, currentTick);
 
+    // Apply per-tick buff effects (e.g., health regen)
+    this.processActiveBuffEffects(context, currentTick);
+
     // Expire old buffs
     this.processBuffExpiration(context, currentTick);
   }
@@ -148,6 +152,8 @@ export class PowerupSystem extends BaseReactiveSystem {
 
     if (isHealthPack(powerupData)) {
       consumed = this.applyHealthPack(collectorId, collectorData, powerupData.healAmount);
+    } else if (isHealthPotion(powerupData)) {
+      consumed = this.applyHealthPotion(collectorData, powerupData.regenPerTick, powerupData.duration, currentTick);
     } else if (isShieldPack(powerupData)) {
       consumed = this.applyShieldPack(collectorData, powerupData.shieldAmount, powerupData.duration, currentTick);
     } else if (isSpeedBoost(powerupData)) {
@@ -183,6 +189,33 @@ export class PowerupSystem extends BaseReactiveSystem {
     } else {
       collectorData.hp = Math.min(collectorData.maxHp, collectorData.hp + healAmount);
     }
+
+    return true;
+  }
+
+  /**
+   * Apply health potion - heal-over-time buff.
+   *
+   * Applies a health-regen buff that restores HP each tick for a duration.
+   * HP gained is permanent and stays after the buff expires.
+   * Only collected when the player is below full health.
+   */
+  private applyHealthPotion(
+    collectorData: EntityData,
+    regenPerTick: number,
+    duration: number,
+    currentTick: number
+  ): boolean {
+    if (!hasHealth(collectorData)) return false;
+
+    // Only collect if not at full health
+    if (collectorData.hp >= collectorData.maxHp) return false;
+
+    this.addBuff(collectorData, {
+      type: 'health-regen',
+      magnitude: regenPerTick,
+      expirationTick: currentTick + duration,
+    });
 
     return true;
   }
@@ -343,6 +376,45 @@ export class PowerupSystem extends BaseReactiveSystem {
     } else {
       // Add new buff
       buffEntity.activeBuffs.push(buff);
+    }
+  }
+
+  /**
+   * Apply per-tick effects from active buffs (e.g., health-regen).
+   *
+   * Runs each tick before expiration so the last tick of a buff
+   * still applies its effect.
+   */
+  private processActiveBuffEffects(context: GameContext, currentTick: number): void {
+    for (const [entityId] of context.spatial.getAllPositions()) {
+      const entityData = context.spatial.getEntityData(entityId);
+      if (!entityData || !hasBuff(entityData)) continue;
+
+      for (const buff of entityData.activeBuffs) {
+        // Skip buffs that expire this tick (expiration runs after this)
+        if (buff.expirationTick !== -1 && buff.expirationTick <= currentTick) continue;
+
+        if (buff.type === 'health-regen') {
+          this.applyHealthRegen(entityId, entityData, buff.magnitude);
+        }
+      }
+    }
+  }
+
+  /**
+   * Apply one tick of health regeneration from a health-regen buff.
+   *
+   * Only heals while HP is below maxHP. Uses HealthSystem if available,
+   * otherwise directly modifies HP.
+   */
+  private applyHealthRegen(entityId: number, entityData: EntityData, regenAmount: number): void {
+    if (!hasHealth(entityData)) return;
+    if (entityData.hp >= entityData.maxHp) return;
+
+    if (this.healthSystem) {
+      this.healthSystem.heal(entityId, regenAmount);
+    } else {
+      entityData.hp = Math.min(entityData.maxHp, entityData.hp + regenAmount);
     }
   }
 

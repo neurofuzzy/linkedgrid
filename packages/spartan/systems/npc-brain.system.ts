@@ -27,8 +27,20 @@ import { DEFAULT_WEAPONS } from '../traits/weapon.trait';
 /**
  * NPCBrainSystem - Makes NPCs fight autonomously.
  *
- * Runs before NPCMovementSystem so posture decisions are available
- * for movement in the same tick.
+ * Architecture: AI Controller/Executor Pattern
+ *
+ * This system acts as a high-level "Controller" that makes decisions
+ * and writes intent fields onto entity data. Low-level "Executor"
+ * systems (NPCMovementSystem, MeleeSystem, ProjectileSystem) then
+ * act on those intents without making decisions themselves.
+ *
+ * Controller sets -> Executor reads:
+ * - movementMode, targetEntityId -> NPCMovementSystem
+ * - meleeDirection -> MeleeSystem
+ * - projectile spawn -> ProjectileSystem
+ *
+ * Runs before NPCMovementSystem (pre-commit phase) so posture
+ * decisions are available for movement in the same tick.
  *
  * Per-NPC each tick:
  * 1. Threat scan: find nearest opposing-team entity within threatRange
@@ -275,6 +287,8 @@ export class NPCBrainSystem extends BaseTickedSystem {
 
     const dir = this.directionToTarget(pos.x, pos.y, target.x, target.y);
     if (dir !== Direction.NONE) {
+      // Only set direction intent; MeleeSystem stamps lastMeleeAttackTick
+      // when it actually executes the attack.
       entityData.meleeDirection = dir;
     }
   }

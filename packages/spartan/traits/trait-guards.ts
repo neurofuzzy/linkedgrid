@@ -75,6 +75,7 @@ import type {
   SleepWakeData,
   SpawnerData,
   HealthPackData,
+  HealthPotionData,
   ShieldPackData,
   SpeedBoostData,
   DamageBoostData,
@@ -1256,6 +1257,16 @@ export function isHealthPack(entity: EntityData): entity is HealthPackData {
 }
 
 /**
+ * Check if entity is a health potion (heal-over-time).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'health-potion'
+ */
+export function isHealthPotion(entity: EntityData): entity is HealthPotionData {
+  return entity.type === 'health-potion';
+}
+
+/**
  * Check if entity is a shield pack.
  *
  * @param entity - Entity to check
@@ -1321,9 +1332,10 @@ export function isWeaponPickup(entity: EntityData): entity is WeaponPickupData {
  * @param entity - Entity to check
  * @returns true if entity is a collectible powerup
  */
-export function isPowerup(entity: EntityData): entity is HealthPackData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData | WeaponPickupData {
+export function isPowerup(entity: EntityData): entity is HealthPackData | HealthPotionData | ShieldPackData | SpeedBoostData | DamageBoostData | InvincibilityData | AmmoPackData | WeaponPickupData {
   return (
     isHealthPack(entity) ||
+    isHealthPotion(entity) ||
     isShieldPack(entity) ||
     isSpeedBoost(entity) ||
     isDamageBoost(entity) ||
@@ -1382,5 +1394,5 @@ export function hasScoreValue(entity: EntityData): entity is EntityData & HasSco
  * @returns true if entity has NPC brain configuration
  */
 export function hasNPCBrain(entity: EntityData): entity is EntityData & HasNPCBrain {
-  return 'threatRange' in entity || 'brainState' in entity || 'attackRange' in entity;
+  return 'posture' in entity || 'threatRange' in entity || 'attackRange' in entity || 'retreatHealthPct' in entity;
 }

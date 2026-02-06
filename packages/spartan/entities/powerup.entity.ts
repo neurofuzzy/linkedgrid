@@ -21,6 +21,26 @@ export type HealthPackData = BaseEntityData & {
   HasColor;
 
 /**
+ * HealthPotionData - Heal-over-time powerup.
+ *
+ * When collected, applies a health-regen buff that slowly restores HP
+ * each tick for a duration. Health gained is permanent -- it stays
+ * after the buff expires (unlike shield buffs).
+ *
+ * Only heals while the entity's HP is below maxHp.
+ *
+ * Placed on COLLECTIBLES layer.
+ */
+export type HealthPotionData = BaseEntityData & {
+  type: 'health-potion';
+  /** HP restored per tick while the buff is active */
+  regenPerTick: number;
+  /** Duration in ticks */
+  duration: number;
+} & IsCollectible &
+  HasColor;
+
+/**
  * ShieldPackData - Shield restoration or temporary shield powerup.
  *
  * Can either restore existing shield or grant temporary shields.

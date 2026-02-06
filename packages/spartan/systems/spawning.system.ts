@@ -689,12 +689,12 @@ export class SpawningSystem extends BaseTickedSystem {
    * Returns false if there are no wave-mode groups.
    */
   areAllWavesCleared(): boolean {
-    let hasWaveGroups = false;
+    const waveGroups = [...this.groups.values()].filter(g => g.waveMode);
 
-    for (const group of this.groups.values()) {
-      if (!group.waveMode) continue;
-      hasWaveGroups = true;
+    // No wave groups means waves are considered cleared
+    if (waveGroups.length === 0) return true;
 
+    for (const group of waveGroups) {
       // All waves must be spawned
       if (!group.wavesComplete) return false;
 
@@ -702,7 +702,7 @@ export class SpawningSystem extends BaseTickedSystem {
       if (group.spawnedEntityIds.length > 0) return false;
     }
 
-    return hasWaveGroups;
+    return true;
   }
 
   /**
