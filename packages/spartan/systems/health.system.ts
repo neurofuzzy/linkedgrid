@@ -6,8 +6,9 @@
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext, EntityData } from '../core/types';
-import { hasHealth, hasHealthState } from '../traits/trait-guards';
-import type { HealthState } from '../traits/health.trait';
+import { hasHealth, hasHealthState, hasShield, hasVulnerability } from '../traits/trait-guards';
+import type { HasHealth } from '../traits/health.trait';
+import type { HasShield } from '../traits/defense.trait';
 
 /**
  * Damage intent - Request to deal damage to an entity.
@@ -183,8 +184,8 @@ export class HealthSystem extends BaseReactiveSystem {
    */
   private applyDamage(
     context: GameContext,
-    entityId: number,
-    entityData: EntityData & { hp: number; maxHp: number; healthState?: HealthState },
+    _entityId: number,
+    entityData: EntityData & HasHealth,
     intent: DamageIntent
   ): void {
     let damage = intent.amount;
@@ -200,23 +201,21 @@ export class HealthSystem extends BaseReactiveSystem {
     }
 
     // Apply vulnerabilities
-    if (intent.damageType && 'vulnerabilities' in entityData) {
-      const vuln = entityData.vulnerabilities as Record<string, number>;
-      if (vuln[intent.damageType] !== undefined) {
-        damage = Math.floor(damage * vuln[intent.damageType]);
+    if (intent.damageType && hasVulnerability(entityData)) {
+      const multiplier = entityData.vulnerabilities[intent.damageType];
+      if (multiplier !== undefined) {
+        damage = Math.floor(damage * multiplier);
       }
     }
 
     // Apply to shield first
-    if ('shield' in entityData && typeof entityData.shield === 'number' && entityData.shield > 0) {
+    if (hasShield(entityData) && entityData.shield > 0) {
       const shieldDamage = Math.min(entityData.shield, damage);
       entityData.shield -= shieldDamage;
       damage -= shieldDamage;
 
       // Track when shield was last damaged for regen delay
-      if ('lastShieldDamageTick' in entityData || 'shieldRegenDelay' in entityData) {
-        (entityData as { lastShieldDamageTick?: number }).lastShieldDamageTick = context.tick ?? 0;
-      }
+      entityData.lastShieldDamageTick = context.tick ?? 0;
     }
 
     // Apply remaining damage to HP
@@ -234,7 +233,7 @@ export class HealthSystem extends BaseReactiveSystem {
    * Apply healing to an entity.
    */
   private applyHeal(
-    entityData: EntityData & { hp: number; maxHp: number },
+    entityData: EntityData & HasHealth,
     intent: HealIntent
   ): void {
     entityData.hp = Math.min(entityData.maxHp, entityData.hp + intent.amount);
@@ -243,9 +242,9 @@ export class HealthSystem extends BaseReactiveSystem {
   /**
    * Transition entity to dying state.
    */
-  private startDying(entityData: EntityData & { hp: number; maxHp: number; healthState?: HealthState }): void {
+  private startDying(entityData: EntityData & HasHealth): void {
     entityData.healthState = 'dying';
-    (entityData as { dyingTicks?: number }).dyingTicks = this.config.dyingDuration;
+    entityData.dyingTicks = this.config.dyingDuration;
   }
 
   /**
@@ -256,40 +255,36 @@ export class HealthSystem extends BaseReactiveSystem {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasHealth(entityData)) continue;
 
-      if (hasHealthState(entityData) && entityData.healthState === 'dying') {
-        const dyingTicks = (entityData as { dyingTicks?: number }).dyingTicks ?? 0;
+      if (entityData.healthState === 'dying') {
+        const dyingTicks = entityData.dyingTicks ?? 0;
 
         if (dyingTicks <= 1) {
           // Transition to dead
           entityData.healthState = 'dead';
         } else {
           // Countdown
-          (entityData as { dyingTicks?: number }).dyingTicks = dyingTicks - 1;
+          entityData.dyingTicks = dyingTicks - 1;
         }
       }
 
       // Process shield regeneration
-      this.processShieldRegen(entityData, context.tick ?? 0);
+      if (hasShield(entityData)) {
+        this.processShieldRegen(entityData, context.tick ?? 0);
+      }
     }
   }
 
   /**
    * Handle shield regeneration.
    */
-  private processShieldRegen(entityData: EntityData, currentTick: number): void {
-    if (!('shield' in entityData) || !('maxShield' in entityData)) return;
+  private processShieldRegen(entityData: EntityData & HasShield, currentTick: number): void {
+    const { shield, maxShield, shieldRegenRate = 0, shieldRegenDelay = 0, lastShieldDamageTick = 0 } = entityData;
 
-    const shield = entityData.shield as number;
-    const maxShield = entityData.maxShield as number;
-    const regenRate = (entityData as { shieldRegenRate?: number }).shieldRegenRate ?? 0;
-    const regenDelay = (entityData as { shieldRegenDelay?: number }).shieldRegenDelay ?? 0;
-    const lastDamage = (entityData as { lastShieldDamageTick?: number }).lastShieldDamageTick ?? 0;
-
-    if (regenRate <= 0 || shield >= maxShield) return;
+    if (shieldRegenRate <= 0 || shield >= maxShield) return;
 
     // Check if we've waited long enough since last damage
-    if (currentTick - lastDamage >= regenDelay) {
-      (entityData as { shield: number }).shield = Math.min(maxShield, shield + regenRate);
+    if (currentTick - lastShieldDamageTick >= shieldRegenDelay) {
+      entityData.shield = Math.min(maxShield, shield + shieldRegenRate);
     }
   }
 

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { GameState } from '../core/game-state';
+
 import { Scene } from '../core/scene';
 import { GameManager } from '../core/game-manager';
 import { GameLoop } from '../core/game-loop';

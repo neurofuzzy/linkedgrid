@@ -5,7 +5,7 @@
  * Supports cross-scene respawning and life tracking.
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import { isEntityDead, isCheckpoint, isPlayerStart, hasCheckpoint } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
@@ -135,21 +135,21 @@ export class RespawnSystem extends BaseReactiveSystem {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !isCheckpoint(entityData)) continue;
 
-      // Check if already activated
-      const checkpointData = entityData as { activated?: boolean; sceneId: string };
-      if (checkpointData.activated) continue;
+      // Check if already activated (narrowed to CheckpointData)
+      if (entityData.activated) continue;
 
       // Activate checkpoint
-      checkpointData.activated = true;
+      entityData.activated = true;
       this.debugStats.checkpointsActivated++;
 
       // Update player's checkpoint tracking
+      // Note: These properties are dynamically added to player data for respawn tracking
       const playerData = context.spatial.getEntityData(playerId);
       if (playerData) {
-        (playerData as any).lastCheckpointId = entityId;
-        (playerData as any).lastCheckpointSceneId = checkpointData.sceneId;
-        (playerData as any).lastCheckpointX = playerPos.x;
-        (playerData as any).lastCheckpointY = playerPos.y;
+        playerData.lastCheckpointId = entityId;
+        playerData.lastCheckpointSceneId = entityData.sceneId;
+        playerData.lastCheckpointX = playerPos.x;
+        playerData.lastCheckpointY = playerPos.y;
       }
     }
   }
@@ -195,13 +195,14 @@ export class RespawnSystem extends BaseReactiveSystem {
     }
 
     // Cache player data for respawn (entity will be removed by HealthSystem)
+    // Using index signature access - these properties are dynamically added
     const cachedPlayerData = {
-      maxHp: (playerData as any).maxHp ?? 100,
-      damage: (playerData as any).damage ?? 10,
-      lastCheckpointId: (playerData as any).lastCheckpointId,
-      lastCheckpointSceneId: (playerData as any).lastCheckpointSceneId,
-      lastCheckpointX: (playerData as any).lastCheckpointX,
-      lastCheckpointY: (playerData as any).lastCheckpointY,
+      maxHp: typeof playerData.maxHp === 'number' ? playerData.maxHp : 100,
+      damage: typeof playerData.damage === 'number' ? playerData.damage : 10,
+      lastCheckpointId: typeof playerData.lastCheckpointId === 'number' ? playerData.lastCheckpointId : undefined,
+      lastCheckpointSceneId: typeof playerData.lastCheckpointSceneId === 'string' ? playerData.lastCheckpointSceneId : undefined,
+      lastCheckpointX: typeof playerData.lastCheckpointX === 'number' ? playerData.lastCheckpointX : undefined,
+      lastCheckpointY: typeof playerData.lastCheckpointY === 'number' ? playerData.lastCheckpointY : undefined,
     };
 
     // Schedule respawn
@@ -227,7 +228,7 @@ export class RespawnSystem extends BaseReactiveSystem {
   private findRespawnLocation(
     _context: GameContext,
     _playerId: number,
-    playerData: any
+    playerData: EntityData
   ): { sceneId: string; x: number; y: number } | null {
     // Priority 1: Check for saved checkpoint
     if (hasCheckpoint(playerData) && playerData.lastCheckpointSceneId) {
@@ -284,7 +285,7 @@ export class RespawnSystem extends BaseReactiveSystem {
   /**
    * Find player-start entity in a specific scene.
    */
-  private findPlayerStartInScene(scene: { spatial: { getAllPositions(): IterableIterator<[number, { x: number; y: number; layer: number }]>; getEntityData(id: number): any; getEntityPosition(id: number): { x: number; y: number } | null } }): { x: number; y: number } | null {
+  private findPlayerStartInScene(scene: { spatial: { getAllPositions(): IterableIterator<[number, { x: number; y: number; layer: number }]>; getEntityData(id: number): EntityData | undefined; getEntityPosition(id: number): { x: number; y: number } | null } }): { x: number; y: number } | null {
     for (const [entityId] of scene.spatial.getAllPositions()) {
       const entityData = scene.spatial.getEntityData(entityId);
       if (!entityData || !isPlayerStart(entityData)) continue;

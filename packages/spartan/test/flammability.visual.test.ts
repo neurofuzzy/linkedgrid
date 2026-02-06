@@ -2,6 +2,7 @@ import { visual } from './visual-helpers';
 import { GameLayers } from "../config/layers.config";
 import { FireSystem } from '../systems/fire.system';
 import { GameLoop } from '../core/game-loop';
+import { hasTemperature } from '../traits/trait-guards';
 
 visual('fire spreads through grass field', {
   arrange: ({ spatial }) => {
@@ -48,7 +49,7 @@ visual('fire spreads through grass field', {
       // Check how many grass entities are burning (temp > flamePoint)
       const burningCount = Array.from(spatial.getAllPositions()).filter(([id]) => {
         const data = spatial.getEntityData(id);
-        return data && 'temperature' in data && (data.temperature as number) >= (data.flamePoint as number);
+        return data && hasTemperature(data) && data.temperature >= data.flamePoint;
       }).length;
 
       // Should have spread to neighbors
@@ -108,7 +109,7 @@ visual('gasoline trail burns fast', {
 
       const burningCount = entities.filter(([id]) => {
         const d = spatial.getEntityData(id);
-        return d && 'temperature' in d && (d.temperature as number) >= (d.flamePoint as number);
+        return d && hasTemperature(d) && d.temperature >= d.flamePoint;
       }).length;
 
       if (ashCount + burningCount < 4) {
@@ -162,7 +163,7 @@ visual('fuse burns in sequence', {
       const entities = Array.from(spatial.getAllPositions());
       const affectedCount = entities.filter(([id]) => {
         const d = spatial.getEntityData(id);
-        return d?.type === 'ash' || (d && 'temperature' in d && (d.temperature as number) >= (d.flamePoint as number));
+        return d?.type === 'ash' || (d && hasTemperature(d) && d.temperature >= d.flamePoint);
       }).length;
 
       if (affectedCount < 3) {
@@ -239,7 +240,7 @@ visual('fire blocked by non-flammable entities', {
       const rightGrass = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
       const data = rightGrass ? spatial.getEntityData(rightGrass) : null;
 
-      if (data && 'temperature' in data && (data.temperature as number) >= (data.flamePoint as number)) {
+      if (data && hasTemperature(data) && data.temperature >= data.flamePoint) {
         throw new Error(`Fire jumped the water! Right grass temp: ${data.temperature}`);
       }
     });
@@ -303,8 +304,8 @@ visual('mixed flammability terrain creates realistic spread', {
         // But wait, getAllPositions returns ALL.
 
         // Let's check specifically for gasoline entity ID if still alive
-        if (d?.type === 'gasoline') {
-          return (d.temperature as number) >= (d.flamePoint as number);
+        if (d?.type === 'gasoline' && hasTemperature(d)) {
+          return d.temperature >= d.flamePoint;
         }
         return d?.type === 'ash';
       }).length;
@@ -373,9 +374,8 @@ visual('fire spreads through connected grass via temperature', {
           return (
             data &&
             data.type === 'grass' &&
-            'temperature' in data &&
-            'flamePoint' in data &&
-            (data.temperature as number) >= (data.flamePoint as number)
+            hasTemperature(data) &&
+            data.temperature >= data.flamePoint
           );
         }
       ).length;
@@ -427,8 +427,8 @@ visual('fire cannot spread without flammable materials', {
     const grassId = spatial.getEntityIdAt(5, 5, GameLayers.FLOOR);
     if (grassId) {
       const grassData = spatial.getEntityData(grassId);
-      if (grassData) {
-        grassData.temperature = (grassData.flamePoint as number) + 50;
+      if (grassData && hasTemperature(grassData)) {
+        grassData.temperature = grassData.flamePoint + 50;
       }
     }
     spatial.commit();
@@ -447,9 +447,8 @@ visual('fire cannot spread without flammable materials', {
           const data = spatial.getEntityData(id);
           return (
             data &&
-            'temperature' in data &&
-            'flamePoint' in data &&
-            (data.temperature as number) >= (data.flamePoint as number)
+            hasTemperature(data) &&
+            data.temperature >= data.flamePoint
           );
         }
       ).length;

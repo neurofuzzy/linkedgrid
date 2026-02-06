@@ -31,6 +31,15 @@ export class SpatialSystem {
   private positions: Map<number, { x: number; y: number; layer: Layer }> =
     new Map();
 
+  /**
+   * @internal
+   * Restore entity position from save data.
+   * Bypass pending operations and directly update tracking.
+   */
+  restorePosition(entityId: number, x: number, y: number, layer: Layer): void {
+    this.positions.set(entityId, { x, y, layer });
+  }
+
   /** Callbacks for entity spawn events (excludes ephemeral entities) */
   private spawnCallbacks: LifecycleCallback[] = [];
 
@@ -588,7 +597,7 @@ export class SpatialSystem {
       this.updateCellMasks(cell);
 
       // Queue lifecycle callback (skip ephemeral entities)
-      const isEphemeral = op.props && 'ephemeral' in op.props && (op.props as { ephemeral?: boolean }).ephemeral === true;
+      const isEphemeral = op.props && 'ephemeral' in op.props && op.props.ephemeral === true;
       if (!isEphemeral && op.typeStr) {
         spawnEvents.push({
           entityId: op.entityId!,

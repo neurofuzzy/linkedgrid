@@ -16,8 +16,11 @@ import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
 import { GameLoop } from '../core/game-loop';
+import { GameState } from '../core/game-state';
 import { SpawningSystem } from '../systems/spawning.system';
 import { GameLayers } from '../config/layers.config';
+import type { GameManagerContext } from '../core/types';
+import { createMockGameManager } from './test-mocks';
 
 describe('SpawningSystem', () => {
   let grid: LinkedGrid;
@@ -25,7 +28,7 @@ describe('SpawningSystem', () => {
   let spatial: SpatialSystem;
   let gameLoop: GameLoop;
   let spawningSystem: SpawningSystem;
-  let mockManager: any;
+  let mockManager: GameManagerContext;
 
   beforeEach(() => {
     grid = new LinkedGrid(20, 20);
@@ -33,15 +36,15 @@ describe('SpawningSystem', () => {
     spatial = new SpatialSystem(grid, store);
 
     // Create mock game manager
-    mockManager = {
+    mockManager = createMockGameManager({
       gameState: {
-        playerEntityId: -1, // Will be set when player is spawned
+        playerEntityId: -1,
         entityStore: store,
-      },
-    };
+      } as unknown as GameState // Store cast still needed due to SparseEntityStore vs interface mismatch
+    });
 
     gameLoop = new GameLoop(spatial, mockManager);
-    spawningSystem = new SpawningSystem(mockManager);
+    spawningSystem = new SpawningSystem();
     gameLoop.addSystem(spawningSystem);
   });
 
@@ -622,7 +625,7 @@ describe('SpawningSystem', () => {
       // (10,10) - (11,10)
       //    |
       // (10,11)
-      const spawner1Id = spatial.spawn('spawner', 10, 10, GameLayers.WALLS, {
+      spatial.spawn('spawner', 10, 10, GameLayers.WALLS, {
         spawnType: 'enemy',
         spawnLimit: 10,
         cooldown: 1,
@@ -631,7 +634,7 @@ describe('SpawningSystem', () => {
         requiresLineOfSight: false,
         color: '#ff0000',
       });
-      const spawner2Id = spatial.spawn('spawner', 11, 10, GameLayers.WALLS, {
+      spatial.spawn('spawner', 11, 10, GameLayers.WALLS, {
         spawnType: 'enemy',
         spawnLimit: 10,
         cooldown: 1,
@@ -640,7 +643,7 @@ describe('SpawningSystem', () => {
         requiresLineOfSight: false,
         color: '#ff0000',
       });
-      const spawner3Id = spatial.spawn('spawner', 10, 11, GameLayers.WALLS, {
+      spatial.spawn('spawner', 10, 11, GameLayers.WALLS, {
         spawnType: 'enemy',
         spawnLimit: 10,
         cooldown: 1,
@@ -743,7 +746,7 @@ describe('SpawningSystem', () => {
     it('prevents multiple spawns on same cell+layer+tick', () => {
       // This is implicitly tested by the grouping tests,
       // but let's verify explicitly with a single spawner
-      
+
       // Spawn player in range
       const playerId = spatial.spawn('player', 5, 10, GameLayers.ACTORS, {
         hp: 100,
@@ -818,7 +821,7 @@ describe('SpawningSystem', () => {
         if (data?.type === 'enemy') {
           expect(data.hp).toBe(50);
           expect(data.maxHp).toBe(50);
-          expect((data as any).customField).toBe('test-value');
+          expect((data as unknown as { customField: string }).customField).toBe('test-value');
           break;
         }
       }

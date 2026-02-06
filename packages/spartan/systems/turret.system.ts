@@ -426,10 +426,11 @@ export class TurretSystem extends BaseTickedSystem {
       if (!context.spatial.isAlive(entityId)) continue;
 
       const data = context.spatial.getEntityData(entityId);
-      if (!data || !('rayVisual' in data) || !data.rayVisual) continue;
+      if (!data || data.type !== 'ray-effect') continue;
 
-      const spawnTick = (data as { spawnTick?: number }).spawnTick ?? 0;
-      const lifetime = (data as { lifetime?: number }).lifetime ?? 3;
+      // RayEffectData has lifetime and optional spawnTick
+      const spawnTick = 'spawnTick' in data && typeof data.spawnTick === 'number' ? data.spawnTick : 0;
+      const lifetime = 'lifetime' in data && typeof data.lifetime === 'number' ? data.lifetime : 3;
 
       if (currentTick - spawnTick >= lifetime) {
         toRemove.push(entityId);

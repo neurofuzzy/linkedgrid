@@ -9,6 +9,7 @@
  * - HealthSystem integration
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getHp } from './test-helpers';
 import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
@@ -18,6 +19,7 @@ import { ProjectileSystem } from '../systems/projectile.system';
 import { TurretSystem } from '../systems/turret.system';
 import { GameLayers } from '../config/layers.config';
 import { Direction } from '../core/grid/direction';
+import { GameManager } from '../core/game-manager';
 
 describe('ProjectileSystem', () => {
   let grid: LinkedGrid;
@@ -499,10 +501,10 @@ describe('TurretSystem', () => {
     const rightData = spatial.getEntityData(targetRight);
 
     const totalDamage =
-      (100 - (upData?.hp ?? 100)) +
-      (100 - (downData?.hp ?? 100)) +
-      (100 - (leftData?.hp ?? 100)) +
-      (100 - (rightData?.hp ?? 100));
+      (100 - (getHp(upData) ?? 100)) +
+      (100 - (getHp(downData) ?? 100)) +
+      (100 - (getHp(leftData) ?? 100)) +
+      (100 - (getHp(rightData) ?? 100));
 
     // Should have fired 4 times, 10 damage each = 40 total damage distributed
     expect(totalDamage).toBe(40);
@@ -600,7 +602,7 @@ describe('TurretSystem', () => {
         playerEntityId: playerId,
         entityStore: store
       }
-    } as any;
+    } as unknown as GameManager;
 
     const testLoop = new GameLoop(spatial, mockManager);
     testLoop.addSystem(turretSystem);

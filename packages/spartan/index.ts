@@ -35,14 +35,17 @@
 export * from './core';
 
 export {
-  GameLayer,
   GameLayers,
   BLOCKING_LAYERS,
   VISION_BLOCKING_LAYERS,
   GAMEPLAY_VISIBLE_LAYERS,
   ALL_LAYERS,
-  CellMask,
   CellMasks,
+} from './config/layers.config';
+
+export type {
+  GameLayer,
+  CellMask,
 } from './config/layers.config';
 
 // Layers

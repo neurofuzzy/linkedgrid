@@ -634,5 +634,5 @@ When modifying code:
 
 ---
 
-**Last Updated:** 2026-01-28  
-**Version:** Temperature-based fire system with explosion integration
+**Last Updated:** 2026-02-05  
+**Version:** Phase 1.5 - TypeScript strict mode, normalized entity types

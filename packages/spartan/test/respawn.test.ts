@@ -9,17 +9,16 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SpatialSystem } from '../core/spatial-system';
-import { SparseEntityStore } from '../core/entity-store';
-import { LinkedGrid } from '../core/grid/linked-grid';
 import { GameLoop } from '../core/game-loop';
 import { GameManager } from '../core/game-manager';
 import { HealthSystem } from '../systems/health.system';
 import { RespawnSystem } from '../systems/respawn.system';
+import { isPlayer, hasHealth } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
 
 describe('RespawnSystem', () => {
-  let grid: LinkedGrid;
-  let store: SparseEntityStore;
+  // let grid: LinkedGrid;
+  // let store: SparseEntityStore;
   let spatial: SpatialSystem;
   let gameLoop: GameLoop;
   let gameManager: GameManager;
@@ -37,8 +36,8 @@ describe('RespawnSystem', () => {
     // Get the scene's spatial system
     const scene = gameManager.sceneManager.getScene('test-scene')!;
     spatial = scene.spatial;
-    grid = scene.grid;
-    store = gameManager.gameState.entityStore;
+    // grid = scene.grid;
+    // store = gameManager.gameState.entityStore;
 
     // Pass gameManager to GameLoop so context.gameManager is available
     gameLoop = new GameLoop(spatial, gameManager);
@@ -83,7 +82,17 @@ describe('RespawnSystem', () => {
 
     // Assert: Player has checkpoint tracked
     const playerData = spatial.getEntityData(playerId);
-    expect((playerData as any)?.lastCheckpointId).toBe(checkpointId);
+    // Use type assertion to PlayerData since we spawned it as 'player'
+    // or assume EntityData access via index signature is checked
+    // Better: use isPlayer guard if available, or just assert specific properties exist
+    // Since we updated PlayerData type, we can cast to PlayerData safely if we know it is one.
+    // Or we can rely on BaseEntityData index signature + specific check
+    // But since we updated PlayerData, let's use isPlayer guard.
+    if (playerData && isPlayer(playerData)) {
+      expect(playerData.lastCheckpointId).toBe(checkpointId);
+    } else {
+      throw new Error('Player data not found or invalid type');
+    }
   });
 
   it('respawns player at checkpoint after death', () => {
@@ -108,7 +117,11 @@ describe('RespawnSystem', () => {
 
     // Verify checkpoint data is on player
     const preData = spatial.getEntityData(playerId);
-    expect((preData as any).lastCheckpointSceneId).toBe('test-scene');
+    if (preData && isPlayer(preData)) {
+      expect(preData.lastCheckpointSceneId).toBe('test-scene');
+    } else {
+      throw new Error('Player data not found');
+    }
 
     // Kill the player
     healthSystem.damage(playerId, 100);
@@ -116,7 +129,11 @@ describe('RespawnSystem', () => {
 
     // Verify player is dying
     let midData = spatial.getEntityData(playerId);
-    expect((midData as any)?.healthState).toBe('dying');
+    if (midData && hasHealth(midData)) {
+      expect(midData.healthState).toBe('dying');
+    } else {
+      throw new Error('Player data likely removed or invalid');
+    }
 
     gameLoop.tick(); // tick 2: dying, dyingTicks 1 -> dead, respawn scheduled
 
@@ -133,8 +150,12 @@ describe('RespawnSystem', () => {
 
     // Assert: Player is alive again
     const playerData = spatial.getEntityData(playerId);
-    expect((playerData as any)?.healthState).toBe('alive');
-    expect(playerData?.hp).toBe(100); // Full health
+    if (playerData && hasHealth(playerData)) {
+      expect(playerData.healthState).toBe('alive');
+      expect(playerData.hp).toBe(100); // Full health
+    } else {
+      throw new Error('Player not found or missing health after respawn');
+    }
   });
 
   it('respawns at player-start if no checkpoint', () => {
@@ -251,7 +272,7 @@ describe('RespawnSystem', () => {
       pushStrength: 1,
     });
 
-    const checkpointId = spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
+    spatial.spawn('checkpoint', 5, 5, GameLayers.FLOOR, {
       activated: true, // Already activated
       sceneId: 'test-scene',
       color: '#00ff00',

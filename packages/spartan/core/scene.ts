@@ -196,12 +196,9 @@ export class Scene {
             cell.setMask(layer, true);
           }
         }
-        // Restore distances array (direct array access since no simple setter)
-        for (let layer = 0; layer < cellData.distances.length; layer++) {
-          if (cellData.distances[layer] !== 0) {
-            // Access private _distances array for restoration
-            (cell as unknown as { _distances: number[] })._distances[layer] = cellData.distances[layer];
-          }
+        // Restore distances array
+        if (cellData.distances && cellData.distances.some((d) => d !== 0)) {
+          cell.restoreDistances([...cellData.distances]);
         }
       }
     }
@@ -211,9 +208,8 @@ export class Scene {
       for (let layer = 0; layer < cellData.values.length; layer++) {
         const entityId = cellData.values[layer];
         if (entityId !== undefined) {
-          // Update position tracking directly (accessing private field)
-          const positions = (scene.spatial as unknown as { positions: Map<number, { x: number; y: number; layer: Layer }> }).positions;
-          positions.set(entityId, { x: cellData.x, y: cellData.y, layer });
+          // Update position tracking directly
+          scene.spatial.restorePosition(entityId, cellData.x, cellData.y, layer);
         }
       }
     }

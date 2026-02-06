@@ -9,7 +9,7 @@
  * Works with HealthSystem for damage/heal effects.
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext, EntityData, Overlap } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { HealthSystem } from './health.system';
 import type { Buff, HasBuff } from '../traits/buff.trait';
 import {
@@ -280,9 +280,9 @@ export class PowerupSystem extends BaseReactiveSystem {
   private applyAmmoPack(collectorData: EntityData, weaponType: string, ammoAmount: number): boolean {
     if (!hasWeapon(collectorData)) return false;
 
-    // Ensure ammo map exists
+    // Ensure ammo map exists (using index signature access)
     if (!collectorData.ammo) {
-      (collectorData as any).ammo = {};
+      collectorData.ammo = {};
     }
     // Initialize ammo for weapon type if not present
     if (!(collectorData.ammo[weaponType] >= 0)) {
@@ -297,10 +297,10 @@ export class PowerupSystem extends BaseReactiveSystem {
    * Apply weapon pickup - switch weapon and add starting ammo.
    */
   private applyWeaponPickup(collectorData: EntityData, weaponType: string, ammoAmount: number): boolean {
-    // Initialize weapon trait if not present
+    // Initialize weapon trait if not present (using index signature access)
     if (!hasWeapon(collectorData)) {
-      (collectorData as any).equippedWeapon = weaponType;
-      (collectorData as any).ammo = {};
+      collectorData.equippedWeapon = weaponType;
+      collectorData.ammo = {};
     }
 
     const weaponData = collectorData as EntityData & { equippedWeapon: string; ammo: Record<string, number> };

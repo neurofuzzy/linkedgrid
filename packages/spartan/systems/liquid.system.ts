@@ -7,7 +7,35 @@ import type { GameContext } from '../core/types';
 import type { BaseEntityData } from '../entities/entity.types';
 import { Direction } from '../core/grid/direction';
 import type { LinkedCell } from '../core/grid/linked-cell';
+import type { EntityData } from '../entities/entity.types';
 import { hasPropagation, hasLiquid } from '../traits/trait-guards';
+
+/**
+ * Properties required for liquid propagation.
+ */
+interface LiquidConfigProps {
+  spreadLayer: number;
+  blockedByLayers?: number[];
+  depth: number;
+  flammable?: boolean;
+  flamePoint?: number;
+  temperature?: number;
+  maxDistance?: number;
+  spreadRate: number;
+  spreadType: string;
+}
+
+/**
+ * Type guard for LiquidConfig properties.
+ */
+function isLiquidConfig(data: EntityData): data is EntityData & LiquidConfigProps {
+  return (
+    'spreadLayer' in data && typeof data.spreadLayer === 'number' &&
+    'depth' in data && typeof data.depth === 'number' &&
+    'spreadRate' in data && typeof data.spreadRate === 'number' &&
+    'spreadType' in data && typeof data.spreadType === 'string'
+  );
+}
 
 interface SpreadState {
   lastSpreadTick: number;
@@ -22,17 +50,8 @@ interface PropagatedEntity {
   originY: number;
 }
 
-type LiquidConfig = BaseEntityData & {
+type LiquidConfig = BaseEntityData & LiquidConfigProps & {
   propagationType?: string;
-  spreadLayer: number;
-  blockedByLayers?: number[];
-  depth: number;
-  flammable?: boolean;
-  flamePoint?: number;
-  temperature?: number;
-  maxDistance?: number;
-  spreadRate: number;
-  spreadType: string;
 };
 
 /**
@@ -69,7 +88,8 @@ export class LiquidSystem extends BaseTickedSystem {
       if (!entityData ||
         !hasPropagation(entityData) ||
         entityData.propagationType !== 'liquid' ||
-        !hasLiquid(entityData)) {
+        !hasLiquid(entityData) ||
+        !isLiquidConfig(entityData)) {
         continue;
       }
 
@@ -106,7 +126,7 @@ export class LiquidSystem extends BaseTickedSystem {
         if (!neighbor) continue;
 
         // Check blocking
-        if (this.isBlocked(neighbor, entityData as unknown as LiquidConfig, context)) continue;
+        if (this.isBlocked(neighbor, entityData, context)) continue;
 
         // Check distance limit
         if (entityData.maxDistance !== undefined) {
@@ -174,7 +194,7 @@ export class LiquidSystem extends BaseTickedSystem {
               // Otherwise, create a new pending spawn
               pendingSpawns.set(key, {
                 amount: transfer,
-                template: entityData as unknown as LiquidConfig,
+                template: entityData,
                 originX: state.originX,
                 originY: state.originY
               });

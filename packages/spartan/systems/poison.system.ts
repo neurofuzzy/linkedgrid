@@ -36,8 +36,14 @@ interface PropagatedEntity {
  * Poison propagation configuration from entity data.
  * Uses intersection with BaseEntityData for proper typing.
  */
-type PoisonConfig = BaseEntityData & {
+type PoisonConfig = BaseEntityData & PoisonConfigProps & {
   propagationType?: string;
+};
+
+/**
+ * Properties required for poison gas propagation.
+ */
+interface PoisonConfigProps {
   spreadLayer: number;
   blockedByLayers?: number[];
   density: number;
@@ -46,7 +52,21 @@ type PoisonConfig = BaseEntityData & {
   spreadType: string;
   maxDistance?: number;
   lifetime?: number;
-};
+}
+
+/**
+ * Type guard for PoisonConfig properties.
+ * Checks required properties for poison gas propagation.
+ */
+function isPoisonConfig(data: EntityData): data is EntityData & PoisonConfigProps {
+  return (
+    'spreadLayer' in data && typeof data.spreadLayer === 'number' &&
+    'density' in data && typeof data.density === 'number' &&
+    'minDensity' in data && typeof data.minDensity === 'number' &&
+    'spreadRate' in data && typeof data.spreadRate === 'number' &&
+    'spreadType' in data && typeof data.spreadType === 'string'
+  );
+}
 
 /**
  * Poison status effect for entities.
@@ -433,7 +453,7 @@ export class PoisonSystem extends BaseTickedSystem {
       const sourceData = context.spatial.getEntityData(sourceId);
 
       // Guard checks (should pass from identifySpreadSources, but strict type check needed for TS)
-      if (!sourceData || !hasPropagation(sourceData) || !hasDensity(sourceData)) continue;
+      if (!sourceData || !hasPropagation(sourceData) || !hasDensity(sourceData) || !isPoisonConfig(sourceData)) continue;
 
       const state = this.spreadState.get(sourceId);
       if (!state) continue;
@@ -454,7 +474,7 @@ export class PoisonSystem extends BaseTickedSystem {
         if (!neighbor) continue;
 
         // Check if we can spread here (empty of gas, not blocked)
-        if (this.canSpreadTo(neighbor, sourceData as unknown as PoisonConfig, context)) {
+        if (this.canSpreadTo(neighbor, sourceData, context)) {
           // Distance check
           if (sourceData.maxDistance !== undefined) {
             const dist = this.manhattanDistance(state.originX, state.originY, neighbor.x, neighbor.y);
@@ -488,7 +508,7 @@ export class PoisonSystem extends BaseTickedSystem {
       for (const neighbor of availableNeighbors) {
         const key = `${neighbor.x},${neighbor.y}`;
         pendingSpawns.set(key, {
-          config: sourceData as unknown as PoisonConfig,
+          config: sourceData,
           density: newDensity,
           rootSourceId,
           originX: state.originX,
@@ -536,16 +556,16 @@ export class PoisonSystem extends BaseTickedSystem {
           density: spawn.density, // Starts with split density
           minDensity: spawn.config.minDensity,
 
-          // Effect traits
-          ...(spawn.config.effectType && {
+          // Effect traits (conditionally included)
+          ...(spawn.config.effectType ? {
             effectType: spawn.config.effectType,
             triggerMode: spawn.config.triggerMode,
             damage: spawn.config.damage,
             healRate: spawn.config.healRate,
             cadence: spawn.config.cadence,
             cooldown: spawn.config.cooldown,
-          }),
-          ...(spawn.config.color && { color: spawn.config.color }),
+          } : {}),
+          ...(spawn.config.color ? { color: spawn.config.color } : {}),
         }
       );
 

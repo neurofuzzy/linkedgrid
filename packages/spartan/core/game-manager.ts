@@ -105,9 +105,9 @@ export class GameManager {
    * const scene = game.sceneManager.createScene('level1', 20, 20);
    * ```
    */
-  constructor() {
-    this.gameState = new GameState();
-    this.sceneManager = new SceneManager(this.gameState);
+  constructor(gameState?: GameState, sceneManager?: SceneManager) {
+    this.gameState = gameState ?? new GameState();
+    this.sceneManager = sceneManager ?? new SceneManager(this.gameState);
   }
 
   /**

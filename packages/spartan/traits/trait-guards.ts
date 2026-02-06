@@ -28,13 +28,13 @@ import type { EntityData } from '../entities/entity.types';
 import type { HasNPCMovement } from './npc-movement.trait';
 import type { HasPushable, HasPusher } from './pushable.trait';
 import type { HasPlayerRole, HasTeam, Team } from './role.trait';
-import type { HealthState } from './health.trait';
-import type { HasArmor, HasShield, HasResistance } from './defense.trait';
+import type { HealthState, HasHealth } from './health.trait';
+import type { HasArmor, HasShield, HasResistance, HasVulnerability } from './defense.trait';
 import type { HasProjectile } from './projectile.trait';
 import type { HasTurret, TurretWeaponType, TurretTargeting } from './turret.trait';
 import type { HasSpawner } from './spawner.trait';
 import type { HasSceneConnection } from './scene-connection.trait';
-import type { HasBuff, Buff } from './buff.trait';
+import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
@@ -79,6 +79,7 @@ import type {
   InvincibilityData,
   AmmoPackData,
   WeaponPickupData,
+  CheckpointData,
 } from '../entities';
 
 /**
@@ -98,7 +99,7 @@ import type {
  */
 export function hasHealth(
   entity: EntityData
-): entity is PlayerData | EnemyData | GrassData | GasolineData | FuseData | BarrelData | DestructibleWallData | SpawnerData {
+): entity is EntityData & HasHealth {
   return (
     'hp' in entity && typeof entity.hp === 'number' &&
     'maxHp' in entity && typeof entity.maxHp === 'number'
@@ -1000,6 +1001,22 @@ export function hasResistance(
 }
 
 /**
+ * Check if entity has vulnerability multipliers.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has vulnerabilities trait
+ */
+export function hasVulnerability(
+  entity: EntityData
+): entity is EntityData & HasVulnerability {
+  return (
+    'vulnerabilities' in entity &&
+    typeof entity.vulnerabilities === 'object' &&
+    entity.vulnerabilities !== null
+  );
+}
+
+/**
  * Projectile & Turret Trait Guards
  *
  * These check for projectile and turret combat traits.
@@ -1185,7 +1202,7 @@ export function isPlayerStart(entity: EntityData): boolean {
  * @param entity - Entity to check
  * @returns true if entity type is 'checkpoint'
  */
-export function isCheckpoint(entity: EntityData): boolean {
+export function isCheckpoint(entity: EntityData): entity is CheckpointData {
   return entity.type === 'checkpoint';
 }
 

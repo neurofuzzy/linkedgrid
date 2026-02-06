@@ -8,6 +8,8 @@
  * - Weapon pickup and switching
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getAmmo } from './test-helpers';
+import type { PlayerData, ProjectileData } from '../entities/entity.types';
 import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
@@ -286,7 +288,7 @@ describe('Combat Gameplay - Separated Mode', () => {
       const projPos1 = spatial.getEntityPosition(projectileId!);
       const projData = spatial.getEntityData(projectileId!);
       expect(projPos1?.x).toBe(6); // At spawn position (6,5)
-      expect((projData as any)?.damage).toBe(15); // Pistol damage
+      expect((projData as ProjectileData)?.damage).toBe(15); // Pistol damage
 
       // Tick to move projectile - with speed 2 and path [6,5, 7,5, 8,5, ...]
       // Tick 2: moves from 6,5 to 7,5
@@ -325,7 +327,7 @@ describe('Combat Gameplay - Separated Mode', () => {
 
       // Check ammo decreased
       const playerData = spatial.getEntityData(playerId);
-      expect((playerData as any).ammo.pistol).toBe(19);
+      expect(getAmmo(playerData, 'pistol')).toBe(19);
     });
 
     it('falls back to melee when out of ammo', () => {
@@ -490,7 +492,7 @@ describe('Combat Gameplay - Separated Mode', () => {
       gameLoop.tick();
 
       // Assert: Player now has the weapon
-      const playerData = spatial.getEntityData(playerId) as any;
+      const playerData = spatial.getEntityData(playerId) as PlayerData;
       expect(playerData.equippedWeapon).toBe('machine-gun');
       expect(playerData.ammo['machine-gun']).toBe(50);
 

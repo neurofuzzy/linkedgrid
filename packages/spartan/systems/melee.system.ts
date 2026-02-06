@@ -97,7 +97,8 @@ export class MeleeSystem extends BaseReactiveSystem {
 
     // Check if action button is pressed OR meleeDirection is explicitly set (fallback from weapon system)
     const actionPressed = this.inputProvider.getPrimaryAction();
-    const hasExplicitDirection = playerData.meleeDirection && playerData.meleeDirection !== Direction.NONE;
+    // Direction.NONE = 0, so truthy check suffices
+    const hasExplicitDirection = !!playerData.meleeDirection;
 
     // In separated/twin-stick mode, isAiming() returns true when WASD is pressed
     // This allows WASD to trigger melee directly if no weapon is equipped or out of ammo
@@ -175,7 +176,8 @@ export class MeleeSystem extends BaseReactiveSystem {
 
       // Check if entity has melee capability and a pending attack direction
       if (!hasMelee(entityData)) continue;
-      if (!entityData.meleeDirection || entityData.meleeDirection === Direction.NONE) continue;
+      // Direction.NONE = 0, so falsy check suffices
+      if (!entityData.meleeDirection) continue;
 
       // Check cooldown (undefined means never attacked, so allow first attack)
       const lastAttack = entityData.lastMeleeAttackTick;
@@ -253,8 +255,12 @@ export class MeleeSystem extends BaseReactiveSystem {
         break;
       }
 
-      // Find targets on ACTORS layer
-      const targetIds = context.spatial.getEntityIdsInCell(targetX, targetY, GameLayers.ACTORS);
+      // Find targets at this cell (filter to ACTORS layer below)
+      const allTargetIds = context.spatial.getEntityIdsInCell(targetX, targetY);
+      const targetIds = allTargetIds.filter(id => {
+        const pos = context.spatial.getEntityPosition(id);
+        return pos && pos.layer === GameLayers.ACTORS;
+      });
 
       for (const targetId of targetIds) {
         // Skip self

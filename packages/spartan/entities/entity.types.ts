@@ -1,31 +1,29 @@
 /**
  * EntityData - Discriminated union of all entity types.
  */
-import { HasPushable, HasPusher } from '../traits/pushable.trait';
-
-import { BaseEntityData } from './base.entity';
-import { PlayerData } from './player.entity';
-import { EnemyData } from './enemy.entity';
-import { TeleporterData } from './teleporter.entity';
-import { ItemData, KeyData, GasolineData, FuseData } from './collectible.entity';
-import { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData } from './structure.entity';
-import { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData } from './hazard.entity';
-import { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData } from './elemental.entity';
-import { ChainLinkData, PathNodeData, SleepWakeData } from './logic.entity';
-import { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData } from './signal.entity';
-import { PlayerStartData, CheckpointData } from './spawning.entity';
-import { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData } from './powerup.entity';
+import type { BaseEntityData } from './base.entity';
+import type { PlayerData } from './player.entity';
+import type { EnemyData, GuardData } from './enemy.entity';
+import type { TeleporterData } from './teleporter.entity';
+import type { ItemData, KeyData, GasolineData, FuseData } from './collectible.entity';
+import type { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData } from './structure.entity';
+import type { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData } from './hazard.entity';
+import type { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData, ProjectileData, RayEffectData } from './elemental.entity';
+import type { ChainLinkData, PathNodeData, SleepWakeData } from './logic.entity';
+import type { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData } from './signal.entity';
+import type { PlayerStartData, CheckpointData } from './spawning.entity';
+import type { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData } from './powerup.entity';
 
 // Re-export commonly used types for external consumption
-export { BaseEntityData, TeleporterData, PlayerData, EnemyData };
-export { ItemData, KeyData, GasolineData, FuseData };
-export { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData };
-export { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData };
-export { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData };
-export { ChainLinkData, PathNodeData, SleepWakeData };
-export { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData };
-export { PlayerStartData, CheckpointData };
-export { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData };
+export type { BaseEntityData, TeleporterData, PlayerData, EnemyData, GuardData };
+export type { ItemData, KeyData, GasolineData, FuseData };
+export type { WallData, DoorData, OpenDoorData, TorchData, DestructibleWallData, SpawnerData };
+export type { LavaData, AcidData, MedbayData, IceData, MudData, BarrelData };
+export type { FireVisualData, PoisonGasData, WaterData, AshData, GrassData, ExplosionVisualData, ProjectileData, RayEffectData };
+export type { ChainLinkData, PathNodeData, SleepWakeData };
+export type { OscillatorData, PressureSwitchData, InverterData, ConductiveFloorData, GateData, TransceiverData };
+export type { PlayerStartData, CheckpointData };
+export type { HealthPackData, ShieldPackData, SpeedBoostData, DamageBoostData, InvincibilityData, AmmoPackData, WeaponPickupData };
 
 export type EntityData = PlayerData |
   EnemyData |
@@ -69,4 +67,7 @@ export type EntityData = PlayerData |
   DamageBoostData |
   InvincibilityData |
   AmmoPackData |
-  WeaponPickupData;
+  WeaponPickupData |
+  GuardData |
+  ProjectileData |
+  RayEffectData;
