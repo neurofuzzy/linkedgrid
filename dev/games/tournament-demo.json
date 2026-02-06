@@ -1,0 +1,240 @@
+{
+  "name": "Tournament Demo",
+  "description": "Phase 2 Demo C: Multiscene tournament with tiered NPC combat.\nArrow keys: Move | WASD: Fire | Space: Melee\nScene 1: Grunts (T1). Scene 2: Soldiers (T2) + Elite (T3).\nKill all enemies in each round to advance. Score tracked across scenes.",
+  "initialScene": "round-1",
+  "input": {
+    "type": "keyboard",
+    "preset": "twin-stick"
+  },
+  "objectives": [
+    { "id": "r1-clear", "type": "kill-all", "sceneId": "round-1" },
+    { "id": "r1-exit", "type": "reach-exit", "sceneId": "round-1" },
+    { "id": "r2-clear", "type": "kill-all", "sceneId": "round-2" },
+    { "id": "r2-exit", "type": "reach-exit", "sceneId": "round-2" }
+  ],
+  "scenes": [
+    {
+      "id": "round-1",
+      "name": "Round 1 - Grunts",
+      "width": 12,
+      "height": 12,
+      "entities": [
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 1,
+          "y": 6,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "speed": 1,
+            "healthState": "alive",
+            "sceneId": "round-1",
+            "inventory": [],
+            "pushStrength": 1,
+            "meleeDamage": 25,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
+            "equippedWeapon": "machine-gun",
+            "ammo": { "machine-gun": 100 },
+            "team": "player"
+          }
+        },
+
+        { "_comment": "=== PLAYER START (respawn point) ===" },
+        { "type": "player-start", "x": 1, "y": 6, "layer": 3, "data": { "sceneId": "round-1" } },
+
+        { "_comment": "=== GRUNTS (Tier 1: 30hp, 5dmg, score 10) ===" },
+        {
+          "type": "enemy", "x": 8, "y": 2, "layer": 6,
+          "data": {
+            "hp": 30, "maxHp": 30, "healthState": "alive",
+            "damage": 5, "aiState": "idle", "team": "enemy",
+            "scoreValue": 10, "speed": 3, "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy", "x": 8, "y": 5, "layer": 6,
+          "data": {
+            "hp": 30, "maxHp": 30, "healthState": "alive",
+            "damage": 5, "aiState": "idle", "team": "enemy",
+            "scoreValue": 10, "speed": 3, "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy", "x": 8, "y": 8, "layer": 6,
+          "data": {
+            "hp": 30, "maxHp": 30, "healthState": "alive",
+            "damage": 5, "aiState": "idle", "team": "enemy",
+            "scoreValue": 10, "speed": 3, "color": "#ff4444"
+          }
+        },
+
+        { "_comment": "=== COINS ===" },
+        { "type": "coin", "x": 5, "y": 2, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 5, "y": 9, "layer": 4, "data": { "scoreValue": 5, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== HEALTH PACK ===" },
+        {
+          "type": "health-pack", "x": 5, "y": 5, "layer": 4,
+          "data": { "healAmount": 25, "collectibleType": "powerup", "collectibleId": "health-pack", "color": "#00ff00" }
+        },
+
+        { "_comment": "=== EXIT (to round 2) ===" },
+        { "type": "exit", "x": 10, "y": 6, "layer": 1, "data": { "color": "#00ff00" } },
+        {
+          "type": "teleporter", "x": 10, "y": 6, "layer": 1,
+          "data": { "connectionKey": "portal-r2", "sceneId": "round-1", "color": "#00ff00" }
+        },
+
+        { "_comment": "=== WALLS ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 10, "layer": 5, "data": { "color": "#444444" } }
+      ]
+    },
+    {
+      "id": "round-2",
+      "name": "Round 2 - Soldiers & Elite",
+      "width": 12,
+      "height": 12,
+      "entities": [
+        { "_comment": "=== ENTRY TELEPORTER ===" },
+        {
+          "type": "teleporter", "x": 1, "y": 6, "layer": 1,
+          "data": { "connectionKey": "portal-r2", "sceneId": "round-2", "color": "#ff00ff" }
+        },
+
+        { "_comment": "=== SOLDIERS (Tier 2: 60hp, 10dmg, armor 2, score 25) ===" },
+        {
+          "type": "enemy", "x": 6, "y": 2, "layer": 6,
+          "data": {
+            "hp": 60, "maxHp": 60, "healthState": "alive",
+            "damage": 10, "aiState": "idle", "team": "enemy",
+            "scoreValue": 25, "armor": 2, "speed": 2, "color": "#ff8800"
+          }
+        },
+        {
+          "type": "enemy", "x": 9, "y": 5, "layer": 6,
+          "data": {
+            "hp": 60, "maxHp": 60, "healthState": "alive",
+            "damage": 10, "aiState": "idle", "team": "enemy",
+            "scoreValue": 25, "armor": 2, "speed": 2, "color": "#ff8800"
+          }
+        },
+
+        { "_comment": "=== ELITE (Tier 3: 100hp, 15dmg, armor 5, hardness 3, score 50) ===" },
+        {
+          "type": "enemy", "x": 6, "y": 8, "layer": 6,
+          "data": {
+            "hp": 100, "maxHp": 100, "healthState": "alive",
+            "damage": 15, "aiState": "idle", "team": "enemy",
+            "scoreValue": 50, "armor": 5, "hardness": 3, "speed": 2, "color": "#cc00cc"
+          }
+        },
+
+        { "_comment": "=== COINS ===" },
+        { "type": "coin", "x": 3, "y": 3, "layer": 4, "data": { "scoreValue": 25, "collectibleId": "coin", "color": "#ffd700" } },
+        { "type": "coin", "x": 3, "y": 8, "layer": 4, "data": { "scoreValue": 25, "collectibleId": "coin", "color": "#ffd700" } },
+
+        { "_comment": "=== HEALTH PACKS ===" },
+        {
+          "type": "health-pack", "x": 5, "y": 5, "layer": 4,
+          "data": { "healAmount": 50, "collectibleType": "powerup", "collectibleId": "health-pack", "color": "#00ff00" }
+        },
+
+        { "_comment": "=== EXIT (victory) ===" },
+        { "type": "exit", "x": 10, "y": 6, "layer": 1, "data": { "color": "#00ff00" } },
+
+        { "_comment": "=== WALLS ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 1, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 2, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 3, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 4, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 5, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 6, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 7, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 8, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 9, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 10, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 11, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 1, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 2, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 3, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 4, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 5, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 6, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 7, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 8, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 9, "layer": 5, "data": { "color": "#444444" } },
+        { "type": "wall", "x": 11, "y": 10, "layer": 5, "data": { "color": "#444444" } }
+      ]
+    }
+  ]
+}

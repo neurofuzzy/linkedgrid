@@ -117,6 +117,21 @@ const AVAILABLE_GAMES = [
     name: 'Weapons Demo (Pickups & Presets)',
     path: '/dev/games/weapons-demo.json',
   },
+  {
+    id: 'score-objectives-demo',
+    name: 'Score & Objectives Demo',
+    path: '/dev/games/score-objectives-demo.json',
+  },
+  {
+    id: 'multiscene-objectives-demo',
+    name: 'Multiscene Objectives Demo',
+    path: '/dev/games/multiscene-objectives-demo.json',
+  },
+  {
+    id: 'tournament-demo',
+    name: 'Tournament Demo (Tiered NPC Combat)',
+    path: '/dev/games/tournament-demo.json',
+  },
 ];
 
 /**

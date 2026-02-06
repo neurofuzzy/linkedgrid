@@ -40,11 +40,13 @@ import { GameLayers } from '../config/layers.config';
 import type {
   PlayerData,
   EnemyData,
+  GuardData,
   TeleporterData,
   ItemData,
   WallData,
   SpawnerData,
 } from './index';
+import { CHARACTER_PERSONAS, type CharacterPersona } from '../config/personas.config';
 
 /**
  * Spawn a player entity with type-safe properties.
@@ -656,5 +658,210 @@ export function spawnSpawner(
     requiresLineOfSight: true,  // Default to requiring LOS
     spawnProps: {},             // Default to empty to prevent undefined
     ...props,
+  });
+}
+
+// ============================================================
+// Character Persona Spawn Helpers
+// ============================================================
+
+/**
+ * Spawn an NPC (enemy) using a character persona preset.
+ *
+ * Merges persona defaults with per-instance overrides.
+ * The persona defines base stats (hp, armor, damage, speed, scoreValue, etc.)
+ * and overrides can customize any property.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param personaName - Name of the persona preset (e.g., 'grunt', 'soldier', 'elite', 'boss')
+ * @param overrides - Optional per-instance property overrides
+ * @returns Entity ID
+ *
+ * @example
+ * ```typescript
+ * // Spawn a tier-1 grunt
+ * const gruntId = spawnNPC(spatial, 5, 5, 'grunt', { sceneId: 'arena' });
+ *
+ * // Spawn a tier-3 elite with custom color
+ * const eliteId = spawnNPC(spatial, 10, 10, 'elite', {
+ *   sceneId: 'arena',
+ *   color: '#ff00ff',
+ * });
+ * ```
+ */
+export function spawnNPC(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  personaName: string,
+  overrides?: Record<string, unknown>
+): number {
+  const persona = CHARACTER_PERSONAS[personaName];
+  if (!persona) {
+    throw new Error(`Unknown character persona: "${personaName}"`);
+  }
+
+  return spawnNPCFromPersona(spatial, x, y, persona, overrides);
+}
+
+/**
+ * Spawn an NPC from a CharacterPersona object directly.
+ *
+ * Use this when you have a custom persona not registered in CHARACTER_PERSONAS.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param persona - Character persona configuration
+ * @param overrides - Optional per-instance property overrides
+ * @returns Entity ID
+ */
+export function spawnNPCFromPersona(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  persona: CharacterPersona,
+  overrides?: Record<string, unknown>
+): number {
+  // Build entity data from persona + overrides
+  const entityData: Record<string, unknown> = {
+    hp: persona.hp,
+    maxHp: persona.maxHp ?? persona.hp,
+    healthState: 'alive',
+    damage: persona.damage ?? 0,
+    aiState: 'idle',
+  };
+
+  // Optional persona properties
+  if (persona.armor !== undefined) entityData.armor = persona.armor;
+  if (persona.hardness !== undefined) entityData.hardness = persona.hardness;
+  if (persona.scoreValue !== undefined) entityData.scoreValue = persona.scoreValue;
+  if (persona.shield !== undefined) {
+    entityData.shield = persona.shield;
+    entityData.maxShield = persona.maxShield ?? persona.shield;
+  }
+  if (persona.resistance !== undefined) entityData.resistance = persona.resistance;
+  if (persona.meleeDamage !== undefined) {
+    entityData.meleeDamage = persona.meleeDamage;
+    entityData.meleeCooldown = persona.meleeCooldown ?? 3;
+    entityData.meleeRange = persona.meleeRange ?? 1;
+  }
+  if (persona.color !== undefined) entityData.color = persona.color;
+
+  // NPC movement (if persona defines movement mode)
+  if (persona.movementMode) {
+    entityData.movementMode = persona.movementMode;
+    if (persona.speed !== undefined) entityData.speed = persona.speed;
+  }
+
+  // Apply overrides
+  if (overrides) {
+    Object.assign(entityData, overrides);
+  }
+
+  // Use 'enemy' type for entities with movement, 'enemy' for simpler ones
+  return spatial.spawn('enemy', x, y, GameLayers.ACTORS, entityData);
+}
+
+// ============================================================
+// Objective Entity Spawn Helpers
+// ============================================================
+
+/**
+ * Spawn a coin entity.
+ *
+ * Coins award score points when collected by the player.
+ * Placed on COLLECTIBLES layer.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param scoreValue - Points awarded when collected
+ * @param overrides - Optional property overrides
+ * @returns Entity ID
+ *
+ * @example
+ * ```typescript
+ * const coinId = spawnCoin(spatial, 5, 5, 10);
+ * ```
+ */
+export function spawnCoin(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  scoreValue: number,
+  overrides?: Partial<{ color: string; sceneId: string }>
+): number {
+  return spatial.spawn('coin', x, y, GameLayers.COLLECTIBLES, {
+    scoreValue,
+    collectibleId: 'coin',
+    color: '#ffd700',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn a flag entity.
+ *
+ * Flags are objective markers collected by the player.
+ * When all flags with a given objectiveId are collected,
+ * the matching 'collect-flag' objective is completed.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param objectiveId - Objective identifier (links to ObjectiveDefinition.targetId)
+ * @param overrides - Optional property overrides
+ * @returns Entity ID
+ *
+ * @example
+ * ```typescript
+ * const flagId = spawnFlag(spatial, 10, 10, 'red-flag', { color: '#ff0000' });
+ * ```
+ */
+export function spawnFlag(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  objectiveId: string,
+  overrides?: Partial<{ color: string; sceneId: string }>
+): number {
+  return spatial.spawn('flag', x, y, GameLayers.COLLECTIBLES, {
+    objectiveId,
+    collectibleId: 'flag',
+    color: '#ff0000',
+    ...overrides,
+  });
+}
+
+/**
+ * Spawn an exit entity.
+ *
+ * Exits mark the target for 'reach-exit' objectives.
+ * Player overlapping an exit triggers objective completion.
+ * Placed on FLOOR layer (non-blocking).
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param x - X coordinate
+ * @param y - Y coordinate
+ * @param overrides - Optional property overrides
+ * @returns Entity ID
+ *
+ * @example
+ * ```typescript
+ * const exitId = spawnExit(spatial, 15, 15, { color: '#00ff00' });
+ * ```
+ */
+export function spawnExit(
+  spatial: SpatialSystem,
+  x: number,
+  y: number,
+  overrides?: Partial<{ color: string; sceneId: string }>
+): number {
+  return spatial.spawn('exit', x, y, GameLayers.FLOOR, {
+    color: '#00ff00',
+    ...overrides,
   });
 }

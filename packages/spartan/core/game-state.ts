@@ -1,4 +1,5 @@
 import { SparseEntityStore } from './entity-store';
+import type { ObjectiveDefinition } from '../traits/objective.trait';
 
 /**
  * GameState - Global game state that persists across scenes.
@@ -50,6 +51,9 @@ export class GameState {
 
   /** Boolean flags: flag name → state */
   flags: Map<string, boolean> = new Map();
+
+  /** Game objectives (tracked by ObjectiveSystem) */
+  objectives: ObjectiveDefinition[] = [];
 
   /** Arbitrary game-specific data */
   data: Map<string, unknown> = new Map();
@@ -213,6 +217,7 @@ export class GameState {
       maxLives: this.maxLives,
       lives: this.lives,
       score: this.score,
+      objectives: this.objectives,
       inventory: Array.from(this.inventory.entries()),
       buffs: Array.from(this.buffs.entries()),
       upgrades: Array.from(this.upgrades),
@@ -236,6 +241,7 @@ export class GameState {
     maxLives?: number;
     lives?: number;
     score?: number;
+    objectives?: ObjectiveDefinition[];
     inventory?: Array<[string, number]>;
     buffs?: Array<[string, number]>;
     upgrades?: string[];
@@ -251,6 +257,7 @@ export class GameState {
     state.maxLives = data.maxLives ?? 3;
     state.lives = data.lives ?? 3;
     state.score = data.score ?? 0;
+    state.objectives = data.objectives ?? [];
     state.inventory = new Map(data.inventory ?? []);
     state.buffs = new Map(data.buffs ?? []);
     state.upgrades = new Set(data.upgrades ?? []);

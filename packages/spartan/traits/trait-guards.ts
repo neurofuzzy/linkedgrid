@@ -36,6 +36,7 @@ import type { HasSpawner } from './spawner.trait';
 import type { HasSceneConnection } from './scene-connection.trait';
 import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
+import type { HasScoreValue } from './objective.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -80,6 +81,9 @@ import type {
   AmmoPackData,
   WeaponPickupData,
   CheckpointData,
+  CoinData,
+  FlagData,
+  ExitData,
 } from '../entities';
 
 /**
@@ -1318,4 +1322,46 @@ export function isPowerup(entity: EntityData): entity is HealthPackData | Shield
     isAmmoPack(entity) ||
     isWeaponPickup(entity)
   );
+}
+
+// === Objective Entity Guards ===
+
+/**
+ * Check if entity is a coin.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'coin'
+ */
+export function isCoin(entity: EntityData): entity is CoinData {
+  return entity.type === 'coin';
+}
+
+/**
+ * Check if entity is a flag.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'flag'
+ */
+export function isFlag(entity: EntityData): entity is FlagData {
+  return entity.type === 'flag';
+}
+
+/**
+ * Check if entity is an exit.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'exit'
+ */
+export function isExit(entity: EntityData): entity is ExitData {
+  return entity.type === 'exit';
+}
+
+/**
+ * Check if entity has a score value.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has scoreValue property
+ */
+export function hasScoreValue(entity: EntityData): entity is EntityData & HasScoreValue {
+  return typeof entity.scoreValue === 'number';
 }
