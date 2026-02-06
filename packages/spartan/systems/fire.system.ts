@@ -7,6 +7,7 @@ import type { GameContext } from '../core/types';
 import { hasTemperature, hasHealth, hasExplosion } from '../traits/trait-guards';
 import { GameLayers } from "../config/layers.config";
 import { Direction } from '../core/grid/direction';
+import type { EffectsQueue } from '../core/effects-queue';
 
 interface BurningEntity {
   lastDamageTick: number;
@@ -48,6 +49,14 @@ export class FireSystem extends BaseTickedSystem {
 
   protected tickRate = SYSTEM_CONFIG.Fire.tickRate;
 
+  /** Optional effects queue for visual effects */
+  private effectsQueue?: EffectsQueue;
+
+  constructor(effectsQueue?: EffectsQueue) {
+    super();
+    this.effectsQueue = effectsQueue;
+  }
+
   private readonly FIRE_DAMAGE_RATE = 5;
   private readonly FIRE_DAMAGE_CADENCE = 2;
   private readonly TEMPERATURE_INCREASE = 50;
@@ -81,6 +90,11 @@ export class FireSystem extends BaseTickedSystem {
           const burnState = this.burningEntities.get(entityId);
           if (burnState) {
             burnState.visualEffectId = visualId;
+          }
+
+          // Push fire ignition visual effect
+          if (this.effectsQueue) {
+            this.effectsQueue.push({ type: 'particle', x: pos.x, y: pos.y, preset: 'fire', color: '#ff4400' });
           }
         }
       }

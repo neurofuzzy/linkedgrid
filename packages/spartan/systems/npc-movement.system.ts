@@ -4,7 +4,7 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';
-import { hasNPCMovement, isPathNode } from '../traits/trait-guards';
+import { hasNPCMovement, isPathNode, hasFacing, hasVisualState } from '../traits/trait-guards';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { LinkedCell } from '../core/grid/linked-cell';
 import { Direction } from '../core/grid/direction';
@@ -84,9 +84,21 @@ export class NPCMovementSystem extends BaseTickedSystem {
           break;
       }
 
-      // Update lastMoveTick if the entity moved
+      // Update lastMoveTick and visual state if the entity moved
       if (moved) {
         entityData.lastMoveTick = currentTick;
+
+        // Update visual state to 'walk' while moving
+        if (hasVisualState(entityData) && entityData.visualState !== 'walk') {
+          entityData.visualState = 'walk';
+          entityData.visualDirty = true;
+        }
+      } else {
+        // Revert to idle when not moving
+        if (hasVisualState(entityData) && entityData.visualState === 'walk') {
+          entityData.visualState = 'idle';
+          entityData.visualDirty = true;
+        }
       }
     }
   }

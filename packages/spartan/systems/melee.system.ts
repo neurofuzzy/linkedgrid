@@ -10,7 +10,7 @@ import type { InputProvider } from '../core/input-provider';
 import type { GameManager } from '../core/game-manager';
 import type { HealthSystem } from './health.system';
 import { Direction } from '../core/grid/direction';
-import { hasMelee, hasHealth, isPlayer, hasTeam, isPlayerTeam, isEnemyTeam, hasWeapon } from '../traits/trait-guards';
+import { hasMelee, hasHealth, isPlayer, hasTeam, isPlayerTeam, isEnemyTeam, hasWeapon, hasVisualState, hasFacing } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
 
 /**
@@ -161,6 +161,16 @@ export class MeleeSystem extends BaseReactiveSystem {
     if (hasExplicitDirection) {
       playerData.meleeDirection = Direction.NONE;
     }
+
+    // Set visual state to 'attack'
+    if (hasVisualState(playerData)) {
+      playerData.visualState = 'attack';
+      playerData.visualDirty = true;
+    }
+    // Set facing toward attack direction
+    if (hasFacing(playerData)) {
+      playerData.facing = attackDir;
+    }
   }
 
   /**
@@ -208,6 +218,17 @@ export class MeleeSystem extends BaseReactiveSystem {
 
       // Update cooldown and clear pending direction
       entityData.lastMeleeAttackTick = currentTick;
+
+      // Set visual state to 'attack'
+      if (hasVisualState(entityData)) {
+        entityData.visualState = 'attack';
+        entityData.visualDirty = true;
+      }
+      // Set facing toward attack direction
+      if (hasFacing(entityData)) {
+        entityData.facing = entityData.meleeDirection;
+      }
+
       entityData.meleeDirection = Direction.NONE;
     }
   }

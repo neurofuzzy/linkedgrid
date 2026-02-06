@@ -81,6 +81,27 @@ export type {
   HasDamageable,
 } from './traits/traits';
 
+// Visual traits
+export type {
+  HasVisualState,
+  HasFacing,
+  HasAnimation,
+  VisualStateName,
+} from './traits/visual.trait';
+
+export { VISUAL_STATES } from './traits/visual.trait';
+
+// Visual config presets
+export {
+  VISUAL_STATE_PRESETS,
+  EFFECT_PRESETS,
+  VISUAL_LAYERS,
+} from './config/visual.config';
+export type {
+  VisualStatePreset,
+  EffectPreset,
+} from './config/visual.config';
+
 export type { HasSceneConnection } from './traits/scene-connection.trait';
 
 // Entity archetypes (example patterns)
@@ -135,6 +156,9 @@ export {
   isRangeSensor,
   isHealthPotion,
   hasNPCBrain,
+  hasVisualState,
+  hasFacing,
+  hasAnimation,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
@@ -170,6 +194,7 @@ export {
   ScoreSystem,
   ObjectiveSystem,
   TeleporterSystem,
+  VisualStateSystem,
 } from './systems';
 
 // Character Personas
@@ -181,4 +206,14 @@ export type { ObjectiveDefinition, ObjectiveType, HasScoreValue } from './traits
 
 // NPC Brain trait
 export type { HasNPCBrain, NPCPosture } from './traits/npc-brain.trait';
+
+// Visual system types
+export type { VisualEvent, VisualEventType } from './core/visual-event-bus';
+export type {
+  VisualEffect,
+  ShakeEffect,
+  FlashEffect,
+  ParticleEffect,
+  AreaEffect,
+} from './core/effects-queue';
 

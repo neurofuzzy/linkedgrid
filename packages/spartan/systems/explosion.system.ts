@@ -6,8 +6,9 @@ import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';
 import type { EntityData } from '../entities/entity.types';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
-import { hasExplosion, hasDamageable, hasHealth, hasTemperature } from '../traits/trait-guards';
+import { hasExplosion, hasDamageable, hasHealth, hasTemperature, hasVisualState } from '../traits/trait-guards';
 import { GameLayers } from "../config/layers.config";
+import type { EffectsQueue } from '../core/effects-queue';
 
 /**
  * Explosion event to be processed.
@@ -71,6 +72,14 @@ export class ExplosionSystem extends BaseTickedSystem {
   private explodedThisTick = new Set<number>();
 
   protected tickRate = SYSTEM_CONFIG.Explosion.tickRate;
+
+  /** Optional effects queue for visual effects */
+  private effectsQueue?: EffectsQueue;
+
+  constructor(effectsQueue?: EffectsQueue) {
+    super();
+    this.effectsQueue = effectsQueue;
+  }
 
   /**
    * Update called by GameLoop each tick.
@@ -212,6 +221,15 @@ export class ExplosionSystem extends BaseTickedSystem {
       spawnTick: this.currentTick, // Track spawn tick for cleanup
       ephemeral: true,
     });
+
+    // Push visual effects
+    if (this.effectsQueue) {
+      this.effectsQueue.push({ type: 'shake', intensity: 8, durationMs: 300 });
+      this.effectsQueue.push({ type: 'particle', x, y, preset: 'explosion' });
+      this.effectsQueue.push({
+        type: 'area', x, y, radius, effectType: 'shockwave', durationMs: 400,
+      });
+    }
   }
 
   /**

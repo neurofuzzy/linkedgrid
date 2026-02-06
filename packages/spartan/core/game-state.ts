@@ -1,5 +1,7 @@
 import { SparseEntityStore } from './entity-store';
 import type { ObjectiveDefinition } from '../traits/objective.trait';
+import { VisualEventBus } from './visual-event-bus';
+import { EffectsQueue } from './effects-queue';
 
 /**
  * GameState - Global game state that persists across scenes.
@@ -57,6 +59,12 @@ export class GameState {
 
   /** Arbitrary game-specific data */
   data: Map<string, unknown> = new Map();
+
+  /** Visual event bus for view layer subscriptions (persists across scenes) */
+  visualEventBus: VisualEventBus = new VisualEventBus();
+
+  /** Effects queue for view layer consumption (persists across scenes) */
+  effectsQueue: EffectsQueue = new EffectsQueue();
 
   /** Cross-scene connections: key → array of scene locations */
   connections: Map<

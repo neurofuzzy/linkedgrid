@@ -6,6 +6,7 @@ import type { GameContext } from '../core/types';
 import { InputProvider } from '../core/input-provider';
 import { Direction } from '../core/grid/direction';
 import type { GameManager } from '../core/game-manager';
+import { hasVisualState, hasFacing } from '../traits/trait-guards';
 
 /**
  * PlayerInputSystem - Translates player input into movement intents.
@@ -62,7 +63,33 @@ export class PlayerInputSystem extends BaseReactiveSystem {
 
     this.debugStats.lastDirection = lastDirection;
 
-    if (lastDirection === Direction.NONE) return;
+    // Update visual state based on input
+    const playerEntity = context.spatial.getEntityData(playerId);
+    if (playerEntity) {
+      if (lastDirection === Direction.NONE) {
+        // No input -- revert to idle if currently walking
+        if (hasVisualState(playerEntity) && playerEntity.visualState === 'walk') {
+          playerEntity.visualState = 'idle';
+          playerEntity.visualDirty = true;
+        }
+        return;
+      }
+
+      // Set facing from input direction
+      if (hasFacing(playerEntity)) {
+        playerEntity.facing = lastDirection;
+      }
+
+      // Set walk state
+      if (hasVisualState(playerEntity) && playerEntity.visualState !== 'attack') {
+        if (playerEntity.visualState !== 'walk') {
+          playerEntity.visualState = 'walk';
+          playerEntity.visualDirty = true;
+        }
+      }
+    } else if (lastDirection === Direction.NONE) {
+      return;
+    }
 
     const delta = this.directionToDelta(lastDirection);
     const newX = pos.x + delta.dx;

@@ -32,3 +32,4 @@ export { ScoreSystem } from './score.system';
 export { ObjectiveSystem } from './objective.system';
 export { SignalSystem } from './signal.system';
 export { SpawningSystem } from './spawning.system';
+export { VisualStateSystem } from './visual-state.system';

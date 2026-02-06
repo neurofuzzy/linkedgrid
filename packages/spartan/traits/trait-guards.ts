@@ -38,6 +38,7 @@ import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
 import type { HasScoreValue } from './objective.trait';
 import type { HasNPCBrain } from './npc-brain.trait';
+import type { HasVisualState, HasFacing, HasAnimation } from './visual.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -1395,4 +1396,68 @@ export function hasScoreValue(entity: EntityData): entity is EntityData & HasSco
  */
 export function hasNPCBrain(entity: EntityData): entity is EntityData & HasNPCBrain {
   return 'posture' in entity || 'threatRange' in entity || 'attackRange' in entity || 'retreatHealthPct' in entity;
+}
+
+// === Visual Trait Guards ===
+
+/**
+ * Check if entity has visual state trait.
+ *
+ * Entities with visual state have a named state (e.g. 'idle', 'walk')
+ * and a dirty flag for change detection.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has visual state trait
+ */
+export function hasVisualState(
+  entity: EntityData
+): entity is EntityData & HasVisualState {
+  return (
+    'visualState' in entity &&
+    typeof entity.visualState === 'string' &&
+    'visualDirty' in entity &&
+    typeof entity.visualDirty === 'boolean'
+  );
+}
+
+/**
+ * Check if entity has facing trait.
+ *
+ * Entities with facing trait have a cardinal direction and facing mode.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has facing trait
+ */
+export function hasFacing(
+  entity: EntityData
+): entity is EntityData & HasFacing {
+  return (
+    'facing' in entity &&
+    typeof entity.facing === 'number' &&
+    'facingMode' in entity &&
+    typeof entity.facingMode === 'string'
+  );
+}
+
+/**
+ * Check if entity has animation trait.
+ *
+ * Entities with animation trait have tick-based frame advancement.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has animation trait
+ */
+export function hasAnimation(
+  entity: EntityData
+): entity is EntityData & HasAnimation {
+  return (
+    'frameCount' in entity &&
+    typeof entity.frameCount === 'number' &&
+    'currentFrame' in entity &&
+    typeof entity.currentFrame === 'number' &&
+    'animationMode' in entity &&
+    typeof entity.animationMode === 'string' &&
+    'frameDuration' in entity &&
+    typeof entity.frameDuration === 'number'
+  );
 }

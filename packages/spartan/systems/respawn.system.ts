@@ -9,6 +9,7 @@ import type { GameContext, EntityData } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import { isEntityDead, isCheckpoint, isPlayerStart, hasCheckpoint } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
+import type { EffectsQueue } from '../core/effects-queue';
 
 /**
  * RespawnSystemConfig - Configuration options for respawn behavior.
@@ -82,12 +83,17 @@ export class RespawnSystem extends BaseReactiveSystem {
     checkpointsActivated: 0,
   };
 
+  /** Optional effects queue for visual effects */
+  private effectsQueue?: EffectsQueue;
+
   constructor(
     private gameManager: GameManager,
-    config: Partial<RespawnSystemConfig> = {}
+    config: Partial<RespawnSystemConfig> = {},
+    effectsQueue?: EffectsQueue
   ) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.effectsQueue = effectsQueue;
 
     // Initialize GameState lives from config
     // Note: We always set lives from config on construction.
@@ -337,6 +343,12 @@ export class RespawnSystem extends BaseReactiveSystem {
 
     if (!success) {
       console.warn(`[RespawnSystem] Failed to spawn player in scene '${targetSceneId}' at (${targetX}, ${targetY})`);
+    }
+
+    // Push visual effects for respawn
+    if (this.effectsQueue) {
+      this.effectsQueue.push({ type: 'flash', color: '#ffffff', durationMs: 150 });
+      this.effectsQueue.push({ type: 'particle', x: targetX, y: targetY, preset: 'respawn' });
     }
 
     this.debugStats.respawnsThisSession++;
