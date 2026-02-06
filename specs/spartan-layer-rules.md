@@ -149,12 +149,13 @@ function blocksVision(cell: LinkedCell): boolean {
 export const GameLayers = {
   BACKGROUND: 0,
   FLOOR: 1,
-  LOGIC: 2,
-  COLLECTIBLES: 3,
-  WALLS: 4,
-  ACTORS: 5,
-  EPHEMERALS: 6,
-  TEXT: 7,
+  FLOOR_EFFECTS: 2,
+  LOGIC: 3,
+  COLLECTIBLES: 4,
+  WALLS: 5,
+  ACTORS: 6,
+  EPHEMERALS: 7,
+  TEXT: 8
 } as const;
 
 export type GameLayer = typeof GameLayers[keyof typeof GameLayers];

@@ -236,7 +236,7 @@ const GameLayers = {
     WALLS: 5,          // Static obstacles, closed doors
     ACTORS: 6,         // Players, enemies
     EPHEMERALS: 7,     // Temporary effects (fire visuals, particles)
-    TEST: 8            // Text overlays
+    TEXT: 8            // Text overlays
 };
 ```
 
