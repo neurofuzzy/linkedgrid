@@ -9,9 +9,9 @@
 7. All summary documents should go in an `ai-temp` folder.
 8. NO emojis.
 
+For a PR to be accepted, it must follow the above rules.
+
 See also [Developer Context](./DEVELOPER_CONTEXT.md)
+See also [Spartan Framework Docs](../packages/spartan/docs)
 See also [Package Contents](./PACKAGE_CONTENTS.md)
 See also [Web Platform Package Contents](./PLATFORM_WEB.md)
-See also [Spartan Reviewer Rules](./specs/spartan-review-rules.md)
-
-For a PR to be accepted, it must follow the above rules.

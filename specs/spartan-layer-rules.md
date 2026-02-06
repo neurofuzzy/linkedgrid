@@ -28,34 +28,37 @@ Walkable terrain that may have gameplay effects.
 - **Use**: Ground tiles, interactive terrain, teleport pads
 - **Game Setting**: "Empty floor tiles block" - when enabled, cells without floor are impassable
 
-### Layer 2: LOGIC
+### Layer 2: FLOOR_EFFECTS
+Spills, fire and propagating effects
+
+### Layer 3: LOGIC
 Invisible AI and editor helpers (not rendered during gameplay).
-- **Storage**: `values[2]` for zone types; `items[2]` for waypoint entities
+- **Storage**: `values[3]` for zone types; `items[3]` for waypoint entities
 - **Blocking**: No gameplay blocking
 - **Use**: Spawn points, waypoints, trigger volumes, region tags
 - **Visibility**: Editor/debug mode only
 
-### Layer 3: COLLECTIBLES
+### Layer 4: COLLECTIBLES
 Items that can be picked up.
-- **Storage**: `items[3]` for entity IDs
+- **Storage**: `items[4]` for entity IDs
 - **Blocking**: Does not block movement
 - **Use**: Coins, keys, power-ups, weapons, quest items
 
-### Layer 4: WALLS
+### Layer 5: WALLS
 Static blocking elements.
-- **Storage**: `values[4]` for wall types; `items[4]` for door entities
+- **Storage**: `values[5]` for wall types; `items[5]` for door entities
 - **Blocking**: Blocks movement and vision
 - **Use**: Walls, barriers, locked doors, destructible obstacles
 
-### Layer 5: ACTORS
+### Layer 6: ACTORS
 Dynamic moving entities.
-- **Storage**: `items[5]` for entity IDs
+- **Storage**: `items[6]` for entity IDs
 - **Blocking**: Typically blocks movement
 - **Use**: Player, enemies, NPCs, vehicles, moving platforms
 
-### Layer 6: EPHEMERALS
+### Layer 7: EPHEMERALS
 Temporary effects and permanent decals.
-- **Storage**: `items[6]` for entity IDs
+- **Storage**: `items[7]` for entity IDs
 - **Blocking**: Game-dependent
 - **Use**: 
   - Temporary: Projectiles, explosions, particle effects
@@ -63,7 +66,7 @@ Temporary effects and permanent decals.
 
 ### Layer 7: TEXT
 UI elements and text overlays (always on top).
-- **Storage**: `values[7]` for character codes; `items[7]` for UI entities
+- **Storage**: `values[8]` for character codes; `items[8]` for UI entities
 - **Blocking**: Never blocks
 - **Use**: HUD, menus, dialog, floating combat text, debug overlays
 
@@ -74,12 +77,13 @@ Layers render from lowest to highest (back to front):
 ```
 0 (BACKGROUND)    ← Back
 1 (FLOOR)
-2 (LOGIC)         ← Invisible during gameplay
-3 (COLLECTIBLES)
-4 (WALLS)
-5 (ACTORS)
-6 (EPHEMERALS)
-7 (TEXT)          ← Front
+2 (FLOOR_EFFECTS)
+3 (LOGIC)         ← Invisible during gameplay
+4 (COLLECTIBLES)
+5 (WALLS)
+6 (ACTORS)
+7 (EPHEMERALS)
+8 (TEXT)          ← Front
 ```
 
 ## Cell Data Arrays
@@ -145,12 +149,13 @@ function blocksVision(cell: LinkedCell): boolean {
 export const GameLayers = {
   BACKGROUND: 0,
   FLOOR: 1,
-  LOGIC: 2,
-  COLLECTIBLES: 3,
-  WALLS: 4,
-  ACTORS: 5,
-  EPHEMERALS: 6,
-  TEXT: 7,
+  FLOOR_EFFECTS: 2,
+  LOGIC: 3,
+  COLLECTIBLES: 4,
+  WALLS: 5,
+  ACTORS: 6,
+  EPHEMERALS: 7,
+  TEXT: 8
 } as const;
 
 export type GameLayer = typeof GameLayers[keyof typeof GameLayers];
@@ -170,6 +175,7 @@ export const GAMEPLAY_VISIBLE_LAYERS = [
 ```
 BACKGROUND:    Dungeon floor variations
 FLOOR:         Lava, water
+FLOOR_EFFECTS: Spills, fire
 LOGIC:         Spawn points, safe zones
 COLLECTIBLES:  Gold, potions, keys
 WALLS:         Dungeon walls, doors

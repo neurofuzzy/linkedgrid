@@ -1,32 +1,36 @@
-# Working with Spatial Queries & Updates
+# Working with Spatial Queries and Updates
 
 The `SpatialSystem` is your primary interface for interacting with the game world. It handles entity positioning, movement, collision detection, and spatial queries.
 
 ## Key Concept: Deferred Execution
 
 Updates (move, spawn, remove) are **staged** immediately but **executed** only when `commit()` is called (automatically at the end of every tick).
-*   **Reads are immediate**: `getPosition()` returns the current state.
-*   **Writes are deferred**: `move()` queues a change for the next frame.
+
+- **Reads are immediate**: `getPosition()`, `getEntityData()` return the current committed state.
+- **Writes are deferred**: `move()`, `spawn()`, `remove()` queue intents for the next commit.
 
 ## Reading the World
 
 ### Check Entity State
+
 ```typescript
-const pos = spatial.getPosition(entityId); // { x, y, layer } or null
-const data = spatial.getEntityData(entityId); // { type, ...traits }
-const alive = spatial.isAlive(entityId); // False if pending removal
+const pos = spatial.getPosition(entityId);    // { x, y, layer } or null
+const data = spatial.getEntityData(entityId);  // EntityData or undefined
+const alive = spatial.isAlive(entityId);       // false if pending removal
 ```
 
 ### Point Queries
+
 ```typescript
 // Specific layer check
 const actorId = spatial.getEntityIdAt(x, y, GameLayers.ACTORS);
 
-// Get all entities in a cell (useful for overlaps)
+// Get all entities in a cell (all layers)
 const allIds = spatial.getEntityIdsInCell(x, y);
 ```
 
 ### Area Queries
+
 ```typescript
 // Circular radius (Euclidean distance)
 const nearbyIds = spatial.getEntityIdsInRadius(x, y, 3.5);
@@ -35,165 +39,255 @@ const nearbyIds = spatial.getEntityIdsInRadius(x, y, 3.5);
 const lineIds = spatial.getEntityIdsInLine(startX, startY, endX, endY);
 ```
 
+### Validation Queries
+
+```typescript
+spatial.isBlocked(cell);       // Walls or actors present?
+spatial.blocksVision(cell);    // Walls present?
+spatial.isWalkable(cell);      // Not blocked?
+```
+
 ## Modifying the World
 
 ### Moving Entities
-```typescript
-// Queues a move operation.
-// Automatically checks bounds.
-// Collisions are resolved during commit().
-spatial.move(entityId, newX, newY); 
 
-// Optional: Custom blocking logic
-spatial.move(entityId, newX, newY, (cell) => {
-    return cell.hasMask(CellMasks.LAVA); // Block if lava
-});
+```typescript
+// Stage a move (validated during commit)
+spatial.move(entityId, newX, newY);
+
+// Move by entity ID (looks up current position)
+spatial.moveEntity(entityId, newX, newY);
 ```
 
-### Spawning & Removing
-```typescript
-// Spawning
-// Returns ID immediately, but entity appears on grid next tick.
-const id = spatial.spawn('enemy', x, y, GameLayers.ACTORS, { hp: 100 });
+### Spawning and Removing
 
-// Removing
-// Marks as "not alive" immediately, removed from grid next tick.
+```typescript
+// Spawn: returns ID immediately, entity appears after commit
+const id = spatial.spawn('enemy', x, y, GameLayers.ACTORS, {
+  hp: 100, maxHp: 100, healthState: 'alive', team: 'enemy',
+});
+
+// Remove: marks as "not alive" immediately, removed from grid after commit
 spatial.remove(entityId);
+
+// Remove by position
+spatial.removeAt(x, y, GameLayers.WALLS);
+```
+
+### Inspecting Pending Operations
+
+```typescript
+const pendingOps = spatial.getPendingOps();
+for (const op of pendingOps) {
+  if (op.type === 'move' && op.entityId === playerId) {
+    // React to player's movement intent
+    const destCell = spatial.getGrid().cell(op.toX!, op.toY!);
+  }
+}
+
+const pendingRemovals = spatial.getPendingRemovals();
+// Set of entity IDs staged for removal
 ```
 
 ## Common Patterns
 
 ### Handling Overlaps (Collision)
-Use `detectOverlaps()` in a reactive system to handle entities sharing a cell.
+
+Overlaps are detected at the start of each tick and passed via `GameContext`:
+
 ```typescript
-// In your system's update loop
-const overlaps = spatial.detectOverlaps();
-for (const { entityIds } of overlaps) {
-    // Check if Player and Gold are in the same cell
-    // ... logic ...
+class MySystem extends BaseReactiveSystem {
+  update({ overlaps, spatial }: GameContext) {
+    for (const { entityIds, position } of overlaps) {
+      const player = entityIds.find(id => isPlayer(spatial.getEntityData(id)));
+      const coin = entityIds.find(id => isCoin(spatial.getEntityData(id)));
+
+      if (player && coin) {
+        // Collect the coin
+        spatial.remove(coin);
+      }
+    }
+  }
 }
 ```
 
-### checking Line of Sight
-```typescript
-function canSee(spatial, fromId, toId) {
-    const start = spatial.getPosition(fromId);
-    const end = spatial.getPosition(toId);
-    if (!start || !end) return false;
+### Checking Line of Sight
 
-    const line = spatial.getEntityIdsInLine(start.x, start.y, end.x, end.y);
-    // Check if any entity in the line is a wall
-    return !line.some(id => spatial.getEntityData(id).type === 'wall');
+```typescript
+function canSee(spatial: SpatialSystem, fromId: number, toId: number): boolean {
+  const start = spatial.getPosition(fromId);
+  const end = spatial.getPosition(toId);
+  if (!start || !end) return false;
+
+  const startCell = spatial.getGrid().cell(start.x, start.y);
+  if (!startCell) return false;
+
+  const lineOfSight = startCell.raycast(
+    /* direction calculated from start to end */,
+    Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y)),
+    (cell) => spatial.blocksVision(cell)
+  );
+
+  // Check if end position is reached without obstruction
+  return lineOfSight.some(c => c.x === end.x && c.y === end.y);
 }
 ```
 
 ## Advanced Patterns
 
 ### Two-Phase Updates (Simulation Logic)
-When entities affect their neighbors (e.g., fluid flow, fire spreading), updates must be order-independent to prevent "scanning bias" (where top-left entities update before bottom-right ones).
 
-1.  **Calculate Phase**: Determine all changes based on *current* state. Store deltas in a temporary Map.
-2.  **Apply Phase**: Iterate through the Map and apply changes to the actual entities.
+When entities affect their neighbors (fire spread, liquid flow), updates must be order-independent to prevent scanning bias.
+
+1. **Calculate Phase**: Determine all changes based on *current* state. Store deltas in a temporary Map.
+2. **Apply Phase**: Iterate through the Map and apply changes.
 
 ```typescript
-// Example: Liquid Flow
-const depthDeltas = new Map<number, number>();
-
-// Phase 1: Calculate Flow
-for (const id of liquidEntities) {
-    const myDepth = spatial.getEntityData(id).depth;
-    // ... calculate flow to neighbors ...
-    depthDeltas.set(id, delta);
+// Phase 1: Calculate
+const tempChanges = new Map<number, number>();
+for (const [id, pos] of spatial.getAllPositions()) {
+  const entity = spatial.getEntityData(id);
+  if (!hasTemperature(entity)) continue;
+  // Calculate temperature delta from neighbors
+  tempChanges.set(id, delta);
 }
 
 // Phase 2: Apply
-for (const [id, delta] of depthDeltas) {
-    const data = spatial.getEntityData(id);
-    if (data) data.depth += delta;
+for (const [id, delta] of tempChanges) {
+  const entity = spatial.getEntityData(id);
+  if (entity && hasTemperature(entity)) {
+    entity.temperature += delta;
+  }
 }
 ```
 
-### Entity Transformation (Changing Layers/Types)
-To change an entity's fundamental properties (like moving a "closed door" from `WALLS` to `FLOOR` to open it), you must remove and respawn it. Use `spawnWithId` to preserve its identity.
+### Entity Transformation (Changing Layers)
+
+To move an entity between layers (e.g., opening a door from WALLS to FLOOR), remove and respawn with the same ID:
 
 ```typescript
-// Example: Opening a Door (Bollard)
 if (shouldOpen) {
-    // 1. Remove from Store (so ID is free) & Spatial (so grid is clear)
-    spatial.getStore().remove(entityId);
-    spatial.remove(entityId); 
-    
-    // 2. Respawn with SAME ID on NEW Layer
-    spatial.spawnWithId(
-        entityId, 
-        'door-open', 
-        x, y, 
-        GameLayers.FLOOR, // Moved to non-blocking layer
-        { ...oldProps, isOpen: true }
-    );
+  const oldData = spatial.getEntityData(entityId);
+  spatial.getStore().remove(entityId);
+  spatial.remove(entityId);
+
+  spatial.spawnWithId(
+    entityId,
+    'door-open',
+    x, y,
+    GameLayers.FLOOR,  // Non-blocking layer
+    { ...oldData, isOpen: true }
+  );
 }
 ```
 
 ### Graph Algorithms (Flood Fill)
-You can use the grid for graph traversals like signal propagation or pathfinding.
+
+Use the grid for signal propagation, pathfinding, or area effects:
 
 ```typescript
-// Example: Signal Flood Fill
-const queue = [{x: startX, y: startY}];
+const queue = [{ x: startX, y: startY }];
 const visited = new Set<string>();
 
 while (queue.length > 0) {
-    const {x, y} = queue.shift();
-    const cell = spatial.getGrid().cell(x, y);
-    
-    // Process neighbors
-    const neighbors = [cell.neighbor(Direction.UP), ...];
-    for (const n of neighbors) {
-        if (n && isConductive(n) && !visited.has(n.key)) {
-            visited.add(n.key);
-            queue.push({x: n.x, y: n.y});
-        }
+  const { x, y } = queue.shift()!;
+  const cell = spatial.getGrid().cell(x, y);
+  if (!cell) continue;
+
+  const key = `${x},${y}`;
+  if (visited.has(key)) continue;
+  visited.add(key);
+
+  // Process cell...
+
+  // Check 4-directional neighbors
+  for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+    const neighbor = cell.neighbor(dir);
+    if (neighbor && !visited.has(`${neighbor.x},${neighbor.y}`)) {
+      queue.push({ x: neighbor.x, y: neighbor.y });
     }
+  }
 }
 ```
 
 ### Visual Effects Lifecycle
-Spawning "ephemeral" entities for visual feedback (explosions, particles).
+
+Spawn ephemeral entities with a lifetime:
+
 ```typescript
-// Spawn with a spawnTick or lifetime property
 spatial.spawn('explosion-visual', x, y, GameLayers.EPHEMERALS, {
-    spawnTick: this.currentTick,
-    lifetime: 5
+  spawnTick: currentTick,
+  lifetime: 5,
+  color: '#ff4400',
 });
 
-// In your system's cleanup phase
+// In cleanup phase of your system:
 if (currentTick - entity.spawnTick > entity.lifetime) {
-    spatial.remove(entityId);
+  spatial.remove(entityId);
 }
 ```
 
 ### Advanced Field of View
-For area effects blocked by walls (explosions, lighting), use `LinkedCellUtils`.
+
+For area effects blocked by walls (explosions, lighting):
+
 ```typescript
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 
 const center = spatial.getGrid().cell(x, y);
 const visibleCells = LinkedCellUtils.fieldOfView(
-    center, 
-    radius, 
-    (cell) => spatial.isBlocked(cell) // Blocking predicate
+  center,
+  radius,
+  (cell) => spatial.blocksVision(cell)
 );
 ```
 
-## API Reference
+For cone-shaped effects (shotgun blast):
 
-| Method | Description |
-| :--- | :--- |
-| `getPosition(id)` | Get x, y, layer of an entity. |
-| `getEntityData(id)` | Get the raw data object for an entity. |
-| `getEntityIdAt(x, y, layer)` | Get ID at specific coordinate/layer. |
-| `getEntityIdsInRadius(...)` | Get IDs within a circular area. |
-| `isBlocked(cell)` | Check if a cell has a wall/obstacle. |
-| `move(id, x, y)` | Stage a movement. |
-| `spawn(...)` | Stage a creation. |
-| `remove(id)` | Stage a deletion. |
+```typescript
+const coneCells = center.fieldOfViewCone(
+  Direction.UP,  // direction
+  90,            // angle in degrees
+  5,             // range
+  (cell) => spatial.blocksVision(cell)
+);
+```
+
+## API Quick Reference
+
+### Lifecycle (deferred)
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `spawn(type, x, y, layer, data?)` | `number` | Stage spawn, returns entity ID |
+| `spawnWithId(id, type, x, y, layer, data?)` | `boolean` | Stage spawn with specific ID |
+| `remove(entityId)` | `void` | Stage removal |
+| `removeAt(x, y, layer)` | `boolean` | Stage removal by position |
+| `commit()` | `void` | Execute all staged operations |
+
+### Queries (immediate)
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `getEntityData(id)` | `EntityData?` | Get entity metadata |
+| `getPosition(id)` | `{x,y,layer}?` | Get entity position |
+| `getEntityIdAt(x, y, layer)` | `number?` | Entity at cell+layer |
+| `getEntityIdsInCell(x, y)` | `number[]` | All entities at cell |
+| `getEntityIdsInRadius(x, y, r)` | `number[]` | Entities within radius |
+| `getEntityIdsInLine(x1, y1, x2, y2)` | `number[]` | Entities along line |
+| `isAlive(id)` | `boolean` | Not pending removal? |
+| `isBlocked(cell)` | `boolean` | Has blocking entity? |
+| `blocksVision(cell)` | `boolean` | Blocks line of sight? |
+
+### Inspection
+| Method | Returns | Description |
+| :--- | :--- | :--- |
+| `getPendingOps()` | `PendingOperation[]` | All staged intents |
+| `getPendingRemovals()` | `Set<number>` | Entity IDs pending removal |
+| `getAllPositions()` | `Iterator` | All tracked positions |
+
+## See Also
+
+- [REFERENCE.md](./REFERENCE.md) -- Full framework reference
+- [core/spatial-system.ts](../core/spatial-system.ts) -- SpatialSystem implementation
+- [core/grid/linked-cell.ts](../core/grid/linked-cell.ts) -- LinkedCell with algorithms
+- [core/grid/linked-cell-utils.ts](../core/grid/linked-cell-utils.ts) -- Utility algorithms
+- [specs/visual-test-timing-guide.md](../../../specs/visual-test-timing-guide.md) -- Timing patterns

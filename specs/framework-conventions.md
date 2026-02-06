@@ -152,9 +152,13 @@ export const ENTITY_TYPES = {
 
 export const GameLayers = {
   FLOOR: 1,
-  COLLECTIBLES: 3,
-  WALLS: 4,
-  ACTORS: 5,
+  FLOOR_EFFECTS: 2,
+  LOGIC: 3,
+  COLLECTIBLES: 4,
+  WALLS: 5,
+  ACTORS: 6,
+  EPHEMERALS: 7,
+  TEXT: 8
 } as const;
 ```
 
