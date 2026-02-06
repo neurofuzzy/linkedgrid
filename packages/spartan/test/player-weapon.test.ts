@@ -8,6 +8,7 @@
  * - Melee fallback when out of ammo
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getAmmo } from './test-helpers';
 import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
@@ -90,12 +91,16 @@ describe('PlayerWeaponSystem', () => {
 
     // Assert: A projectile was spawned on EPHEMERALS layer
     // Projectile should be at (6,5) - one cell to the right
-    const projectileIds = spatial.getEntityIdsInCell(6, 5, GameLayers.EPHEMERALS);
+    const allIds = spatial.getEntityIdsInCell(6, 5);
+    const projectileIds = allIds.filter(id => {
+      const pos = spatial.getEntityPosition(id);
+      return pos && pos.layer === GameLayers.EPHEMERALS;
+    });
     expect(projectileIds.length).toBeGreaterThanOrEqual(1);
 
     // Assert: Ammo was consumed
     const playerData = spatial.getEntityData(playerId);
-    expect(playerData?.ammo?.pistol).toBe(9);
+    expect(getAmmo(playerData, 'pistol')).toBe(9);
   });
 
   it('weapon respects cooldown', () => {
@@ -124,14 +129,14 @@ describe('PlayerWeaponSystem', () => {
     gameLoop.tick();
 
     let playerData = spatial.getEntityData(playerId);
-    expect(playerData?.ammo?.pistol).toBe(9); // First shot consumed ammo
+    expect(getAmmo(playerData, 'pistol')).toBe(9); // First shot consumed ammo
 
     // Try to fire again immediately (should be on cooldown)
     gameLoop.tick();
     gameLoop.tick();
 
     playerData = spatial.getEntityData(playerId);
-    expect(playerData?.ammo?.pistol).toBe(9); // No additional ammo consumed during cooldown
+    expect(getAmmo(playerData, 'pistol')).toBe(9); // No additional ammo consumed during cooldown
   });
 
   it('cannot fire without ammo', () => {
@@ -160,7 +165,11 @@ describe('PlayerWeaponSystem', () => {
     gameLoop.tick();
 
     // Assert: No projectile spawned
-    const projectileIds = spatial.getEntityIdsInCell(6, 5, GameLayers.EPHEMERALS);
+    const allIds = spatial.getEntityIdsInCell(6, 5);
+    const projectileIds = allIds.filter(id => {
+      const pos = spatial.getEntityPosition(id);
+      return pos && pos.layer === GameLayers.EPHEMERALS;
+    });
     expect(projectileIds.length).toBe(0);
   });
 
@@ -192,7 +201,7 @@ describe('PlayerWeaponSystem', () => {
 
     // Assert: Ammo was NOT consumed
     const playerData = spatial.getEntityData(playerId);
-    expect(playerData?.ammo?.pistol).toBe(5);
+    expect(getAmmo(playerData, 'pistol')).toBe(5);
   });
 
   it('falls back to melee when out of ammo', () => {
@@ -285,6 +294,6 @@ describe('PlayerWeaponSystem', () => {
     weaponSystem.addAmmo({ spatial } as any, playerId, 'pistol', 10);
 
     const playerData = spatial.getEntityData(playerId);
-    expect(playerData?.ammo?.pistol).toBe(15);
+    expect(getAmmo(playerData, 'pistol')).toBe(15);
   });
 });

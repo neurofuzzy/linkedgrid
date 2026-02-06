@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "A linked-cell grid data structure for tile-based 2D games — pathfinding, distance fields, and neighbor queries",
   "type": "module",
-  "main": "dist/linkedgrid.js",
-  "module": "dist/linkedgrid.js",
+  "main": "dist/spartan.js",
+  "module": "dist/spartan.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/linkedgrid.js",
+      "import": "./dist/spartan.js",
       "types": "./dist/index.d.ts"
     }
   },
@@ -20,6 +20,7 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",

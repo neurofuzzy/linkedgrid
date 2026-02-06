@@ -9,7 +9,7 @@
  * - Cone weapons (e.g., shotgun): Instant hit within a cone area
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { InputProvider } from '../core/input-provider';
 import type { GameManager } from '../core/game-manager';
 import type { ProjectileSystem } from './projectile.system';
@@ -204,12 +204,12 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
    * Fall back to melee attack when out of ammo.
    */
   private fallbackToMelee(
-    context: GameContext,
-    entityId: number,
-    entityData: { meleeDamage?: number; meleeDirection?: Direction }
+    _context: GameContext,
+    _entityId: number,
+    entityData: EntityData
   ): void {
     if (!this.meleeSystem) return;
-    if (!hasMelee(entityData as Parameters<typeof hasMelee>[0])) return;
+    if (!hasMelee(entityData)) return;
 
     // Set melee direction to trigger attack in MeleeSystem
     entityData.meleeDirection = this.lastPlayerDirection;
@@ -346,7 +346,7 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
       // Apply damage
       if (this.healthSystem) {
         this.healthSystem.damage(entityId, weaponConfig.damage, weaponConfig.name);
-      } else {
+      } else if (context.gameManager && typeof entityData.hp === 'number') {
         // Direct damage if no health system - persist through entity store
         const newHp = Math.max(0, entityData.hp - weaponConfig.damage);
         context.gameManager.gameState.entityStore.setData(entityId, { hp: newHp });

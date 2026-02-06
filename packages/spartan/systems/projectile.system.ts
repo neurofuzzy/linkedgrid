@@ -310,7 +310,7 @@ export class ProjectileSystem extends BaseTickedSystem {
     targetX: number,
     targetY: number,
     damage: number,
-    options: Partial<HasProjectile> = {}
+    options: Partial<HasProjectile> & { color?: string } = {}
   ): number {
     return context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
       targetX,

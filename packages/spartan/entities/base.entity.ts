@@ -2,6 +2,7 @@ export interface BaseEntityData {
   id: number;
   type: string;
   sceneId: string;
-  // Entity-specific properties should be defined in entity interfaces.
-  // Removed broad index signature to enforce type safety.
+  // Index signature allows entity types to be compatible with Record<string, unknown>
+  // while still preserving type-safe property access via intersection types.
+  [key: string]: unknown;
 }

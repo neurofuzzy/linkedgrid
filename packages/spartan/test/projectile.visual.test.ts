@@ -9,6 +9,7 @@
  * - HealthSystem integration
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getHp } from './test-helpers';
 import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
@@ -499,10 +500,10 @@ describe('TurretSystem', () => {
     const rightData = spatial.getEntityData(targetRight);
 
     const totalDamage =
-      (100 - (upData?.hp ?? 100)) +
-      (100 - (downData?.hp ?? 100)) +
-      (100 - (leftData?.hp ?? 100)) +
-      (100 - (rightData?.hp ?? 100));
+      (100 - (getHp(upData) ?? 100)) +
+      (100 - (getHp(downData) ?? 100)) +
+      (100 - (getHp(leftData) ?? 100)) +
+      (100 - (getHp(rightData) ?? 100));
 
     // Should have fired 4 times, 10 damage each = 40 total damage distributed
     expect(totalDamage).toBe(40);

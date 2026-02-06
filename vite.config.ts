@@ -20,7 +20,7 @@ export default defineConfig(() => {
     plugins: [
       tsconfigPaths(),
       dts({
-        include: ['src/**/*', 'packages/**/*'],
+        include: ['packages/**/*'],
         outDir: 'dist',
         rollupTypes: true,
       }),
@@ -32,9 +32,9 @@ export default defineConfig(() => {
     },
     build: {
       lib: {
-        entry: resolve(__dirname, 'src/index.ts'),
-        name: 'LinkedGrid',
-        fileName: 'linkedgrid',
+        entry: resolve(__dirname, 'packages/spartan/index.ts'),
+        name: 'Spartan',
+        fileName: 'spartan',
         formats: ['es'],
       },
       sourcemap: true,

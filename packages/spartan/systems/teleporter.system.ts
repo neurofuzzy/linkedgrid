@@ -112,10 +112,10 @@ export class TeleporterSystem extends BaseReactiveSystem {
         });
 
         // Use player's current layer for teleportation (more robust than hardcoding)
-        const playerEntity = spatial.getEntityData(
+        const playerPosition = spatial.getEntityPosition(
           this.gameManager.gameState.playerEntityId
         );
-        const targetLayer = playerEntity?.layer ?? GameLayers.ACTORS;
+        const targetLayer = playerPosition?.layer ?? GameLayers.ACTORS;
 
         // Execute teleport
         this.gameManager.movePlayerToScene(

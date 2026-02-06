@@ -3,6 +3,7 @@
  */
 import { BaseEntityData } from './base.entity';
 import { HasPropagation, HasFloorEffect, HasColor, HasDensity, HasLiquid, HasHealth, HasTemperature } from '../traits';
+import { HasProjectile } from '../traits/projectile.trait';
 
 export type FireVisualData = BaseEntityData & {
   type: 'fire-visual';
@@ -28,3 +29,23 @@ export type ExplosionVisualData = BaseEntityData & {
   type: 'explosion-visual';
   lifetime: number;
 } & HasColor;
+
+/**
+ * ProjectileData - Moving projectile entity.
+ * Used for bullets, arrows, fireballs, etc.
+ */
+export type ProjectileData = BaseEntityData & {
+  type: 'projectile';
+  ephemeral?: boolean;
+} & HasProjectile & Partial<HasColor>;
+
+/**
+ * RayEffectData - Visual ray/beam effect.
+ * Used for instant-hit weapon visuals.
+ */
+export type RayEffectData = BaseEntityData & {
+  type: 'ray-effect';
+  lifetime: number;
+  spawnTick?: number;
+  ephemeral?: boolean;
+} & Partial<HasColor>;

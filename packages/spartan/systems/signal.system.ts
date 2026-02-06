@@ -9,7 +9,7 @@
  * - When pending is applied, STEs emit new signals with backfeed protection
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext } from '../core/types';
+import type { GameContext, EntityData } from '../core/types';
 import type { GameManager } from '../core/game-manager';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { GameLayers } from '../config/layers.config';
@@ -514,7 +514,7 @@ export class SignalSystem extends BaseReactiveSystem {
    * Classify an entity for signal processing.
    */
   private classifyEntity(
-    data: Record<string, unknown>
+    data: EntityData
   ): 'conductor' | 'inverter' | 'gate' | 'transceiver' | 'none' {
     // Check for STE types first (more specific)
     if (hasSignalReceiver(data)) {

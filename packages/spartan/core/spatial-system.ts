@@ -588,7 +588,7 @@ export class SpatialSystem {
       this.updateCellMasks(cell);
 
       // Queue lifecycle callback (skip ephemeral entities)
-      const isEphemeral = op.props && 'ephemeral' in op.props && (op.props as { ephemeral?: boolean }).ephemeral === true;
+      const isEphemeral = op.props && 'ephemeral' in op.props && op.props.ephemeral === true;
       if (!isEphemeral && op.typeStr) {
         spawnEvents.push({
           entityId: op.entityId!,

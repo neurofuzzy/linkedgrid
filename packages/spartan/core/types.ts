@@ -9,7 +9,7 @@
 
 import type { EntityData } from '../entities/entity.types';
 import type { ExecutionPhase } from '../config/systems.config';
-import { LinkedCell } from './grid';
+import { LinkedCell, LinkedGrid } from './grid';
 export type { EntityData, ExecutionPhase };
 
 /**
@@ -173,12 +173,16 @@ export interface GameContext {
       [number, { x: number; y: number; layer: number }]
     >;
     getEntityIdsInRadius: (x: number, y: number, radius: number) => number[];
-    isBlocked: (cell: LinkedCell) => boolean;
+    isBlocked: (cell: LinkedCell | null) => boolean;
+    blocksVision: (cell: LinkedCell | null) => boolean;
+    isWalkable: (cell: LinkedCell | null) => boolean;
     isAlive: (entityId: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
     cancelMove: (entityId: number) => void;
     onSpawn: (callback: LifecycleCallback) => () => void;
     onRemove: (callback: LifecycleCallback) => () => void;
+    getPosition: (id: number) => { x: number; y: number; layer: number } | null;
+    getGrid: () => LinkedGrid;
   };
   sceneManager?: {
     getScene: (id: string) => unknown;

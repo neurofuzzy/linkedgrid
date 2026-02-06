@@ -1,5 +1,6 @@
 import { GameRuntime } from '../core/game-runtime';
-import type { GameSystem } from '../core/types';
+import type { GameSystem, EntityData } from '../core/types';
+import { hasWeapon, hasHealth } from '../traits/trait-guards';
 
 /**
  * Create GameRuntime with systems properly registered.
@@ -57,4 +58,31 @@ export function createRuntimeWithSystems(config: {
   }
 
   return runtime;
+}
+
+/**
+ * Get ammo count for a specific weapon type from an entity.
+ * Returns undefined if entity doesn't have weapon trait or ammo type.
+ */
+export function getAmmo(entity: EntityData | undefined, weaponType: string): number | undefined {
+  if (!entity || !hasWeapon(entity)) return undefined;
+  return entity.ammo[weaponType];
+}
+
+/**
+ * Get HP from an entity.
+ * Returns undefined if entity doesn't have health trait.
+ */
+export function getHp(entity: EntityData | undefined): number | undefined {
+  if (!entity || !hasHealth(entity)) return undefined;
+  return entity.hp;
+}
+
+/**
+ * Get max HP from an entity.
+ * Returns undefined if entity doesn't have health trait.
+ */
+export function getMaxHp(entity: EntityData | undefined): number | undefined {
+  if (!entity || !hasHealth(entity)) return undefined;
+  return entity.maxHp;
 }

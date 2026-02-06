@@ -135,21 +135,21 @@ export class RespawnSystem extends BaseReactiveSystem {
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !isCheckpoint(entityData)) continue;
 
-      // Check if already activated
-      const checkpointData = entityData as { activated?: boolean; sceneId: string };
-      if (checkpointData.activated) continue;
+      // Check if already activated (narrowed to CheckpointData)
+      if (entityData.activated) continue;
 
       // Activate checkpoint
-      checkpointData.activated = true;
+      entityData.activated = true;
       this.debugStats.checkpointsActivated++;
 
       // Update player's checkpoint tracking
+      // Note: These properties are dynamically added to player data for respawn tracking
       const playerData = context.spatial.getEntityData(playerId);
       if (playerData) {
-        (playerData as any).lastCheckpointId = entityId;
-        (playerData as any).lastCheckpointSceneId = checkpointData.sceneId;
-        (playerData as any).lastCheckpointX = playerPos.x;
-        (playerData as any).lastCheckpointY = playerPos.y;
+        playerData.lastCheckpointId = entityId;
+        playerData.lastCheckpointSceneId = entityData.sceneId;
+        playerData.lastCheckpointX = playerPos.x;
+        playerData.lastCheckpointY = playerPos.y;
       }
     }
   }
@@ -195,13 +195,14 @@ export class RespawnSystem extends BaseReactiveSystem {
     }
 
     // Cache player data for respawn (entity will be removed by HealthSystem)
+    // Using index signature access - these properties are dynamically added
     const cachedPlayerData = {
-      maxHp: (playerData as any).maxHp ?? 100,
-      damage: (playerData as any).damage ?? 10,
-      lastCheckpointId: (playerData as any).lastCheckpointId,
-      lastCheckpointSceneId: (playerData as any).lastCheckpointSceneId,
-      lastCheckpointX: (playerData as any).lastCheckpointX,
-      lastCheckpointY: (playerData as any).lastCheckpointY,
+      maxHp: typeof playerData.maxHp === 'number' ? playerData.maxHp : 100,
+      damage: typeof playerData.damage === 'number' ? playerData.damage : 10,
+      lastCheckpointId: typeof playerData.lastCheckpointId === 'number' ? playerData.lastCheckpointId : undefined,
+      lastCheckpointSceneId: typeof playerData.lastCheckpointSceneId === 'string' ? playerData.lastCheckpointSceneId : undefined,
+      lastCheckpointX: typeof playerData.lastCheckpointX === 'number' ? playerData.lastCheckpointX : undefined,
+      lastCheckpointY: typeof playerData.lastCheckpointY === 'number' ? playerData.lastCheckpointY : undefined,
     };
 
     // Schedule respawn
