@@ -133,6 +133,7 @@ export {
   isExit,
   hasScoreValue,
   isRangeSensor,
+  hasNPCBrain,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
@@ -176,4 +177,7 @@ export type { CharacterPersona } from './config/personas.config';
 
 // Objective types
 export type { ObjectiveDefinition, ObjectiveType, HasScoreValue } from './traits/objective.trait';
+
+// NPC Brain trait
+export type { HasNPCBrain, NPCPosture } from './traits/npc-brain.trait';
 

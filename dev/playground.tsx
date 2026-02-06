@@ -147,6 +147,11 @@ const AVAILABLE_GAMES = [
     name: 'Wave Recycling & Objectives Demo',
     path: '/dev/games/wave-recycling-demo.json',
   },
+  {
+    id: 'npc-dungeon-demo',
+    name: 'NPC Dungeon (Brain AI Combat)',
+    path: '/dev/games/npc-dungeon-demo.json',
+  },
 ];
 
 /**

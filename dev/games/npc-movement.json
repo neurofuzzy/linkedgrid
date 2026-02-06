@@ -1,5 +1,5 @@
 {
-  "description": "NPC Movement Demo - Shows 4 AI behaviors:\n• Blue (follow): Stays 2-4 cells from player (speed 1 - fast)\n• Orange (flee): Runs when player gets within 5 cells (speed 2 - medium)\n• Pink (pursue): Chases player when within 8 cells (speed 1 - fast)\n• Purple (wander): Moves randomly (speed 3 - slow)",
+  "description": "NPC Movement + Combat Demo - Shows 4 AI behaviors:\n• Blue (follow): Stays 2-4 cells from player (ally, no combat)\n• Orange (flee): Runs when player gets within 5 cells (neutral)\n• Pink (pursue + melee): Chases and attacks! Has NPC Brain AI.\n• Purple (wander): Moves randomly (neutral)\nArrow keys: Move | Space: Melee",
   "scenes": [
     {
       "id": "npc-demo",
@@ -24,6 +24,9 @@
             "isPlayer": true,
             "team": "player",
             "healthState": "alive",
+            "meleeDamage": 20,
+            "meleeCooldown": 3,
+            "meleeRange": 1,
             "color": "#00ff00"
           }
         },
@@ -58,11 +61,16 @@
           }
         },
         {
-          "type": "npc",
+          "_comment": "Pink pursue NPC with NPC Brain + melee combat",
+          "type": "enemy",
           "x": 10,
           "y": 3,
           "layer": 6,
           "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "damage": 5,
             "movementMode": "pursue",
             "triggerRange": 8,
             "giveUpRange": 15,
@@ -70,6 +78,13 @@
             "aiMovementState": "idle",
             "speed": 1,
             "team": "enemy",
+            "threatRange": 8,
+            "attackRange": 1,
+            "posture": "aggressive",
+            "meleeDamage": 10,
+            "meleeCooldown": 5,
+            "meleeRange": 1,
+            "scoreValue": 25,
             "color": "#ff0066"
           }
         },

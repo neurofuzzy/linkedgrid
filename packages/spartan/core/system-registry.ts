@@ -40,6 +40,7 @@ import { TeleporterSystem } from '../systems/teleporter.system';
 import { TurretSystem } from '../systems/turret.system';
 import { ScoreSystem } from '../systems/score.system';
 import { ObjectiveSystem } from '../systems/objective.system';
+import { NPCBrainSystem } from '../systems/npc-brain.system';
 
 /**
  * Create all game systems with proper dependency resolution.
@@ -75,6 +76,7 @@ export function createAllSystems(
   systems.push(fireSystem);
   systems.push(liquidSystem);
   systems.push(chainReactionSystem);
+  // NPCBrainSystem is inserted before NPCMovementSystem below (needs ProjectileSystem first)
   systems.push(npcMovementSystem);
 
   // === HEALTH SYSTEM (depended on by many) ===
@@ -113,8 +115,14 @@ export function createAllSystems(
 
   // === SYSTEMS NEEDING PROJECTILESYSTEM ===
   const turretSystem = new TurretSystem(healthSystem, projectileSystem);
-  systems.push(turretSystem);
+  const npcBrainSystem = new NPCBrainSystem(projectileSystem);
 
+  // Insert NPCBrainSystem before NPCMovementSystem so brain decisions
+  // are available for movement in the same tick.
+  const npcMovementIndex = systems.indexOf(npcMovementSystem);
+  systems.splice(npcMovementIndex, 0, npcBrainSystem);
+
+  systems.push(turretSystem);
   systems.push(projectileSystem);
   systems.push(powerupSystem);
   systems.push(scoreSystem);
@@ -152,6 +160,7 @@ export const ALL_SYSTEM_NAMES = [
   'FireSystem',
   'LiquidSystem',
   'ChainReactionSystem',
+  'NPCBrainSystem',
   'NPCMovementSystem',
   'HealthSystem',
   'TeleporterSystem',

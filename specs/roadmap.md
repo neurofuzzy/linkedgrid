@@ -117,17 +117,17 @@ Phase 3.5: NPC Movement and Attack Modes
 
 NPC AI has movement modes via the npc movement system, but we need a proper NPC state machine that coordinates movement modes, attack and defense posture and weapons/melee usage. This should also understand teams and who is a player.
 
-[ ] 1. NPC State Machine System: coordinator of all NPCs. Entities remain dumb
-[ ] 2. NPC Attack/Defense Posture - links with NPC movement modes
-[ ] 3. NPC prey/threat identification - decision-making heuristics that determine state transitions
+[x] 1. NPC State Machine System: coordinator of all NPCs. Entities remain dumb
+[x] 2. NPC Attack/Defense Posture - links with NPC movement modes
+[x] 3. NPC prey/threat identification - decision-making heuristics that determine state transitions
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
 *SEPARATE DEMOS EXPECTED*
 
-[ ] A) Upgrade existing NPC movement demo to include melee attacks
-[ ] B) Upgrade existing NPC paths to support melee and ranged (projectile) weapons
-[ ] C) New multi-scene demo with one enemy per scene in maze/dungeon environments
+[x] A) Upgrade existing NPC movement demo to include melee attacks -> `dev/games/npc-movement.json`
+[x] B) Upgrade existing NPC paths to support melee and ranged (projectile) weapons -> `dev/games/npc-paths.json`
+[x] C) New multi-scene demo with one enemy per scene in maze/dungeon environments -> `dev/games/npc-dungeon-demo.json`
 
 ---
 

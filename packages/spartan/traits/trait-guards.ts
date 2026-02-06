@@ -37,6 +37,7 @@ import type { HasSceneConnection } from './scene-connection.trait';
 import type { HasBuff } from './buff.trait';
 import type { HasTemperature } from './thermal.trait';
 import type { HasScoreValue } from './objective.trait';
+import type { HasNPCBrain } from './npc-brain.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -1372,4 +1373,14 @@ export function isExit(entity: EntityData): entity is ExitData {
  */
 export function hasScoreValue(entity: EntityData): entity is EntityData & HasScoreValue {
   return typeof entity.scoreValue === 'number';
+}
+
+/**
+ * Check if entity has NPC brain trait.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has NPC brain configuration
+ */
+export function hasNPCBrain(entity: EntityData): entity is EntityData & HasNPCBrain {
+  return 'threatRange' in entity || 'brainState' in entity || 'attackRange' in entity;
 }

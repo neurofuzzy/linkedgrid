@@ -83,6 +83,13 @@ export const SYSTEM_CONFIG = {
     description: 'Handles domino-like chain reactions',
   },
 
+  NPCBrain: {
+    tickRate: 1,
+    executionPhase: 'pre-commit' as const,
+    dependencies: ['SpatialSystem', 'ProjectileSystem'] as const,
+    description: 'Autonomous NPC combat AI: threat scan, posture evaluation, attack execution',
+  },
+
   NPCMovement: {
     tickRate: 2,
     executionPhase: 'main' as const,
