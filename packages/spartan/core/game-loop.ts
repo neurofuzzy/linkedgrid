@@ -2,8 +2,7 @@
  * @brief Main game loop orchestrating systems and frame ticks.
  */
 import { SpatialSystem } from './spatial-system';
-import type { GameManager } from './game-manager';
-import type { GameSystem, GameContext, ExecutionPhase } from './types';
+import type { GameSystem, GameContext, ExecutionPhase, GameManagerContext } from './types';
 import { EXECUTION_PHASE_ORDER } from '../config/systems.config';
 
 /**
@@ -43,7 +42,7 @@ export class GameLoop {
 
   constructor(
     private spatial: SpatialSystem,
-    private gameManager?: GameManager
+    private gameManager?: GameManagerContext
   ) { }
 
   /** Current tick count */
@@ -121,7 +120,7 @@ export class GameLoop {
       tick: this._tickCount,
       overlaps,
       spatial: this.spatial as unknown as GameContext['spatial'],
-      gameManager: this.gameManager as unknown as GameContext['gameManager'],
+      gameManager: this.gameManager,
     };
 
     for (const system of this.systems) {

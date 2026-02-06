@@ -12,4 +12,13 @@ export type PlayerData = BaseEntityData & {
   HasSceneLocation &
   HasInventory &
   HasPusher &
-  HasWeapon;
+  HasWeapon & {
+    /** ID of the last activated checkpoint entity */
+    lastCheckpointId?: number;
+    /** Scene ID of the last activated checkpoint */
+    lastCheckpointSceneId?: string;
+    /** X coordinate of the last activated checkpoint */
+    lastCheckpointX?: number;
+    /** Y coordinate of the last activated checkpoint */
+    lastCheckpointY?: number;
+  };

@@ -16,9 +16,11 @@ import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
 import { GameLoop } from '../core/game-loop';
+import { GameState } from '../core/game-state';
 import { SpawningSystem } from '../systems/spawning.system';
 import { GameLayers } from '../config/layers.config';
-import { GameManager } from '../core/game-manager';
+import type { GameManagerContext } from '../core/types';
+import { createMockGameManager } from './test-mocks';
 
 describe('SpawningSystem', () => {
   let grid: LinkedGrid;
@@ -26,7 +28,7 @@ describe('SpawningSystem', () => {
   let spatial: SpatialSystem;
   let gameLoop: GameLoop;
   let spawningSystem: SpawningSystem;
-  let mockManager: GameManager;
+  let mockManager: GameManagerContext;
 
   beforeEach(() => {
     grid = new LinkedGrid(20, 20);
@@ -34,15 +36,15 @@ describe('SpawningSystem', () => {
     spatial = new SpatialSystem(grid, store);
 
     // Create mock game manager
-    mockManager = {
+    mockManager = createMockGameManager({
       gameState: {
-        playerEntityId: -1, // Will be set when player is spawned
+        playerEntityId: -1,
         entityStore: store,
-      },
-    } as unknown as GameManager;
+      } as unknown as GameState // Store cast still needed due to SparseEntityStore vs interface mismatch
+    });
 
     gameLoop = new GameLoop(spatial, mockManager);
-    spawningSystem = new SpawningSystem(mockManager);
+    spawningSystem = new SpawningSystem();
     gameLoop.addSystem(spawningSystem);
   });
 

@@ -10,7 +10,6 @@ import type { GameContext, SpawnIntent, EntityLifecycleEvent } from '../core/typ
 import { hasSpawner, hasSignalReceiver, isSleepWake } from '../traits/trait-guards';
 import { GameLayers } from '../config/layers.config';
 import type { HasSpawner } from '../traits/spawner.trait';
-import type { GameManager } from '../core/game-manager';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 
 /**
@@ -95,7 +94,7 @@ export class SpawningSystem extends BaseTickedSystem {
   /** Flag indicating groups need rebuilding (set by lifecycle callbacks) */
   private groupsDirty = true;
 
-  constructor(private gameManager: GameManager) {
+  constructor() {
     super();
   }
 

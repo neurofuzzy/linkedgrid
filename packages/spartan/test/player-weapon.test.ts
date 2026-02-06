@@ -9,7 +9,6 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getAmmo } from './test-helpers';
-import type { GameContext } from '../core/types';
 import { SpatialSystem } from '../core/spatial-system';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
@@ -24,6 +23,9 @@ import { PlayerWeaponSystem } from '../systems/player-weapon.system';
 import { GameLayers } from '../config/layers.config';
 import { Direction } from '../core/grid/direction';
 import { TestInputProvider } from './test-input-provider';
+import { createMockGameContext } from './test-mocks';
+import { GameContext } from '../core/types';
+
 
 describe('PlayerWeaponSystem', () => {
   let grid: LinkedGrid;
@@ -268,7 +270,8 @@ describe('PlayerWeaponSystem', () => {
     gameManager.gameState.playerEntityId = playerId;
 
     // Switch to shotgun
-    const result = weaponSystem.switchWeapon({ spatial } as unknown as GameContext, playerId, 'shotgun');
+    // Cast spatial to any to bypass private 'grid' property mismatch with GameContext['spatial']
+    const result = weaponSystem.switchWeapon(createMockGameContext({ spatial: spatial as unknown as GameContext['spatial'] }), playerId, 'shotgun');
     expect(result).toBe(true);
 
     const playerData = spatial.getEntityData(playerId);
@@ -292,7 +295,7 @@ describe('PlayerWeaponSystem', () => {
     gameManager.gameState.playerEntityId = playerId;
 
     // Add ammo
-    weaponSystem.addAmmo({ spatial } as unknown as GameContext, playerId, 'pistol', 10);
+    weaponSystem.addAmmo(createMockGameContext({ spatial: spatial as unknown as GameContext['spatial'] }), playerId, 'pistol', 10);
 
     const playerData = spatial.getEntityData(playerId);
     expect(getAmmo(playerData, 'pistol')).toBe(15);

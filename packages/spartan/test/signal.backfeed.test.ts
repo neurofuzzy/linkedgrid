@@ -4,13 +4,16 @@ import { SignalSystem } from '../systems/signal.system';
 import { GameContext } from '../core/types';
 import { SparseEntityStore } from '../core/entity-store';
 import { LinkedGrid } from '../core/grid/linked-grid';
-import { GameManager } from '../core/game-manager';
+import type { GameManagerContext } from '../core/types';
 import {
     spawnOscillator,
     spawnConductiveFloor,
     spawnInverter,
     spawnGate
 } from '../entities/spawn-helpers';
+
+import { createMockGameContext } from './test-mocks';
+import { InverterData, ConductiveFloorData, GateData } from '../entities/entity.types';
 
 describe('Signal Back-feed Investigation', () => {
     let spatial: SpatialSystem;
@@ -22,19 +25,19 @@ describe('Signal Back-feed Investigation', () => {
         const grid = new LinkedGrid(20, 20);
         spatial = new SpatialSystem(grid, entityStore);
 
-        // Initialize mock game context
-        context = {
-            overlaps: [],
+        // Initialize mock game context using helper
+        context = createMockGameContext({
             spatial: spatial as unknown as GameContext['spatial'],
             gameManager: {
                 gameState: {
                     entityStore,
                     systems: {}
-                }
-            } as unknown as GameManager
-        };
+                },
+                // Mock required methods if needed, or rely on createMockGameManager defaults
+            } as unknown as GameManagerContext
+        });
 
-        signalSystem = new SignalSystem(context.gameManager as unknown as GameManager);
+        signalSystem = new SignalSystem(context.gameManager!);
     });
 
     it('O-C-I-C-B chain: Inverter should not back-feed input wire when Oscillator is OFF', () => {
@@ -84,8 +87,8 @@ describe('Signal Back-feed Investigation', () => {
         // - Oscillator is ON, creates event(true)
         // - WireIn receives true (instant)
         // - Inverter has pendingSignal = true (1-tick delay)
-        const invData1 = spatial.getEntityData(invId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const wireIn1 = spatial.getEntityData(wireInId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
+        const invData1 = spatial.getEntityData(invId) as InverterData;
+        const wireIn1 = spatial.getEntityData(wireInId) as ConductiveFloorData;
 
         expect(wireIn1.receivedSignal).toBe(true); // WireIn receives oscillator's ON
         expect(invData1.pendingSignal).toBe(true); // Inverter pending (not applied yet)
@@ -106,10 +109,10 @@ describe('Signal Back-feed Investigation', () => {
         //
         // CRITICAL: WireIn should NOT receive the inverter's signal (no backfeed)
 
-        const wireIn2 = spatial.getEntityData(wireInId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const wireOut2 = spatial.getEntityData(wireOutId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const invData2 = spatial.getEntityData(invId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const gate2 = spatial.getEntityData(gateId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
+        const wireIn2 = spatial.getEntityData(wireInId) as ConductiveFloorData;
+        const wireOut2 = spatial.getEntityData(wireOutId) as ConductiveFloorData;
+        const invData2 = spatial.getEntityData(invId) as InverterData;
+        const gate2 = spatial.getEntityData(gateId) as GateData;
 
         // NO BACKFEED: WireIn should be false (from oscillator OFF), not affected by inverter
         expect(wireIn2.receivedSignal).toBe(false);
@@ -128,10 +131,10 @@ describe('Signal Back-feed Investigation', () => {
         // - WireOut = true (from inverter's TRUE emission)
         // - WireIn should still be false (no backfeed)
 
-        const wireIn3 = spatial.getEntityData(wireInId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const wireOut3 = spatial.getEntityData(wireOutId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const invData3 = spatial.getEntityData(invId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
-        const gate3 = spatial.getEntityData(gateId) as unknown as { receivedSignal?: boolean; pendingSignal?: boolean; signalState?: boolean };
+        const wireIn3 = spatial.getEntityData(wireInId) as ConductiveFloorData;
+        const wireOut3 = spatial.getEntityData(wireOutId) as ConductiveFloorData;
+        const invData3 = spatial.getEntityData(invId) as InverterData;
+        const gate3 = spatial.getEntityData(gateId) as GateData;
 
         // NO BACKFEED: WireIn should still be false
         expect(wireIn3.receivedSignal).toBe(false);

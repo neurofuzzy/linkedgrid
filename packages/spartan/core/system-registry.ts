@@ -87,7 +87,7 @@ export function createAllSystems(
   const poisonSystem = new PoisonSystem(gameManager);
   const signalSystem = new SignalSystem(gameManager);
   const gateSystem = new GateSystem(gameManager);
-  const spawningSystem = new SpawningSystem(gameManager);
+  const spawningSystem = new SpawningSystem();
   const respawnSystem = new RespawnSystem(gameManager);
 
   systems.push(teleporterSystem);

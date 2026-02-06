@@ -32,13 +32,13 @@ Phase [x] 1.3: Weapons Pickups / Presets
   - machine-gun, single projectile at a time: ammo 100, cooldown 2 ticks
   - shotgun, no projectile, uses LinkedCell `fieldOfViewCone` to apply damage: ammo 20, cooldown 16 ticks
 
-Phase [ ] 1.5: Cleanup and Refactor
+Phase [x] 1.5: Cleanup and Refactor
 
-[ ] 1. Assess all systems and execution flow
-[ ] 2. Assess proper usage patterns and leveraging LinkedGrid/LinkedCell API
-[ ] 3. Audit responsibility boundaries
-[ ] 4. Normalize and refactor where necessary 
-[ ] 5. Typescript error sweep and fix (incl. pre-existing)
+[x] 1. Assess all systems and execution flow
+[x] 2. Assess proper usage patterns and leveraging LinkedGrid/LinkedCell API
+[x] 3. Audit responsibility boundaries
+[x] 4. Normalize and refactor where necessary 
+[x] 5. Typescript error sweep and fix (incl. pre-existing)
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 

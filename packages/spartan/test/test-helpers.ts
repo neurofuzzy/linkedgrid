@@ -48,12 +48,8 @@ export function createRuntimeWithSystems(config: {
   // This ensures they survive scene transitions
   if (config.systems) {
     for (const system of config.systems) {
-      // Add to persistent systems array (survives transitions)
-      // Access private field via type assertion
-      (runtime as unknown as { systems: unknown[] }).systems.push(system);
-
-      // Add to current gameLoop (active immediately)
-      (runtime as unknown as { gameLoop: { addSystem: (s: unknown) => void } }).gameLoop.addSystem(system);
+      // Add to persistent systems and game loop using public API
+      runtime.addSystem(system);
     }
   }
 

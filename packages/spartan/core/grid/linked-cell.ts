@@ -59,6 +59,14 @@ export class LinkedCell {
     return this._distances;
   }
 
+  /**
+   * @internal
+   * Restore distance values from save data.
+   */
+  restoreDistances(distances: number[]): void {
+    this._distances = distances;
+  }
+
   /** Boolean masks for collision, visibility, walkability, etc. */
   private _masks: boolean[] = [];
   get masks(): boolean[] {

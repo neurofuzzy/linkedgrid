@@ -133,6 +133,22 @@ export type LifecycleCallback = (event: EntityLifecycleEvent) => void;
  * Provides systems with overlap data and spatial access.
  * Optional references for cross-scene operations.
  */
+export interface GameManagerContext {
+  gameState: {
+    playerEntityId: number;
+    entityStore: {
+      getData: (id: number) => EntityData | undefined;
+      setData: (id: number, data: Partial<EntityData>) => void;
+    };
+  };
+  movePlayerToScene: (
+    sceneId: string,
+    x: number,
+    y: number,
+    layer: number
+  ) => void;
+}
+
 export interface GameContext {
   /** Current tick count (increments each game loop iteration) */
   tick?: number;
@@ -188,21 +204,7 @@ export interface GameContext {
     getScene: (id: string) => unknown;
     getActiveScene: () => unknown;
   };
-  gameManager?: {
-    gameState: {
-      playerEntityId: number;
-      entityStore: {
-        getData: (id: number) => EntityData | undefined;
-        setData: (id: number, data: Partial<EntityData>) => void;
-      };
-    };
-    movePlayerToScene: (
-      sceneId: string,
-      x: number,
-      y: number,
-      layer: number
-    ) => void;
-  };
+  gameManager?: GameManagerContext;
 }
 
 /**

@@ -10,6 +10,7 @@
 import { visual } from './visual-helpers';
 import { GameLayers } from '../config/layers.config';
 import { spawnPlayer } from '../entities/spawn-helpers';
+import { hasHealth } from '../traits/trait-guards';
 import { HealthSystem } from '../systems/health.system';
 import { RespawnSystem } from '../systems/respawn.system';
 import { GameManager } from '../core/game-manager';
@@ -112,8 +113,12 @@ visual('player loses life on death and respawns', {
       if (!playerData) {
         throw new Error('Player data not found');
       }
-      if ((playerData as unknown as { healthState: string }).healthState !== 'alive') {
-        throw new Error(`Expected healthState 'alive', got ${(playerData as unknown as { healthState: string }).healthState}`);
+      if (playerData && hasHealth(playerData)) {
+        if (playerData.healthState !== 'alive') {
+          throw new Error(`Expected healthState 'alive', got ${playerData.healthState}`);
+        }
+      } else {
+        throw new Error('Player data not found or missing health');
       }
     });
   },

@@ -9,8 +9,7 @@
  * - When pending is applied, STEs emit new signals with backfeed protection
  */
 import { BaseReactiveSystem } from '../core/base-system';
-import type { GameContext, EntityData } from '../core/types';
-import type { GameManager } from '../core/game-manager';
+import type { GameContext, EntityData, GameManagerContext } from '../core/types';
 import type { LinkedCell } from '../core/grid/linked-cell';
 import { GameLayers } from '../config/layers.config';
 import {
@@ -91,7 +90,7 @@ export class SignalSystem extends BaseReactiveSystem {
   // Tick counter
   private tickCount = 0;
 
-  constructor(private gameManager: GameManager) {
+  constructor(private gameManager: GameManagerContext) {
     super();
   }
 
