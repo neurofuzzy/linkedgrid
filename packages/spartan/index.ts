@@ -132,6 +132,7 @@ export {
   isFlag,
   isExit,
   hasScoreValue,
+  isRangeSensor,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)
@@ -147,6 +148,7 @@ export {
   spawnCoin,
   spawnFlag,
   spawnExit,
+  spawnRangeSensor,
 } from './entities/spawn-helpers';
 
 // Helpers

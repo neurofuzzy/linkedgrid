@@ -122,7 +122,14 @@ export const SYSTEM_CONFIG = {
     tickRate: 1,
     executionPhase: 'post-commit' as const,
     dependencies: ['SpatialSystem', 'HealthSystem'] as const,
-    description: 'Tracks game objectives (collect-flag, kill-all, reach-exit) and scene completion',
+    description: 'Tracks game objectives (collect-flag, kill-all, reach-exit, wave-clear) and scene completion',
+  },
+
+  Spawning: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Spawns entities from spawner entities with grouping, activation, wave mode, and boundary recycling',
   },
 } as const;
 

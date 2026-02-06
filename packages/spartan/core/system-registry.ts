@@ -108,6 +108,9 @@ export function createAllSystems(
   const scoreSystem = new ScoreSystem(gameManager, healthSystem);
   const objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);
 
+  // Wire ObjectiveSystem to SpawningSystem for wave-clear objectives
+  objectiveSystem.setSpawningSystem(spawningSystem);
+
   // === SYSTEMS NEEDING PROJECTILESYSTEM ===
   const turretSystem = new TurretSystem(healthSystem, projectileSystem);
   systems.push(turretSystem);

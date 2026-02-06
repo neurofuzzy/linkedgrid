@@ -40,6 +40,22 @@ interface SpawnerGroup {
   spawnLimit: number;
   /** Group cooldown (from first member) */
   cooldown: number;
+  /** Wave mode enabled */
+  waveMode: boolean;
+  /** Entities to spawn per wave */
+  waveSize: number;
+  /** Total number of waves (undefined = infinite) */
+  totalWaves?: number;
+  /** Ticks between waves (overrides cooldown) */
+  waveCooldown: number;
+  /** Current wave number (0-indexed, tracks completed waves) */
+  currentWave: number;
+  /** Whether all waves have been spawned */
+  wavesComplete: boolean;
+  /** If true, spawned entities at grid boundary are recycled */
+  recycleAtBoundary: boolean;
+  /** Total entities ever spawned by this group (for wave tracking) */
+  totalSpawned: number;
 }
 
 /**
@@ -150,6 +166,9 @@ export class SpawningSystem extends BaseTickedSystem {
     // (e.g., collision) never get placed, so onRemove never fires for them.
     this.cleanupDeadSpawns(context);
 
+    // Phase 2b: Recycle spawned entities at grid boundaries
+    this.recycleBoundaryEntities(context);
+
     // Phase 3: Process each group
     for (const [groupId, group] of this.groups) {
       this.processGroup(context, groupId, group, currentTick);
@@ -165,6 +184,40 @@ export class SpawningSystem extends BaseTickedSystem {
       group.spawnedEntityIds = group.spawnedEntityIds.filter((id) =>
         context.spatial.isAlive(id)
       );
+    }
+  }
+
+  /**
+   * Recycle spawned entities that have reached grid boundaries.
+   * Removes them directly via spatial.remove() -- no death event is emitted,
+   * so ScoreSystem and ObjectiveSystem won't count them as kills.
+   */
+  private recycleBoundaryEntities(context: GameContext): void {
+    const gridW = context.spatial.grid.width;
+    const gridH = context.spatial.grid.height;
+
+    for (const group of this.groups.values()) {
+      if (!group.recycleAtBoundary) continue;
+
+      const toRecycle: number[] = [];
+
+      for (const entityId of group.spawnedEntityIds) {
+        const pos = context.spatial.getEntityPosition(entityId);
+        if (!pos) continue;
+
+        // Check if entity is at grid boundary (edge cells)
+        if (pos.x <= 0 || pos.x >= gridW - 1 || pos.y <= 0 || pos.y >= gridH - 1) {
+          toRecycle.push(entityId);
+        }
+      }
+
+      for (const entityId of toRecycle) {
+        context.spatial.remove(entityId);
+        const idx = group.spawnedEntityIds.indexOf(entityId);
+        if (idx !== -1) {
+          group.spawnedEntityIds.splice(idx, 1);
+        }
+      }
     }
   }
 
@@ -253,6 +306,14 @@ export class SpawningSystem extends BaseTickedSystem {
         currentDirection: existingState?.currentDirection || 0,
         spawnLimit: firstSpawner.data.spawnLimit,
         cooldown: firstSpawner.data.cooldown,
+        waveMode: firstSpawner.data.waveMode ?? false,
+        waveSize: firstSpawner.data.waveSize ?? 1,
+        totalWaves: firstSpawner.data.totalWaves,
+        waveCooldown: firstSpawner.data.waveCooldown ?? firstSpawner.data.cooldown,
+        currentWave: existingState?.currentWave ?? 0,
+        wavesComplete: existingState?.wavesComplete ?? false,
+        recycleAtBoundary: firstSpawner.data.recycleAtBoundary ?? false,
+        totalSpawned: existingState?.totalSpawned ?? 0,
       });
 
       for (const memberId of component) {
@@ -280,15 +341,15 @@ export class SpawningSystem extends BaseTickedSystem {
 
     if (!isActive) return;
 
+    // Check if all waves have been completed
+    if (group.waveMode && group.wavesComplete) return;
+
     // Check spawn limit
     if (group.spawnedEntityIds.length >= group.spawnLimit) return;
 
-    // Check cooldown
-    if (currentTick - group.lastSpawnTick < group.cooldown) return;
-
-    // Find open spawn cell from aggregated adjacent cells
-    const spawnLocation = this.findGroupSpawnCell(context, group);
-    if (!spawnLocation) return;
+    // Check cooldown (use waveCooldown in wave mode)
+    const cooldown = group.waveMode ? group.waveCooldown : group.cooldown;
+    if (currentTick - group.lastSpawnTick < cooldown) return;
 
     // Get spawn properties from first member
     const firstMemberId = group.memberIds[0];
@@ -297,20 +358,89 @@ export class SpawningSystem extends BaseTickedSystem {
 
     const spawnerData = firstMemberData as typeof firstMemberData & HasSpawner;
 
-    // Create spawn intent
+    if (group.waveMode) {
+      // Wave mode: spawn waveSize entities simultaneously
+      this.processWaveSpawn(context, group, spawnerData, currentTick);
+    } else {
+      // Normal mode: spawn one entity
+      this.processNormalSpawn(context, group, spawnerData, currentTick);
+    }
+  }
+
+  /**
+   * Normal (non-wave) spawn: one entity per activation.
+   */
+  private processNormalSpawn(
+    context: GameContext,
+    group: SpawnerGroup,
+    spawnerData: HasSpawner & { id: number; type: string },
+    currentTick: number
+  ): void {
+    const spawnLocation = this.findGroupSpawnCell(context, group);
+    if (!spawnLocation) return;
+
     const intent: SpawnIntent = {
-      sourceId: firstMemberId,
+      sourceId: group.memberIds[0],
       entityType: spawnerData.spawnType,
       layer: spawnerData.spawnLayer,
       props: spawnerData.spawnProps,
       preferredCell: spawnLocation,
     };
 
-    // Validate and execute spawn
     const spawnedId = this.executeSpawn(context, intent);
     if (spawnedId !== null) {
       group.spawnedEntityIds.push(spawnedId);
       group.lastSpawnTick = currentTick;
+      group.totalSpawned++;
+    }
+  }
+
+  /**
+   * Wave spawn: spawn waveSize entities simultaneously.
+   *
+   * For contiguous groups, alternates which spawner positions are used
+   * across waves. E.g., 4 spawners with waveSize=2: wave 1 uses positions
+   * 0,2; wave 2 uses positions 1,3.
+   */
+  private processWaveSpawn(
+    context: GameContext,
+    group: SpawnerGroup,
+    spawnerData: HasSpawner & { id: number; type: string },
+    currentTick: number
+  ): void {
+    const slotsAvailable = group.spawnLimit - group.spawnedEntityIds.length;
+    const toSpawn = Math.min(group.waveSize, slotsAvailable);
+    if (toSpawn <= 0) return;
+
+    let spawned = 0;
+    for (let i = 0; i < toSpawn; i++) {
+      const spawnLocation = this.findGroupSpawnCell(context, group);
+      if (!spawnLocation) break;
+
+      const intent: SpawnIntent = {
+        sourceId: group.memberIds[0],
+        entityType: spawnerData.spawnType,
+        layer: spawnerData.spawnLayer,
+        props: spawnerData.spawnProps,
+        preferredCell: spawnLocation,
+      };
+
+      const spawnedId = this.executeSpawn(context, intent);
+      if (spawnedId !== null) {
+        group.spawnedEntityIds.push(spawnedId);
+        group.totalSpawned++;
+        spawned++;
+      }
+    }
+
+    if (spawned > 0) {
+      group.lastSpawnTick = currentTick;
+      group.currentWave++;
+
+      // Check if all waves are complete
+      if (group.totalWaves !== undefined && group.currentWave >= group.totalWaves) {
+        group.wavesComplete = true;
+      }
     }
   }
 
@@ -548,6 +678,56 @@ export class SpawningSystem extends BaseTickedSystem {
     return spawnedId;
   }
 
+  // === Public Query API ===
+
+  /**
+   * Check if all waves across all groups have been completed.
+   * Returns true only if every wave-mode group has finished all its waves
+   * AND all spawned entities from those groups are dead/removed.
+   *
+   * Non-wave groups are ignored.
+   * Returns false if there are no wave-mode groups.
+   */
+  areAllWavesCleared(): boolean {
+    let hasWaveGroups = false;
+
+    for (const group of this.groups.values()) {
+      if (!group.waveMode) continue;
+      hasWaveGroups = true;
+
+      // All waves must be spawned
+      if (!group.wavesComplete) return false;
+
+      // All spawned entities must be dead/removed
+      if (group.spawnedEntityIds.length > 0) return false;
+    }
+
+    return hasWaveGroups;
+  }
+
+  /**
+   * Get wave status summary for all wave-mode groups.
+   */
+  getWaveStatus(): { totalWaves: number; completedWaves: number; activeEnemies: number; allCleared: boolean } {
+    let totalWaves = 0;
+    let completedWaves = 0;
+    let activeEnemies = 0;
+
+    for (const group of this.groups.values()) {
+      if (!group.waveMode) continue;
+      totalWaves += group.totalWaves ?? 0;
+      completedWaves += group.currentWave;
+      activeEnemies += group.spawnedEntityIds.length;
+    }
+
+    return {
+      totalWaves,
+      completedWaves,
+      activeEnemies,
+      allCleared: this.areAllWavesCleared(),
+    };
+  }
+
   public override resetState(): void {
     super.resetState(); // Handles lifecycle cleanup
     this.groups.clear();
@@ -568,6 +748,14 @@ export class SpawningSystem extends BaseTickedSystem {
         cooldown: group.cooldown,
         lastSpawnTick: group.lastSpawnTick,
         currentDirection: group.currentDirection,
+        waveMode: group.waveMode,
+        ...(group.waveMode ? {
+          waveSize: group.waveSize,
+          currentWave: group.currentWave,
+          totalWaves: group.totalWaves,
+          wavesComplete: group.wavesComplete,
+          recycleAtBoundary: group.recycleAtBoundary,
+        } : {}),
       };
     }
 

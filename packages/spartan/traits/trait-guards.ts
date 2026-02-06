@@ -84,6 +84,7 @@ import type {
   CoinData,
   FlagData,
   ExitData,
+  RangeSensorData,
 } from '../entities';
 
 /**
@@ -693,11 +694,11 @@ export function isTeleporterWithTarget(
  */
 export function hasSignalEmitter(
   entity: EntityData
-): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData {
+): entity is OscillatorData | PressureSwitchData | InverterData | TransceiverData | RangeSensorData {
   if (!('signalType' in entity)) return false;
   const signalType = entity.signalType;
   return (
-    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver') &&
+    (signalType === 'oscillator' || signalType === 'pressure' || signalType === 'inverter' || signalType === 'transceiver' || signalType === 'range-sensor') &&
     'signalState' in entity && typeof entity.signalState === 'boolean'
   );
 }
@@ -804,6 +805,16 @@ export function isGate(entity: EntityData): entity is GateData {
  */
 export function isTransceiver(entity: EntityData): entity is TransceiverData {
   return entity.type === 'transceiver';
+}
+
+/**
+ * Check if entity is a range sensor.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity type is 'range-sensor'
+ */
+export function isRangeSensor(entity: EntityData): entity is RangeSensorData {
+  return entity.type === 'range-sensor';
 }
 
 /**
