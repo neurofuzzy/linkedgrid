@@ -41,6 +41,7 @@ import type { HasNPCBrain } from './npc-brain.trait';
 import type { HasVisualState, HasFacing, HasAnimation } from './visual.trait';
 import type { HasStunnable } from './stun.trait';
 import type { HasChainFollow } from './chain-follow.trait';
+import type { HasFreeBody } from './free-body.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -1055,6 +1056,26 @@ export function hasProjectile(
     typeof entity.targetY === 'number' &&
     'damage' in entity &&
     typeof entity.damage === 'number'
+  );
+}
+
+/**
+ * Check if entity has free body trait.
+ *
+ * Entities with free body trait have sub-cell float positions
+ * and do NOT occupy grid cells.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has free body trait (fx and fy)
+ */
+export function hasFreeBody(
+  entity: EntityData
+): entity is EntityData & HasFreeBody {
+  return (
+    'fx' in entity &&
+    typeof entity.fx === 'number' &&
+    'fy' in entity &&
+    typeof entity.fy === 'number'
   );
 }
 

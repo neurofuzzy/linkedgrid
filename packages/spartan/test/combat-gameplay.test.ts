@@ -204,28 +204,24 @@ describe('Combat Gameplay - Separated Mode', () => {
 
       spatial.commit();
 
-      // Directly spawn a projectile targeting the enemy
-      const projId = spatial.spawn('projectile', 6, 5, GameLayers.EPHEMERALS, {
-        targetX: 10,
-        targetY: 5,
-        damage: 15,
+      // Spawn projectile via ProjectileSystem (free body, not grid)
+      const ctx = {
+        tick: 0,
+        overlaps: [] as never[],
+        spatial: spatial as unknown as import('../core/types').GameContext['spatial'],
+        freeBody: gameLoop.freeBody,
+      };
+      projectileSystem.spawnProjectile(ctx, 6, 5, 10, 5, 15, {
         speed: 2,
-        ownerId: 0, // No owner
-        ephemeral: true,
+        ownerId: 0,
       });
 
-      spatial.commit();
-
-      // Verify projectile exists
-      expect(spatial.getEntityPosition(projId)?.x).toBe(6);
-
       // Tick: Projectile should move and hit enemy at (8,5)
-      // Path: [6,5, 7,5, 8,5, 9,5, 10,5] (includes spawn position)
-      // With speed 2:
-      // Tick 1: moves to 6,5 (spawn) then 7,5
-      // Tick 2: moves to 8,5 (hits enemy) then would move to 9,5 but destroyed
-      gameLoop.tick(); // Move to 7,5
-      gameLoop.tick(); // Move to 8,5, hit enemy
+      // With speed 2, projectile moves 2 cells per tick.
+      // Tick 1: moves from (6,5) toward (8,5)
+      // Tick 2: reaches/passes (8,5), hits enemy
+      gameLoop.tick();
+      gameLoop.tick();
 
       // Enemy should have taken damage
       const enemyData = spatial.getEntityData(enemyId);
@@ -272,9 +268,9 @@ describe('Combat Gameplay - Separated Mode', () => {
       // Stop firing
       inputProvider.setSecondaryAction(false);
 
-      // Find the projectile
+      // Find the projectile in FreeBodyStore
       let projectileId: number | undefined;
-      for (const [entId] of spatial.getAllPositions()) {
+      for (const [entId] of gameLoop.freeBody.entries()) {
         const data = spatial.getEntityData(entId);
         if (data?.type === 'projectile') {
           projectileId = entId;
@@ -283,18 +279,17 @@ describe('Combat Gameplay - Separated Mode', () => {
       }
       expect(projectileId).toBeDefined();
 
-      // Check projectile position and data after fire tick
-      // Projectile was just spawned at (6,5), projectile system hasn't moved it yet
-      const projPos1 = spatial.getEntityPosition(projectileId!);
+      // Check projectile data after fire tick
       const projData = spatial.getEntityData(projectileId!);
-      expect(projPos1?.x).toBe(6); // At spawn position (6,5)
       expect((projData as ProjectileData)?.damage).toBe(15); // Pistol damage
 
-      // Tick to move projectile - with speed 2 and path [6,5, 7,5, 8,5, ...]
-      // Tick 2: moves from 6,5 to 7,5
-      // Tick 3: moves from 7,5 to 8,5 (hits enemy)
-      gameLoop.tick(); // Move to 7,5
-      gameLoop.tick(); // Move to 8,5, hit enemy
+      // Projectile is a free body - check FreeBodyStore position
+      const freePos = gameLoop.freeBody.getPosition(projectileId!);
+      expect(freePos).not.toBeNull();
+
+      // Tick to move projectile toward enemy at (8,5)
+      gameLoop.tick(); // Move toward 8,5
+      gameLoop.tick(); // Should hit enemy
 
       // Check enemy health - should have taken 15 damage
       const enemyDataAfter = spatial.getEntityData(enemyId);

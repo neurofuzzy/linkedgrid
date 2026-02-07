@@ -174,8 +174,8 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
 
       this.projectileSystem.spawnProjectile(
         context,
-        pos.x + delta.dx, // Start one cell in front of player
-        pos.y + delta.dy,
+        pos.x, // Launcher cell -- spawnProjectile computes edge offset
+        pos.y,
         targetX,
         targetY,
         weaponConfig.damage,

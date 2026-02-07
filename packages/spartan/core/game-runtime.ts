@@ -722,6 +722,17 @@ export class GameRuntime {
   }
 
   /**
+   * Get the FreeBodyStore for off-grid entities (projectiles, flying entities).
+   *
+   * Owned by the active GameLoop. Recreated on scene transitions.
+   *
+   * @returns FreeBodyStore from the current game loop
+   */
+  get freeBody(): import('./free-body-store').FreeBodyStore {
+    return this.gameLoop.freeBody;
+  }
+
+  /**
    * Get the active scene.
    *
    * @returns Active scene

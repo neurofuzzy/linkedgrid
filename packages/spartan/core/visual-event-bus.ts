@@ -45,6 +45,8 @@ export type VisualEventType =
   | 'entity:spawned'
   | 'entity:removed'
   | 'projectile:launched'
+  | 'projectile:moved'
+  | 'projectile:impact'
   | 'scene:transition'
   | 'effect:request';
 

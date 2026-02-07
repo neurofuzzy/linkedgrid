@@ -18,6 +18,7 @@ import { SceneManager } from '../core/scene-manager';
 import { HealthSystem } from '../systems/health.system';
 import { ProjectileSystem } from '../systems/projectile.system';
 import { GameLayers } from '../config/layers.config';
+import type { GameContext } from '../core/types';
 
 describe('Homing Projectiles', () => {
   let grid: LinkedGrid;
@@ -27,6 +28,16 @@ describe('Homing Projectiles', () => {
   let gameManager: GameManager;
   let healthSystem: HealthSystem;
   let projectileSystem: ProjectileSystem;
+
+  /** Helper to build a minimal GameContext for spawning projectiles before ticking */
+  function makeContext(): GameContext {
+    return {
+      tick: 0,
+      overlaps: [],
+      spatial: spatial as unknown as GameContext['spatial'],
+      freeBody: gameLoop.freeBody,
+    };
+  }
 
   beforeEach(() => {
     grid = new LinkedGrid(20, 20);
@@ -55,37 +66,30 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    const projId = spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 10,
-      targetY: 5,
-      damage: 25,
-      speed: 2,
-      lifetime: 50,
-      homing: true,
-      homingStrength: 1.0,
-      homingTargetId: targetId,
-      ephemeral: true,
-    });
-    spatial.commit();
+    const projId = projectileSystem.spawnProjectile(
+      makeContext(), 0, 5, 10, 5, 25, {
+        speed: 2,
+        lifetime: 50,
+        homing: true,
+        homingStrength: 1.0,
+        homingTargetId: targetId,
+      }
+    );
 
-    // Act: advance 1 tick so path initializes and projectile moves
+    // Act: advance 1 tick so velocity initializes and projectile moves
     gameLoop.tick();
-    spatial.commit();
 
     // Now move the target to a new position
     spatial.move(targetId, 10, 10);
     spatial.commit();
 
-    // Advance another tick -- homing should recalculate path toward (10, 10)
+    // Advance another tick -- homing should recalculate velocity toward (10, 10)
     gameLoop.tick();
-    spatial.commit();
 
-    const projPos = spatial.getEntityPosition(projId);
-    const projData = spatial.getEntityData(projId);
+    const projData = store.getData(projId);
 
     // Projectile should still be alive and have updated targetY toward 10
-    if (projPos && projData) {
-      // The path should have been recalculated toward new target position
+    if (projData) {
       expect(projData.targetY).toBe(10);
     }
   });
@@ -100,23 +104,19 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 8,
-      targetY: 5,
-      damage: 50,
-      speed: 2,
-      lifetime: 50,
-      homing: true,
-      homingStrength: 1.0,
-      homingTargetId: targetId,
-      ephemeral: true,
-    });
-    spatial.commit();
+    projectileSystem.spawnProjectile(
+      makeContext(), 0, 5, 8, 5, 50, {
+        speed: 2,
+        lifetime: 50,
+        homing: true,
+        homingStrength: 1.0,
+        homingTargetId: targetId,
+      }
+    );
 
     // Act: advance several ticks until projectile reaches target
     for (let i = 0; i < 10; i++) {
       gameLoop.tick();
-      spatial.commit();
     }
 
     // Assert: target should have taken damage
@@ -137,32 +137,24 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    const projId = spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 5,
-      targetY: 5,
-      damage: 50,
-      speed: 1,
-      lifetime: 50,
-      homing: true,
-      homingStrength: 1.0,
-      homingTargetId: targetId,
-      piercing: true,
-      maxPierces: 5,
-      ephemeral: true,
-    });
-    spatial.commit();
+    projectileSystem.spawnProjectile(
+      makeContext(), 0, 5, 5, 5, 50, {
+        speed: 1,
+        lifetime: 50,
+        homing: true,
+        homingStrength: 1.0,
+        homingTargetId: targetId,
+        piercing: true,
+        maxPierces: 5,
+      }
+    );
 
     // Act: advance until projectile kills the target and passes through
     for (let i = 0; i < 12; i++) {
       gameLoop.tick();
-      spatial.commit();
     }
 
-    // Assert: projectile should still exist (piercing) and continue on path
-    // even though target is dead. It should not recalculate toward dead target.
-    const projPos = spatial.getEntityPosition(projId);
-    // Projectile may have expired by lifetime or reached end of path.
-    // The key assertion is no error was thrown and the system handled dead target gracefully.
+    // Assert: no error was thrown and the system handled dead target gracefully.
     expect(true).toBe(true);
   });
 
@@ -176,27 +168,23 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    const projId = spatial.spawn('projectile', 0, 0, GameLayers.EPHEMERALS, {
-      targetX: 15,
-      targetY: 0,
-      damage: 25,
-      speed: 1,
-      lifetime: 50,
-      homing: true,
-      homingStrength: 0.5,
-      homingTargetId: targetId,
-      ephemeral: true,
-    });
-    spatial.commit();
+    const projId = projectileSystem.spawnProjectile(
+      makeContext(), 0, 0, 15, 0, 25, {
+        speed: 1,
+        lifetime: 50,
+        homing: true,
+        homingStrength: 0.5,
+        homingTargetId: targetId,
+      }
+    );
 
     // Act: advance a few ticks
     for (let i = 0; i < 3; i++) {
       gameLoop.tick();
-      spatial.commit();
     }
 
     // Assert: projectile target should have partially shifted toward (15, 15)
-    const projData = spatial.getEntityData(projId);
+    const projData = store.getData(projId);
     if (projData && 'targetY' in projData) {
       // With strength 0.5, targetY should be between 0 and 15 (partially adjusted)
       const targetY = projData.targetY as number;
@@ -215,24 +203,20 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    const projId = spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 19,
-      targetY: 5,
-      damage: 25,
-      speed: 2,
-      lifetime: 50,
-      homing: false,
-      homingTargetId: targetId,
-      ephemeral: true,
-    });
-    spatial.commit();
+    const projId = projectileSystem.spawnProjectile(
+      makeContext(), 0, 5, 19, 5, 25, {
+        speed: 2,
+        lifetime: 50,
+        homing: false,
+        homingTargetId: targetId,
+      }
+    );
 
     // Act
     gameLoop.tick();
-    spatial.commit();
 
     // Assert: target should not have changed (projectile aimed at (19,5) not (10,10))
-    const projData = spatial.getEntityData(projId);
+    const projData = store.getData(projId);
     if (projData && 'targetY' in projData) {
       expect(projData.targetY).toBe(5);
     }

@@ -326,15 +326,13 @@ export class NPCBrainSystem extends BaseTickedSystem {
     const delta = this.directionToDelta(dir);
     const range = weaponConfig.range ?? 10;
 
-    const startX = pos.x + delta.dx;
-    const startY = pos.y + delta.dy;
     const targetX = pos.x + delta.dx * range;
     const targetY = pos.y + delta.dy * range;
 
     this.projectileSystem.spawnProjectile(
       context,
-      startX,
-      startY,
+      pos.x, // Launcher cell -- spawnProjectile computes edge offset
+      pos.y,
       targetX,
       targetY,
       weaponConfig.damage,

@@ -22,4 +22,5 @@ export * from './scene-connection.trait';
 export * from './objective.trait';
 export * from './stun.trait';
 export * from './chain-follow.trait';
+export * from './free-body.trait';
 export * from './trait-guards';

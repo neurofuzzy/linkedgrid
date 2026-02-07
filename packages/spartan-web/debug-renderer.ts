@@ -31,6 +31,7 @@ import type { GameRuntime } from '../spartan/core/game-runtime';
 import type { VisualEvent } from '../spartan/core/visual-event-bus';
 import type { VisualEffect } from '../spartan/core/effects-queue';
 import type { EntityData } from '../spartan/entities/entity.types';
+import type { FreeBodyStore } from '../spartan/core/free-body-store';
 import { Direction } from '../spartan/core/grid/direction';
 import { GameLayers } from '../spartan/config/layers.config';
 
@@ -319,6 +320,10 @@ export class DebugCanvasRenderer {
   private currPositions: Map<number, PositionSnapshot> = new Map();
   private lastSceneId: string | null = null;
 
+  // Free-body position interpolation (projectiles, flying entities)
+  private prevFreePositions: Map<number, { x: number; y: number }> = new Map();
+  private currFreePositions: Map<number, { x: number; y: number }> = new Map();
+
   constructor(canvas: HTMLCanvasElement, config?: Partial<DebugRendererConfig>) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
@@ -411,6 +416,8 @@ export class DebugCanvasRenderer {
     this.entityTints.clear();
     this.prevPositions.clear();
     this.currPositions.clear();
+    this.prevFreePositions.clear();
+    this.currFreePositions.clear();
     this.lastTickCount = -1;
   }
 
@@ -467,6 +474,15 @@ export class DebugCanvasRenderer {
     for (const [entityId, pos] of scene.spatial.getAllPositions()) {
       this.currPositions.set(entityId, { x: pos.x, y: pos.y, layer: pos.layer });
     }
+
+    // Also snapshot free-body positions (projectiles, flying entities)
+    this.currFreePositions.clear();
+    const freeBody = this.runtime.freeBody;
+    if (freeBody) {
+      for (const [entityId, pos] of freeBody.entries()) {
+        this.currFreePositions.set(entityId, { x: pos.x, y: pos.y });
+      }
+    }
   }
 
   private updateInterpolation(): void {
@@ -478,6 +494,8 @@ export class DebugCanvasRenderer {
     if (sceneId !== this.lastSceneId) {
       this.prevPositions.clear();
       this.currPositions.clear();
+      this.prevFreePositions.clear();
+      this.currFreePositions.clear();
       this.snapshotPositions();
       this.lastTickTime = performance.now();
       this.lastTickCount = currentTick;
@@ -491,6 +509,8 @@ export class DebugCanvasRenderer {
       // Tick advanced — swap snapshots
       this.prevPositions = this.currPositions;
       this.currPositions = new Map();
+      this.prevFreePositions = this.currFreePositions;
+      this.currFreePositions = new Map();
       this.snapshotPositions();
       this.lastTickTime = performance.now();
       this.lastTickCount = currentTick;
@@ -512,6 +532,26 @@ export class DebugCanvasRenderer {
     const dx = Math.abs(curr.x - prev.x);
     const dy = Math.abs(curr.y - prev.y);
     if (dx + dy > 2) {
+      return { x: curr.x, y: curr.y };
+    }
+
+    // Compute interpolation factor
+    const elapsed = now - this.lastTickTime;
+    const t = Math.min(1, Math.max(0, elapsed / this.tickDurationMs));
+
+    return {
+      x: prev.x + (curr.x - prev.x) * t,
+      y: prev.y + (curr.y - prev.y) * t,
+    };
+  }
+
+  /** Get interpolated position for a free-body entity. Uses float precision. */
+  private getInterpolatedFreePos(entityId: number, now: number): { x: number; y: number } | null {
+    const curr = this.currFreePositions.get(entityId);
+    if (!curr) return null;
+
+    const prev = this.prevFreePositions.get(entityId);
+    if (!prev) {
       return { x: curr.x, y: curr.y };
     }
 
@@ -618,6 +658,11 @@ export class DebugCanvasRenderer {
 
       this.drawEntity(ctx, interpPos.x, interpPos.y, ent.data, ent.id, ent.layer, alpha, cellSize, isRound, now, isPulseTarget, sizeScale);
     }
+
+    // 4b. Draw free-body entities (projectiles, flying entities)
+    // These are NOT on the grid, so they don't appear in getAllPositions().
+    // We render them from the FreeBodyStore with float precision.
+    this.renderFreeBodyEntities(ctx, spatial, now, cellSize);
 
     // 5. Render screen-space effects
     if (this.config.showEffects) {
@@ -821,6 +866,40 @@ export class DebugCanvasRenderer {
     }
 
     ctx.globalAlpha = 1.0;
+  }
+
+  // -----------------------------------------------------------------------
+  // Free-body entity rendering (projectiles, flying entities)
+  // -----------------------------------------------------------------------
+
+  private renderFreeBodyEntities(
+    ctx: CanvasRenderingContext2D,
+    spatial: { getEntityData: (id: number) => EntityData | undefined },
+    now: number,
+    cs: number
+  ): void {
+    for (const [entityId] of this.currFreePositions) {
+      const data = spatial.getEntityData(entityId);
+      if (!data) continue;
+
+      // Get interpolated float position
+      const interpPos = this.getInterpolatedFreePos(entityId, now);
+      if (!interpPos) continue;
+
+      // Free bodies render on the EPHEMERALS layer visually
+      const alpha = LAYER_ALPHA[GameLayers.EPHEMERALS] ?? 0.85;
+      const sizeScale = SMALL_ENTITY_TYPES.has(data.type) ? 0.35 : 1.0;
+
+      // Free-body positions are in world-space where cell center = (cx+0.5, cy+0.5).
+      // drawEntity expects grid-space where cell center = cx (it adds cs/2 internally).
+      // Subtract 0.5 to convert world-space → drawEntity-compatible coords.
+      this.drawEntity(
+        ctx, interpPos.x - 0.5, interpPos.y - 0.5, data, entityId,
+        GameLayers.EPHEMERALS, alpha, cs,
+        true, // isRound -- projectiles are circles
+        now, false, sizeScale
+      );
+    }
   }
 
   // -----------------------------------------------------------------------

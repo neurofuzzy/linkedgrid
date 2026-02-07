@@ -92,14 +92,15 @@ describe('PlayerWeaponSystem', () => {
     inputProvider.setSecondary(true);
     gameLoop.tick();
 
-    // Assert: A projectile was spawned on EPHEMERALS layer
-    // Projectile should be at (6,5) - one cell to the right
-    const allIds = spatial.getEntityIdsInCell(6, 5);
-    const projectileIds = allIds.filter(id => {
-      const pos = spatial.getEntityPosition(id);
-      return pos && pos.layer === GameLayers.EPHEMERALS;
-    });
-    expect(projectileIds.length).toBeGreaterThanOrEqual(1);
+    // Assert: A projectile was spawned in FreeBodyStore (free body, not on grid)
+    let projectileCount = 0;
+    for (const [eid] of gameLoop.freeBody.entries()) {
+      const data = spatial.getEntityData(eid);
+      if (data?.type === 'projectile') {
+        projectileCount++;
+      }
+    }
+    expect(projectileCount).toBeGreaterThanOrEqual(1);
 
     // Assert: Ammo was consumed
     const playerData = spatial.getEntityData(playerId);

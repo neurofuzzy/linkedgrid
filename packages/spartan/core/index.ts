@@ -13,3 +13,4 @@ export * from './input-provider';
 export * from './system-registry';
 export * from './visual-event-bus';
 export * from './effects-queue';
+export * from './free-body-store';

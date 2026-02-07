@@ -313,22 +313,22 @@ describe('Freeze projectile applies stun', () => {
     });
     spatial.commit();
 
-    // Fire freeze projectile toward enemy
-    spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 5,
-      targetY: 5,
-      damage: 5,
+    // Fire freeze projectile toward enemy (free body, not grid)
+    const ctx = {
+      tick: 0,
+      overlaps: [] as never[],
+      spatial: spatial as unknown as import('../core/types').GameContext['spatial'],
+      freeBody: gameLoop.freeBody,
+    };
+    projectileSystem.spawnProjectile(ctx, 0, 5, 5, 5, 5, {
       damageType: 'freeze',
       speed: 2,
       lifetime: 50,
-      ephemeral: true,
     });
-    spatial.commit();
 
     // Act: advance until projectile reaches enemy
     for (let i = 0; i < 10; i++) {
       gameLoop.tick();
-      spatial.commit();
     }
 
     // Assert: enemy should be stunned
@@ -348,20 +348,20 @@ describe('Freeze projectile applies stun', () => {
     });
     spatial.commit();
 
-    spatial.spawn('projectile', 0, 5, GameLayers.EPHEMERALS, {
-      targetX: 5,
-      targetY: 5,
-      damage: 15,
+    const ctx = {
+      tick: 0,
+      overlaps: [] as never[],
+      spatial: spatial as unknown as import('../core/types').GameContext['spatial'],
+      freeBody: gameLoop.freeBody,
+    };
+    projectileSystem.spawnProjectile(ctx, 0, 5, 5, 5, 15, {
       damageType: 'freeze',
       speed: 2,
       lifetime: 50,
-      ephemeral: true,
     });
-    spatial.commit();
 
     for (let i = 0; i < 10; i++) {
       gameLoop.tick();
-      spatial.commit();
     }
 
     // Assert: enemy should have taken damage AND be stunned

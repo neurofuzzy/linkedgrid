@@ -4,6 +4,7 @@
 import { BaseEntityData } from './base.entity';
 import { HasPropagation, HasFloorEffect, HasColor, HasDensity, HasLiquid, HasHealth, HasTemperature } from '../traits';
 import { HasProjectile } from '../traits/projectile.trait';
+import type { HasFreeBody } from '../traits/free-body.trait';
 
 export type FireVisualData = BaseEntityData & {
   type: 'fire-visual';
@@ -33,11 +34,14 @@ export type ExplosionVisualData = BaseEntityData & {
 /**
  * ProjectileData - Moving projectile entity.
  * Used for bullets, arrows, fireballs, etc.
+ *
+ * Projectiles are free-body entities: they do NOT occupy grid cells.
+ * Position is tracked via FreeBodyStore with sub-cell float precision.
  */
 export type ProjectileData = BaseEntityData & {
   type: 'projectile';
   ephemeral?: boolean;
-} & HasProjectile & Partial<HasColor>;
+} & HasProjectile & HasFreeBody & Partial<HasColor>;
 
 /**
  * RayEffectData - Visual ray/beam effect.
