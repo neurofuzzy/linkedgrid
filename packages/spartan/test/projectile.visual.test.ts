@@ -261,6 +261,129 @@ describe('ProjectileSystem', () => {
     expect(data).toBeUndefined();
   });
 
+  // -----------------------------------------------------------------------
+  // Wall collision surface precision tests
+  //
+  // Projectiles must stop at the wall surface (within WALL_EPSILON ≈ 0.001),
+  // NOT a full sub-step back (which was 0.5 cells too far on +x/+y sides).
+  // -----------------------------------------------------------------------
+
+  describe('wall collision stops at surface', () => {
+    it('+x direction: wall surface precision', () => {
+      // Wall at cell (8, 5) — left face at x=8.0
+      spatial.spawn('wall', 8, 5, GameLayers.WALLS, {});
+      spatial.commit();
+      spatial.syncMasks();
+
+      // Spawn at cell (6, 5) targeting east, speed 1
+      const projectileId = projectileSystem.spawnProjectile(
+        makeContext(), 6, 5, 15, 5, 10, { speed: 1 }
+      );
+
+      // Tick 1: init, skip
+      gameLoop.tick();
+
+      // Projectile spawns at (7.0, 5.5) — right edge of cell 6
+      // Tick 2: moves +1 → (8.0, 5.5) enters cell 8 → wall hit!
+      // Should stop at x ≈ 8.0 - epsilon, not at 7.5
+      gameLoop.tick();
+
+      // Projectile should be in impact state (position committed at wall surface)
+      const pos = gameLoop.freeBody.getPosition(projectileId);
+      if (pos) {
+        // Should be very close to x=8.0 (wall surface), not 7.5
+        expect(pos.x).toBeGreaterThan(7.9);
+        expect(pos.x).toBeLessThan(8.0);
+        expect(pos.y).toBeCloseTo(5.5, 2);
+      }
+    });
+
+    it('-x direction: wall surface precision', () => {
+      // Wall at cell (3, 5) — right face at x=4.0
+      spatial.spawn('wall', 3, 5, GameLayers.WALLS, {});
+      spatial.commit();
+      spatial.syncMasks();
+
+      // Spawn at cell (5, 5) targeting west, speed 1
+      const projectileId = projectileSystem.spawnProjectile(
+        makeContext(), 5, 5, 0, 5, 10, { speed: 1 }
+      );
+
+      // Tick 1: init, skip
+      gameLoop.tick();
+
+      // Projectile spawns at (5.0, 5.5) — left edge of cell 5
+      // Tick 2: moves -1 → (4.0, 5.5), cell 4, no wall
+      gameLoop.tick();
+      // Tick 3: tries to enter cell 3 → wall hit, stops at surface ≈ 4.0
+      // Cell 3 occupies [3.0, 4.0) so x=4.0 is the boundary (not inside wall).
+      gameLoop.tick();
+
+      const pos = gameLoop.freeBody.getPosition(projectileId);
+      if (pos) {
+        // Should be at or very near x=4.0 (wall surface), not 4.5 (old sub-step back)
+        expect(pos.x).toBeGreaterThanOrEqual(4.0);
+        expect(pos.x).toBeLessThan(4.01);
+        expect(pos.y).toBeCloseTo(5.5, 2);
+      }
+    });
+
+    it('+y direction: wall surface precision', () => {
+      // Wall at cell (5, 8) — top face at y=8.0
+      spatial.spawn('wall', 5, 8, GameLayers.WALLS, {});
+      spatial.commit();
+      spatial.syncMasks();
+
+      // Spawn at cell (5, 6) targeting south, speed 1
+      const projectileId = projectileSystem.spawnProjectile(
+        makeContext(), 5, 6, 5, 15, 10, { speed: 1 }
+      );
+
+      // Tick 1: init, skip
+      gameLoop.tick();
+
+      // Projectile spawns at (5.5, 7.0)
+      // Tick 2: moves +1 → (5.5, 8.0) enters cell 8 → wall hit!
+      // Should stop at y ≈ 8.0 - epsilon, not 7.5
+      gameLoop.tick();
+
+      const pos = gameLoop.freeBody.getPosition(projectileId);
+      if (pos) {
+        expect(pos.y).toBeGreaterThan(7.9);
+        expect(pos.y).toBeLessThan(8.0);
+        expect(pos.x).toBeCloseTo(5.5, 2);
+      }
+    });
+
+    it('-y direction: wall surface precision', () => {
+      // Wall at cell (5, 3) — bottom face at y=4.0
+      // Cell 3 occupies [3.0, 4.0) so y=4.0 is the boundary (not inside wall).
+      spatial.spawn('wall', 5, 3, GameLayers.WALLS, {});
+      spatial.commit();
+      spatial.syncMasks();
+
+      // Spawn at cell (5, 5) targeting north, speed 1
+      const projectileId = projectileSystem.spawnProjectile(
+        makeContext(), 5, 5, 5, 0, 10, { speed: 1 }
+      );
+
+      // Tick 1: init, skip
+      gameLoop.tick();
+      // Tick 2: moves to (5.5, 4.0), cell 4, no wall
+      gameLoop.tick();
+      // Tick 3: tries to enter cell 3 → wall hit, stops at surface ≈ 4.0
+      gameLoop.tick();
+
+      const pos = gameLoop.freeBody.getPosition(projectileId);
+      if (pos) {
+        // Should be at or very near y=4.0 (wall surface), not 4.5 (old sub-step back)
+        expect(pos.y).toBeGreaterThanOrEqual(4.0);
+        expect(pos.y).toBeLessThan(4.01);
+        expect(pos.x).toBeCloseTo(5.5, 2);
+      }
+    });
+  });
+
   it('float positions provide sub-cell precision', () => {
     // Spawn projectile at float (5.5, 10.5) targeting diagonal
     const projectileId = projectileSystem.spawnProjectile(

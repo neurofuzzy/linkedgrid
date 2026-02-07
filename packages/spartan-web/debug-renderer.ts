@@ -726,12 +726,17 @@ export class DebugCanvasRenderer {
     isRound: boolean,
     now: number,
     isPulseTarget: boolean,
-    sizeScale = 1.0
+    sizeScale = 1.0,
+    /** When true, x/y are world-space floats (pixelCenter = floatPos * cs).
+     *  When false (default), x/y are grid cell indices (pixelCenter = cellIndex * cs + cs/2). */
+    isFloatPosition = false
   ): void {
     const px = x * cs;
     const py = y * cs;
-    const cx = px + cs / 2;
-    const cy = py + cs / 2;
+    // Grid entities: cell index → add half-cell offset to get center.
+    // Float entities: already world-space centers → no offset needed.
+    const cx = isFloatPosition ? px : px + cs / 2;
+    const cy = isFloatPosition ? py : py + cs / 2;
 
     // --- Entity colour ---
     let color = ENTITY_COLOR_MAP[data.type] ?? '#888888';
@@ -890,14 +895,14 @@ export class DebugCanvasRenderer {
       const alpha = LAYER_ALPHA[GameLayers.EPHEMERALS] ?? 0.85;
       const sizeScale = SMALL_ENTITY_TYPES.has(data.type) ? 0.35 : 1.0;
 
-      // Free-body positions are in world-space where cell center = (cx+0.5, cy+0.5).
-      // drawEntity expects grid-space where cell center = cx (it adds cs/2 internally).
-      // Subtract 0.5 to convert world-space → drawEntity-compatible coords.
+      // Free-body positions are world-space floats (1.0 per cell, cell center = cx+0.5).
+      // Pass isFloatPosition=true so drawEntity uses floatPos*cs (no half-cell offset).
       this.drawEntity(
-        ctx, interpPos.x - 0.5, interpPos.y - 0.5, data, entityId,
+        ctx, interpPos.x, interpPos.y, data, entityId,
         GameLayers.EPHEMERALS, alpha, cs,
         true, // isRound -- projectiles are circles
-        now, false, sizeScale
+        now, false, sizeScale,
+        true  // isFloatPosition — world-space float coordinates
       );
     }
   }

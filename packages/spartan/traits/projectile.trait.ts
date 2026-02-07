@@ -5,8 +5,8 @@
  * Projectiles use parametric float movement for smooth trajectories at any angle.
  *
  * Projectiles are "free body" entities -- they do NOT occupy grid cells.
- * Position is tracked via FreeBodyStore with sub-cell float precision.
- * Collision detection uses cell snapping (Math.round) against grid entities.
+ * Position is tracked via FreeBodyStore in world-space float coordinates
+ * (same scale as grid: 1.0 per cell; cell center = cellX + 0.5).
  *
  * Used by ProjectileSystem to handle movement, collision, and damage.
  */
@@ -93,10 +93,10 @@ export interface HasProjectile {
   vx?: number;
   /** Velocity Y component per tick (computed from target + speed) */
   vy?: number;
-  /** Float X position at spawn (for distance calculations) */
-  spawnFx?: number;
-  /** Float Y position at spawn (for distance calculations) */
-  spawnFy?: number;
+  /** Float X position at spawn in world-space (for distance calculations) */
+  spawnFloatX?: number;
+  /** Float Y position at spawn in world-space (for distance calculations) */
+  spawnFloatY?: number;
   /** Tick when projectile was spawned */
   spawnTick?: number;
   /**

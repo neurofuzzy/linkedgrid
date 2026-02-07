@@ -1066,16 +1066,16 @@ export function hasProjectile(
  * and do NOT occupy grid cells.
  *
  * @param entity - Entity to check
- * @returns true if entity has free body trait (fx and fy)
+ * @returns true if entity has free body trait (floatX and floatY)
  */
 export function hasFreeBody(
   entity: EntityData
 ): entity is EntityData & HasFreeBody {
   return (
-    'fx' in entity &&
-    typeof entity.fx === 'number' &&
-    'fy' in entity &&
-    typeof entity.fy === 'number'
+    'floatX' in entity &&
+    typeof entity.floatX === 'number' &&
+    'floatY' in entity &&
+    typeof entity.floatY === 'number'
   );
 }
 

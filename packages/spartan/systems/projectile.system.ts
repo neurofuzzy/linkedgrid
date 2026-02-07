@@ -196,8 +196,8 @@ export class ProjectileSystem extends BaseTickedSystem {
       projectile.vy = (dy / dist) * speed;
     }
 
-    projectile.spawnFx = pos.x;
-    projectile.spawnFy = pos.y;
+    projectile.spawnFloatX = pos.x;
+    projectile.spawnFloatY = pos.y;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;
   }
@@ -287,8 +287,8 @@ export class ProjectileSystem extends BaseTickedSystem {
     if (vx === 0 && vy === 0) return true;
 
     const speed = projectile.speed ?? 1;
-    const fromFx = pos.x;
-    const fromFy = pos.y;
+    const fromFloatX = pos.x;
+    const fromFloatY = pos.y;
 
     // Total displacement this tick
     const totalDx = vx;
@@ -299,17 +299,19 @@ export class ProjectileSystem extends BaseTickedSystem {
     const stepDx = totalDx / steps;
     const stepDy = totalDy / steps;
 
-    let fx = pos.x;
-    let fy = pos.y;
-    let prevCellX = Math.floor(fx);
-    let prevCellY = Math.floor(fy);
+    let floatX = pos.x;
+    let floatY = pos.y;
+    let prevCellX = Math.floor(floatX);
+    let prevCellY = Math.floor(floatY);
 
     for (let step = 0; step < steps; step++) {
-      fx += stepDx;
-      fy += stepDy;
+      const prevFloatX = floatX;
+      const prevFloatY = floatY;
+      floatX += stepDx;
+      floatY += stepDy;
 
-      const cellX = Math.floor(fx);
-      const cellY = Math.floor(fy);
+      const cellX = Math.floor(floatX);
+      const cellY = Math.floor(floatY);
       const cellChanged = cellX !== prevCellX || cellY !== prevCellY;
 
       // --- Wall check (only on cell change) ---
@@ -319,8 +321,8 @@ export class ProjectileSystem extends BaseTickedSystem {
 
         // Check if we've left the grid bounds
         if (!context.spatial.grid.isValid(cellX, cellY)) {
-          freeBody.setPosition(entityId, fx, fy);
-          this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+          freeBody.setPosition(entityId, floatX, floatY);
+          this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
           this.emitImpactEvent(entityId, freeBody, 'out-of-bounds');
           return true;
         }
@@ -329,38 +331,43 @@ export class ProjectileSystem extends BaseTickedSystem {
 
         // Wall collision (AABB — point inside blocked cell)
         if (!cell || context.spatial.isBlocked(cell)) {
+          // Compute exact wall surface position via parametric intersection
+          const wallStop = this.computeWallStopPosition(
+            prevFloatX, prevFloatY, stepDx, stepDy, cellX, cellY
+          );
+
           if (projectile.bouncing) {
             const bounceCount = projectile.bounceCount ?? 0;
             const maxBounces = projectile.maxBounces ?? 1;
 
             if (bounceCount < maxBounces) {
               projectile.bounceCount = bounceCount + 1;
-              this.bounceVelocity(context, projectile, fx, fy, stepDx, stepDy);
+              this.bounceVelocity(context, projectile, floatX, floatY, stepDx, stepDy);
 
-              // Step back to before the wall and continue from there
-              fx -= stepDx;
-              fy -= stepDy;
-              freeBody.setPosition(entityId, fx, fy);
-              this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+              // Place at wall surface and continue next tick with reflected velocity
+              floatX = wallStop.x;
+              floatY = wallStop.y;
+              freeBody.setPosition(entityId, floatX, floatY);
+              this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
               return false; // Continue next tick with new velocity
             }
           }
 
-          // Hit wall — update to position just before wall
-          fx -= stepDx;
-          fy -= stepDy;
-          freeBody.setPosition(entityId, fx, fy);
-          this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+          // Hit wall — place at wall surface
+          floatX = wallStop.x;
+          floatY = wallStop.y;
+          freeBody.setPosition(entityId, floatX, floatY);
+          this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
           this.emitImpactEvent(entityId, freeBody, 'wall');
           return true;
         }
       }
 
       // --- Actor collision (geometric, every sub-step) ---
-      const hitResult = this.checkEntityCollisionGeometric(context, entityId, projectile, fx, fy);
+      const hitResult = this.checkEntityCollisionGeometric(context, entityId, projectile, floatX, floatY);
       if (hitResult.hit && hitResult.destroy) {
-        freeBody.setPosition(entityId, fx, fy);
-        this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+        freeBody.setPosition(entityId, floatX, floatY);
+        this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
         this.emitImpactEvent(entityId, freeBody, 'entity');
         return true;
       }
@@ -368,33 +375,81 @@ export class ProjectileSystem extends BaseTickedSystem {
 
     // Check if projectile has reached or passed its target
     if (!projectile.homing) {
-      const spawnFx = projectile.spawnFx ?? fromFx;
-      const spawnFy = projectile.spawnFy ?? fromFy;
+      const spawnFloatX = projectile.spawnFloatX ?? fromFloatX;
+      const spawnFloatY = projectile.spawnFloatY ?? fromFloatY;
 
       // Target in world-space
       const targetWx = projectile.targetX + 0.5;
       const targetWy = projectile.targetY + 0.5;
 
       const distToTarget = Math.sqrt(
-        (targetWx - spawnFx) ** 2 + (targetWy - spawnFy) ** 2
+        (targetWx - spawnFloatX) ** 2 + (targetWy - spawnFloatY) ** 2
       );
       const distTraveled = Math.sqrt(
-        (fx - spawnFx) ** 2 + (fy - spawnFy) ** 2
+        (floatX - spawnFloatX) ** 2 + (floatY - spawnFloatY) ** 2
       );
 
       if (distTraveled >= distToTarget) {
-        freeBody.setPosition(entityId, fx, fy);
-        this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+        freeBody.setPosition(entityId, floatX, floatY);
+        this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
         this.emitImpactEvent(entityId, freeBody, 'end-of-path');
         return true;
       }
     }
 
-    // Update position
-    freeBody.setPosition(entityId, fx, fy);
-    this.emitMovedEvent(entityId, fromFx, fromFy, fx, fy);
+    // No collision — commit new position
+    freeBody.setPosition(entityId, floatX, floatY);
+    this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
 
     return false;
+  }
+
+  /**
+   * Compute the float position just before a wall cell boundary.
+   *
+   * Uses parametric intersection: given a sub-step from (prevFloatX, prevFloatY)
+   * with delta (stepDx, stepDy) entering wall cell (wallCellX, wallCellY),
+   * finds the exact t at which the projectile crosses into the cell,
+   * then returns a position just before that crossing.
+   *
+   * Wall cell occupies [wallCellX, wallCellX+1) × [wallCellY, wallCellY+1)
+   * in world-space.
+   */
+  private computeWallStopPosition(
+    prevFloatX: number,
+    prevFloatY: number,
+    stepDx: number,
+    stepDy: number,
+    wallCellX: number,
+    wallCellY: number
+  ): { x: number; y: number } {
+    const WALL_EPSILON = 0.001;
+    let t = 1.0;
+
+    // Find parametric t for X-axis crossing
+    if (stepDx !== 0) {
+      // Moving +x: hits left face (x = wallCellX)
+      // Moving -x: hits right face (x = wallCellX + 1)
+      const edgeX = stepDx > 0 ? wallCellX : wallCellX + 1;
+      const tx = (edgeX - prevFloatX) / stepDx;
+      if (tx >= 0 && tx < t) t = tx;
+    }
+
+    // Find parametric t for Y-axis crossing
+    if (stepDy !== 0) {
+      // Moving +y: hits top face (y = wallCellY)
+      // Moving -y: hits bottom face (y = wallCellY + 1)
+      const edgeY = stepDy > 0 ? wallCellY : wallCellY + 1;
+      const ty = (edgeY - prevFloatY) / stepDy;
+      if (ty >= 0 && ty < t) t = ty;
+    }
+
+    // Position just before the wall surface
+    const safeT = Math.max(0, t - WALL_EPSILON);
+    return {
+      x: prevFloatX + stepDx * safeT,
+      y: prevFloatY + stepDy * safeT,
+    };
   }
 
   /**
@@ -406,16 +461,16 @@ export class ProjectileSystem extends BaseTickedSystem {
   private bounceVelocity(
     context: GameContext,
     projectile: HasProjectile,
-    hitFx: number,
-    hitFy: number,
+    hitFloatX: number,
+    hitFloatY: number,
     stepDx: number,
     stepDy: number
   ): void {
     // Determine wall orientation by testing adjacent cells
-    const prevCellX = Math.floor(hitFx - stepDx);
-    const prevCellY = Math.floor(hitFy - stepDy);
-    const hitCellX = Math.floor(hitFx);
-    const hitCellY = Math.floor(hitFy);
+    const prevCellX = Math.floor(hitFloatX - stepDx);
+    const prevCellY = Math.floor(hitFloatY - stepDy);
+    const hitCellX = Math.floor(hitFloatX);
+    const hitCellY = Math.floor(hitFloatY);
 
     const dx = hitCellX - prevCellX;
     const dy = hitCellY - prevCellY;
@@ -461,11 +516,11 @@ export class ProjectileSystem extends BaseTickedSystem {
     context: GameContext,
     projectileId: number,
     projectile: HasProjectile,
-    fx: number,
-    fy: number
+    floatX: number,
+    floatY: number
   ): { hit: boolean; destroy: boolean } {
-    const centerCellX = Math.floor(fx);
-    const centerCellY = Math.floor(fy);
+    const centerCellX = Math.floor(floatX);
+    const centerCellY = Math.floor(floatY);
 
     // Scan 3x3 neighborhood for potential hits
     for (let dy = -1; dy <= 1; dy++) {
@@ -493,7 +548,7 @@ export class ProjectileSystem extends BaseTickedSystem {
           const entityWy = targetPos.y + 0.5;
 
           // Circular collision: distance from projectile point to entity center
-          const distSq = (fx - entityWx) ** 2 + (fy - entityWy) ** 2;
+          const distSq = (floatX - entityWx) ** 2 + (floatY - entityWy) ** 2;
           if (distSq >= ACTOR_HIT_RADIUS * ACTOR_HIT_RADIUS) continue;
 
           // --- HIT ---
@@ -580,11 +635,11 @@ export class ProjectileSystem extends BaseTickedSystem {
     const dy = targetY - y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    let spawnFx = centerX;
-    let spawnFy = centerY;
+    let spawnFloatX = centerX;
+    let spawnFloatY = centerY;
     if (dist > 0) {
-      spawnFx = centerX + (dx / dist) * SPAWN_RADIUS;
-      spawnFy = centerY + (dy / dist) * SPAWN_RADIUS;
+      spawnFloatX = centerX + (dx / dist) * SPAWN_RADIUS;
+      spawnFloatY = centerY + (dy / dist) * SPAWN_RADIUS;
     }
 
     // Create entity in store without grid placement
@@ -592,15 +647,15 @@ export class ProjectileSystem extends BaseTickedSystem {
       targetX,
       targetY,
       damage,
-      fx: spawnFx,
-      fy: spawnFy,
+      floatX: spawnFloatX,
+      floatY: spawnFloatY,
       ephemeral: true,
       ...options,
     });
 
     // Register in FreeBodyStore for float position tracking (world-space)
     if (freeBody) {
-      freeBody.register(projectileId, spawnFx, spawnFy);
+      freeBody.register(projectileId, spawnFloatX, spawnFloatY);
     }
 
     // Track in our active set
@@ -611,8 +666,8 @@ export class ProjectileSystem extends BaseTickedSystem {
       this.visualEventBus.emit({
         type: 'projectile:launched',
         entityId: projectileId,
-        x: Math.floor(spawnFx),
-        y: Math.floor(spawnFy),
+        x: Math.floor(spawnFloatX),
+        y: Math.floor(spawnFloatY),
         data: {
           ownerId: options.ownerId,
           targetX,
@@ -620,8 +675,8 @@ export class ProjectileSystem extends BaseTickedSystem {
           speed: options.speed ?? 1,
           color: options.color,
           damageType: options.damageType,
-          fx: spawnFx,
-          fy: spawnFy,
+          floatX: spawnFloatX,
+          floatY: spawnFloatY,
         },
       });
     }
@@ -647,22 +702,22 @@ export class ProjectileSystem extends BaseTickedSystem {
    */
   private emitMovedEvent(
     entityId: number,
-    fromFx: number,
-    fromFy: number,
-    toFx: number,
-    toFy: number
+    fromFloatX: number,
+    fromFloatY: number,
+    toFloatX: number,
+    toFloatY: number
   ): void {
     if (!this.visualEventBus) return;
     this.visualEventBus.emit({
       type: 'projectile:moved',
       entityId,
-      x: Math.floor(toFx),
-      y: Math.floor(toFy),
+      x: Math.floor(toFloatX),
+      y: Math.floor(toFloatY),
       data: {
-        fromFx,
-        fromFy,
-        toFx,
-        toFy,
+        fromFloatX,
+        fromFloatY,
+        toFloatX,
+        toFloatY,
       },
     });
   }
@@ -684,8 +739,8 @@ export class ProjectileSystem extends BaseTickedSystem {
       x: Math.floor(pos.x),
       y: Math.floor(pos.y),
       data: {
-        fx: pos.x,
-        fy: pos.y,
+        floatX: pos.x,
+        floatY: pos.y,
         reason,
       },
     });

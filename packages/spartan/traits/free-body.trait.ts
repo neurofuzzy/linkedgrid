@@ -7,22 +7,27 @@
  *
  * Use cases: projectiles, flying entities, floating particles.
  *
+ * Coordinate convention (world-space, same scale as grid: 1.0 per cell):
+ *   - Grid cell (cx, cy) occupies area [cx, cx+1) × [cy, cy+1)
+ *   - Cell center in float-space = (cx + 0.5, cy + 0.5)
+ *   - Renderer conversion: pixelCenter = floatX * cellSize (no half-cell offset)
+ *
  * Collision detection against grid entities works by snapping
- * (fx, fy) to the nearest integer cell via Math.round().
+ * (floatX, floatY) to the owning grid cell via Math.floor().
  */
 
 /**
  * HasFreeBody - Trait for entities with sub-cell float positions.
  *
  * Entities with this trait:
- * - Have float (x, y) positions with sub-cell precision
+ * - Have float (floatX, floatY) positions with sub-cell precision
  * - Do NOT occupy grid cells (invisible to getEntityIdsInCell)
  * - Can overlap each other without conflict
- * - Use cell snapping for collision detection against grid entities
+ * - Use Math.floor() cell snapping for collision detection against grid entities
  */
 export interface HasFreeBody {
-  /** Float X position (sub-cell precision) */
-  fx: number;
-  /** Float Y position (sub-cell precision) */
-  fy: number;
+  /** Float X position in world-space (1.0 = one cell width). */
+  floatX: number;
+  /** Float Y position in world-space (1.0 = one cell height). */
+  floatY: number;
 }

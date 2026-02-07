@@ -4,26 +4,31 @@
  * Used for entities that move freely without occupying grid cells.
  * Projectiles, flying entities, particle-like entities, etc.
  *
+ * Coordinate convention (world-space, same scale as grid: 1.0 per cell):
+ *   - Grid cell (cx, cy) occupies area [cx, cx+1) × [cy, cy+1)
+ *   - Cell center in float-space = (cx + 0.5, cy + 0.5)
+ *   - Renderer conversion: pixelCenter = floatX * cellSize (no half-cell offset)
+ *
  * Entities in FreeBodyStore:
- * - Have float (x, y) positions with sub-cell precision
+ * - Have float (floatX, floatY) positions with sub-cell precision
  * - Do NOT occupy grid cells (invisible to getEntityIdsInCell)
  * - Can overlap each other without conflict
- * - Use grid cell snapping for collision detection against grid entities
+ * - Use Math.floor() to snap to owning grid cell for collision detection
  * - Still have data in EntityStore (accessible via getEntityData)
  *
  * @example
  * ```typescript
  * const freeBody = new FreeBodyStore();
  *
- * // Register a projectile at float position
- * freeBody.register(projectileId, 5.3, 7.8);
+ * // Register a projectile at float position (center of cell 5,7)
+ * freeBody.register(projectileId, 5.5, 7.5);
  *
  * // Update position each tick
- * freeBody.setPosition(projectileId, 5.6, 8.1);
+ * freeBody.setPosition(projectileId, 5.8, 7.9);
  *
- * // Get snapped cell for collision check
+ * // Get owning cell via Math.floor
  * const cell = freeBody.getCellXY(projectileId);
- * // { x: 6, y: 8 }
+ * // { x: 5, y: 7 }
  *
  * // Clean up
  * freeBody.remove(projectileId);
@@ -34,36 +39,36 @@ export class FreeBodyStore {
   private positions: Map<number, { x: number; y: number }> = new Map();
 
   /**
-   * Register a free entity at a float position.
+   * Register a free entity at a float position (world-space).
    *
    * @param entityId - Entity ID (must already exist in EntityStore)
-   * @param x - Initial float X position
-   * @param y - Initial float Y position
+   * @param floatX - Initial float X position in world-space
+   * @param floatY - Initial float Y position in world-space
    */
-  register(entityId: number, x: number, y: number): void {
-    this.positions.set(entityId, { x, y });
+  register(entityId: number, floatX: number, floatY: number): void {
+    this.positions.set(entityId, { x: floatX, y: floatY });
   }
 
   /**
-   * Update a free entity's float position.
+   * Update a free entity's float position (world-space).
    *
    * @param entityId - Entity ID
-   * @param x - New float X position
-   * @param y - New float Y position
+   * @param floatX - New float X position in world-space
+   * @param floatY - New float Y position in world-space
    */
-  setPosition(entityId: number, x: number, y: number): void {
+  setPosition(entityId: number, floatX: number, floatY: number): void {
     const pos = this.positions.get(entityId);
     if (pos) {
-      pos.x = x;
-      pos.y = y;
+      pos.x = floatX;
+      pos.y = floatY;
     }
   }
 
   /**
-   * Get a free entity's float position.
+   * Get a free entity's float position (world-space).
    *
    * @param entityId - Entity ID
-   * @returns Float position or null if not registered
+   * @returns Float position {x, y} in world-space, or null if not registered
    */
   getPosition(entityId: number): { x: number; y: number } | null {
     return this.positions.get(entityId) ?? null;
