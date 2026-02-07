@@ -6,7 +6,7 @@ import type { GameContext } from '../core/types';
 import { InputProvider } from '../core/input-provider';
 import { Direction } from '../core/grid/direction';
 import type { GameManager } from '../core/game-manager';
-import { hasVisualState, hasFacing } from '../traits/trait-guards';
+import { hasVisualState, hasFacing, isStunned } from '../traits/trait-guards';
 
 /**
  * PlayerInputSystem - Translates player input into movement intents.
@@ -66,6 +66,9 @@ export class PlayerInputSystem extends BaseReactiveSystem {
     // Update visual state based on input
     const playerEntity = context.spatial.getEntityData(playerId);
     if (!playerEntity) return;
+
+    // Skip input if player is stunned
+    if (isStunned(playerEntity)) return;
 
     if (lastDirection === Direction.NONE) {
       // No input -- revert to idle if currently walking

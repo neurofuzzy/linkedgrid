@@ -1,48 +1,61 @@
 /**
- * @brief Projectile System - Handles moving projectiles with Bresenham paths.
+ * @brief Projectile System - Handles free-body projectile movement and collision.
  *
- * Projectiles move along precomputed paths, deal damage on collision,
- * and integrate with HealthSystem for damage processing.
+ * Projectiles are "free body" entities: they do NOT occupy grid cells.
+ * Position is tracked via FreeBodyStore using world-space float coordinates:
+ *   - Cell (cx, cy) center in world-space = (cx + 0.5, cy + 0.5)
+ *   - Cell boundaries are at integer values
+ *
+ * Movement uses parametric velocity for smooth trajectories at any angle.
+ * Collision detection uses geometric checks: circular for actors, AABB for walls.
+ *
+ * Projectiles skip movement on their spawn tick so the renderer can display
+ * the spawn position for at least one frame before movement begins.
  */
 import { BaseTickedSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
-import { hasProjectile, hasHealth } from '../traits/trait-guards';
-import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
-import { GameLayers } from '../config/layers.config';
+import { hasProjectile, hasHealth, hasStunnable } from '../traits/trait-guards';
 import type { HealthSystem } from './health.system';
+import type { StunSystem } from './stun.system';
 import type { HasProjectile } from '../traits/projectile.trait';
 import type { VisualEventBus } from '../core/visual-event-bus';
+import type { FreeBodyStore } from '../core/free-body-store';
+
+/**
+ * Spawn radius: half a cell. Projectile spawns at the perimeter of a circle
+ * with this radius, centered on the launcher's cell center.
+ */
+const SPAWN_RADIUS = 0.5;
+
+/**
+ * Hit radius for actor collision (circular).
+ * Projectile hits when within this distance of an actor's cell center.
+ */
+const ACTOR_HIT_RADIUS = 0.5;
 
 /**
  * ProjectileSystem - Manages autonomous projectile movement and collision.
  *
  * Features:
- * - Bresenham line algorithm for arbitrary angle movement
+ * - Parametric float movement for smooth non-orthogonal trajectories
+ * - Free-body positioning (no grid cell occupancy)
  * - Configurable speed (cells per tick)
- * - Collision detection with walls and entities
+ * - Geometric collision: circular for actors, AABB for walls
  * - Piercing projectiles (pass through targets)
  * - Bouncing projectiles (reflect off walls)
+ * - Homing projectiles (track moving targets)
  * - Lifetime expiration
  * - Integration with HealthSystem for damage
+ * - Float-precision visual events for smooth rendering
+ *
+ * Coordinate convention (world-space):
+ * - Grid cell (cx, cy) occupies area [cx, cx+1) × [cy, cy+1)
+ * - Cell center = (cx + 0.5, cy + 0.5)
+ * - Projectile positions are stored in this world-space
  *
  * @system
- * @reactsTo Entities with HasProjectile trait
- * @modifies Entity position, removes expired projectiles
- *
- * @example
- * ```typescript
- * const healthSystem = new HealthSystem();
- * const projectileSystem = new ProjectileSystem(healthSystem);
- * gameLoop.addSystem(projectileSystem);
- *
- * // Spawn a projectile
- * spatial.spawn('projectile', 5, 5, GameLayers.PROJECTILES, {
- *   targetX: 15,
- *   targetY: 10,
- *   damage: 25,
- *   speed: 2,
- * });
- * ```
+ * @reactsTo Entities with HasProjectile trait (tracked in FreeBodyStore)
+ * @modifies Entity float position, removes expired projectiles
  */
 export class ProjectileSystem extends BaseTickedSystem {
   readonly executionPhase = 'main' as const;
@@ -51,8 +64,17 @@ export class ProjectileSystem extends BaseTickedSystem {
 
   private healthSystem: HealthSystem;
 
+  /** Optional stun system for freeze projectiles */
+  private stunSystem?: StunSystem;
+
   /** Optional visual event bus for emitting launch events */
   private visualEventBus?: VisualEventBus;
+
+  /** Default stun duration for freeze projectiles (ticks) */
+  private static readonly FREEZE_STUN_DURATION = 20;
+
+  /** Active projectile entity IDs managed by this system */
+  private activeProjectiles: Set<number> = new Set();
 
   constructor(healthSystem: HealthSystem, visualEventBus?: VisualEventBus) {
     super();
@@ -60,268 +82,511 @@ export class ProjectileSystem extends BaseTickedSystem {
     this.visualEventBus = visualEventBus;
   }
 
+  /**
+   * Set the StunSystem reference for freeze projectile support.
+   */
+  setStunSystem(stunSystem: StunSystem): void {
+    this.stunSystem = stunSystem;
+  }
+
   protected onTick(context: GameContext): void {
     const currentTick = context.tick ?? 0;
+    const freeBody = context.freeBody;
+    if (!freeBody) return;
+
     const toRemove: number[] = [];
 
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      if (!context.spatial.isAlive(entityId)) continue;
-
+    for (const entityId of this.activeProjectiles) {
       const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !hasProjectile(entityData)) continue;
+      if (!entityData || !hasProjectile(entityData)) {
+        toRemove.push(entityId);
+        continue;
+      }
 
-      // Type assertion for projectile data
       const projectile = entityData as typeof entityData & HasProjectile;
 
       // Deferred removal: projectile entered impact state on a previous tick.
-      // The final move has already been committed, so the renderer had one tick
-      // to interpolate the projectile to its collision/final position.
+      // The final position has already been committed, so the renderer had one
+      // tick to interpolate the projectile to its collision/final position.
       if (projectile.impactTick !== undefined) {
         toRemove.push(entityId);
         continue;
       }
 
-      // Initialize path on first tick
-      if (!projectile.path) {
-        this.initializePath(context, entityId, projectile);
+      // Initialize velocity on first tick.
+      // We SKIP movement on the spawn tick so the renderer can display
+      // the spawn position for at least one frame.
+      if (projectile.vx === undefined || projectile.vy === undefined) {
+        this.initializeVelocity(entityId, projectile, freeBody);
         projectile.spawnTick = currentTick;
 
-        // Check entity collision at spawn position (already here, no move needed).
-        // This catches enemies standing right where the projectile appears.
-        const pos = context.spatial.getEntityPosition(entityId);
+        // Check entity collision at spawn position (geometric)
+        const pos = freeBody.getPosition(entityId);
         if (pos) {
-          const hitResult = this.checkEntityCollision(context, entityId, projectile, pos);
+          const hitResult = this.checkEntityCollisionGeometric(context, entityId, projectile, pos.x, pos.y);
           if (hitResult.hit && hitResult.destroy) {
-            // Instant collision at spawn — no move to commit, so remove immediately.
             toRemove.push(entityId);
             continue;
           }
         }
+
+        // Skip movement on spawn tick — let the renderer display spawn position
+        continue;
       }
 
       // Check lifetime expiration
       const lifetime = projectile.lifetime ?? 100;
       const age = currentTick - (projectile.spawnTick ?? currentTick);
       if (age >= lifetime) {
+        this.emitImpactEvent(entityId, freeBody, 'expired');
         toRemove.push(entityId);
         continue;
       }
 
-      // Move projectile along path
-      const destroyed = this.moveProjectile(context, entityId, projectile);
+      // Homing: recalculate velocity toward target each tick
+      if (projectile.homing) {
+        this.updateHomingVelocity(context, entityId, projectile, freeBody);
+      }
+
+      // Move projectile along velocity vector
+      const destroyed = this.moveProjectile(context, entityId, projectile, freeBody);
       if (destroyed) {
-        // Enter impact state: defer removal to next tick so the pending move
-        // (if any) commits and the renderer can interpolate to the final cell.
+        // Enter impact state: defer removal to next tick so the renderer
+        // can interpolate to the final position.
         projectile.impactTick = currentTick;
       }
     }
 
     // Remove impact/expired projectiles
     for (const entityId of toRemove) {
-      context.spatial.remove(entityId);
+      this.removeProjectile(entityId, context, freeBody);
     }
   }
 
   /**
-   * Initialize the Bresenham path for a projectile.
+   * Initialize velocity vector from spawn position toward target.
+   *
+   * Target coordinates are grid-space; we convert to world-space center
+   * (targetX + 0.5, targetY + 0.5) for accurate direction.
    */
-  private initializePath(
-    context: GameContext,
+  private initializeVelocity(
     entityId: number,
-    projectile: HasProjectile
+    projectile: HasProjectile,
+    freeBody: FreeBodyStore
   ): void {
-    const pos = context.spatial.getEntityPosition(entityId);
+    const pos = freeBody.getPosition(entityId);
     if (!pos) return;
 
-    const startCell = context.spatial.grid.cell(pos.x, pos.y);
-    if (!startCell) {
-      projectile.path = [];
-      return;
+    const speed = projectile.speed ?? 1;
+
+    // Convert grid-space target to world-space center
+    const targetWx = projectile.targetX + 0.5;
+    const targetWy = projectile.targetY + 0.5;
+
+    const dx = targetWx - pos.x;
+    const dy = targetWy - pos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist === 0) {
+      // Target is at spawn position — give a default rightward velocity
+      projectile.vx = speed;
+      projectile.vy = 0;
+    } else {
+      projectile.vx = (dx / dist) * speed;
+      projectile.vy = (dy / dist) * speed;
     }
 
-    // Clamp target coordinates to grid bounds to ensure valid path
-    const grid = context.spatial.grid;
-    const clampedTargetX = Math.max(0, Math.min(grid.width - 1, projectile.targetX));
-    const clampedTargetY = Math.max(0, Math.min(grid.height - 1, projectile.targetY));
-
-    // Update projectile target with clamped values for consistency
-    projectile.targetX = clampedTargetX;
-    projectile.targetY = clampedTargetY;
-
-    const targetCell = grid.cell(projectile.targetX, projectile.targetY);
-
-    if (!targetCell) {
-      projectile.path = [];
-      return;
-    }
-
-    // getLine excludes the start cell — path contains only cells to MOVE to.
-    // The entity is already at the start cell; spawn collision is checked
-    // separately in onTick so we don't waste a movement step.
-    const lineCells = LinkedCellUtils.getLine(startCell, targetCell);
-    projectile.path = lineCells.map((c) => ({ x: c.x, y: c.y }));
-    projectile.pathIndex = 0;
+    projectile.spawnFloatX = pos.x;
+    projectile.spawnFloatY = pos.y;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;
   }
 
   /**
-   * Move projectile along its path and check for collisions.
-   * @returns true if projectile should be destroyed
+   * Update homing projectile velocity toward its target.
+   * If the target is dead or missing, keeps the current trajectory.
+   *
+   * Target position from getEntityPosition is grid-space; we convert
+   * to world-space center for accurate direction.
+   */
+  private updateHomingVelocity(
+    context: GameContext,
+    entityId: number,
+    projectile: HasProjectile,
+    freeBody: FreeBodyStore
+  ): void {
+    const targetId = projectile.homingTargetId;
+    if (targetId === undefined) return;
+
+    // If target is dead, stop homing and continue on current trajectory
+    if (!context.spatial.isAlive(targetId)) {
+      projectile.homingTargetId = undefined;
+      projectile.homing = false;
+      return;
+    }
+
+    const targetPos = context.spatial.getEntityPosition(targetId);
+    if (!targetPos) return;
+
+    const pos = freeBody.getPosition(entityId);
+    if (!pos) return;
+
+    const speed = projectile.speed ?? 1;
+    const strength = projectile.homingStrength ?? 1.0;
+
+    // Convert grid-space target to world-space center
+    const targetWx = targetPos.x + 0.5;
+    const targetWy = targetPos.y + 0.5;
+
+    // Compute desired velocity toward target
+    const dx = targetWx - pos.x;
+    const dy = targetWy - pos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist === 0) return; // Already at target
+
+    const desiredVx = (dx / dist) * speed;
+    const desiredVy = (dy / dist) * speed;
+
+    // Blend current velocity with desired based on homingStrength
+    const currentVx = projectile.vx ?? 0;
+    const currentVy = projectile.vy ?? 0;
+
+    const blendedVx = currentVx + (desiredVx - currentVx) * strength;
+    const blendedVy = currentVy + (desiredVy - currentVy) * strength;
+
+    // Re-normalize to maintain consistent speed
+    const blendedDist = Math.sqrt(blendedVx * blendedVx + blendedVy * blendedVy);
+    if (blendedDist > 0) {
+      projectile.vx = (blendedVx / blendedDist) * speed;
+      projectile.vy = (blendedVy / blendedDist) * speed;
+    }
+
+    // Update target coordinates for reference (grid-space)
+    projectile.targetX = targetPos.x;
+    projectile.targetY = targetPos.y;
+  }
+
+  /**
+   * Move projectile along its velocity vector and check for collisions.
+   *
+   * Sub-steps are sized to at most 0.5 cells to ensure geometric collision
+   * checks don't skip over actors between cells.
+   *
+   * Wall collision: AABB (checked when entering a new cell via Math.floor).
+   * Actor collision: circular distance check in 3x3 neighborhood (every sub-step).
+   *
+   * @returns true if projectile should enter impact state
    */
   private moveProjectile(
     context: GameContext,
     entityId: number,
-    projectile: HasProjectile
+    projectile: HasProjectile,
+    freeBody: FreeBodyStore
   ): boolean {
-    const path = projectile.path;
-    if (!path || path.length === 0) return true; // No path, destroy
+    const pos = freeBody.getPosition(entityId);
+    if (!pos) return true;
+
+    const vx = projectile.vx ?? 0;
+    const vy = projectile.vy ?? 0;
+    if (vx === 0 && vy === 0) return true;
 
     const speed = projectile.speed ?? 1;
-    let pathIndex = projectile.pathIndex ?? 0;
+    const fromFloatX = pos.x;
+    const fromFloatY = pos.y;
 
-    // Move 'speed' cells along path
-    for (let step = 0; step < speed; step++) {
-      if (pathIndex >= path.length) {
-        // Reached end of path
-        return true;
-      }
+    // Total displacement this tick
+    const totalDx = vx;
+    const totalDy = vy;
 
-      const nextPos = path[pathIndex];
-      const nextCell = context.spatial.grid.cell(nextPos.x, nextPos.y);
+    // Sub-steps of at most 0.5 cells so geometric checks don't skip actors.
+    // Base steps on the largest axis displacement to prevent tunneling.
+    const maxAxisMovement = Math.max(Math.abs(totalDx), Math.abs(totalDy));
+    const steps = Math.max(1, Math.ceil(maxAxisMovement * 2));
+    const stepDx = totalDx / steps;
+    const stepDy = totalDy / steps;
 
-      // Check wall collision
-      if (!nextCell || context.spatial.isBlocked(nextCell)) {
-        if (projectile.bouncing) {
-          const bounceCount = projectile.bounceCount ?? 0;
-          const maxBounces = projectile.maxBounces ?? 1;
+    let floatX = pos.x;
+    let floatY = pos.y;
+    let prevCellX = Math.floor(floatX);
+    let prevCellY = Math.floor(floatY);
 
-          if (bounceCount < maxBounces) {
-            // Bounce: reverse remaining path
-            projectile.bounceCount = bounceCount + 1;
-            this.bouncePath(context, entityId, projectile, pathIndex);
-            pathIndex = 0;
-            projectile.pathIndex = 0;
-            continue;
-          }
-        }
-        // Hit wall, destroy
-        return true;
-      }
+    for (let step = 0; step < steps; step++) {
+      const prevFloatX = floatX;
+      const prevFloatY = floatY;
+      floatX += stepDx;
+      floatY += stepDy;
 
-      // Move to next position
-      context.spatial.move(entityId, nextPos.x, nextPos.y);
-      pathIndex++;
-      projectile.pathIndex = pathIndex;
+      const cellX = Math.floor(floatX);
+      const cellY = Math.floor(floatY);
+      const cellChanged = cellX !== prevCellX || cellY !== prevCellY;
 
-      // Check entity collision at new position
-      const hitResult = this.checkEntityCollision(context, entityId, projectile, nextPos);
-      if (hitResult.hit) {
-        if (hitResult.destroy) {
+      // --- Wall check (only on cell change) ---
+      if (cellChanged) {
+        prevCellX = cellX;
+        prevCellY = cellY;
+
+        // Check if we've left the grid bounds
+        if (!context.spatial.grid.isValid(cellX, cellY)) {
+          freeBody.setPosition(entityId, floatX, floatY);
+          this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
+          this.emitImpactEvent(entityId, freeBody, 'out-of-bounds');
           return true;
         }
-        // Piercing: continue moving
+
+        const cell = context.spatial.grid.cell(cellX, cellY);
+
+        // Wall collision (AABB — point inside blocked cell)
+        if (!cell || context.spatial.isBlocked(cell)) {
+          // Compute exact wall surface position via parametric intersection
+          const wallStop = this.computeWallStopPosition(
+            prevFloatX, prevFloatY, stepDx, stepDy, cellX, cellY
+          );
+
+          if (projectile.bouncing) {
+            const bounceCount = projectile.bounceCount ?? 0;
+            const maxBounces = projectile.maxBounces ?? 1;
+
+            if (bounceCount < maxBounces) {
+              projectile.bounceCount = bounceCount + 1;
+              this.bounceVelocity(context, projectile, floatX, floatY, stepDx, stepDy);
+
+              // Place at wall surface and continue next tick with reflected velocity
+              floatX = wallStop.x;
+              floatY = wallStop.y;
+              freeBody.setPosition(entityId, floatX, floatY);
+              this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
+              return false; // Continue next tick with new velocity
+            }
+          }
+
+          // Hit wall — place at wall surface
+          floatX = wallStop.x;
+          floatY = wallStop.y;
+          freeBody.setPosition(entityId, floatX, floatY);
+          this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
+          this.emitImpactEvent(entityId, freeBody, 'wall');
+          return true;
+        }
+      }
+
+      // --- Actor collision (geometric, every sub-step) ---
+      const hitResult = this.checkEntityCollisionGeometric(context, entityId, projectile, floatX, floatY);
+      if (hitResult.hit && hitResult.destroy) {
+        freeBody.setPosition(entityId, floatX, floatY);
+        this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
+        this.emitImpactEvent(entityId, freeBody, 'entity');
+        return true;
       }
     }
+
+    // Check if projectile has reached or passed its target
+    if (!projectile.homing) {
+      const spawnFloatX = projectile.spawnFloatX ?? fromFloatX;
+      const spawnFloatY = projectile.spawnFloatY ?? fromFloatY;
+
+      // Target in world-space
+      const targetWx = projectile.targetX + 0.5;
+      const targetWy = projectile.targetY + 0.5;
+
+      const distToTarget = Math.sqrt(
+        (targetWx - spawnFloatX) ** 2 + (targetWy - spawnFloatY) ** 2
+      );
+      const distTraveled = Math.sqrt(
+        (floatX - spawnFloatX) ** 2 + (floatY - spawnFloatY) ** 2
+      );
+
+      if (distTraveled >= distToTarget) {
+        freeBody.setPosition(entityId, floatX, floatY);
+        this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
+        this.emitImpactEvent(entityId, freeBody, 'end-of-path');
+        return true;
+      }
+    }
+
+    // No collision — commit new position
+    freeBody.setPosition(entityId, floatX, floatY);
+    this.emitMovedEvent(entityId, fromFloatX, fromFloatY, floatX, floatY);
 
     return false;
   }
 
   /**
-   * Bounce the projectile by reflecting the remaining path.
+   * Compute the float position just before a wall cell boundary.
+   *
+   * Uses parametric intersection: given a sub-step from (prevFloatX, prevFloatY)
+   * with delta (stepDx, stepDy) entering wall cell (wallCellX, wallCellY),
+   * finds the exact t at which the projectile crosses into the cell,
+   * then returns a position just before that crossing.
+   *
+   * Wall cell occupies [wallCellX, wallCellX+1) × [wallCellY, wallCellY+1)
+   * in world-space.
    */
-  private bouncePath(
-    context: GameContext,
-    entityId: number,
-    projectile: HasProjectile,
-    hitIndex: number
-  ): void {
-    const pos = context.spatial.getEntityPosition(entityId);
-    if (!pos) return;
+  private computeWallStopPosition(
+    prevFloatX: number,
+    prevFloatY: number,
+    stepDx: number,
+    stepDy: number,
+    wallCellX: number,
+    wallCellY: number
+  ): { x: number; y: number } {
+    const WALL_EPSILON = 0.001;
+    let t = 1.0;
 
-    const path = projectile.path;
-    if (!path || hitIndex <= 0) return;
+    // Find parametric t for X-axis crossing
+    if (stepDx !== 0) {
+      // Moving +x: hits left face (x = wallCellX)
+      // Moving -x: hits right face (x = wallCellX + 1)
+      const edgeX = stepDx > 0 ? wallCellX : wallCellX + 1;
+      const tx = (edgeX - prevFloatX) / stepDx;
+      if (tx >= 0 && tx < t) t = tx;
+    }
 
-    // Get the cell before the wall
-    const prevPos = hitIndex > 0 ? path[hitIndex - 1] : pos;
-    const wallPos = path[hitIndex];
+    // Find parametric t for Y-axis crossing
+    if (stepDy !== 0) {
+      // Moving +y: hits top face (y = wallCellY)
+      // Moving -y: hits bottom face (y = wallCellY + 1)
+      const edgeY = stepDy > 0 ? wallCellY : wallCellY + 1;
+      const ty = (edgeY - prevFloatY) / stepDy;
+      if (ty >= 0 && ty < t) t = ty;
+    }
 
-    // Determine bounce direction (simple reflection)
-    const dx = wallPos.x - prevPos.x;
-    const dy = wallPos.y - prevPos.y;
-
-    // Reflect: if hitting vertical wall, reverse dx; if horizontal, reverse dy
-    // For simplicity, we'll create a new path going in the opposite direction
-    const startCell = context.spatial.grid.cell(pos.x, pos.y);
-    if (!startCell) return;
-
-    // Calculate reflected target
-    const remainingDistance = path.length - hitIndex;
-    const reflectedTargetX = pos.x - dx * remainingDistance;
-    const reflectedTargetY = pos.y - dy * remainingDistance;
-
-    const targetCell = context.spatial.grid.cell(
-      Math.max(0, Math.min(context.spatial.grid.width - 1, reflectedTargetX)),
-      Math.max(0, Math.min(context.spatial.grid.height - 1, reflectedTargetY))
-    );
-
-    if (!targetCell) return;
-
-    const newCells = LinkedCellUtils.getLine(startCell, targetCell);
-    projectile.path = newCells.map((c) => ({ x: c.x, y: c.y }));
-    projectile.pathIndex = 0;
+    // Position just before the wall surface
+    const safeT = Math.max(0, t - WALL_EPSILON);
+    return {
+      x: prevFloatX + stepDx * safeT,
+      y: prevFloatY + stepDy * safeT,
+    };
   }
 
   /**
-   * Check for entity collision at position.
+   * Reflect velocity on wall impact.
+   *
+   * Determines which axis to reflect based on whether the wall is
+   * horizontal or vertical relative to approach direction.
+   */
+  private bounceVelocity(
+    context: GameContext,
+    projectile: HasProjectile,
+    hitFloatX: number,
+    hitFloatY: number,
+    stepDx: number,
+    stepDy: number
+  ): void {
+    const prevFloatX = hitFloatX - stepDx;
+    const prevFloatY = hitFloatY - stepDy;
+    const wallCellX = Math.floor(hitFloatX);
+    const wallCellY = Math.floor(hitFloatY);
+
+    let tx = Infinity;
+    let ty = Infinity;
+
+    if (stepDx !== 0) {
+      const edgeX = stepDx > 0 ? wallCellX : wallCellX + 1;
+      tx = (edgeX - prevFloatX) / stepDx;
+    }
+    if (stepDy !== 0) {
+      const edgeY = stepDy > 0 ? wallCellY : wallCellY + 1;
+      ty = (edgeY - prevFloatY) / stepDy;
+    }
+
+    // Compare t values to see which wall was hit first
+    if (tx < ty) {
+      // Hit a vertical wall
+      projectile.vx = -(projectile.vx ?? 0);
+    } else if (ty < tx) {
+      // Hit a horizontal wall
+      projectile.vy = -(projectile.vy ?? 0);
+    } else {
+      // Hit a corner exactly (or parallel movement)
+      projectile.vx = -(projectile.vx ?? 0);
+      projectile.vy = -(projectile.vy ?? 0);
+    }
+  }
+
+  /**
+   * Geometric entity collision check.
+   *
+   * Checks a 3x3 neighborhood of cells around the projectile's world-space position.
+   * For each entity with health found, tests circular collision:
+   *   distance(projectile, entityWorldCenter) < ACTOR_HIT_RADIUS
+   *
+   * Grid entity at cell (cx, cy) has world-space center (cx + 0.5, cy + 0.5).
+   *
    * @returns { hit: boolean, destroy: boolean }
    */
-  private checkEntityCollision(
+  private checkEntityCollisionGeometric(
     context: GameContext,
     projectileId: number,
     projectile: HasProjectile,
-    pos: { x: number; y: number }
+    floatX: number,
+    floatY: number
   ): { hit: boolean; destroy: boolean } {
-    const entitiesAtPos = context.spatial.getEntityIdsInCell(pos.x, pos.y);
+    const centerCellX = Math.floor(floatX);
+    const centerCellY = Math.floor(floatY);
 
-    for (const targetId of entitiesAtPos) {
-      if (targetId === projectileId) continue; // Skip self
-      if (targetId === projectile.ownerId) continue; // Skip owner
+    // Scan 3x3 neighborhood for potential hits
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const cx = centerCellX + dx;
+        const cy = centerCellY + dy;
 
-      // Skip already hit entities (for piercing)
-      if (projectile.hitEntityIds?.includes(targetId)) continue;
+        if (!context.spatial.grid.isValid(cx, cy)) continue;
 
-      const targetData = context.spatial.getEntityData(targetId);
-      if (!targetData) continue;
+        const entitiesAtPos = context.spatial.getEntityIdsInCell(cx, cy);
 
-      // Only damage entities with health
-      if (!hasHealth(targetData)) continue;
+        for (const targetId of entitiesAtPos) {
+          if (targetId === projectileId) continue;
+          if (targetId === projectile.ownerId) continue;
+          if (projectile.hitEntityIds?.includes(targetId)) continue;
 
-      // Deal damage via HealthSystem
-      this.healthSystem.damage(
-        targetId,
-        projectile.damage,
-        projectile.damageType,
-        projectile.ownerId
-      );
+          const targetData = context.spatial.getEntityData(targetId);
+          if (!targetData) continue;
+          if (!hasHealth(targetData)) continue;
 
-      // Track hit for piercing
-      if (!projectile.hitEntityIds) {
-        projectile.hitEntityIds = [];
-      }
-      projectile.hitEntityIds.push(targetId);
+          // Get entity's grid position and convert to world-space center
+          const targetPos = context.spatial.getEntityPosition(targetId);
+          if (!targetPos) continue;
+          const entityWx = targetPos.x + 0.5;
+          const entityWy = targetPos.y + 0.5;
 
-      // Check piercing behavior
-      if (projectile.piercing) {
-        const maxPierces = projectile.maxPierces ?? Infinity;
-        if (projectile.hitEntityIds.length >= maxPierces) {
+          // Circular collision: distance from projectile point to entity center
+          const distSq = (floatX - entityWx) ** 2 + (floatY - entityWy) ** 2;
+          if (distSq >= ACTOR_HIT_RADIUS * ACTOR_HIT_RADIUS) continue;
+
+          // --- HIT ---
+
+          // Freeze projectiles: apply stun to stunnable targets
+          if (projectile.damageType === 'freeze' && this.stunSystem && hasStunnable(targetData)) {
+            this.stunSystem.applyStun(targetId, ProjectileSystem.FREEZE_STUN_DURATION);
+          }
+
+          // Deal damage via HealthSystem
+          this.healthSystem.damage(
+            targetId,
+            projectile.damage,
+            projectile.damageType,
+            projectile.ownerId
+          );
+
+          // Track hit for piercing
+          if (!projectile.hitEntityIds) {
+            projectile.hitEntityIds = [];
+          }
+          projectile.hitEntityIds.push(targetId);
+
+          // Check piercing behavior
+          if (projectile.piercing) {
+            const maxPierces = projectile.maxPierces ?? Infinity;
+            if (projectile.hitEntityIds.length >= maxPierces) {
+              return { hit: true, destroy: true };
+            }
+            return { hit: true, destroy: false }; // Continue
+          }
+
+          // Non-piercing: destroy on hit
           return { hit: true, destroy: true };
         }
-        return { hit: true, destroy: false }; // Continue
       }
-
-      // Non-piercing: destroy on hit
-      return { hit: true, destroy: true };
     }
 
     return { hit: false, destroy: false };
@@ -329,11 +594,27 @@ export class ProjectileSystem extends BaseTickedSystem {
 
   /**
    * Spawn a projectile programmatically.
-   * Convenience method for other systems to create projectiles.
    *
-   * Emits a `projectile:launched` visual event so renderers can display
-   * muzzle flash / blast cone effects on the first frame (before the
-   * projectile has moved and can be interpolated).
+   * Callers pass the **launcher's grid cell** as (x, y). The projectile spawns
+   * at the edge of the launcher's circle (radius 0.5) at the angle toward the
+   * target, in world-space coordinates.
+   *
+   * World-space formula:
+   *   centerX = x + 0.5   (cell center)
+   *   centerY = y + 0.5
+   *   spawnX = centerX + SPAWN_RADIUS * cos(angle toward target)
+   *   spawnY = centerY + SPAWN_RADIUS * sin(angle toward target)
+   *
+   * Projectiles skip movement on their spawn tick so the renderer can display
+   * the spawn position for at least one frame.
+   *
+   * @param context - Game context
+   * @param x - Launcher grid cell X
+   * @param y - Launcher grid cell Y
+   * @param targetX - Target grid cell X
+   * @param targetY - Target grid cell Y
+   * @param damage - Damage dealt on hit
+   * @param options - Additional projectile options
    */
   spawnProjectile(
     context: GameContext,
@@ -344,21 +625,51 @@ export class ProjectileSystem extends BaseTickedSystem {
     damage: number,
     options: Partial<HasProjectile> & { color?: string } = {}
   ): number {
-    const projectileId = context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
+    const freeBody = context.freeBody;
+    const store = context.spatial.getStore();
+
+    // Cell center in world-space
+    const centerX = x + 0.5;
+    const centerY = y + 0.5;
+
+    // Direction from launcher center toward target center
+    const dx = targetX - x; // (targetX + 0.5) - (x + 0.5) cancels the +0.5
+    const dy = targetY - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    let spawnFloatX = centerX;
+    let spawnFloatY = centerY;
+    if (dist > 0) {
+      spawnFloatX = centerX + (dx / dist) * SPAWN_RADIUS;
+      spawnFloatY = centerY + (dy / dist) * SPAWN_RADIUS;
+    }
+
+    // Create entity in store without grid placement
+    const projectileId = store.createId('projectile', {
       targetX,
       targetY,
       damage,
+      floatX: spawnFloatX,
+      floatY: spawnFloatY,
       ephemeral: true,
       ...options,
     });
+
+    // Register in FreeBodyStore for float position tracking (world-space)
+    if (freeBody) {
+      freeBody.register(projectileId, spawnFloatX, spawnFloatY);
+    }
+
+    // Track in our active set
+    this.activeProjectiles.add(projectileId);
 
     // Emit launch event for renderers (muzzle flash, blast cone, etc.)
     if (this.visualEventBus) {
       this.visualEventBus.emit({
         type: 'projectile:launched',
         entityId: projectileId,
-        x,
-        y,
+        x: Math.floor(spawnFloatX),
+        y: Math.floor(spawnFloatY),
         data: {
           ownerId: options.ownerId,
           targetX,
@@ -366,6 +677,8 @@ export class ProjectileSystem extends BaseTickedSystem {
           speed: options.speed ?? 1,
           color: options.color,
           damageType: options.damageType,
+          floatX: spawnFloatX,
+          floatY: spawnFloatY,
         },
       });
     }
@@ -373,14 +686,78 @@ export class ProjectileSystem extends BaseTickedSystem {
     return projectileId;
   }
 
+  /**
+   * Remove a projectile from all tracking.
+   */
+  private removeProjectile(
+    entityId: number,
+    context: GameContext,
+    freeBody: FreeBodyStore
+  ): void {
+    freeBody.remove(entityId);
+    context.spatial.getStore().remove(entityId);
+    this.activeProjectiles.delete(entityId);
+  }
+
+  /**
+   * Emit a projectile:moved visual event with float positions.
+   */
+  private emitMovedEvent(
+    entityId: number,
+    fromFloatX: number,
+    fromFloatY: number,
+    toFloatX: number,
+    toFloatY: number
+  ): void {
+    if (!this.visualEventBus) return;
+    this.visualEventBus.emit({
+      type: 'projectile:moved',
+      entityId,
+      x: Math.floor(toFloatX),
+      y: Math.floor(toFloatY),
+      data: {
+        fromFloatX,
+        fromFloatY,
+        toFloatX,
+        toFloatY,
+      },
+    });
+  }
+
+  /**
+   * Emit a projectile:impact visual event at the projectile's current position.
+   */
+  private emitImpactEvent(
+    entityId: number,
+    freeBody: FreeBodyStore,
+    reason: string
+  ): void {
+    if (!this.visualEventBus) return;
+    const pos = freeBody.getPosition(entityId);
+    if (!pos) return;
+    this.visualEventBus.emit({
+      type: 'projectile:impact',
+      entityId,
+      x: Math.floor(pos.x),
+      y: Math.floor(pos.y),
+      data: {
+        floatX: pos.x,
+        floatY: pos.y,
+        reason,
+      },
+    });
+  }
+
   public override resetState(): void {
     super.resetState();
+    this.activeProjectiles.clear();
   }
 
   public override getDebugState(): Record<string, unknown> {
     return {
       ...super.getDebugState(),
-      description: 'Projectile System (Bresenham paths, collision, damage)',
+      activeProjectiles: this.activeProjectiles.size,
+      description: 'Projectile System (free-body float movement, geometric collision)',
     };
   }
 }

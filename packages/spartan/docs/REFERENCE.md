@@ -147,12 +147,13 @@ interface GameConfig {
 }
 ```
 
-**Initialization is five-phase**:
+**Initialization is six-phase**:
 1. **Structure** -- Create all scenes (empty grids)
 2. **Hydration** -- Spawn all entities across all scenes
-3. **Global Indexing** -- Register scene connections (teleporters)
-4. **Objectives** -- Load objectives into GameState
-5. **System Initialization** -- Create all systems via registry
+3. **Chain Wiring** -- Link chain follow targets by chainId + chainIndex
+4. **Global Indexing** -- Register scene connections (teleporters) and adjacencies
+5. **Objectives** -- Load objectives into GameState
+6. **System Initialization** -- Create all systems via registry
 
 All game systems are automatically created by the built-in [system registry](../core/system-registry.ts). No manual system instantiation required when using `fromConfig()`.
 
@@ -222,6 +223,7 @@ Scenes contain entity definitions in JSON:
 - `layer` is the semantic layer number (see [Layers](#layers))
 - `data` contains all trait properties for the entity
 - Comment objects `{ "_comment": "..." }` are silently skipped
+- Scene `adjacencies` define directional neighbors for edge-based transitions: `{ "north": "scene-id", "south": "scene-id", ... }`
 
 **Source**: [dev/games/](../../../dev/games/) for examples
 
@@ -229,11 +231,12 @@ Scenes contain entity definitions in JSON:
 
 ## Game Systems at a Glance
 
-All 25 built-in systems, grouped by execution phase:
+All 28 built-in systems, grouped by execution phase:
 
 | Phase | System | Tick Rate | Description |
 | :--- | :--- | :--- | :--- |
 | **input** | PlayerInputSystem | 1 | Translates player input into movement intents |
+| **input** | EdgeTransitionSystem | 1 | Detects player at scene edge and triggers adjacent scene transition |
 | **pre-commit** | PushSystem | 1 | Resolves push interactions from movement intents |
 | **pre-commit** | DoorSystem | 1 | Unlocks doors when player has matching key |
 | **pre-commit** | NPCBrainSystem | 1 | AI Controller: threat scan, posture, attack/movement intent |
@@ -246,8 +249,10 @@ All 25 built-in systems, grouped by execution phase:
 | **main** | PoisonSystem | 1 | Density-based gas dispersion and damage |
 | **main** | ChainReactionSystem | 1 | Domino-like chain reactions |
 | **main** | FloorEffectSystem | 1 | Floor hazards (lava, ice, mud) and healing |
-| **main** | ProjectileSystem | 1 | Autonomous projectiles along Bresenham paths |
+| **main** | ProjectileSystem | 1 | Autonomous projectiles along Bresenham paths (homing, freeze) |
 | **main** | TurretSystem | 1 | Stationary shooters targeting entities |
+| **main** | StunSystem | 1 | Manages stun/freeze status effects and expiration |
+| **main** | ChainFollowSystem | 1 | Linked entity chains (followers replay head position history) |
 | **main** | SignalSystem | 1 | Signal propagation (switches, conductors, gates, range sensors) |
 | **main** | GateSystem | 1 | Signal-controlled gate open/close |
 | **main** | SpawningSystem | 1 | Entity spawning with wave mode and boundary recycling |
@@ -833,6 +838,12 @@ class HealthSystem {
 | `HasVulnerability` | `vulnerabilities` | Damage type multipliers |
 | `HasBuff` | `activeBuffs` | PowerupSystem (health-regen, speed, damage, shield, invincibility) |
 
+### Status Effect Traits
+
+| Trait | Properties | Used By |
+| :--- | :--- | :--- |
+| `HasStunnable` | `stunnable`, `stunned`, `stunEndTick` | StunSystem (freeze/stun effects) |
+
 ### Movement Traits
 
 | Trait | Properties | Used By |
@@ -842,7 +853,8 @@ class HealthSystem {
 | `HasNPCBrain` | `posture`, `threatRange`, `attackRange`, `preferRanged`, `retreatHealthPct` | NPCBrainSystem (Controller/Executor pattern) |
 | `HasPushable` | `pushable` | PushSystem (can be pushed) |
 | `HasPusher` | `pushStrength` | PushSystem (can push) |
-| `HasProjectile` | `projectileSpeed`, `projectileDamage`, `path`, `bounceCount`, `pierceCount` | ProjectileSystem |
+| `HasProjectile` | `projectileSpeed`, `projectileDamage`, `path`, `bounceCount`, `pierceCount`, `homing`, `homingStrength`, `homingTargetId` | ProjectileSystem |
+| `HasChainFollow` | `chainId`, `isChainHead`, `chainFollowTargetId`, `chainIndex`, `chainDelay` | ChainFollowSystem (linked entity chains) |
 
 ### Spatial Traits
 
@@ -1138,7 +1150,7 @@ Triggered when explosive entities (`HasExplosion`) reach 0 HP. Applies area dama
 ### ProjectileSystem
 **Phase**: main | **Tick Rate**: 1
 
-Moves projectiles along Bresenham paths. Handles collision with entities (damage via HealthSystem), walls (bounce or destroy), and range limits. Supports piercing and bouncing projectiles.
+Moves projectiles along Bresenham paths. Handles collision with entities (damage via HealthSystem), walls (bounce or destroy), and range limits. Supports piercing, bouncing, and homing projectiles. Homing projectiles recalculate their Bresenham path each tick toward the target entity. Freeze-type projectiles apply stun via StunSystem.
 
 **Source**: [systems/projectile.system.ts](../systems/projectile.system.ts)
 
@@ -1239,6 +1251,27 @@ Density-based gas dispersion. Poison gas spreads from high to low density cells.
 Deterministic chain reaction spreading. Chain links ignite adjacent chain links with configurable delay.
 
 **Source**: [systems/chain-reaction.system.ts](../systems/chain-reaction.system.ts)
+
+### StunSystem
+**Phase**: main | **Tick Rate**: 1
+
+Manages stun/freeze status effects. Entities with `HasStunnable` can be stunned for a duration (in ticks). While stunned, entities cannot move or act (checked by PlayerInputSystem, NPCMovementSystem, NPCBrainSystem). Sets visual state to 'frozen' while stunned, reverts to 'idle' on expiry. Freeze projectiles (`damageType: 'freeze'`) apply stun via ProjectileSystem integration.
+
+**Source**: [systems/stun.system.ts](../systems/stun.system.ts)
+
+### EdgeTransitionSystem
+**Phase**: input | **Tick Rate**: 1
+
+Handles seamless scene transitions when the player walks off a scene edge. Uses the `adjacencies` map in GameState (populated from scene definitions in JSON config). When the player is at a grid edge and input direction points outward, the system looks up the neighbor scene and teleports the player to the opposite edge at the corresponding position.
+
+**Source**: [systems/edge-transition.system.ts](../systems/edge-transition.system.ts)
+
+### ChainFollowSystem
+**Phase**: main | **Tick Rate**: 1
+
+Coordinates linked entity chains (snakes, centipedes). Each chain consists of a head (moves via NPCMovementSystem) and followers that replay the head's position history with a configurable delay. Each segment is an independent single-cell entity with `HasChainFollow` trait. Handles head promotion when the head dies and gap closing when middle segments die. Chain followers are skipped by NPCMovementSystem and NPCBrainSystem.
+
+**Source**: [systems/chain-follow.system.ts](../systems/chain-follow.system.ts)
 
 ---
 
@@ -1545,6 +1578,31 @@ Use teleporters with matching `connectionKey`:
 
 The `TeleporterSystem` detects player overlap with a teleporter, finds the matching endpoint via `GameState.connections`, and queues a scene transition via `GameManager.movePlayerToScene()`. Transitions execute at tick boundaries.
 
+### Edge-Based Scene Transitions
+
+For seamless world-map-style transitions, define `adjacencies` on scenes:
+
+```json
+{
+  "scenes": [
+    {
+      "id": "forest",
+      "width": 20, "height": 16,
+      "adjacencies": { "east": "village", "south": "cave" },
+      "entities": [...]
+    },
+    {
+      "id": "village",
+      "width": 20, "height": 16,
+      "adjacencies": { "west": "forest" },
+      "entities": [...]
+    }
+  ]
+}
+```
+
+The `EdgeTransitionSystem` detects when the player is at a grid edge and moving outward. It looks up the neighbor scene from the adjacency map and moves the player to the opposite edge at the same parallel coordinate.
+
 ---
 
 ## Set Up Objectives and Scoring
@@ -1681,5 +1739,5 @@ Push the block onto the pressure switch to open the gate.
 
 ---
 
-**Version**: Phase 3.5
+**Version**: Phase 5
 **Last Updated**: 2026-02-06

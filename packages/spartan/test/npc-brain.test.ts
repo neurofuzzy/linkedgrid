@@ -103,9 +103,9 @@ describe('NPCBrainSystem', () => {
     // Act: tick so brain spawns a projectile
     gameLoop.tick();
 
-    // Assert: a projectile should exist (spawned at (6,10) heading right)
+    // Assert: a projectile should exist in FreeBodyStore (free body, not on grid)
     let projectileFound = false;
-    for (const [eid] of spatial.getAllPositions()) {
+    for (const [eid] of gameLoop.freeBody.entries()) {
       const data = spatial.getEntityData(eid);
       if (data?.type === 'projectile') {
         projectileFound = true;
@@ -220,29 +220,21 @@ describe('NPCBrainSystem', () => {
     });
     spatial.commit();
 
-    // Act
+    // Act: tick 1 spawns projectile (skips movement on spawn tick)
     gameLoop.tick();
 
-    // Assert: should spawn projectile instead of meleeing
-    // Player HP should still be 100 (no melee damage)
-    // and a projectile should exist
-    const playerData = spatial.getEntityData(playerId);
-    expect(playerData?.hp).toBe(100); // No melee damage this tick
-
-    let projectileFound = false;
-    for (const [eid] of spatial.getAllPositions()) {
-      const data = spatial.getEntityData(eid);
-      if (data?.type === 'projectile') {
-        projectileFound = true;
-        break;
-      }
-    }
-    expect(projectileFound).toBe(true);
-
-    // Ammo should be consumed
+    // Ammo should be consumed on tick 1 (NPC fired)
     const enemyData = spatial.getEntityData(enemyId);
     const ammo = enemyData?.ammo as Record<string, number> | undefined;
     expect(ammo?.pistol).toBe(9);
+
+    // tick 2: projectile moves and hits player
+    gameLoop.tick();
+
+    // Assert: should spawn projectile instead of meleeing
+    // Pistol does 15 damage, NOT melee (20).
+    const playerData = spatial.getEntityData(playerId);
+    expect(playerData?.hp).toBe(85); // Pistol hit (15 damage), not melee (20)
   });
 
   it('two NPCs on different teams fight each other', () => {

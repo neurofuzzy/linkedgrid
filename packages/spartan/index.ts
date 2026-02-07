@@ -103,6 +103,7 @@ export type {
 } from './config/visual.config';
 
 export type { HasSceneConnection } from './traits/scene-connection.trait';
+export type { HasFreeBody } from './traits/free-body.trait';
 
 // Entity archetypes (example patterns)
 export * from './entities/entity.types';
@@ -159,6 +160,7 @@ export {
   hasVisualState,
   hasFacing,
   hasAnimation,
+  hasFreeBody,
 } from './traits/trait-guards';
 
 // Spawn helpers (type-safe entity creation)

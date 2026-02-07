@@ -7,6 +7,7 @@ import { Scene } from './scene';
 import { SpatialSystem } from './spatial-system';
 import type { GameSystem } from './types';
 import { hasSceneConnection } from '../traits/trait-guards';
+import { Direction } from './grid/direction';
 
 /**
  * Configuration for creating a new game.
@@ -46,6 +47,13 @@ export interface SceneDefinition {
   height: number;
   entities?: EntityDefinition[];
   metadata?: Record<string, unknown>;
+  /** Explicit edge adjacencies: direction → neighborSceneId */
+  adjacencies?: {
+    north?: string;
+    south?: string;
+    east?: string;
+    west?: string;
+  };
 }
 
 /**
@@ -304,6 +312,43 @@ export class GameRuntime {
       scene.spatial.commit();
     }
 
+    // === PHASE 2b: CHAIN FOLLOW WIRING ===
+    // Wire chainFollowTargetId for chain segments based on chainId + chainIndex.
+    // JSON entities cannot reference entity IDs at definition time, so we resolve
+    // follow targets here by matching chainId and linking chainIndex N to N-1.
+    for (const sceneDef of config.scenes) {
+      const scene = game.sceneManager.getScene(sceneDef.id);
+      if (!scene) continue;
+
+      // Collect chain segments grouped by chainId
+      const chains = new Map<string, Array<{ entityId: number; chainIndex: number }>>();
+
+      for (const [entityId] of scene.spatial.getAllPositions()) {
+        const data = scene.spatial.getEntityData(entityId);
+        if (!data || typeof data.chainId !== 'string') continue;
+        const chainId = data.chainId as string;
+        const chainIndex = (data.chainIndex as number) ?? 0;
+
+        if (!chains.has(chainId)) {
+          chains.set(chainId, []);
+        }
+        chains.get(chainId)!.push({ entityId, chainIndex });
+      }
+
+      // Wire follow targets: segment N follows segment N-1
+      for (const [, segments] of chains) {
+        segments.sort((a, b) => a.chainIndex - b.chainIndex);
+        for (let i = 1; i < segments.length; i++) {
+          const followerData = game.gameState.entityStore.getData(segments[i].entityId);
+          if (followerData && followerData.chainFollowTargetId === undefined) {
+            game.gameState.entityStore.setData(segments[i].entityId, {
+              chainFollowTargetId: segments[i - 1].entityId,
+            });
+          }
+        }
+      }
+    }
+
     // Set player entity ID - warn if missing (some test scenarios don't need a player)
     if (playerId === null) {
       console.warn(
@@ -363,6 +408,30 @@ export class GameRuntime {
             `portal at ${endpoints[0].sceneId}(${endpoints[0].x},${endpoints[0].y}) has no destination!`
           );
         }
+      }
+    }
+
+    // === PHASE 3b: ADJACENCIES ===
+    // Index scene adjacencies for edge-based scene transitions
+    const directionMap: Record<string, number> = {
+      north: Direction.UP,
+      south: Direction.DOWN,
+      east: Direction.RIGHT,
+      west: Direction.LEFT,
+    };
+
+    for (const sceneDef of config.scenes) {
+      if (!sceneDef.adjacencies) continue;
+
+      const sceneAdj = new Map<number, string>();
+      for (const [dirName, neighborId] of Object.entries(sceneDef.adjacencies)) {
+        if (neighborId && directionMap[dirName] !== undefined) {
+          sceneAdj.set(directionMap[dirName], neighborId);
+        }
+      }
+
+      if (sceneAdj.size > 0) {
+        game.gameState.adjacencies.set(sceneDef.id, sceneAdj);
       }
     }
 
@@ -650,6 +719,17 @@ export class GameRuntime {
     const scene = this.game.sceneManager.getActiveScene();
     if (!scene) throw new Error('No active scene');
     return scene.spatial;
+  }
+
+  /**
+   * Get the FreeBodyStore for off-grid entities (projectiles, flying entities).
+   *
+   * Owned by the active GameLoop. Recreated on scene transitions.
+   *
+   * @returns FreeBodyStore from the current game loop
+   */
+  get freeBody(): import('./free-body-store').FreeBodyStore {
+    return this.gameLoop.freeBody;
   }
 
   /**

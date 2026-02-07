@@ -139,6 +139,27 @@ export const SYSTEM_CONFIG = {
     description: 'Spawns entities from spawner entities with grouping, activation, wave mode, and boundary recycling',
   },
 
+  Stun: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Applies, manages, and expires stun/freeze status effects',
+  },
+
+  EdgeTransition: {
+    tickRate: 1,
+    executionPhase: 'input' as const,
+    dependencies: ['SpatialSystem', 'GameManager'] as const,
+    description: 'Detects player at scene edge and triggers cross-scene transition',
+  },
+
+  ChainFollow: {
+    tickRate: 1,
+    executionPhase: 'main' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Coordinates linked entity chains (stages follower moves after head)',
+  },
+
   Visual: {
     tickRate: 1,
     executionPhase: 'post-commit' as const,

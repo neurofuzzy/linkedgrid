@@ -27,6 +27,8 @@ export const VISUAL_STATE_PRESETS = {
   DIE: 'die',
   /** Special action (powerup, charge, etc.) */
   SPECIAL: 'special',
+  /** Frozen/stunned state (entity cannot move or act) */
+  FROZEN: 'frozen',
 } as const;
 
 export type VisualStatePreset = (typeof VISUAL_STATE_PRESETS)[keyof typeof VISUAL_STATE_PRESETS];
@@ -56,6 +58,8 @@ export const EFFECT_PRESETS = {
   RESPAWN: 'respawn',
   /** Purple swirl -- teleporter activation */
   PORTAL: 'portal',
+  /** Blue/cyan ice particles -- freeze/stun applied */
+  FREEZE: 'freeze',
 } as const;
 
 export type EffectPreset = (typeof EFFECT_PRESETS)[keyof typeof EFFECT_PRESETS];

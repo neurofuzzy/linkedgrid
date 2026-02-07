@@ -157,6 +157,26 @@ const AVAILABLE_GAMES = [
     name: 'Debug Renderer Showcase',
     path: '/dev/games/debug-renderer-demo.json',
   },
+  {
+    id: 'homing-projectile-demo',
+    name: 'Homing Projectile Demo',
+    path: '/dev/games/homing-projectile-demo.json',
+  },
+  {
+    id: 'freeze-stun-demo',
+    name: 'Freeze/Stun Weapon Demo',
+    path: '/dev/games/freeze-stun-demo.json',
+  },
+  {
+    id: 'edge-linking-demo',
+    name: 'Edge-Based Scene Linking (2x2 Grid)',
+    path: '/dev/games/edge-linking-demo.json',
+  },
+  {
+    id: 'conjoined-npc-demo',
+    name: 'Conjoined NPCs (Chain Following)',
+    path: '/dev/games/conjoined-npc-demo.json',
+  },
 ];
 
 /**

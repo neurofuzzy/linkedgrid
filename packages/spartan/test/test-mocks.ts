@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import type { GameContext, GameManagerContext } from '../core/types';
 import type { SpatialSystem } from '../core/spatial-system';
+import { FreeBodyStore } from '../core/free-body-store';
 
 /**
  * Creates a type-safe partial mock of GameContext.
@@ -12,6 +13,7 @@ export function createMockGameContext(overrides: Partial<GameContext> = {}): Gam
     const defaultContext: Partial<GameContext> = {
         overlaps: [],
         spatial: createMockSpatial(),
+        freeBody: new FreeBodyStore(),
         gameManager: createMockGameManager(),
         tick: 0,
     };
@@ -50,12 +52,14 @@ export function createMockSpatial(overrides: Partial<SpatialSystem> = {}): GameC
         blocksVision: vi.fn(),
         isWalkable: vi.fn(),
         isAlive: vi.fn().mockReturnValue(true),
+        relocate: vi.fn().mockReturnValue(true),
         getPendingOps: vi.fn().mockReturnValue([]),
         cancelMove: vi.fn(),
         onSpawn: vi.fn().mockReturnValue(() => { }),
         onRemove: vi.fn().mockReturnValue(() => { }),
         getPosition: vi.fn(),
         getGrid: vi.fn() as unknown as SpatialSystem['getGrid'], // Often hard to mock fully without a real grid
+        getStore: vi.fn() as unknown as SpatialSystem['getStore'],
     };
 
     return { ...mockSpatial, ...overrides } as GameContext['spatial'];

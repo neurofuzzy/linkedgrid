@@ -174,15 +174,15 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
 
       this.projectileSystem.spawnProjectile(
         context,
-        pos.x + delta.dx, // Start one cell in front of player
-        pos.y + delta.dy,
+        pos.x, // Launcher cell -- spawnProjectile computes edge offset
+        pos.y,
         targetX,
         targetY,
         weaponConfig.damage,
         {
           speed: weaponConfig.projectileSpeed ?? 2,
           ownerId: playerId,
-          damageType: weaponConfig.name,
+          damageType: weaponConfig.damageType ?? weaponConfig.name,
           color: weaponConfig.projectileColor ?? '#ffff00',
         }
       );

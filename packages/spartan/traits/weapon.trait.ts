@@ -43,6 +43,8 @@ export interface WeaponConfig {
   projectileColor?: string;
   /** Cone spread in radians (for cone-based weapons like shotgun) */
   coneSpread?: number;
+  /** Damage type override (defaults to weapon name). Used for special effects like 'freeze'. */
+  damageType?: string;
 }
 
 /**
@@ -118,5 +120,16 @@ export const DEFAULT_WEAPONS: Record<string, WeaponConfig> = {
     range: 20,
     projectileSpeed: 4,
     projectileColor: '#ff0000',
+  },
+  'freeze-gun': {
+    name: 'freeze-gun',
+    damage: 5,
+    projectileType: 'freeze-bolt',
+    fireRate: 10,
+    ammoCost: 1,
+    range: 15,
+    projectileSpeed: 2,
+    projectileColor: '#88ccff',
+    damageType: 'freeze',
   },
 };

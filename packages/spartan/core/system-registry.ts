@@ -41,6 +41,9 @@ import { TurretSystem } from '../systems/turret.system';
 import { ScoreSystem } from '../systems/score.system';
 import { ObjectiveSystem } from '../systems/objective.system';
 import { NPCBrainSystem } from '../systems/npc-brain.system';
+import { StunSystem } from '../systems/stun.system';
+import { EdgeTransitionSystem } from '../systems/edge-transition.system';
+import { ChainFollowSystem } from '../systems/chain-follow.system';
 import { VisualStateSystem } from '../systems/visual-state.system';
 import { VisualEventBus } from './visual-event-bus';
 import { EffectsQueue } from './effects-queue';
@@ -76,6 +79,8 @@ export function createAllSystems(
   const liquidSystem = new LiquidSystem();
   const chainReactionSystem = new ChainReactionSystem();
   const npcMovementSystem = new NPCMovementSystem();
+  const stunSystem = new StunSystem();
+  const chainFollowSystem = new ChainFollowSystem();
 
   systems.push(pushSystem);
   systems.push(explosionSystem);
@@ -84,6 +89,8 @@ export function createAllSystems(
   systems.push(chainReactionSystem);
   // NPCBrainSystem is inserted before NPCMovementSystem below (needs ProjectileSystem first)
   systems.push(npcMovementSystem);
+  systems.push(chainFollowSystem); // Runs after NPCMovementSystem so head has moved
+  systems.push(stunSystem);
 
   // === HEALTH SYSTEM (depended on by many) ===
   const healthSystem = new HealthSystem({}, effectsQueue);
@@ -112,6 +119,7 @@ export function createAllSystems(
 
   // === SYSTEMS NEEDING HEALTHSYSTEM ===
   const projectileSystem = new ProjectileSystem(healthSystem, gameManager.gameState.visualEventBus);
+  projectileSystem.setStunSystem(stunSystem);
   const powerupSystem = new PowerupSystem({ healthSystem });
   const scoreSystem = new ScoreSystem(gameManager, healthSystem);
   const objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);
@@ -138,6 +146,7 @@ export function createAllSystems(
   // Only create these if inputProvider is available
   if (inputProvider) {
     const playerInputSystem = new PlayerInputSystem(gameManager, inputProvider);
+    const edgeTransitionSystem = new EdgeTransitionSystem(gameManager, inputProvider);
     const meleeSystem = new MeleeSystem(gameManager, inputProvider, healthSystem);
     const playerWeaponSystem = new PlayerWeaponSystem(
       gameManager,
@@ -149,6 +158,7 @@ export function createAllSystems(
     );
 
     systems.push(playerInputSystem);
+    systems.push(edgeTransitionSystem); // Runs after PlayerInputSystem in input phase
     systems.push(meleeSystem);
     systems.push(playerWeaponSystem);
   }
@@ -173,6 +183,8 @@ export const ALL_SYSTEM_NAMES = [
   'ChainReactionSystem',
   'NPCBrainSystem',
   'NPCMovementSystem',
+  'ChainFollowSystem',
+  'StunSystem',
   'HealthSystem',
   'TeleporterSystem',
   'CollectionSystem',
@@ -187,6 +199,7 @@ export const ALL_SYSTEM_NAMES = [
   'PowerupSystem',
   'TurretSystem',
   'PlayerInputSystem',
+  'EdgeTransitionSystem',
   'MeleeSystem',
   'PlayerWeaponSystem',
   'ScoreSystem',

@@ -39,6 +39,9 @@ import type { HasTemperature } from './thermal.trait';
 import type { HasScoreValue } from './objective.trait';
 import type { HasNPCBrain } from './npc-brain.trait';
 import type { HasVisualState, HasFacing, HasAnimation } from './visual.trait';
+import type { HasStunnable } from './stun.trait';
+import type { HasChainFollow } from './chain-follow.trait';
+import type { HasFreeBody } from './free-body.trait';
 import type { Direction } from '../core/grid/direction';
 import type {
   PlayerData,
@@ -1057,6 +1060,26 @@ export function hasProjectile(
 }
 
 /**
+ * Check if entity has free body trait.
+ *
+ * Entities with free body trait have sub-cell float positions
+ * and do NOT occupy grid cells.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has free body trait (floatX and floatY)
+ */
+export function hasFreeBody(
+  entity: EntityData
+): entity is EntityData & HasFreeBody {
+  return (
+    'floatX' in entity &&
+    typeof entity.floatX === 'number' &&
+    'floatY' in entity &&
+    typeof entity.floatY === 'number'
+  );
+}
+
+/**
  * Check if entity is a turret.
  *
  * @param entity - Entity to check
@@ -1460,4 +1483,63 @@ export function hasAnimation(
     'frameDuration' in entity &&
     typeof entity.frameDuration === 'number'
   );
+}
+
+/**
+ * Check if entity has stunnable trait.
+ *
+ * Entities with stunnable trait can be frozen/stunned, preventing movement and attacks.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has stunnable trait
+ */
+export function hasStunnable(
+  entity: EntityData
+): entity is EntityData & HasStunnable {
+  return 'stunnable' in entity && entity.stunnable === true;
+}
+
+/**
+ * Check if entity is currently stunned.
+ *
+ * Convenience guard that checks both trait presence and active stun state.
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is stunned
+ */
+export function isStunned(
+  entity: EntityData
+): boolean {
+  return 'stunned' in entity && entity.stunned === true;
+}
+
+/**
+ * Check if entity has chain follow trait.
+ *
+ * Entities with chain follow trait are part of a linked chain (snake, centipede).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity has chain follow trait
+ */
+export function hasChainFollow(
+  entity: EntityData
+): entity is EntityData & HasChainFollow {
+  return (
+    'chainId' in entity &&
+    typeof entity.chainId === 'string' &&
+    'isChainHead' in entity &&
+    typeof entity.isChainHead === 'boolean'
+  );
+}
+
+/**
+ * Check if entity is a chain follower (not the head).
+ *
+ * @param entity - Entity to check
+ * @returns true if entity is a chain follower
+ */
+export function isChainFollower(
+  entity: EntityData
+): boolean {
+  return hasChainFollow(entity) && !entity.isChainHead;
 }

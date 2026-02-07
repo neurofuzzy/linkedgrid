@@ -911,3 +911,74 @@ export function spawnExit(
     ...overrides,
   });
 }
+
+/**
+ * Spawn a chain of linked entities (snake, centipede).
+ *
+ * Creates a head entity and N follower segments. The head moves via
+ * NPCMovementSystem; followers are moved by ChainFollowSystem.
+ *
+ * @param spatial - SpatialSystem to spawn in
+ * @param chainId - Unique chain identifier
+ * @param positions - Array of {x, y} positions for each segment (head first)
+ * @param headOverrides - Properties for the head entity
+ * @param segmentOverrides - Properties for follower entities
+ * @returns Array of entity IDs [head, follower1, follower2, ...]
+ *
+ * @example
+ * ```typescript
+ * const ids = spawnChain(spatial, 'snake-1', [
+ *   { x: 5, y: 5 },
+ *   { x: 4, y: 5 },
+ *   { x: 3, y: 5 },
+ * ], { movementMode: 'wander', speed: 2 });
+ * ```
+ */
+export function spawnChain(
+  spatial: SpatialSystem,
+  chainId: string,
+  positions: Array<{ x: number; y: number }>,
+  headOverrides?: Record<string, unknown>,
+  segmentOverrides?: Record<string, unknown>
+): number[] {
+  if (positions.length === 0) return [];
+
+  const entityIds: number[] = [];
+
+  // Spawn head
+  const headPos = positions[0];
+  const headId = spatial.spawn('enemy', headPos.x, headPos.y, GameLayers.ACTORS, {
+    hp: 30,
+    maxHp: 30,
+    healthState: 'alive',
+    team: 'enemy',
+    chainId,
+    isChainHead: true,
+    chainIndex: 0,
+    chainDelay: 1,
+    movementMode: 'wander',
+    speed: 2,
+    ...headOverrides,
+  });
+  entityIds.push(headId);
+
+  // Spawn followers
+  for (let i = 1; i < positions.length; i++) {
+    const pos = positions[i];
+    const followerId = spatial.spawn('enemy', pos.x, pos.y, GameLayers.ACTORS, {
+      hp: 20,
+      maxHp: 20,
+      healthState: 'alive',
+      team: 'enemy',
+      chainId,
+      isChainHead: false,
+      chainFollowTargetId: entityIds[i - 1], // Follow previous segment
+      chainIndex: i,
+      chainDelay: 1,
+      ...segmentOverrides,
+    });
+    entityIds.push(followerId);
+  }
+
+  return entityIds;
+}

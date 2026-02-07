@@ -10,6 +10,8 @@
 import type { EntityData } from '../entities/entity.types';
 import type { ExecutionPhase } from '../config/systems.config';
 import { LinkedCell, LinkedGrid } from './grid';
+import type { FreeBodyStore } from './free-body-store';
+import type { SparseEntityStore } from './entity-store';
 export type { EntityData, ExecutionPhase };
 
 /**
@@ -193,13 +195,17 @@ export interface GameContext {
     blocksVision: (cell: LinkedCell | null) => boolean;
     isWalkable: (cell: LinkedCell | null) => boolean;
     isAlive: (entityId: number) => boolean;
+    relocate: (entityId: number, toX: number, toY: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
     cancelMove: (entityId: number) => void;
     onSpawn: (callback: LifecycleCallback) => () => void;
     onRemove: (callback: LifecycleCallback) => () => void;
     getPosition: (id: number) => { x: number; y: number; layer: number } | null;
     getGrid: () => LinkedGrid;
+    getStore: () => SparseEntityStore;
   };
+  /** Free body store for entities with sub-cell float positions (projectiles, flying entities) */
+  freeBody?: FreeBodyStore;
   sceneManager?: {
     getScene: (id: string) => unknown;
     getActiveScene: () => unknown;

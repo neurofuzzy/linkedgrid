@@ -4,6 +4,7 @@
 import { SpatialSystem } from './spatial-system';
 import type { GameSystem, GameContext, ExecutionPhase, GameManagerContext } from './types';
 import { EXECUTION_PHASE_ORDER } from '../config/systems.config';
+import { FreeBodyStore } from './free-body-store';
 
 /**
  * Sort systems by their execution phase.
@@ -39,6 +40,9 @@ function sortSystemsByPhase(systems: GameSystem[]): GameSystem[] {
 export class GameLoop {
   private systems: GameSystem[] = [];
   private _tickCount = 0;
+
+  /** Free body store for off-grid entities (projectiles, flying entities) */
+  readonly freeBody: FreeBodyStore = new FreeBodyStore();
 
   constructor(
     private spatial: SpatialSystem,
@@ -120,6 +124,7 @@ export class GameLoop {
       tick: this._tickCount,
       overlaps,
       spatial: this.spatial as unknown as GameContext['spatial'],
+      freeBody: this.freeBody,
       gameManager: this.gameManager,
     };
 
