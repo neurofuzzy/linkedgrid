@@ -1435,7 +1435,7 @@ export function hasFacing(
     'facing' in entity &&
     typeof entity.facing === 'number' &&
     'facingMode' in entity &&
-    typeof entity.facingMode === 'string'
+    (entity.facingMode === '2-way' || entity.facingMode === '4-way')
   );
 }
 

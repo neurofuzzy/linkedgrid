@@ -11,6 +11,7 @@ import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { GameLayers } from '../config/layers.config';
 import type { HealthSystem } from './health.system';
 import type { HasProjectile } from '../traits/projectile.trait';
+import type { VisualEventBus } from '../core/visual-event-bus';
 
 /**
  * ProjectileSystem - Manages autonomous projectile movement and collision.
@@ -48,8 +49,15 @@ export class ProjectileSystem extends BaseTickedSystem {
 
   protected tickRate = 1; // Run every tick for smooth movement
 
-  constructor(private healthSystem: HealthSystem) {
+  private healthSystem: HealthSystem;
+
+  /** Optional visual event bus for emitting launch events */
+  private visualEventBus?: VisualEventBus;
+
+  constructor(healthSystem: HealthSystem, visualEventBus?: VisualEventBus) {
     super();
+    this.healthSystem = healthSystem;
+    this.visualEventBus = visualEventBus;
   }
 
   protected onTick(context: GameContext): void {
@@ -322,6 +330,10 @@ export class ProjectileSystem extends BaseTickedSystem {
   /**
    * Spawn a projectile programmatically.
    * Convenience method for other systems to create projectiles.
+   *
+   * Emits a `projectile:launched` visual event so renderers can display
+   * muzzle flash / blast cone effects on the first frame (before the
+   * projectile has moved and can be interpolated).
    */
   spawnProjectile(
     context: GameContext,
@@ -332,13 +344,33 @@ export class ProjectileSystem extends BaseTickedSystem {
     damage: number,
     options: Partial<HasProjectile> & { color?: string } = {}
   ): number {
-    return context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
+    const projectileId = context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
       targetX,
       targetY,
       damage,
       ephemeral: true,
       ...options,
     });
+
+    // Emit launch event for renderers (muzzle flash, blast cone, etc.)
+    if (this.visualEventBus) {
+      this.visualEventBus.emit({
+        type: 'projectile:launched',
+        entityId: projectileId,
+        x,
+        y,
+        data: {
+          ownerId: options.ownerId,
+          targetX,
+          targetY,
+          speed: options.speed ?? 1,
+          color: options.color,
+          damageType: options.damageType,
+        },
+      });
+    }
+
+    return projectileId;
   }
 
   public override resetState(): void {

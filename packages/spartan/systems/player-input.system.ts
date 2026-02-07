@@ -65,30 +65,28 @@ export class PlayerInputSystem extends BaseReactiveSystem {
 
     // Update visual state based on input
     const playerEntity = context.spatial.getEntityData(playerId);
-    if (playerEntity) {
-      if (lastDirection === Direction.NONE) {
-        // No input -- revert to idle if currently walking
-        if (hasVisualState(playerEntity) && playerEntity.visualState === 'walk') {
-          playerEntity.visualState = 'idle';
-          playerEntity.visualDirty = true;
-        }
-        return;
-      }
+    if (!playerEntity) return;
 
-      // Set facing from input direction
-      if (hasFacing(playerEntity)) {
-        playerEntity.facing = lastDirection;
+    if (lastDirection === Direction.NONE) {
+      // No input -- revert to idle if currently walking
+      if (hasVisualState(playerEntity) && playerEntity.visualState === 'walk') {
+        playerEntity.visualState = 'idle';
+        playerEntity.visualDirty = true;
       }
-
-      // Set walk state
-      if (hasVisualState(playerEntity) && playerEntity.visualState !== 'attack') {
-        if (playerEntity.visualState !== 'walk') {
-          playerEntity.visualState = 'walk';
-          playerEntity.visualDirty = true;
-        }
-      }
-    } else if (lastDirection === Direction.NONE) {
       return;
+    }
+
+    // Set facing from input direction
+    if (hasFacing(playerEntity)) {
+      playerEntity.facing = lastDirection;
+    }
+
+    // Set walk state
+    if (hasVisualState(playerEntity) && playerEntity.visualState !== 'attack') {
+      if (playerEntity.visualState !== 'walk') {
+        playerEntity.visualState = 'walk';
+        playerEntity.visualDirty = true;
+      }
     }
 
     const delta = this.directionToDelta(lastDirection);

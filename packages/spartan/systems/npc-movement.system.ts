@@ -88,13 +88,13 @@ export class NPCMovementSystem extends BaseTickedSystem {
       if (moved) {
         entityData.lastMoveTick = currentTick;
 
-        // Update visual state to 'walk' while moving
-        if (hasVisualState(entityData) && entityData.visualState !== 'walk') {
+        // Update visual state to 'walk' while moving, but don't override attack/hurt
+        if (hasVisualState(entityData) && entityData.visualState === 'idle') {
           entityData.visualState = 'walk';
           entityData.visualDirty = true;
         }
       } else {
-        // Revert to idle when not moving
+        // Revert to idle only when currently walking (preserve attack/hurt states)
         if (hasVisualState(entityData) && entityData.visualState === 'walk') {
           entityData.visualState = 'idle';
           entityData.visualDirty = true;

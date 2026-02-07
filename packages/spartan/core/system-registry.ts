@@ -111,7 +111,7 @@ export function createAllSystems(
   systems.push(respawnSystem);
 
   // === SYSTEMS NEEDING HEALTHSYSTEM ===
-  const projectileSystem = new ProjectileSystem(healthSystem);
+  const projectileSystem = new ProjectileSystem(healthSystem, gameManager.gameState.visualEventBus);
   const powerupSystem = new PowerupSystem({ healthSystem });
   const scoreSystem = new ScoreSystem(gameManager, healthSystem);
   const objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);

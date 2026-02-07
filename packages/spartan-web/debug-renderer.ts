@@ -435,7 +435,7 @@ export class DebugCanvasRenderer {
 
   updateConfig(partial: Partial<DebugRendererConfig>): void {
     Object.assign(this.config, partial);
-    if (partial.tickRate) {
+    if (partial.tickRate && partial.tickRate > 0) {
       this.tickDurationMs = 1000 / partial.tickRate;
     }
     this.resizeCanvas();

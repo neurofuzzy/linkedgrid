@@ -44,6 +44,7 @@ export type VisualEventType =
   | 'entity:died'
   | 'entity:spawned'
   | 'entity:removed'
+  | 'projectile:launched'
   | 'scene:transition'
   | 'effect:request';
 
@@ -109,7 +110,11 @@ export class VisualEventBus {
     const set = this.listeners.get(event.type);
     if (!set) return;
     for (const callback of set) {
-      callback(event);
+      try {
+        callback(event);
+      } catch (error) {
+        console.error('[VisualEventBus] listener error:', error);
+      }
     }
   }
 
