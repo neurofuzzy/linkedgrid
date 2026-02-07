@@ -131,25 +131,46 @@ GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`)
 
 ---
 
-Phase 4: Visual System (New Subsystem)
+Phase [x] 4: Visual System (New Subsystem)
 
-[ ] 1. Phase 4a: Foundation (Dirty state tracking, Visual States)
-[ ] 2. Phase 4b: Enhanced Visuals (Facing direction, Animation states)
-[ ] 3. Phase 4c: Effects Manager (Particles, Area effects)
+[x] 1. Phase 4a: Foundation (Dirty state tracking, Visual States)
+   - `VisualEventBus` pub/sub for platform-agnostic visual events.
+   - `EffectsQueue` FIFO queue for effect descriptors (shake, flash, particle, area).
+   - `VisualStateSystem` (post-commit) for dirty tracking, position changes, animation frames.
+   - Visual traits: `HasVisualState`, `HasFacing`, `HasAnimation`, `HasColor`.
+   - Spec: `specs/visual-system-spec.md`
+[x] 2. Phase 4b: Enhanced Visuals (Facing direction, Animation states)
+   - Systems set `visualState` and `facing` based on actions (player-input, npc-movement, melee, player-weapon).
+   - `Direction` enum for entity facing/movement.
+   - Spec: `specs/visual-animation-spec.md`
+[x] 3. Phase 4c: Effects Manager (Particles, Area effects)
+   - Systems push `VisualEffect`s to the `EffectsQueue` (explosion, health, respawn, fire).
+   - Spec: `specs/visual-effects-spec.md`
+[x] 4. Projectile visual lifecycle
+   - `projectile:launched` event emitted from `spawnProjectile()` for muzzle flash / blast cone renderers.
+   - Impact grace tick: deferred removal so renderers can interpolate projectiles to their collision cell.
+   - Path no longer includes spawn cell, eliminating first-tick stall.
 
-NOTE: Sprite animation is not movement-based, it simply sets a frame number for any states that have more than one sprite, for instance, a walking animation may have legs in different positions. Sprite sheets can be envisioned as a 5x5 matrix with each row being a state and each column being a frame in the state. A state can have 0 or more frames. If no frames, it reverts to the default state (idl[ ] e)
+NOTE: Sprite animation is not movement-based, it simply sets a frame number for any states that have more than one sprite, for instance, a walking animation may have legs in different positions. Sprite sheets can be envisioned as a 5x5 matrix with each row being a state and each column being a frame in the state. A state can have 0 or more frames. If no frames, it reverts to the default state (idle)
 
-Phase [ ] 4.5: Refactor Visual Interplay
+Phase [x] 4.5: Refactor Visual Interplay
 
-[ ] 1. Audit Layers and Visual State types
-[ ] 2. Normalize common states
+[x] 1. Audit Layers and Visual State types
+[x] 2. Normalize common states
+   - Centralized `VISUAL_STATE_PRESETS`, `EFFECT_PRESETS`, `VISUAL_LAYERS` in `config/visual.config.ts`.
+[x] 3. Debug/fallback Canvas2D renderer (`packages/spartan-web/debug-renderer.ts`)
+   - Position interpolation (FPS decoupled from tick rate).
+   - Entity tints (damage=red, spawn=white, death=red) and pulse effect (health chargers).
+   - Round rendering for collectibles/actors, transparency for gas/liquid.
+   - Screen effects (shake, flash, particles) driven by `EffectsQueue`.
+   - Spec: `specs/debug-renderer-spec.md`
 
 GAME DEMO DELIVERABLES (see `dev/games` and `dev/playground.tsx`) 
 
 *SEPARATE DEMOS EXPECTED*
 
-[ ] A) Visual states and facing direction, simple animation using numeric frame numbers
-[ ] B) Effects manager demo with explosions
+[x] A) Debug renderer demo with visual states, effects, floor tiles, and entity rendering showcase -> `dev/games/debug-renderer-demo.json`
+[x] B) Effects manager demo with explosions (integrated into debug-renderer-demo and existing combat/npc demos)
 
 ---
 
