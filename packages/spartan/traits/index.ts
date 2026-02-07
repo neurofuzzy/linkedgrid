@@ -20,4 +20,6 @@ export * from './spawner.trait';
 export * from './pushable.trait';
 export * from './scene-connection.trait';
 export * from './objective.trait';
+export * from './stun.trait';
+export * from './chain-follow.trait';
 export * from './trait-guards';

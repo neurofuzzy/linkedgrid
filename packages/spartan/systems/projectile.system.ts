@@ -6,10 +6,11 @@
  */
 import { BaseTickedSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
-import { hasProjectile, hasHealth } from '../traits/trait-guards';
+import { hasProjectile, hasHealth, hasStunnable } from '../traits/trait-guards';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { GameLayers } from '../config/layers.config';
 import type { HealthSystem } from './health.system';
+import type { StunSystem } from './stun.system';
 import type { HasProjectile } from '../traits/projectile.trait';
 import type { VisualEventBus } from '../core/visual-event-bus';
 
@@ -51,13 +52,26 @@ export class ProjectileSystem extends BaseTickedSystem {
 
   private healthSystem: HealthSystem;
 
+  /** Optional stun system for freeze projectiles */
+  private stunSystem?: StunSystem;
+
   /** Optional visual event bus for emitting launch events */
   private visualEventBus?: VisualEventBus;
+
+  /** Default stun duration for freeze projectiles (ticks) */
+  private static readonly FREEZE_STUN_DURATION = 20;
 
   constructor(healthSystem: HealthSystem, visualEventBus?: VisualEventBus) {
     super();
     this.healthSystem = healthSystem;
     this.visualEventBus = visualEventBus;
+  }
+
+  /**
+   * Set the StunSystem reference for freeze projectile support.
+   */
+  setStunSystem(stunSystem: StunSystem): void {
+    this.stunSystem = stunSystem;
   }
 
   protected onTick(context: GameContext): void {
@@ -105,6 +119,11 @@ export class ProjectileSystem extends BaseTickedSystem {
       if (age >= lifetime) {
         toRemove.push(entityId);
         continue;
+      }
+
+      // Homing: recalculate path toward target each tick
+      if (projectile.homing && projectile.path) {
+        this.updateHomingPath(context, entityId, projectile);
       }
 
       // Move projectile along path
@@ -163,6 +182,70 @@ export class ProjectileSystem extends BaseTickedSystem {
     projectile.pathIndex = 0;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;
+  }
+
+  /**
+   * Update homing projectile path toward its target.
+   * If the target is dead or missing, keeps the current trajectory.
+   */
+  private updateHomingPath(
+    context: GameContext,
+    entityId: number,
+    projectile: HasProjectile
+  ): void {
+    const targetId = projectile.homingTargetId;
+    if (targetId === undefined) return;
+
+    // If target is dead, continue on current trajectory
+    if (!context.spatial.isAlive(targetId)) return;
+
+    const targetPos = context.spatial.getEntityPosition(targetId);
+    if (!targetPos) return;
+
+    const pos = context.spatial.getEntityPosition(entityId);
+    if (!pos) return;
+
+    // Already at or past target -- nothing to recalculate
+    if (pos.x === targetPos.x && pos.y === targetPos.y) return;
+
+    const strength = projectile.homingStrength ?? 1.0;
+
+    // Blend current target with actual target based on homingStrength
+    let effectiveTargetX: number;
+    let effectiveTargetY: number;
+
+    if (strength >= 1.0) {
+      // Perfect tracking
+      effectiveTargetX = targetPos.x;
+      effectiveTargetY = targetPos.y;
+    } else {
+      // Partial tracking: blend between current trajectory endpoint and target
+      const currentTargetX = projectile.targetX;
+      const currentTargetY = projectile.targetY;
+      effectiveTargetX = Math.round(currentTargetX + (targetPos.x - currentTargetX) * strength);
+      effectiveTargetY = Math.round(currentTargetY + (targetPos.y - currentTargetY) * strength);
+    }
+
+    // Update target coordinates
+    projectile.targetX = effectiveTargetX;
+    projectile.targetY = effectiveTargetY;
+
+    // Recompute path from current position
+    const startCell = context.spatial.grid.cell(pos.x, pos.y);
+    if (!startCell) return;
+
+    const grid = context.spatial.grid;
+    const clampedX = Math.max(0, Math.min(grid.width - 1, effectiveTargetX));
+    const clampedY = Math.max(0, Math.min(grid.height - 1, effectiveTargetY));
+    projectile.targetX = clampedX;
+    projectile.targetY = clampedY;
+
+    const targetCell = grid.cell(clampedX, clampedY);
+    if (!targetCell) return;
+
+    const lineCells = LinkedCellUtils.getLine(startCell, targetCell);
+    projectile.path = lineCells.map((c) => ({ x: c.x, y: c.y }));
+    projectile.pathIndex = 0;
   }
 
   /**
@@ -296,6 +379,11 @@ export class ProjectileSystem extends BaseTickedSystem {
 
       // Only damage entities with health
       if (!hasHealth(targetData)) continue;
+
+      // Freeze projectiles: apply stun to stunnable targets
+      if (projectile.damageType === 'freeze' && this.stunSystem && hasStunnable(targetData)) {
+        this.stunSystem.applyStun(targetId, ProjectileSystem.FREEZE_STUN_DURATION);
+      }
 
       // Deal damage via HealthSystem
       this.healthSystem.damage(

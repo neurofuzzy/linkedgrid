@@ -98,6 +98,10 @@ export interface HasTurret {
   projectileLifetime?: number;
   /** Whether spawned projectiles pierce targets */
   projectilePiercing?: boolean;
+  /** Whether spawned projectiles home toward the target */
+  projectileHoming?: boolean;
+  /** Homing turn rate for spawned projectiles (0-1, default: 1.0) */
+  projectileHomingStrength?: number;
 
   // ========== Ray Config (for weaponType: 'ray') ==========
   /** Damage for ray hits */

@@ -182,7 +182,7 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
         {
           speed: weaponConfig.projectileSpeed ?? 2,
           ownerId: playerId,
-          damageType: weaponConfig.name,
+          damageType: weaponConfig.damageType ?? weaponConfig.name,
           color: weaponConfig.projectileColor ?? '#ffff00',
         }
       );

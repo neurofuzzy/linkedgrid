@@ -84,6 +84,14 @@ export interface HasProjectile {
   /** Current bounce count (managed by system) */
   bounceCount?: number;
 
+  // ========== Homing ==========
+  /** Whether projectile tracks a target entity each tick */
+  homing?: boolean;
+  /** Turn rate toward target per tick: 1.0 = perfect tracking, 0 = no tracking (default: 1.0) */
+  homingStrength?: number;
+  /** Entity ID of the homing target. If target dies, projectile continues on last trajectory. */
+  homingTargetId?: number;
+
   // ========== Internal State (managed by system) ==========
   /** Current index in the precomputed path */
   pathIndex?: number;

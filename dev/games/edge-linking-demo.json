@@ -1,0 +1,202 @@
+{
+  "description": "Edge-Based Scene Linking Demo:\n- 4 scenes arranged in a 2x2 grid\n- Walk off any edge to transition to the adjacent scene\n- NW scene: Green (player start)\n- NE scene: Blue theme\n- SW scene: Red theme\n- SE scene: Yellow theme\n- Each scene has walls marking boundaries with openings at edges",
+  "initialScene": "scene-nw",
+  "input": {
+    "type": "keyboard",
+    "preset": "classic"
+  },
+  "scenes": [
+    {
+      "id": "scene-nw",
+      "name": "Northwest (Start)",
+      "width": 10,
+      "height": 10,
+      "adjacencies": { "east": "scene-ne", "south": "scene-sw" },
+      "entities": [
+        { "_comment": "=== NW WALLS (leave east and south edges open) ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": {} },
+        { "_comment": "=== NW DECOR ===" },
+        { "type": "wall", "x": 4, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 5, "layer": 5, "data": {} },
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 3,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "scene-nw",
+            "inventory": [],
+            "isPlayer": true,
+            "team": "player",
+            "healthState": "alive",
+            "color": "#00ff00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene-ne",
+      "name": "Northeast",
+      "width": 10,
+      "height": 10,
+      "adjacencies": { "west": "scene-nw", "south": "scene-se" },
+      "entities": [
+        { "_comment": "=== NE WALLS (leave west and south edges open) ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 9, "layer": 5, "data": {} },
+        { "_comment": "=== NE DECOR ===" },
+        { "type": "wall", "x": 3, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 6, "layer": 5, "data": {} },
+        {
+          "type": "enemy",
+          "x": 5,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 3,
+            "color": "#4488ff"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene-sw",
+      "name": "Southwest",
+      "width": 10,
+      "height": 10,
+      "adjacencies": { "north": "scene-nw", "east": "scene-se" },
+      "entities": [
+        { "_comment": "=== SW WALLS (leave north and east edges open) ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 9, "layer": 5, "data": {} },
+        { "_comment": "=== SW DECOR ===" },
+        { "type": "wall", "x": 5, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 5, "layer": 5, "data": {} },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 5,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 3,
+            "color": "#ff4444"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene-se",
+      "name": "Southeast",
+      "width": 10,
+      "height": 10,
+      "adjacencies": { "north": "scene-ne", "west": "scene-sw" },
+      "entities": [
+        { "_comment": "=== SE WALLS (leave north and west edges open) ===" },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 9, "layer": 5, "data": {} },
+        { "_comment": "=== SE DECOR ===" },
+        { "type": "wall", "x": 4, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 5, "layer": 5, "data": {} },
+        {
+          "type": "enemy",
+          "x": 5,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 50,
+            "maxHp": 50,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 3,
+            "color": "#ffcc00"
+          }
+        }
+      ]
+    }
+  ]
+}

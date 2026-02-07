@@ -69,13 +69,14 @@ public override getDebugState(): Record<string, unknown> {
 }
 ```
 
-## All Built-in Systems (25)
+## All Built-in Systems (28)
 
 ### Input Phase
 
 | System | Tick Rate | Description |
 | :--- | :--- | :--- |
 | **PlayerInputSystem** | 1 | Translates `InputProvider.getMoveDirection()` into `spatial.move()` intents. No validation. |
+| **EdgeTransitionSystem** | 1 | Detects player at scene edge moving outward; triggers cross-scene transition via adjacency map. |
 
 ### Pre-Commit Phase
 
@@ -98,8 +99,10 @@ public override getDebugState(): Record<string, unknown> {
 | **PoisonSystem** | 1 | Density-based gas dispersion and damage. |
 | **ChainReactionSystem** | 1 | Deterministic chain link spreading. |
 | **FloorEffectSystem** | 1 | Floor hazards: damage, heal, slide, slow. |
-| **ProjectileSystem** | 1 | Autonomous projectiles along Bresenham paths. Bounce, pierce. |
+| **ProjectileSystem** | 1 | Autonomous projectiles along Bresenham paths. Bounce, pierce, homing. |
 | **TurretSystem** | 1 | Stationary shooters. Targeting: nearest, player, fixed, cardinal. |
+| **StunSystem** | 1 | Applies, manages, and expires stun/freeze status effects on stunnable entities. |
+| **ChainFollowSystem** | 1 | Coordinates linked entity chains (snakes, centipedes). Followers replay head position history. |
 | **SignalSystem** | 1 | Signal propagation (oscillators, switches, conductors, inverters, range sensors). |
 | **GateSystem** | 1 | Signal-controlled gate open/close (WALLS <-> FLOOR layer swap). |
 | **SpawningSystem** | 1 | Entity spawning from spawner entities. Supports wave mode, boundary recycling. |

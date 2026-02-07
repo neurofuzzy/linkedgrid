@@ -305,7 +305,7 @@ export class TurretSystem extends BaseTickedSystem {
     turretId: number,
     turret: HasTurret,
     turretPos: { x: number; y: number },
-    target: { x: number; y: number }
+    target: { x: number; y: number; entityId?: number }
   ): void {
     const damage = turret.projectileDamage ?? 10;
     const speed = turret.projectileSpeed ?? 1;
@@ -323,6 +323,9 @@ export class TurretSystem extends BaseTickedSystem {
         lifetime,
         ownerId: turretId,
         piercing: turret.projectilePiercing,
+        homing: turret.projectileHoming,
+        homingStrength: turret.projectileHomingStrength,
+        homingTargetId: turret.projectileHoming ? target.entityId : undefined,
       }
     );
   }

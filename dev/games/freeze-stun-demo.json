@@ -1,0 +1,190 @@
+{
+  "description": "Freeze/Stun Weapon Demo:\n- Green player (WASD to move, aim with arrows, fire with Space)\n- Pick up the blue freeze weapon to fire freeze projectiles\n- Freeze projectiles stun enemies (they turn frozen and cannot move)\n- Stun wears off after ~20 ticks\n- Red enemies wander and pursue when close\n- Blue turret fires freeze projectiles at you!",
+  "initialScene": "freeze-arena",
+  "input": {
+    "type": "keyboard",
+    "preset": "twin-stick"
+  },
+  "scenes": [
+    {
+      "id": "freeze-arena",
+      "name": "Freeze/Stun Arena",
+      "width": 18,
+      "height": 14,
+      "entities": [
+        { "_comment": "=== BORDER WALLS ===" },
+        { "type": "wall", "x": 0, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 10, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 11, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 12, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 13, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 14, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 15, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 16, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 0, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 1, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 2, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 3, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 4, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 5, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 6, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 7, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 8, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 9, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 10, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 11, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 12, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 13, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 14, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 15, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 16, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 13, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 10, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 11, "layer": 5, "data": {} },
+        { "type": "wall", "x": 0, "y": 12, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 1, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 2, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 3, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 4, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 5, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 6, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 7, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 8, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 9, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 10, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 11, "layer": 5, "data": {} },
+        { "type": "wall", "x": 17, "y": 12, "layer": 5, "data": {} },
+
+        { "_comment": "=== PLAYER ===" },
+        {
+          "type": "player",
+          "x": 9,
+          "y": 7,
+          "layer": 6,
+          "data": {
+            "hp": 100,
+            "maxHp": 100,
+            "damage": 10,
+            "sceneId": "freeze-arena",
+            "inventory": [],
+            "isPlayer": true,
+            "team": "player",
+            "healthState": "alive",
+            "stunnable": true,
+            "equippedWeapon": "freeze-gun",
+            "ammo": { "freeze-gun": 30 },
+            "color": "#00ff00"
+          }
+        },
+
+        { "_comment": "=== WANDERING ENEMIES (stunnable) ===" },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 2,
+            "stunnable": true,
+            "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 14,
+          "y": 3,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 2,
+            "stunnable": true,
+            "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 3,
+          "y": 10,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 2,
+            "stunnable": true,
+            "color": "#ff4444"
+          }
+        },
+        {
+          "type": "enemy",
+          "x": 14,
+          "y": 10,
+          "layer": 6,
+          "data": {
+            "hp": 60,
+            "maxHp": 60,
+            "healthState": "alive",
+            "team": "enemy",
+            "movementMode": "wander",
+            "speed": 2,
+            "stunnable": true,
+            "color": "#ff4444"
+          }
+        },
+
+        { "_comment": "=== FREEZE TURRET (enemy, fires freeze projectiles at player) ===" },
+        {
+          "type": "turret",
+          "x": 9,
+          "y": 1,
+          "layer": 6,
+          "data": {
+            "weaponType": "projectile",
+            "targeting": "player",
+            "cooldown": 30,
+            "range": 20,
+            "projectileDamage": 5,
+            "projectileSpeed": 1,
+            "projectileLifetime": 40,
+            "projectileDamageType": "freeze",
+            "team": "enemy",
+            "hp": 80,
+            "maxHp": 80,
+            "healthState": "alive",
+            "color": "#4488ff"
+          }
+        }
+      ]
+    }
+  ]
+}

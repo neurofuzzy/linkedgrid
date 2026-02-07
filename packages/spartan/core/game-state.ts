@@ -72,6 +72,9 @@ export class GameState {
     Array<{ sceneId: string; x: number; y: number; layer: number }>
   > = new Map();
 
+  /** Scene adjacencies: sceneId → direction → neighborSceneId */
+  adjacencies: Map<string, Map<number, string>> = new Map();
+
   /** Global entity ID counter (prevents collisions across scenes) */
   private nextEntityId: number = 1;
 
@@ -232,6 +235,7 @@ export class GameState {
       flags: Array.from(this.flags.entries()),
       data: Array.from(this.data.entries()),
       connections: Array.from(this.connections.entries()),
+      adjacencies: Array.from(this.adjacencies.entries()).map(([k, v]) => [k, Array.from(v.entries())]),
       nextEntityId: this.nextEntityId,
       entities,
     };
@@ -256,6 +260,7 @@ export class GameState {
     flags?: Array<[string, boolean]>;
     data?: Array<[string, unknown]>;
     connections?: Array<[string, Array<{ sceneId: string; x: number; y: number; layer: number }>]>;
+    adjacencies?: Array<[string, Array<[number, string]>]>;
     nextEntityId?: number;
     entities?: Array<{ id: number; type: string;[key: string]: unknown }>;
   }): GameState {
@@ -272,6 +277,11 @@ export class GameState {
     state.flags = new Map(data.flags ?? []);
     state.data = new Map(data.data ?? []);
     state.connections = new Map(data.connections ?? []);
+    if (data.adjacencies) {
+      state.adjacencies = new Map(
+        data.adjacencies.map(([k, v]) => [k, new Map(v)])
+      );
+    }
     state.nextEntityId = data.nextEntityId ?? 1;
 
     // Restore all entities to global store

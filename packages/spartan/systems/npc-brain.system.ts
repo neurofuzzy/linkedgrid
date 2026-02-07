@@ -12,7 +12,7 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext, EntityData } from '../core/types';
-import { hasNPCBrain, hasMelee, hasWeapon, hasHealth, hasTeam, hasNPCMovement } from '../traits/trait-guards';
+import { hasNPCBrain, hasMelee, hasWeapon, hasHealth, hasTeam, hasNPCMovement, isStunned, isChainFollower } from '../traits/trait-guards';
 import { Direction } from '../core/grid/direction';
 import { GameLayers } from '../config/layers.config';
 import type { HasNPCBrain, NPCPosture } from '../traits/npc-brain.trait';
@@ -70,6 +70,12 @@ export class NPCBrainSystem extends BaseTickedSystem {
 
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasNPCBrain(entityData)) continue;
+
+      // Skip stunned entities
+      if (isStunned(entityData)) continue;
+
+      // Skip chain followers (head only makes decisions)
+      if (isChainFollower(entityData)) continue;
 
       this.processNPC(context, entityId, entityData, currentTick);
     }

@@ -32,4 +32,7 @@ export { ScoreSystem } from './score.system';
 export { ObjectiveSystem } from './objective.system';
 export { SignalSystem } from './signal.system';
 export { SpawningSystem } from './spawning.system';
+export { ChainFollowSystem } from './chain-follow.system';
+export { EdgeTransitionSystem } from './edge-transition.system';
+export { StunSystem } from './stun.system';
 export { VisualStateSystem } from './visual-state.system';

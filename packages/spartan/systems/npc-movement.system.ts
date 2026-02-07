@@ -4,7 +4,7 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';
-import { hasNPCMovement, isPathNode, hasFacing, hasVisualState } from '../traits/trait-guards';
+import { hasNPCMovement, isPathNode, hasFacing, hasVisualState, isStunned, isChainFollower } from '../traits/trait-guards';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { LinkedCell } from '../core/grid/linked-cell';
 import { Direction } from '../core/grid/direction';
@@ -51,6 +51,12 @@ export class NPCMovementSystem extends BaseTickedSystem {
 
       const entityData = context.spatial.getEntityData(entityId);
       if (!entityData || !hasNPCMovement(entityData)) continue;
+
+      // Skip stunned entities
+      if (isStunned(entityData)) continue;
+
+      // Skip chain followers (moved by ChainFollowSystem)
+      if (isChainFollower(entityData)) continue;
 
       // Check speed-based cooldown
       const speed = entityData.speed ?? 1;
