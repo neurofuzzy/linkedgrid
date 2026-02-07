@@ -465,8 +465,10 @@ export class NPCMovementSystem extends BaseTickedSystem {
           const next2 = next.neighbor(dir3);
           if (!next2) continue;
           if (context.spatial.isBlocked(next2)) continue;
+          // Don't count paths that return to the candidate cell
+          if (next2.x === c.cell.x && next2.y === c.cell.y) continue;
+
           const next2Key = `${next2.x},${next2.y}`;
-          if (next2Key === nextKey) continue; // don't count self
           if (next2Key === currentKey) continue;
           if (bodyPositions.has(next2Key)) continue;
           openCount++;

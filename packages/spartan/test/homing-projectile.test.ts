@@ -68,12 +68,12 @@ describe('Homing Projectiles', () => {
 
     const projId = projectileSystem.spawnProjectile(
       makeContext(), 0, 5, 10, 5, 25, {
-        speed: 2,
-        lifetime: 50,
-        homing: true,
-        homingStrength: 1.0,
-        homingTargetId: targetId,
-      }
+      speed: 2,
+      lifetime: 50,
+      homing: true,
+      homingStrength: 1.0,
+      homingTargetId: targetId,
+    }
     );
 
     // Act: advance 1 tick so velocity initializes and projectile moves
@@ -106,12 +106,12 @@ describe('Homing Projectiles', () => {
 
     projectileSystem.spawnProjectile(
       makeContext(), 0, 5, 8, 5, 50, {
-        speed: 2,
-        lifetime: 50,
-        homing: true,
-        homingStrength: 1.0,
-        homingTargetId: targetId,
-      }
+      speed: 2,
+      lifetime: 50,
+      homing: true,
+      homingStrength: 1.0,
+      homingTargetId: targetId,
+    }
     );
 
     // Act: advance several ticks until projectile reaches target
@@ -137,25 +137,31 @@ describe('Homing Projectiles', () => {
     });
     spatial.commit();
 
-    projectileSystem.spawnProjectile(
+    const projId = projectileSystem.spawnProjectile(
       makeContext(), 0, 5, 5, 5, 50, {
-        speed: 1,
-        lifetime: 50,
-        homing: true,
-        homingStrength: 1.0,
-        homingTargetId: targetId,
-        piercing: true,
-        maxPierces: 5,
-      }
+      speed: 1,
+      lifetime: 50,
+      homing: true,
+      homingStrength: 1.0,
+      homingTargetId: targetId,
+      piercing: true,
+      maxPierces: 5,
+    }
     );
 
     // Act: advance until projectile kills the target and passes through
-    for (let i = 0; i < 12; i++) {
+    // With speed 1, it takes 5 ticks to reach the target, plus system delay
+    for (let i = 0; i < 10; i++) {
       gameLoop.tick();
     }
 
-    // Assert: no error was thrown and the system handled dead target gracefully.
-    expect(true).toBe(true);
+    // Assert: target should be dead (removed since dyingDuration=0) and projectile should no longer be homing.
+    const targetData = store.getData(targetId);
+    expect(targetData).toBeUndefined();
+
+    const projData = store.getData(projId);
+    expect(projData?.homingTargetId).toBeUndefined();
+
   });
 
   it('partial homingStrength blends toward target', () => {
@@ -170,12 +176,12 @@ describe('Homing Projectiles', () => {
 
     const projId = projectileSystem.spawnProjectile(
       makeContext(), 0, 0, 15, 0, 25, {
-        speed: 1,
-        lifetime: 50,
-        homing: true,
-        homingStrength: 0.5,
-        homingTargetId: targetId,
-      }
+      speed: 1,
+      lifetime: 50,
+      homing: true,
+      homingStrength: 0.5,
+      homingTargetId: targetId,
+    }
     );
 
     // Act: advance a few ticks
@@ -205,11 +211,11 @@ describe('Homing Projectiles', () => {
 
     const projId = projectileSystem.spawnProjectile(
       makeContext(), 0, 5, 19, 5, 25, {
-        speed: 2,
-        lifetime: 50,
-        homing: false,
-        homingTargetId: targetId,
-      }
+      speed: 2,
+      lifetime: 50,
+      homing: false,
+      homingTargetId: targetId,
+    }
     );
 
     // Act

@@ -248,10 +248,16 @@ function rayCircleIntersection(
   
   // Calculate intersection distance along ray
   const halfChord = Math.sqrt(circleRadius * circleRadius - distSq);
-  const intersectionDist = projection - halfChord;
-  
+  let intersectionDist = projection - halfChord;
+
+  // If the ray starts inside the circle, the first intersection is behind
+  // the start point. Use the second intersection point instead.
+  if (intersectionDist < 0) {
+    intersectionDist = projection + halfChord;
+  }
+
   // Check if intersection is within ray segment
-  if (intersectionDist < 0 || intersectionDist > rayLength) return null;
+  if (intersectionDist > rayLength) return null;
   
   // Calculate intersection point
   const point = {
@@ -296,6 +302,14 @@ function rayAABBIntersection(
   const dirX = rayDx / rayLength;
   const dirY = rayDy / rayLength;
   
+  // Handle axis-aligned rays to avoid division by zero
+  if (dirX === 0 && (rayStart.x < boxMin.x || rayStart.x > boxMax.x)) {
+    return null;
+  }
+  if (dirY === 0 && (rayStart.y < boxMin.y || rayStart.y > boxMax.y)) {
+    return null;
+  }
+
   // Compute intersection distances for each axis
   const tMinX = (boxMin.x - rayStart.x) / dirX;
   const tMaxX = (boxMax.x - rayStart.x) / dirX;

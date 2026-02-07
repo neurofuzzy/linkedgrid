@@ -218,8 +218,12 @@ export class ProjectileSystem extends BaseTickedSystem {
     const targetId = projectile.homingTargetId;
     if (targetId === undefined) return;
 
-    // If target is dead, continue on current trajectory
-    if (!context.spatial.isAlive(targetId)) return;
+    // If target is dead, stop homing and continue on current trajectory
+    if (!context.spatial.isAlive(targetId)) {
+      projectile.homingTargetId = undefined;
+      projectile.homing = false;
+      return;
+    }
 
     const targetPos = context.spatial.getEntityPosition(targetId);
     if (!targetPos) return;
@@ -294,8 +298,10 @@ export class ProjectileSystem extends BaseTickedSystem {
     const totalDx = vx;
     const totalDy = vy;
 
-    // Sub-steps of at most 0.5 cells so geometric checks don't skip actors
-    const steps = Math.max(1, Math.ceil(speed * 2));
+    // Sub-steps of at most 0.5 cells so geometric checks don't skip actors.
+    // Base steps on the largest axis displacement to prevent tunneling.
+    const maxAxisMovement = Math.max(Math.abs(totalDx), Math.abs(totalDy));
+    const steps = Math.max(1, Math.ceil(maxAxisMovement * 2));
     const stepDx = totalDx / steps;
     const stepDy = totalDy / steps;
 
@@ -466,37 +472,33 @@ export class ProjectileSystem extends BaseTickedSystem {
     stepDx: number,
     stepDy: number
   ): void {
-    // Determine wall orientation by testing adjacent cells
-    const prevCellX = Math.floor(hitFloatX - stepDx);
-    const prevCellY = Math.floor(hitFloatY - stepDy);
-    const hitCellX = Math.floor(hitFloatX);
-    const hitCellY = Math.floor(hitFloatY);
+    const prevFloatX = hitFloatX - stepDx;
+    const prevFloatY = hitFloatY - stepDy;
+    const wallCellX = Math.floor(hitFloatX);
+    const wallCellY = Math.floor(hitFloatY);
 
-    const dx = hitCellX - prevCellX;
-    const dy = hitCellY - prevCellY;
+    let tx = Infinity;
+    let ty = Infinity;
 
-    // Try reflecting each axis to find valid bounce direction
-    if (dx !== 0 && dy !== 0) {
-      // Diagonal approach: try reflecting X first
-      const cellAfterReflectX = context.spatial.grid.cell(prevCellX, hitCellY);
-      const cellAfterReflectY = context.spatial.grid.cell(hitCellX, prevCellY);
+    if (stepDx !== 0) {
+      const edgeX = stepDx > 0 ? wallCellX : wallCellX + 1;
+      tx = (edgeX - prevFloatX) / stepDx;
+    }
+    if (stepDy !== 0) {
+      const edgeY = stepDy > 0 ? wallCellY : wallCellY + 1;
+      ty = (edgeY - prevFloatY) / stepDy;
+    }
 
-      if (cellAfterReflectX && !context.spatial.isBlocked(cellAfterReflectX)) {
-        // Reflect X axis (bounce off vertical wall)
-        projectile.vx = -(projectile.vx ?? 0);
-      } else if (cellAfterReflectY && !context.spatial.isBlocked(cellAfterReflectY)) {
-        // Reflect Y axis (bounce off horizontal wall)
-        projectile.vy = -(projectile.vy ?? 0);
-      } else {
-        // Corner: reflect both axes
-        projectile.vx = -(projectile.vx ?? 0);
-        projectile.vy = -(projectile.vy ?? 0);
-      }
-    } else if (dx !== 0) {
-      // Approaching from X: reflect X
+    // Compare t values to see which wall was hit first
+    if (tx < ty) {
+      // Hit a vertical wall
       projectile.vx = -(projectile.vx ?? 0);
+    } else if (ty < tx) {
+      // Hit a horizontal wall
+      projectile.vy = -(projectile.vy ?? 0);
     } else {
-      // Approaching from Y: reflect Y
+      // Hit a corner exactly (or parallel movement)
+      projectile.vx = -(projectile.vx ?? 0);
       projectile.vy = -(projectile.vy ?? 0);
     }
   }
