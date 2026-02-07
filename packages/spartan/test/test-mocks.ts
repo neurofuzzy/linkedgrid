@@ -50,6 +50,7 @@ export function createMockSpatial(overrides: Partial<SpatialSystem> = {}): GameC
         blocksVision: vi.fn(),
         isWalkable: vi.fn(),
         isAlive: vi.fn().mockReturnValue(true),
+        relocate: vi.fn().mockReturnValue(true),
         getPendingOps: vi.fn().mockReturnValue([]),
         cancelMove: vi.fn(),
         onSpawn: vi.fn().mockReturnValue(() => { }),

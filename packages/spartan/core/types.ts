@@ -193,6 +193,7 @@ export interface GameContext {
     blocksVision: (cell: LinkedCell | null) => boolean;
     isWalkable: (cell: LinkedCell | null) => boolean;
     isAlive: (entityId: number) => boolean;
+    relocate: (entityId: number, toX: number, toY: number) => boolean;
     getPendingOps: () => ReadonlyArray<PendingOperation>;
     cancelMove: (entityId: number) => void;
     onSpawn: (callback: LifecycleCallback) => () => void;

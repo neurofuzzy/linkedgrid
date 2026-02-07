@@ -155,9 +155,9 @@ export const SYSTEM_CONFIG = {
 
   ChainFollow: {
     tickRate: 1,
-    executionPhase: 'main' as const,
+    executionPhase: 'post-commit' as const,
     dependencies: ['SpatialSystem'] as const,
-    description: 'Coordinates linked entity chains (followers replay head position history)',
+    description: 'Coordinates linked entity chains via immediate relocation (post-commit)',
   },
 
   Visual: {

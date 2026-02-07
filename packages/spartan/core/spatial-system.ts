@@ -798,6 +798,47 @@ export class SpatialSystem {
   }
 
   /**
+   * Immediately relocate an entity to a new position.
+   *
+   * Unlike move(), this is NOT deferred. It directly updates the grid
+   * and position tracking. Use for coordinated multi-entity movement
+   * where deferred moves would cause conflicts (e.g., chain following).
+   *
+   * @param entityId - Entity to relocate
+   * @param toX - Destination X coordinate
+   * @param toY - Destination Y coordinate
+   * @returns true if relocation succeeded, false if destination blocked or invalid
+   */
+  relocate(entityId: number, toX: number, toY: number): boolean {
+    const pos = this.positions.get(entityId);
+    if (!pos) return false;
+
+    const toCell = this.grid.cell(toX, toY);
+    if (!toCell) return false;
+
+    // Check destination is not occupied on this layer
+    const existing = toCell.getValue(pos.layer);
+    if (existing !== undefined && existing !== entityId) return false;
+
+    // Check blocking (walls)
+    if (pos.layer === GameLayers.ACTORS && this.isBlocked(toCell)) return false;
+
+    // Clear old position
+    const fromCell = this.grid.cell(pos.x, pos.y);
+    if (fromCell) {
+      fromCell.clearValue(pos.layer);
+      this.updateCellMasks(fromCell);
+    }
+
+    // Set new position
+    toCell.setValue(pos.layer, entityId);
+    this.positions.set(entityId, { x: toX, y: toY, layer: pos.layer });
+    this.updateCellMasks(toCell);
+
+    return true;
+  }
+
+  /**
    * Get entity ID at a specific position and layer.
    *
    * @param x - X coordinate

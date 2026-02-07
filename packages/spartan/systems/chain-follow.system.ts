@@ -1,16 +1,24 @@
 /**
  * Chain Follow System - Coordinates linked entity chains (snakes, centipedes).
  *
- * Each chain consists of a head (moves via NPCMovementSystem) and followers
- * that move to the previous position of the segment ahead of them.
- * Each segment is an independent single-cell entity, maintaining the
- * Spartan spatial rules.
+ * Each chain consists of a head (moves via NPCMovementSystem) and followers.
+ * Each follower stages a move to the CURRENT position of the segment ahead.
+ * Since the segment ahead has also staged a move (or the head moved via
+ * NPCMovement), the spatial commit's "vacating" logic handles the cascade:
+ *
+ *   Head at A stages move to B  →  sources has A
+ *   F1 at A-1 stages move to A  →  A is in sources, move approved
+ *   F2 at A-2 stages move to A-1 → A-1 is in sources, move approved
+ *   Commit: clears A, A-1, A-2 → writes B, A, A-1. No overlap.
+ *
+ * If the head's move is rejected (rare with smart wander), none of the
+ * followers' destinations are in the sources set, so all are rejected too.
+ * The entire chain stays put. Correct behavior, no overlap.
  *
  * Features:
- * - Followers step into the cell their leader just vacated
- * - Death handling: chain splitting (centipede-style)
+ * - Zero-lag following (same-tick as head via commit cascade)
+ * - Centipede-style chain splitting when middle segments die
  * - Head promotion when head dies
- * - New chain ID generation for split tails
  */
 import { BaseTickedSystem } from '../core/base-system';
 import type { GameContext } from '../core/types';
@@ -20,8 +28,9 @@ import type { HasChainFollow } from '../traits/chain-follow.trait';
 /**
  * ChainFollowSystem - Manages linked entity chains.
  *
- * Runs AFTER NPCMovementSystem so the head has already moved.
- * Each follower steps into the cell its leader occupied before moving.
+ * Runs in main phase AFTER NPCMovementSystem so the head has staged its move.
+ * Followers stage moves to their leader's current position. The commit
+ * resolves the entire chain atomically via its vacating logic.
  *
  * @system
  * @reactsTo Entities with HasChainFollow trait
@@ -32,18 +41,32 @@ export class ChainFollowSystem extends BaseTickedSystem {
 
   protected tickRate = 1;
 
-  /**
-   * Previous position per entity ID (from last tick).
-   * Key: entity ID of any chain member.
-   * Value: {x, y} position at start of this tick (before movement).
-   */
-  private previousPositions: Map<number, { x: number; y: number }> = new Map();
-
   /** Counter for generating unique chain IDs on split */
   private splitCounter = 0;
 
   protected onTick(context: GameContext): void {
     // Phase 1: Collect all chain segments grouped by chainId
+    const chains = this.collectChains(context);
+
+    // Phase 2: Handle dead segments (split chains, promote heads)
+    this.handleDeathAndSplitting(context, chains);
+
+    // Phase 3: Re-collect after splitting (chain IDs may have changed)
+    const updatedChains = this.collectChains(context);
+
+    // Phase 4: Stage follower moves for each chain
+    for (const [, segments] of updatedChains) {
+      segments.sort((a, b) => a.data.chainIndex - b.data.chainIndex);
+      this.processChain(context, segments);
+    }
+  }
+
+  /**
+   * Collect all living chain segments grouped by chainId.
+   */
+  private collectChains(
+    context: GameContext
+  ): Map<string, Array<{ entityId: number; data: HasChainFollow }>> {
     const chains = new Map<string, Array<{ entityId: number; data: HasChainFollow }>>();
 
     for (const [entityId] of context.spatial.getAllPositions()) {
@@ -61,48 +84,18 @@ export class ChainFollowSystem extends BaseTickedSystem {
       chains.get(chainId)!.push({ entityId, data: chainData });
     }
 
-    // Phase 2: Handle dead segments FIRST (split chains, promote heads)
-    this.handleDeathAndSplitting(context, chains);
-
-    // Phase 3: Re-collect after splitting (chain IDs may have changed)
-    chains.clear();
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      if (!context.spatial.isAlive(entityId)) continue;
-      const entityData = context.spatial.getEntityData(entityId);
-      if (!entityData || !hasChainFollow(entityData)) continue;
-      const chainData = entityData as typeof entityData & HasChainFollow;
-      const chainId = chainData.chainId;
-      if (!chains.has(chainId)) {
-        chains.set(chainId, []);
-      }
-      chains.get(chainId)!.push({ entityId, data: chainData });
-    }
-
-    // Phase 4: Process movement for each chain
-    for (const [, segments] of chains) {
-      segments.sort((a, b) => a.data.chainIndex - b.data.chainIndex);
-      this.processChain(context, segments);
-    }
-
-    // Phase 5: Save current positions for next tick
-    this.previousPositions.clear();
-    for (const [entityId] of context.spatial.getAllPositions()) {
-      if (!context.spatial.isAlive(entityId)) continue;
-      const pos = context.spatial.getEntityPosition(entityId);
-      if (pos) {
-        this.previousPositions.set(entityId, { x: pos.x, y: pos.y });
-      }
-    }
+    return chains;
   }
 
   /**
-   * Process a single chain: move followers to the previous position of
-   * the segment ahead.
+   * Stage follower moves: each follower moves to its leader's current position.
    *
-   * The head has already moved (via NPCMovementSystem). Each follower
-   * steps into the cell its leader occupied before the head moved.
-   * We process from head-to-tail order so each follower gets the
-   * pre-move position of the segment directly ahead.
+   * The head has already staged a move via NPCMovementSystem.
+   * Each follower stages a move to the leader's current (pre-commit) position.
+   * When commit runs, the leader vacates that cell, and the follower occupies it.
+   *
+   * Process head-to-tail so each follower reads the correct current position
+   * of its leader (before any commit changes).
    */
   private processChain(
     context: GameContext,
@@ -110,7 +103,12 @@ export class ChainFollowSystem extends BaseTickedSystem {
   ): void {
     if (segments.length <= 1) return;
 
-    // Process from index 1 (first follower) to end
+    // Check if the head has a pending move. If not, no follower should move.
+    const head = segments[0];
+    const headPending = this.hasPendingMove(context, head.entityId);
+    if (!headPending) return;
+
+    // Process followers head-to-tail
     for (let i = 1; i < segments.length; i++) {
       const seg = segments[i];
       if (seg.data.isChainHead) continue;
@@ -118,30 +116,35 @@ export class ChainFollowSystem extends BaseTickedSystem {
       const targetId = seg.data.chainFollowTargetId;
       if (targetId === undefined) continue;
 
-      // Get the target's position from BEFORE this tick's movement
-      const prevPos = this.previousPositions.get(targetId);
-      if (!prevPos) continue;
+      // Leader's current committed position (leader is about to vacate this)
+      const leaderPos = context.spatial.getEntityPosition(targetId);
+      if (!leaderPos) continue;
 
       const currentPos = context.spatial.getEntityPosition(seg.entityId);
       if (!currentPos) continue;
 
-      // Only move if the destination is different from current position
-      if (currentPos.x !== prevPos.x || currentPos.y !== prevPos.y) {
-        context.spatial.move(seg.entityId, prevPos.x, prevPos.y);
+      // Only stage move if destination differs from current position
+      if (currentPos.x !== leaderPos.x || currentPos.y !== leaderPos.y) {
+        context.spatial.move(seg.entityId, leaderPos.x, leaderPos.y);
       }
     }
   }
 
   /**
+   * Check if an entity has a pending move staged for this tick's commit.
+   */
+  private hasPendingMove(context: GameContext, entityId: number): boolean {
+    const ops = context.spatial.getPendingOps();
+    for (const op of ops) {
+      if (op.type === 'move' && op.entityId === entityId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Handle dead segments: split chains centipede-style.
-   *
-   * When a middle segment dies:
-   * 1. The segments behind it become a new independent chain
-   * 2. The first segment of the new chain is promoted to head
-   * 3. Both chains continue independently
-   *
-   * When the head dies:
-   * 1. The next segment is promoted to head of the existing chain
    */
   private handleDeathAndSplitting(
     context: GameContext,
@@ -151,20 +154,13 @@ export class ChainFollowSystem extends BaseTickedSystem {
       if (segments.length === 0) continue;
       segments.sort((a, b) => a.data.chainIndex - b.data.chainIndex);
 
-      // Build a set of entity IDs in this chain for fast lookup
       const segmentIdSet = new Set(segments.map(s => s.entityId));
-
-      // Identify which segments are dead/dying or have broken links.
-      // A "break point" is where a follower's target is either:
-      // - Dead/dying in the current list
-      // - Already removed from spatial (not in segmentIdSet)
       const deadOrBroken: Set<number> = new Set();
 
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i];
         const entityData = context.spatial.getEntityData(seg.entityId);
 
-        // Check if this entity itself is dead/dying/removed
         let isDead = false;
         if (!entityData || !context.spatial.isAlive(seg.entityId)) {
           isDead = true;
@@ -179,14 +175,12 @@ export class ChainFollowSystem extends BaseTickedSystem {
         }
       }
 
-      // Build contiguous linked runs.
-      // Split at dead segments AND at followers whose target is missing.
+      // Build contiguous linked runs, splitting at dead segments and broken links
       const livingRuns: Array<Array<{ entityId: number; data: HasChainFollow }>> = [];
       let currentRun: Array<{ entityId: number; data: HasChainFollow }> = [];
 
       for (let i = 0; i < segments.length; i++) {
         if (deadOrBroken.has(i)) {
-          // Dead segment: start a new run after this
           if (currentRun.length > 0) {
             livingRuns.push(currentRun);
             currentRun = [];
@@ -195,10 +189,9 @@ export class ChainFollowSystem extends BaseTickedSystem {
         }
 
         const seg = segments[i];
-        // Check if this follower's target is missing (broken link)
+        // Check for broken link (target was removed on a previous tick)
         if (!seg.data.isChainHead && seg.data.chainFollowTargetId !== undefined) {
           if (!segmentIdSet.has(seg.data.chainFollowTargetId)) {
-            // Target was removed -- this is a break point, start new run
             if (currentRun.length > 0) {
               livingRuns.push(currentRun);
               currentRun = [];
@@ -212,23 +205,29 @@ export class ChainFollowSystem extends BaseTickedSystem {
         livingRuns.push(currentRun);
       }
 
-      // If only one run and it already has a head, nothing changed
-      if (livingRuns.length === 1 && livingRuns[0].length > 0) {
-        const hasHead = livingRuns[0].some(s => s.data.isChainHead);
-        if (hasHead && deadOrBroken.size === 0) continue;
+      // Check if anything actually needs to change
+      if (livingRuns.length === 1 && deadOrBroken.size === 0) {
+        const run = livingRuns[0];
+        const hasHead = run.some(s => s.data.isChainHead);
+        let linksOk = true;
+        for (let i = 1; i < run.length; i++) {
+          if (run[i].data.chainFollowTargetId !== run[i - 1].entityId) {
+            linksOk = false;
+            break;
+          }
+        }
+        if (hasHead && linksOk) continue;
       }
 
       if (livingRuns.length === 0) continue;
 
-      // First living run keeps the original chain ID
-      // Additional runs get new chain IDs (split tails become new chains)
+      // Assign chain IDs and relink
       for (let runIdx = 0; runIdx < livingRuns.length; runIdx++) {
         const run = livingRuns[runIdx];
         if (run.length === 0) continue;
 
         const newChainId = runIdx === 0 ? chainId : `${chainId}-split-${++this.splitCounter}`;
 
-        // The first segment in each run becomes the head
         for (let i = 0; i < run.length; i++) {
           const seg = run[i];
           seg.data.chainId = newChainId;
@@ -262,14 +261,12 @@ export class ChainFollowSystem extends BaseTickedSystem {
 
   public override resetState(): void {
     super.resetState();
-    this.previousPositions.clear();
     this.splitCounter = 0;
   }
 
   public override getDebugState(): Record<string, unknown> {
     return {
       ...super.getDebugState(),
-      trackedEntities: this.previousPositions.size,
       splitCount: this.splitCounter,
       description: 'Chain Follow System (snakes, centipedes, linked entities)',
     };

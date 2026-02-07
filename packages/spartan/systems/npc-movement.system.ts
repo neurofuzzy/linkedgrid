@@ -4,12 +4,13 @@
 import { BaseTickedSystem } from '../core/base-system';
 import { SYSTEM_CONFIG } from '../config/systems.config';
 import type { GameContext } from '../core/types';
-import { hasNPCMovement, isPathNode, hasFacing, hasVisualState, isStunned, isChainFollower } from '../traits/trait-guards';
+import { hasNPCMovement, isPathNode, hasFacing, hasVisualState, isStunned, isChainFollower, hasChainFollow } from '../traits/trait-guards';
 import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { LinkedCell } from '../core/grid/linked-cell';
 import { Direction } from '../core/grid/direction';
 import { GameLayers } from '../config/layers.config';
 import type { HasNPCMovement } from '../traits/npc-movement.trait';
+import type { HasChainFollow } from '../traits/chain-follow.trait';
 
 /**
  * NPCMovementSystem - Manages autonomous NPC movement behaviors.
@@ -339,6 +340,12 @@ export class NPCMovementSystem extends BaseTickedSystem {
 
   /**
    * Wander mode: move randomly to adjacent walkable cells.
+   *
+   * Chain heads get smarter wander logic:
+   * - Exclude cells occupied by own chain body
+   * - Prefer directions with more open space (lookahead)
+   * - Avoid corners and dead ends
+   *
    * @returns true if a movement was issued
    */
   private processWander(context: GameContext, entityId: number): boolean {
@@ -348,7 +355,16 @@ export class NPCMovementSystem extends BaseTickedSystem {
     const cell = context.spatial.grid.cell(npcPos.x, npcPos.y);
     if (!cell) return false;
 
-    // Get all walkable neighbors (not blocked)
+    // Check if this entity is a chain head
+    const entityData = context.spatial.getEntityData(entityId);
+    const isChainHead = entityData && hasChainFollow(entityData) &&
+      (entityData as HasChainFollow).isChainHead;
+
+    if (isChainHead) {
+      return this.processChainWander(context, entityId, cell);
+    }
+
+    // Standard wander for non-chain entities
     const walkableNeighbors: LinkedCell[] = [];
     for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
       const neighbor = cell.neighbor(dir);
@@ -359,10 +375,113 @@ export class NPCMovementSystem extends BaseTickedSystem {
 
     if (walkableNeighbors.length === 0) return false;
 
-    // Pick a random neighbor
     const randomIndex = Math.floor(Math.random() * walkableNeighbors.length);
     const target = walkableNeighbors[randomIndex];
     context.spatial.move(entityId, target.x, target.y);
+    return true;
+  }
+
+  /**
+   * Smart wander for chain heads.
+   *
+   * 1. Collect own chain body positions to avoid
+   * 2. Find walkable neighbors not occupied by own body
+   * 3. Score each candidate by open space (depth-2 lookahead)
+   * 4. Pick the best-scoring direction (with randomness for ties)
+   */
+  private processChainWander(
+    context: GameContext,
+    entityId: number,
+    cell: LinkedCell
+  ): boolean {
+    // Collect positions of own chain body segments
+    const entityData = context.spatial.getEntityData(entityId);
+    if (!entityData || !hasChainFollow(entityData)) return false;
+    const chainId = (entityData as HasChainFollow).chainId;
+
+    const bodyPositions = new Set<string>();
+    for (const [otherId] of context.spatial.getAllPositions()) {
+      if (otherId === entityId) continue;
+      const otherData = context.spatial.getEntityData(otherId);
+      if (!otherData || !hasChainFollow(otherData)) continue;
+      if ((otherData as HasChainFollow).chainId !== chainId) continue;
+      const otherPos = context.spatial.getEntityPosition(otherId);
+      if (otherPos) {
+        bodyPositions.add(`${otherPos.x},${otherPos.y}`);
+      }
+    }
+
+    // Find walkable neighbors not occupied by own chain body
+    const candidates: Array<{ cell: LinkedCell; dir: Direction }> = [];
+    for (const dir of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+      const neighbor = cell.neighbor(dir);
+      if (!neighbor) continue;
+      if (context.spatial.isBlocked(neighbor)) continue;
+
+      // Exclude cells occupied by own chain body
+      const key = `${neighbor.x},${neighbor.y}`;
+      if (bodyPositions.has(key)) continue;
+
+      // Also check for other actors (non-chain entities)
+      const actorId = context.spatial.getEntityIdAt(neighbor.x, neighbor.y, GameLayers.ACTORS);
+      if (actorId !== undefined && actorId !== entityId) continue;
+
+      candidates.push({ cell: neighbor, dir });
+    }
+
+    if (candidates.length === 0) return false;
+    if (candidates.length === 1) {
+      context.spatial.move(entityId, candidates[0].cell.x, candidates[0].cell.y);
+      return true;
+    }
+
+    // Score each candidate by lookahead: count how many open moves
+    // are available from that cell (excluding our body and walls).
+    // The immediate follower will occupy our current cell, so exclude
+    // current position from lookahead counts.
+    const currentKey = `${cell.x},${cell.y}`;
+
+    const scored = candidates.map(c => {
+      let openCount = 0;
+      for (const dir2 of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+        const next = c.cell.neighbor(dir2);
+        if (!next) continue;
+        if (context.spatial.isBlocked(next)) continue;
+
+        const nextKey = `${next.x},${next.y}`;
+        // The cell we're leaving will be taken by our follower
+        if (nextKey === currentKey) continue;
+        // Don't count cells occupied by our body (they'll shift but
+        // we can't predict exactly where -- conservative approach)
+        if (bodyPositions.has(nextKey)) continue;
+
+        const nextActorId = context.spatial.getEntityIdAt(next.x, next.y, GameLayers.ACTORS);
+        if (nextActorId !== undefined && nextActorId !== entityId) continue;
+
+        openCount++;
+
+        // Depth 2: check one more step
+        for (const dir3 of [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]) {
+          const next2 = next.neighbor(dir3);
+          if (!next2) continue;
+          if (context.spatial.isBlocked(next2)) continue;
+          const next2Key = `${next2.x},${next2.y}`;
+          if (next2Key === nextKey) continue; // don't count self
+          if (next2Key === currentKey) continue;
+          if (bodyPositions.has(next2Key)) continue;
+          openCount++;
+        }
+      }
+      return { ...c, score: openCount };
+    });
+
+    // Pick from the top-scoring candidates randomly
+    scored.sort((a, b) => b.score - a.score);
+    const bestScore = scored[0].score;
+    const topCandidates = scored.filter(c => c.score === bestScore);
+    const pick = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+
+    context.spatial.move(entityId, pick.cell.x, pick.cell.y);
     return true;
   }
 
