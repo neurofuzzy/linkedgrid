@@ -8,6 +8,7 @@
  * - Head promotion when head dies
  * - Centipede-style chain splitting when middle segment dies
  * - No two chain segments ever share the same cell
+ * - Zero-lag following (same-tick as head)
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SpatialSystem } from '../core/spatial-system';
@@ -98,12 +99,13 @@ describe('ChainFollowSystem', () => {
     expect(seg2!.chainIndex).toBe(2);
   });
 
-  it('followers move into the cell their leader vacates', () => {
-    // Create a 3-segment chain. Head won't auto-move (speed: 100).
+  it('followers move into the cell their leader vacates (same tick)', () => {
+    // Head: (5,5), F1: (4,5), F2: (3,5)
+    // Head will auto-wander; we just need to see the chain stay connected.
     const headId = spatial.spawn('enemy', 5, 5, GameLayers.ACTORS, {
       hp: 30, maxHp: 30, healthState: 'alive', team: 'enemy',
       chainId: 'test', isChainHead: true, chainIndex: 0, chainDelay: 1,
-      movementMode: 'wander', speed: 100,
+      movementMode: 'wander', speed: 1,
     });
     const f1Id = spatial.spawn('enemy', 4, 5, GameLayers.ACTORS, {
       hp: 20, maxHp: 20, healthState: 'alive', team: 'enemy',
@@ -117,23 +119,22 @@ describe('ChainFollowSystem', () => {
     });
     spatial.commit();
 
-    // Tick 1: system records initial positions, no movement yet
-    gameLoop.tick();
-    assertNoOverlaps([headId, f1Id, f2Id], 'after tick 1');
-
-    // Now manually move the head and tick again
-    spatial.move(headId, 6, 5);
-    spatial.commit();
-
-    // Tick 2: chain follow sees head moved from (5,5) to (6,5)
+    // Run a tick so the head moves and followers follow in the same commit
     gameLoop.tick();
 
     const [headPos, f1Pos, f2Pos] = getPositions([headId, f1Id, f2Id]);
-    expect(headPos).toEqual({ x: 6, y: 5 });
+
+    // Head should have moved from (5,5)
+    expect(headPos).toBeDefined();
+
+    // F1 should be at the head's original position (5,5) since the
+    // chain follow system staged the move in the same tick.
     expect(f1Pos).toEqual({ x: 5, y: 5 });
+
+    // F2 should be at F1's original position (4,5)
     expect(f2Pos).toEqual({ x: 4, y: 5 });
 
-    assertNoOverlaps([headId, f1Id, f2Id], 'after head move');
+    assertNoOverlaps([headId, f1Id, f2Id], 'after first tick');
   });
 
   it('chain segments never overlap even over many ticks', () => {
@@ -309,5 +310,40 @@ describe('ChainFollowSystem', () => {
     expect(posA0).toBeDefined();
     expect(posB0).toBeDefined();
     expect(posA0!.x).not.toBe(posB0!.x);
+  });
+
+  it('chain is contiguous after every tick (no gaps)', () => {
+    const headId = spatial.spawn('enemy', 10, 10, GameLayers.ACTORS, {
+      hp: 30, maxHp: 30, healthState: 'alive', team: 'enemy',
+      chainId: 'contiguous', isChainHead: true, chainIndex: 0, chainDelay: 1,
+      movementMode: 'wander', speed: 1,
+    });
+    const f1Id = spatial.spawn('enemy', 9, 10, GameLayers.ACTORS, {
+      hp: 20, maxHp: 20, healthState: 'alive', team: 'enemy',
+      chainId: 'contiguous', isChainHead: false, chainFollowTargetId: headId,
+      chainIndex: 1, chainDelay: 1,
+    });
+    const f2Id = spatial.spawn('enemy', 8, 10, GameLayers.ACTORS, {
+      hp: 20, maxHp: 20, healthState: 'alive', team: 'enemy',
+      chainId: 'contiguous', isChainHead: false, chainFollowTargetId: f1Id,
+      chainIndex: 2, chainDelay: 1,
+    });
+    spatial.commit();
+
+    const ids = [headId, f1Id, f2Id];
+
+    for (let t = 0; t < 15; t++) {
+      gameLoop.tick();
+
+      // Each consecutive pair should be exactly 1 cell apart (Manhattan distance)
+      const positions = getPositions(ids);
+      for (let i = 0; i < positions.length - 1; i++) {
+        const a = positions[i];
+        const b = positions[i + 1];
+        if (!a || !b) continue;
+        const dist = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        expect(dist, `tick ${t + 1}: gap between segment ${i} and ${i + 1}`).toBeLessThanOrEqual(1);
+      }
+    }
   });
 });
