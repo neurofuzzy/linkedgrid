@@ -41,6 +41,9 @@ import { TurretSystem } from '../systems/turret.system';
 import { ScoreSystem } from '../systems/score.system';
 import { ObjectiveSystem } from '../systems/objective.system';
 import { NPCBrainSystem } from '../systems/npc-brain.system';
+import { VisualStateSystem } from '../systems/visual-state.system';
+import { VisualEventBus } from './visual-event-bus';
+import { EffectsQueue } from './effects-queue';
 
 /**
  * Create all game systems with proper dependency resolution.
@@ -63,10 +66,13 @@ export function createAllSystems(
 ): GameSystem[] {
   const systems: GameSystem[] = [];
 
+  // Effects queue for systems that produce visual effects
+  const effectsQueue = gameManager.gameState.effectsQueue;
+
   // === CORE SYSTEMS (no dependencies) ===
   const pushSystem = new PushSystem();
-  const explosionSystem = new ExplosionSystem();
-  const fireSystem = new FireSystem();
+  const explosionSystem = new ExplosionSystem(effectsQueue);
+  const fireSystem = new FireSystem(effectsQueue);
   const liquidSystem = new LiquidSystem();
   const chainReactionSystem = new ChainReactionSystem();
   const npcMovementSystem = new NPCMovementSystem();
@@ -80,7 +86,7 @@ export function createAllSystems(
   systems.push(npcMovementSystem);
 
   // === HEALTH SYSTEM (depended on by many) ===
-  const healthSystem = new HealthSystem();
+  const healthSystem = new HealthSystem({}, effectsQueue);
   systems.push(healthSystem);
 
   // === SYSTEMS NEEDING GAMEMANAGER ===
@@ -92,7 +98,7 @@ export function createAllSystems(
   const signalSystem = new SignalSystem(gameManager);
   const gateSystem = new GateSystem(gameManager);
   const spawningSystem = new SpawningSystem();
-  const respawnSystem = new RespawnSystem(gameManager);
+  const respawnSystem = new RespawnSystem(gameManager, {}, effectsQueue);
 
   systems.push(teleporterSystem);
   systems.push(collectionSystem);
@@ -105,7 +111,7 @@ export function createAllSystems(
   systems.push(respawnSystem);
 
   // === SYSTEMS NEEDING HEALTHSYSTEM ===
-  const projectileSystem = new ProjectileSystem(healthSystem);
+  const projectileSystem = new ProjectileSystem(healthSystem, gameManager.gameState.visualEventBus);
   const powerupSystem = new PowerupSystem({ healthSystem });
   const scoreSystem = new ScoreSystem(gameManager, healthSystem);
   const objectiveSystem = new ObjectiveSystem(gameManager, healthSystem);
@@ -147,6 +153,11 @@ export function createAllSystems(
     systems.push(playerWeaponSystem);
   }
 
+  // === VISUAL SYSTEM (post-commit, no hard dependencies) ===
+  const visualEventBus = gameManager.gameState.visualEventBus;
+  const visualStateSystem = new VisualStateSystem(visualEventBus, effectsQueue);
+  systems.push(visualStateSystem);
+
   return systems;
 }
 
@@ -180,6 +191,7 @@ export const ALL_SYSTEM_NAMES = [
   'PlayerWeaponSystem',
   'ScoreSystem',
   'ObjectiveSystem',
+  'VisualStateSystem',
 ] as const;
 
 export type SystemName = (typeof ALL_SYSTEM_NAMES)[number];

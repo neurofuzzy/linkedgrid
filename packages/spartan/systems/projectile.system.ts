@@ -11,6 +11,7 @@ import { LinkedCellUtils } from '../core/grid/linked-cell-utils';
 import { GameLayers } from '../config/layers.config';
 import type { HealthSystem } from './health.system';
 import type { HasProjectile } from '../traits/projectile.trait';
+import type { VisualEventBus } from '../core/visual-event-bus';
 
 /**
  * ProjectileSystem - Manages autonomous projectile movement and collision.
@@ -48,8 +49,15 @@ export class ProjectileSystem extends BaseTickedSystem {
 
   protected tickRate = 1; // Run every tick for smooth movement
 
-  constructor(private healthSystem: HealthSystem) {
+  private healthSystem: HealthSystem;
+
+  /** Optional visual event bus for emitting launch events */
+  private visualEventBus?: VisualEventBus;
+
+  constructor(healthSystem: HealthSystem, visualEventBus?: VisualEventBus) {
     super();
+    this.healthSystem = healthSystem;
+    this.visualEventBus = visualEventBus;
   }
 
   protected onTick(context: GameContext): void {
@@ -65,10 +73,30 @@ export class ProjectileSystem extends BaseTickedSystem {
       // Type assertion for projectile data
       const projectile = entityData as typeof entityData & HasProjectile;
 
+      // Deferred removal: projectile entered impact state on a previous tick.
+      // The final move has already been committed, so the renderer had one tick
+      // to interpolate the projectile to its collision/final position.
+      if (projectile.impactTick !== undefined) {
+        toRemove.push(entityId);
+        continue;
+      }
+
       // Initialize path on first tick
       if (!projectile.path) {
         this.initializePath(context, entityId, projectile);
         projectile.spawnTick = currentTick;
+
+        // Check entity collision at spawn position (already here, no move needed).
+        // This catches enemies standing right where the projectile appears.
+        const pos = context.spatial.getEntityPosition(entityId);
+        if (pos) {
+          const hitResult = this.checkEntityCollision(context, entityId, projectile, pos);
+          if (hitResult.hit && hitResult.destroy) {
+            // Instant collision at spawn — no move to commit, so remove immediately.
+            toRemove.push(entityId);
+            continue;
+          }
+        }
       }
 
       // Check lifetime expiration
@@ -82,11 +110,13 @@ export class ProjectileSystem extends BaseTickedSystem {
       // Move projectile along path
       const destroyed = this.moveProjectile(context, entityId, projectile);
       if (destroyed) {
-        toRemove.push(entityId);
+        // Enter impact state: defer removal to next tick so the pending move
+        // (if any) commits and the renderer can interpolate to the final cell.
+        projectile.impactTick = currentTick;
       }
     }
 
-    // Remove destroyed/expired projectiles
+    // Remove impact/expired projectiles
     for (const entityId of toRemove) {
       context.spatial.remove(entityId);
     }
@@ -125,13 +155,11 @@ export class ProjectileSystem extends BaseTickedSystem {
       return;
     }
 
-    // getLine excludes the start cell, so we need to prepend it
-    // This ensures collision check happens at spawn position
+    // getLine excludes the start cell — path contains only cells to MOVE to.
+    // The entity is already at the start cell; spawn collision is checked
+    // separately in onTick so we don't waste a movement step.
     const lineCells = LinkedCellUtils.getLine(startCell, targetCell);
-    projectile.path = [
-      { x: startCell.x, y: startCell.y },
-      ...lineCells.map((c) => ({ x: c.x, y: c.y })),
-    ];
+    projectile.path = lineCells.map((c) => ({ x: c.x, y: c.y }));
     projectile.pathIndex = 0;
     projectile.hitEntityIds = [];
     projectile.bounceCount = 0;
@@ -302,6 +330,10 @@ export class ProjectileSystem extends BaseTickedSystem {
   /**
    * Spawn a projectile programmatically.
    * Convenience method for other systems to create projectiles.
+   *
+   * Emits a `projectile:launched` visual event so renderers can display
+   * muzzle flash / blast cone effects on the first frame (before the
+   * projectile has moved and can be interpolated).
    */
   spawnProjectile(
     context: GameContext,
@@ -312,13 +344,33 @@ export class ProjectileSystem extends BaseTickedSystem {
     damage: number,
     options: Partial<HasProjectile> & { color?: string } = {}
   ): number {
-    return context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
+    const projectileId = context.spatial.spawn('projectile', x, y, GameLayers.EPHEMERALS, {
       targetX,
       targetY,
       damage,
       ephemeral: true,
       ...options,
     });
+
+    // Emit launch event for renderers (muzzle flash, blast cone, etc.)
+    if (this.visualEventBus) {
+      this.visualEventBus.emit({
+        type: 'projectile:launched',
+        entityId: projectileId,
+        x,
+        y,
+        data: {
+          ownerId: options.ownerId,
+          targetX,
+          targetY,
+          speed: options.speed ?? 1,
+          color: options.color,
+          damageType: options.damageType,
+        },
+      });
+    }
+
+    return projectileId;
   }
 
   public override resetState(): void {

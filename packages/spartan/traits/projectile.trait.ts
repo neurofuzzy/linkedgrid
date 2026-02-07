@@ -91,4 +91,11 @@ export interface HasProjectile {
   path?: Array<{ x: number; y: number }>;
   /** Tick when projectile was spawned */
   spawnTick?: number;
+  /**
+   * Tick when the projectile entered "impact" state (collision/wall/end-of-path).
+   * When set, the projectile's final move has been committed but removal is
+   * deferred to the next tick. This gives the renderer one tick to interpolate
+   * the projectile to its final position before it disappears.
+   */
+  impactTick?: number;
 }

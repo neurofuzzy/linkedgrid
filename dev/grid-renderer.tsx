@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { Scene } from '../packages/spartan/core/scene';
 import { GameRuntime } from '../packages/spartan/core/game-runtime';
 import { InputManager } from '../packages/spartan-web/input/input-manager';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
+import { DebugCanvasRenderer } from '../packages/spartan-web/debug-renderer';
 import {
   hasColor,
   hasDensity,
@@ -713,6 +714,64 @@ export function GameStatusPanel({ runtime }: GameStatusPanelProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * CanvasDebugView - React wrapper for DebugCanvasRenderer.
+ *
+ * Manages renderer lifecycle: creates on mount, attaches to runtime,
+ * starts rAF loop, and cleans up on unmount.
+ *
+ * @example
+ * ```tsx
+ * <CanvasDebugView runtime={runtime} />
+ * ```
+ */
+interface CanvasDebugViewProps {
+  runtime: GameRuntime;
+}
+
+export function CanvasDebugView({ runtime }: CanvasDebugViewProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rendererRef = useRef<DebugCanvasRenderer | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const renderer = new DebugCanvasRenderer(canvas, {
+      cellSize: 32,
+      showGrid: true,
+      showLabels: true,
+      showHealth: true,
+      showFacing: true,
+      showVisualState: true,
+      showLayers: false,
+      showEffects: true,
+      debug: false,
+    });
+
+    renderer.attach(runtime);
+    renderer.startLoop();
+    rendererRef.current = renderer;
+
+    return () => {
+      renderer.stopLoop();
+      renderer.detach();
+      rendererRef.current = null;
+    };
+  }, [runtime]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        display: 'block',
+        border: '1px solid #222',
+        imageRendering: 'pixelated',
+      }}
+    />
   );
 }
 

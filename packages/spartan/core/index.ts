@@ -11,3 +11,5 @@ export * from './types';
 export * from './base-system';
 export * from './input-provider';
 export * from './system-registry';
+export * from './visual-event-bus';
+export * from './effects-queue';

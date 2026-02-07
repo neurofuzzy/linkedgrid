@@ -6,9 +6,10 @@
  */
 import { BaseReactiveSystem } from '../core/base-system';
 import type { GameContext, EntityData } from '../core/types';
-import { hasHealth, hasHealthState, hasShield, hasVulnerability } from '../traits/trait-guards';
+import { hasHealth, hasHealthState, hasShield, hasVulnerability, hasVisualState } from '../traits/trait-guards';
 import type { HasHealth } from '../traits/health.trait';
 import type { HasShield } from '../traits/defense.trait';
+import type { EffectsQueue } from '../core/effects-queue';
 
 /**
  * Damage intent - Request to deal damage to an entity.
@@ -114,9 +115,13 @@ export class HealthSystem extends BaseReactiveSystem {
   /** Tracks the last damage source per entity (for kill attribution). */
   private lastDamageSource: Map<number, number> = new Map();
 
-  constructor(config: Partial<HealthSystemConfig> = {}) {
+  /** Optional effects queue for visual effects */
+  private effectsQueue?: EffectsQueue;
+
+  constructor(config: Partial<HealthSystemConfig> = {}, effectsQueue?: EffectsQueue) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.effectsQueue = effectsQueue;
   }
 
   /**
@@ -214,7 +219,7 @@ export class HealthSystem extends BaseReactiveSystem {
       if (intent.type === 'damage') {
         this.applyDamage(context, intent.targetId, entityData, intent);
       } else {
-        this.applyHeal(entityData, intent);
+        this.applyHeal(context, entityData, intent);
       }
     }
   }
@@ -261,6 +266,18 @@ export class HealthSystem extends BaseReactiveSystem {
     // Apply remaining damage to HP
     if (damage > 0) {
       entityData.hp = Math.max(0, entityData.hp - damage);
+
+      // Visual effects for damage
+      const pos = context.spatial.getEntityPosition(intent.targetId);
+      if (pos && this.effectsQueue) {
+        this.effectsQueue.push({ type: 'particle', x: pos.x, y: pos.y, preset: 'blood', color: '#cc0000' });
+      }
+
+      // Set visual state to 'hurt'
+      if (hasVisualState(entityData)) {
+        entityData.visualState = 'hurt';
+        entityData.visualDirty = true;
+      }
     }
 
     // Track damage source for kill attribution
@@ -278,10 +295,20 @@ export class HealthSystem extends BaseReactiveSystem {
    * Apply healing to an entity.
    */
   private applyHeal(
+    context: GameContext,
     entityData: EntityData & HasHealth,
     intent: HealIntent
   ): void {
+    const oldHp = entityData.hp;
     entityData.hp = Math.min(entityData.maxHp, entityData.hp + intent.amount);
+
+    // Push heal effect if HP actually changed
+    if (entityData.hp > oldHp && this.effectsQueue) {
+      const pos = context.spatial.getEntityPosition(intent.targetId);
+      if (pos) {
+        this.effectsQueue.push({ type: 'particle', x: pos.x, y: pos.y, preset: 'heal', color: '#00ff44' });
+      }
+    }
   }
 
   /**
@@ -290,6 +317,12 @@ export class HealthSystem extends BaseReactiveSystem {
   private startDying(entityData: EntityData & HasHealth): void {
     entityData.healthState = 'dying';
     entityData.dyingTicks = this.config.dyingDuration;
+
+    // Set visual state to 'die'
+    if (hasVisualState(entityData)) {
+      entityData.visualState = 'die';
+      entityData.visualDirty = true;
+    }
   }
 
   /**
@@ -350,6 +383,13 @@ export class HealthSystem extends BaseReactiveSystem {
       if (!entityData) continue;
 
       if (hasHealthState(entityData) && entityData.healthState === 'dead') {
+        // Push death smoke effect
+        if (this.effectsQueue) {
+          const pos = context.spatial.getEntityPosition(entityId);
+          if (pos) {
+            this.effectsQueue.push({ type: 'particle', x: pos.x, y: pos.y, preset: 'smoke' });
+          }
+        }
         context.spatial.remove(entityId);
       }
     }

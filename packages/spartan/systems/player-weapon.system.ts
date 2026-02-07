@@ -16,7 +16,7 @@ import type { ProjectileSystem } from './projectile.system';
 import type { MeleeSystem } from './melee.system';
 import type { HealthSystem } from './health.system';
 import { Direction } from '../core/grid/direction';
-import { hasWeapon, hasMelee, hasHealth, isEnemyTeam } from '../traits/trait-guards';
+import { hasWeapon, hasMelee, hasHealth, isEnemyTeam, hasVisualState, hasFacing } from '../traits/trait-guards';
 import { DEFAULT_WEAPONS, type WeaponConfig } from '../traits/weapon.trait';
 import { GameLayers } from '../config/layers.config';
 
@@ -196,6 +196,16 @@ export class PlayerWeaponSystem extends BaseReactiveSystem {
 
     // Update cooldown
     playerData.lastFireTick = currentTick;
+
+    // Set visual state to 'attack'
+    if (hasVisualState(playerData)) {
+      playerData.visualState = 'attack';
+      playerData.visualDirty = true;
+    }
+    // Set facing toward fire direction
+    if (hasFacing(playerData)) {
+      playerData.facing = fireDir;
+    }
 
     this.debugStats.totalShotsFired++;
   }

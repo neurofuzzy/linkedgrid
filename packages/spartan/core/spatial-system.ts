@@ -3,7 +3,13 @@
  */
 import { LinkedCell, LinkedGrid } from './grid';
 import { SparseEntityStore } from './entity-store';
-import type { EntityData, Layer, PendingOperation, EntityLifecycleEvent, LifecycleCallback } from './types';
+import type {
+  EntityData,
+  Layer,
+  PendingOperation,
+  EntityLifecycleEvent,
+  LifecycleCallback,
+} from './types';
 import { GameLayers, CellMasks } from '../config/layers.config';
 
 /**
@@ -61,7 +67,7 @@ export class SpatialSystem {
   constructor(
     private grid: LinkedGrid,
     private store: SparseEntityStore
-  ) { }
+  ) {}
 
   /**
    * Enable debug logging for commit operations.
@@ -238,7 +244,9 @@ export class SpatialSystem {
     // Create entity in store with specific ID
     const success = this.store.createWithId(entityId, type, props);
     if (!success) {
-      console.warn(`[SpatialSystem] spawnWithId: Entity ${entityId} already exists, skipping spawn.`);
+      console.warn(
+        `[SpatialSystem] spawnWithId: Entity ${entityId} already exists, skipping spawn.`
+      );
       return false;
     }
 
@@ -390,7 +398,10 @@ export class SpatialSystem {
     for (const op of removals) {
       // Capture entity data before removal for lifecycle callback
       const entityData = this.store.getData(op.entityId!);
-      const isEphemeral = entityData && 'ephemeral' in entityData && entityData.ephemeral === true;
+      const isEphemeral =
+        entityData &&
+        'ephemeral' in entityData &&
+        entityData.ephemeral === true;
 
       const cell = this.grid.cell(op.x!, op.y!);
       if (cell) {
@@ -597,7 +608,8 @@ export class SpatialSystem {
       this.updateCellMasks(cell);
 
       // Queue lifecycle callback (skip ephemeral entities)
-      const isEphemeral = op.props && 'ephemeral' in op.props && op.props.ephemeral === true;
+      const isEphemeral =
+        op.props && 'ephemeral' in op.props && op.props.ephemeral === true;
       if (!isEphemeral && op.typeStr) {
         spawnEvents.push({
           entityId: op.entityId!,
@@ -774,6 +786,15 @@ export class SpatialSystem {
     }
 
     return this.removeAt(pos.x, pos.y, pos.layer);
+  }
+
+  /**
+   * @alias for remove
+   * @param entityId
+   * @returns
+   */
+  removeEntity(entityId: number): boolean {
+    return this.remove(entityId);
   }
 
   /**

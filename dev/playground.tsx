@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SceneLoader, type SceneConfig } from './scene-loader';
 import { InputManager } from '../packages/spartan-web/input';
 import { PlayerInputSystem } from '../packages/spartan/systems/player-input.system';
-import { GridRenderer, HUD, DebugPanel, GameStatusPanel } from './grid-renderer';
+import { HUD, DebugPanel, GameStatusPanel, CanvasDebugView } from './grid-renderer';
 import type { GameRuntime } from '../packages/spartan/core/game-runtime';
 
 /**
@@ -151,6 +151,11 @@ const AVAILABLE_GAMES = [
     id: 'npc-dungeon-demo',
     name: 'NPC Dungeon (Brain AI Combat)',
     path: '/dev/games/npc-dungeon-demo.json',
+  },
+  {
+    id: 'debug-renderer-demo',
+    name: 'Debug Renderer Showcase',
+    path: '/dev/games/debug-renderer-demo.json',
   },
 ];
 
@@ -501,7 +506,7 @@ function Playground() {
 
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         <div style={{ marginTop: '20px' }}>
-          <GridRenderer scene={runtime?.activeScene || null} />
+          {runtime && <CanvasDebugView runtime={runtime} />}
           {runtime && <HUD runtime={runtime} />}
         </div>
         <div style={{ flex: '1', minWidth: '300px' }}>

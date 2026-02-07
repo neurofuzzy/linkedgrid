@@ -138,6 +138,13 @@ export const SYSTEM_CONFIG = {
     dependencies: ['SpatialSystem'] as const,
     description: 'Spawns entities from spawner entities with grouping, activation, wave mode, and boundary recycling',
   },
+
+  Visual: {
+    tickRate: 1,
+    executionPhase: 'post-commit' as const,
+    dependencies: ['SpatialSystem'] as const,
+    description: 'Tracks visual state changes, emits events for view layers, advances animation frames',
+  },
 } as const;
 
 // Timing constants extracted from config
